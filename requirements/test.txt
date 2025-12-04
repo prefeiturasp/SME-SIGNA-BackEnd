@@ -1,0 +1,5 @@
+-r base.txt
+pytest>=7
+pytest-django
+coverage
+factory-boy

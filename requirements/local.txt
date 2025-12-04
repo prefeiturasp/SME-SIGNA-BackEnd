@@ -1,0 +1,4 @@
+-r base.txt
+# dev
+django-debug-toolbar
+ipython
