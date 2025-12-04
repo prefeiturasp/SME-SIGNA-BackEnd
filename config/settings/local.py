@@ -1,7 +1,5 @@
-from .base import *
-
+from . import base
 
 DEBUG = True
-
 
 # configurações extra para desenvolvimento (ex.: django-debug-toolbar)
