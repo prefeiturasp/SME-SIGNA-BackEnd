@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Dependências do SO (mínimas; ajusta conforme suas libs)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libpq-dev gcc \
+    build-essential gcc libpq-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # Copia apenas requirements para cache de build
