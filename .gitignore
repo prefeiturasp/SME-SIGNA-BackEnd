@@ -37,3 +37,14 @@ staticfiles/
 /data/
 docker-cache/
 __docker__/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
