@@ -25,6 +25,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 # Apps
 INSTALLED_APPS = [
     # Django contrib
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -37,7 +38,11 @@ INSTALLED_APPS = [
 
     # Local apps
     'apps.core',
+    'apps.usuarios',
 ]
+
+# https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
+AUTH_USER_MODEL = "usuarios.User"
 
 # Middleware (corsheaders deve vir antes do CommonMiddleware)
 MIDDLEWARE = [
