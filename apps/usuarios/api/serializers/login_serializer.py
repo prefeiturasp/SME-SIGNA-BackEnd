@@ -10,7 +10,7 @@ class LoginSerializer(serializers.Serializer):
 
         digits = re.sub(r"\D", "", username or "")
 
-        # valida RF (7 ou 8 dígitos) ou CPF (11 dígitos)
+        # valida RF (7 ou 8 dígitos)
         if len(digits) not in (7, 8):
             raise serializers.ValidationError({
                 "username": "Login inválido. Informe RF (7 ou 8 dígitos)."
