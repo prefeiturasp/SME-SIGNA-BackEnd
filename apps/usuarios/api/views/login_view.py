@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from rest_framework import status, permissions
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -26,7 +27,7 @@ class LoginView(TokenObtainPairView):
 
         try:
             serializer.is_valid(raise_exception=True)
-        except:
+        except ValidationError:
             return Response(
                 {"detail": "Credenciais inválidas"},
                 status=status.HTTP_400_BAD_REQUEST,
