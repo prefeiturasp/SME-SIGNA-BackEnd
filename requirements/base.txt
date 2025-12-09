@@ -22,3 +22,6 @@ gunicorn>=21.0
 
 # Static files (para produção)
 whitenoise>=6.5
+
+# HTTP requests
+requests==2.32.5
