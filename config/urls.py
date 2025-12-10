@@ -11,7 +11,7 @@ urlpatterns = [
     path('api/', include('apps.core.urls')),
 
     # APIs da sua app (apps.usuarios)
-    path("usuario/", include("apps.usuarios.urls")),
+    path('api/usuario/', include('apps.usuarios.urls')),
 
 
     path("admin/", admin.site.urls),
