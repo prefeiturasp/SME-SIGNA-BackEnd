@@ -1,4 +1,5 @@
 import pytest
+import os
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from django.contrib.auth import get_user_model
@@ -11,6 +12,11 @@ from apps.helpers.exceptions import EmailNaoCadastrado, UserNotFoundError
 User = get_user_model()
 
 class TestEsqueciMinhaSenhaViewSet(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        os.environ["AMBIENTE_URL"] = "http://testserver"
+
     def setUp(self):
         self.client = APIClient()
         self.url = "/api/usuario/esqueci-senha"
