@@ -6,6 +6,7 @@ from apps.helpers.exceptions import (
     InternalError
 )
 import requests
+from unittest.mock import patch, MagicMock
 
 
 class FakeResponse:
@@ -69,3 +70,39 @@ def test_sme_autentica_internal_error(monkeypatch):
 
     with pytest.raises(InternalError):
         SmeIntegracaoService.autentica("1234", "senha")
+
+
+def test_informacao_usuario_sgp_success():
+    """Testa quando a API retorna 200 com dados"""
+    with patch('requests.get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"email": "teste@email.com"}
+        mock_get.return_value = mock_response
+        
+        result = SmeIntegracaoService.informacao_usuario_sgp("1234567")
+        
+        assert result == {"email": "teste@email.com"}
+        mock_get.assert_called_once()
+
+
+def test_informacao_usuario_sgp_not_found():
+    """Testa quando a API retorna erro (status diferente de 200)"""
+    with patch('requests.get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+        
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.informacao_usuario_sgp("1234567")
+        
+        assert "Dados não encontrados" in str(exc.value)
+
+
+def test_informacao_usuario_sgp_connection_error():
+    """Testa quando há erro de conexão"""
+    with patch('requests.get') as mock_get:
+        mock_get.side_effect = requests.exceptions.ConnectionError
+        
+        with pytest.raises(requests.exceptions.RequestException) as exc:
+            SmeIntegracaoService.informacao_usuario_sgp("1234567")
