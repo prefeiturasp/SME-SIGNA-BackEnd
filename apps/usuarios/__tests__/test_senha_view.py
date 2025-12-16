@@ -1,13 +1,21 @@
 import pytest
 import os
+import secrets
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
+from rest_framework.test import APIRequestFactory
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from apps.usuarios.api.views.senha_view import EsqueciMinhaSenhaViewSet
-from apps.helpers.exceptions import EmailNaoCadastrado, UserNotFoundError
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+
+from apps.usuarios.api.views.senha_view import EsqueciMinhaSenhaViewSet, RedefinirSenhaViewSet
+from apps.helpers.exceptions import SmeIntegracaoException
 
 User = get_user_model()
 
@@ -265,3 +273,165 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class TestRedefinirSenhaViewSet:
+    
+    @patch("apps.usuarios.api.views.senha_view.RedefinirSenhaSerializer")
+    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    def test_post_success(self, mock_sme, mock_serializer):
+        """Testa sucesso total."""
+
+        factory = APIRequestFactory()
+        mock_sme.return_value = None
+
+        mock_serializer_instance = MagicMock()
+        mock_serializer_instance.is_valid.return_value = True
+        mock_serializer_instance.validated_data = {
+            "user": MagicMock(username="teste"),
+            "new_pass": "NovaSenha@123",
+        }
+
+        mock_serializer.return_value = mock_serializer_instance
+
+        request = factory.post(
+            "/redefinir-senha/",
+            {
+                "uid": "fake_uid",
+                "token": "fake_token",
+                "new_pass": "NovaSenha@123",
+                "new_pass_confirm": "NovaSenha@123",
+            },
+            format="json",
+        )
+
+        response = RedefinirSenhaViewSet.as_view()(request)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "success"
+    
+    @patch('apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha')
+    def test_post_sme_error(self, mock_sme):
+        """Testa erro na SME."""
+        factory = APIRequestFactory()
+        mock_sme.side_effect = SmeIntegracaoException("Erro SME")
+        
+        data = {"uid": "x", "token": "x", "new_pass": "x", "new_pass_confirm": "x"}
+        
+        with patch('apps.usuarios.api.serializers.senha_serializer.RedefinirSenhaSerializer') as mock_serializer:
+            mock_serializer_instance = MagicMock()
+            mock_serializer_instance.is_valid.return_value = True
+            mock_serializer_instance.validated_data = {"user": MagicMock(), "new_pass": "x"}
+            mock_serializer.return_value = mock_serializer_instance
+            
+            request = factory.post('/redefinir-senha/', data)
+            view = RedefinirSenhaViewSet.as_view()
+            response = view(request)
+            
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+    
+    def test_post_invalid_data(self):
+        """Testa dados inválidos."""
+        factory = APIRequestFactory()
+        
+        with patch('apps.usuarios.api.serializers.senha_serializer.RedefinirSenhaSerializer') as mock_serializer:
+            mock_serializer_instance = MagicMock()
+            mock_serializer_instance.is_valid.side_effect = Exception()
+            mock_serializer_instance.errors = {"error": "detalhe"}
+            mock_serializer.return_value = mock_serializer_instance
+            
+            request = factory.post('/redefinir-senha/', {})
+            view = RedefinirSenhaViewSet.as_view()
+            response = view(request)
+            
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    def test_post_sme_integracao_exception_returns_400(self, mock_redefine, django_user_model):
+        password = secrets.token_urlsafe(16)
+
+        user = django_user_model.objects.create_user(
+            username="usuario",
+            password=password
+        )
+
+        mock_redefine.side_effect = SmeIntegracaoException("Erro SME")
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        data = {
+            "uid": uid,
+            "token": token,
+            "new_pass": "NovaSenha@123",
+            "new_pass_confirm": "NovaSenha@123",
+        }
+
+        request = APIRequestFactory().post("/reset/", data, format="json")
+        response = RedefinirSenhaViewSet.as_view()(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["status"] == "error"
+        assert "Erro SME" in response.data["detail"]
+
+    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch("django.contrib.auth.models.AbstractBaseUser.save")
+    def test_post_password_updated_in_sme_but_local_save_fails(
+        self, mock_save, mock_redefine, django_user_model
+    ):
+        password = secrets.token_urlsafe(16)
+    
+        user = django_user_model.objects.create_user(
+            username="usuario",
+            password=password
+        )
+
+        mock_redefine.return_value = None
+        mock_save.side_effect = Exception("DB error")
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        data = {
+            "uid": uid,
+            "token": token,
+            "new_pass": "NovaSenha@123",
+            "new_pass_confirm": "NovaSenha@123",
+        }
+
+        request = APIRequestFactory().post("/reset/", data, format="json")
+        response = RedefinirSenhaViewSet.as_view()(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["status"] == "error"
+
+
+    @pytest.mark.django_db
+    def test_redefine_senha_view_success(self, client, django_user_model):
+        password = secrets.token_urlsafe(16)
+        user = django_user_model.objects.create_user(
+            username="teste",
+            password=password
+        )
+
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        payload = {
+            "uid": uid,
+            "token": token,
+            "new_pass": password,
+            "new_pass_confirm": password
+        }
+
+        response = client.post(
+            f"/api/usuario/redefinir-senha",
+            payload,
+            content_type="application/json"
+        )
+
+        user.refresh_from_db()
+
+        assert response.status_code == 200
+        assert user.check_password(password)
+
