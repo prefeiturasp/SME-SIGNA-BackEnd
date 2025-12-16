@@ -114,3 +114,70 @@ def test_informacao_usuario_sgp_connection_error():
         
         with pytest.raises(requests.exceptions.RequestException):
             SmeIntegracaoService.informacao_usuario_sgp("1234567")
+
+
+def test_redefine_senha_success(monkeypatch):
+    """Testa quando a redefinição de senha ocorre com sucesso"""
+    def fake_post(*args, **kwargs):
+        return FakeResponse(200)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    result = SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
+
+    assert result == "OK"
+
+
+def test_redefine_senha_invalid_data_sem_mock():
+    with pytest.raises(SmeIntegracaoException):
+        SmeIntegracaoService.redefine_senha("", "NovaSenha123")
+
+    with pytest.raises(SmeIntegracaoException):
+        SmeIntegracaoService.redefine_senha("123456", "")
+
+
+def test_redefine_senha_server_error(monkeypatch):
+    """Testa quando a API do SME retorna erro 500"""
+    def fake_post(*args, **kwargs):
+        return FakeResponse(500)
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    with pytest.raises(SmeIntegracaoException):
+        SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
+
+
+def test_redefine_senha_request_exception(monkeypatch):
+    """Testa quando há uma exceção de requisição"""
+    def fake_post(*args, **kwargs):
+        raise requests.exceptions.RequestException("timeout")
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    with pytest.raises(SmeIntegracaoException):
+        SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
+
+
+def test_redefine_senha_internal_error(monkeypatch):
+    """Testa quando ocorre um erro inesperado"""
+    def fake_post(*args, **kwargs):
+        raise ValueError("erro inesperado")
+
+    monkeypatch.setattr(requests, "post", fake_post)
+
+    with pytest.raises(SmeIntegracaoException):
+        SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
+
+
+def test_redefine_senha_bad_request_with_message():
+    """Cobre o bloco else que extrai mensagem do response.content"""
+    with patch('requests.post') as mock_post:
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.content = b'{"Erro":"Senha invalida"}'
+        mock_post.return_value = mock_response
+        
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.redefine_senha("123456", "SenhaRuim")
+        
+        assert "Senha invalida" in str(exc.value)
