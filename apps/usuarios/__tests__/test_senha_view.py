@@ -407,8 +407,17 @@ class TestRedefinirSenhaViewSet:
 
 
     @pytest.mark.django_db
-    def test_redefine_senha_view_success(self, client, django_user_model):
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
+    def test_redefine_senha_view_success(
+        self,
+        mock_redefine_senha,
+        client,
+        django_user_model,
+    ):
         password = secrets.token_urlsafe(16)
+
         user = django_user_model.objects.create_user(
             username="teste",
             password=password
@@ -424,14 +433,21 @@ class TestRedefinirSenhaViewSet:
             "new_pass_confirm": password
         }
 
+        mock_redefine_senha.return_value = "OK"
+
         response = client.post(
-            f"/api/usuario/redefinir-senha",
+            "/api/usuario/redefinir-senha",
             payload,
             content_type="application/json"
         )
 
-        user.refresh_from_db()
-
         assert response.status_code == 200
+
+        mock_redefine_senha.assert_called_once_with(
+            user.username,
+            password
+        )
+
+        user.refresh_from_db()
         assert user.check_password(password)
 
