@@ -7,11 +7,11 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import status, permissions
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.helpers.utils import anonimizar_email
-from apps.usuarios.api.serializers.senha_serializer import EsqueciMinhaSenhaSerializer, RedefinirSenhaSerializer
+from apps.usuarios.api.serializers.senha_serializer import EsqueciMinhaSenhaSerializer, RedefinirSenhaSerializer, AtualizarSenhaSerializer
 from apps.helpers.exceptions import EmailNaoCadastrado, UserNotFoundError, SmeIntegracaoException
 from apps.usuarios.services.senha_service import SenhaService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
@@ -190,3 +190,46 @@ class RedefinirSenhaViewSet(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class AtualizarSenhaViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = AtualizarSenhaSerializer(data=request.data, context={"request": request})
+
+        if not serializer.is_valid():
+            logger.warning(f"Erro de validação: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+        user = request.user
+        nova_senha = serializer.validated_data["nova_senha"]
+
+        try:
+            with transaction.atomic():
+                SmeIntegracaoService.redefine_senha(user.username, nova_senha)
+
+                user.set_password(nova_senha)
+                user.save(update_fields=["password"])
+
+                logger.info("Usuário ID %s alterou a senha com sucesso.", user.id)
+
+                return Response(
+                    {"detail": "Senha alterada com sucesso."},
+                    status=status.HTTP_200_OK,
+                )
+
+        except SmeIntegracaoException as e:
+            logger.error("Erro na integração SME para alteração de senha do usuário ID %s: %s", user.id, str(e))
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            logger.exception("Erro inesperado na alteração de senha do usuário ID: %s", user.id)
+            return Response(
+                {"detail": "Erro interno do servidor."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
