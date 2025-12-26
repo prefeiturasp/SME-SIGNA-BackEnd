@@ -468,18 +468,21 @@ class TestRedefinirSenhaViewSet:
 
 @pytest.mark.django_db
 class TestAtualizarSenhaViewSet:
+    password = secrets.token_urlsafe(16)
+    old_password = secrets.token_urlsafe(16)
 
     def test_sucesso(self, view, mock_request):
+
         mock_request.data = {
             "username": "testuser",
-            "senha_atual": "senhaantiga",
-            "nova_senha": "novasenha123",
-            "confirmacao_nova_senha": "novasenha123"
+            "senha_atual": self.old_password,
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": self.password
         }
 
         mock_serializer = MagicMock()
         mock_serializer.is_valid.return_value = True
-        mock_serializer.validated_data = {"nova_senha": "novasenha123"}
+        mock_serializer.validated_data = {"nova_senha": self.password}
         
         with patch('apps.usuarios.api.serializers.senha_serializer.AtualizarSenhaSerializer') as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
@@ -495,9 +498,9 @@ class TestAtualizarSenhaViewSet:
     def test_validation_error_confirmacao_senha_nao_corresponde(self, view, mock_request):
         mock_request.data = {
             "username": "testuser",
-            "senha_atual": "senhaantiga",
-            "nova_senha": "novasenha123",
-            "confirmacao_nova_senha": "diferente"
+            "senha_atual": self.old_password,
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": f"{self.password}_diferente"
         }
 
         mock_serializer = MagicMock()
@@ -515,8 +518,8 @@ class TestAtualizarSenhaViewSet:
         mock_request.data = {
             "username": "testuser",
             "senha_atual": "senha_errada",
-            "nova_senha": "novasenha123",
-            "confirmacao_nova_senha": "novasenha123"
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": self.password
         }
 
         mock_request.user.check_password.return_value = False
@@ -550,14 +553,14 @@ class TestAtualizarSenhaViewSet:
     def test_erro_sme(self, view, mock_request):
         mock_request.data = {
             "username": "testuser",
-            "senha_atual": "senhaantiga",
-            "nova_senha": "novasenha123",
-            "confirmacao_nova_senha": "novasenha123"
+            "senha_atual": self.old_password,
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": self.password
         }
 
         mock_serializer = MagicMock()
         mock_serializer.is_valid.return_value = True
-        mock_serializer.validated_data = {"nova_senha": "novasenha123"}
+        mock_serializer.validated_data = {"nova_senha": self.password}
         
         with patch('apps.usuarios.api.serializers.senha_serializer.AtualizarSenhaSerializer') as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
@@ -572,14 +575,14 @@ class TestAtualizarSenhaViewSet:
     def test_erro_inesperado(self, view, mock_request):
         mock_request.data = {
             "username": "testuser",
-            "senha_atual": "senhaantiga",
-            "nova_senha": "novasenha123",
-            "confirmacao_nova_senha": "novasenha123"
+            "senha_atual": self.old_password,
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": self.password
         }
 
         mock_serializer = MagicMock()
         mock_serializer.is_valid.return_value = True
-        mock_serializer.validated_data = {"nova_senha": "novasenha123"}
+        mock_serializer.validated_data = {"nova_senha": self.password}
         
         with patch('apps.usuarios.api.serializers.senha_serializer.AtualizarSenhaSerializer') as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
