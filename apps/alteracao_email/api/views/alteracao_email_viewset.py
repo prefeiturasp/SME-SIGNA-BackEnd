@@ -30,7 +30,6 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
                 usuario=request.user,
                 novo_email=serializer.validated_data["new_email"]
             )
-            print("enviou")
 
             return Response(
                 {"message": "E-mail de confirmação enviado com sucesso."},
