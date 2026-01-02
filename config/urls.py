@@ -10,6 +10,10 @@ urlpatterns = [
     # APIs da sua app (apps.usuarios)
     path('api/usuario/', include('apps.usuarios.urls')),
 
+    # APIs da sua app (apps.alteracao_email)
+    path("api/alteracao-email/", include("apps.alteracao_email.urls", namespace="alteracao_email")),
+
+
 
     path("admin/", admin.site.urls),
 ]

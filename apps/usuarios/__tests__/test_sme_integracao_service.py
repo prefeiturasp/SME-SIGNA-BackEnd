@@ -6,6 +6,7 @@ from apps.helpers.exceptions import (
     InternalError
 )
 import requests
+from rest_framework import status
 from unittest.mock import patch, MagicMock
 
 
@@ -181,3 +182,51 @@ def test_redefine_senha_bad_request_with_message():
             SmeIntegracaoService.redefine_senha("123456", "SenhaRuim")
         
         assert "Senha invalida" in str(exc.value)
+
+@patch("apps.usuarios.services.sme_integracao_service.requests.post")
+class TestAlteraEmail:
+
+    def test_sucesso(self, mock_post):
+        """Deve retornar OK quando a API responde 200"""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_200_OK
+        mock_post.return_value = mock_response
+
+        result = SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+
+        assert result == "OK"
+        mock_post.assert_called_once()
+
+    def test_parametros_invalidos(self, mock_post):
+        """Deve lançar exceção se registro_funcional ou email forem vazios"""
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.altera_email("", "teste@sme.prefeitura.sp.gov.br")
+        assert "Registro funcional e email são obrigatórios" in str(exc.value)
+
+        with pytest.raises(SmeIntegracaoException):
+            SmeIntegracaoService.altera_email("1234567", "")
+
+        mock_post.assert_not_called()
+
+    def test_erro_api(self, mock_post):
+        """Deve lançar exceção quando API responde status != 200"""
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.content = b'{"mensagem":"Erro API"}'
+        mock_post.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+
+        assert "Erro API" in str(exc.value)
+        mock_post.assert_called_once()
+
+    def test_excecao_generica(self, mock_post):
+        """Deve encapsular erros inesperados em SmeIntegracaoException"""
+        mock_post.side_effect = requests.RequestException("Falha de rede")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+
+        assert "Falha de rede" in str(exc.value)
+        mock_post.assert_called_once()
