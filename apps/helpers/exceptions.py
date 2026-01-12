@@ -35,3 +35,8 @@ class UserNotFoundError(Exception):
     def __init__(self, message, usuario=None):
         super().__init__(message)
         self.usuario = usuario
+
+class PerfilNaoAutorizadoError(Exception):
+    """Não possui perfil signa"""
+    pass
+

@@ -28,9 +28,10 @@ class SmeIntegracaoService:
         payload = {
             "login": login,
             "senha": senha,
+            "codigoSistema": env('CODIGO_SISTEMA_GIPE', default='')
         }
 
-        url = f"{env('SME_INTEGRACAO_URL', default='')}/v1/autenticacao"
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/v1/autenticacao/externa"
 
         logger.info("Autenticando no CoreSSO: %s", login)
 
