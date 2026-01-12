@@ -163,7 +163,7 @@ def test_login_generic_exception():
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
     url = reverse("login")
-    password = "senha123"
+    password = secrets.token_urlsafe(16)
 
     monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "0000")
 
@@ -191,7 +191,7 @@ def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
     url = reverse("login")
-    password = "senha123"
+    password = secrets.token_urlsafe(16)
 
     monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "0000")
 
@@ -220,7 +220,7 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypatch):
     url = reverse("login")
-    password = "senha123"
+    password = secrets.token_urlsafe(16)
 
     monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "SIGNACODE")
 
