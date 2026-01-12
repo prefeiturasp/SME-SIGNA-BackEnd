@@ -13,7 +13,7 @@ User = get_user_model()
 
 @pytest.fixture(autouse=True)
 def set_signa_env(monkeypatch):
-    monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "0000")
+    monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "0000")
 
 
 @pytest.mark.django_db
@@ -165,7 +165,7 @@ def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
-    monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "0000")
+    monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "0000")
 
     with patch(
         "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
@@ -193,7 +193,7 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
-    monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "0000")
+    monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "0000")
 
     with patch(
         "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
@@ -222,7 +222,7 @@ def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypat
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
-    monkeypatch.setenv("CODIGO_SISTEMA_SIGNA", "SIGNACODE")
+    monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "SIGNACODE")
 
     with patch(
         "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
