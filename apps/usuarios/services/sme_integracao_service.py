@@ -26,9 +26,9 @@ class SmeIntegracaoService:
     @classmethod
     def autentica(cls, login: str, senha: str) -> dict:
         payload = {
-            "login": login,
+            "usuario": login,
             "senha": senha,
-            "codigoSistema": env('CODIGO_SISTEMA_GIPE', default='')
+            "codigoSistema": env('CODIGO_SISTEMA_SIGNA', default='')
         }
 
         url = f"{env('SME_INTEGRACAO_URL', default='')}/v1/autenticacao/externa"

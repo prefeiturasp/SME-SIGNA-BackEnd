@@ -96,9 +96,10 @@ class LoginView(TokenObtainPairView):
         if not perfis or not isinstance(perfis, list):
             raise PerfilNaoAutorizadoError()
 
-        codigo_signa = env("CODIGO_SISTEMA_SIGNA")
-
-        if codigo_signa not in perfis:
+        perfis_normalizados = [p.upper() for p in perfis]
+        perfil_signa = env("GUIDE_PERFIL_SIGNA")
+        
+        if perfil_signa not in perfis_normalizados:
             raise PerfilNaoAutorizadoError()
 
 
