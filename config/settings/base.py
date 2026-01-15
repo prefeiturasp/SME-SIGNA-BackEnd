@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.usuarios',
     'apps.alteracao_email',
+    'apps.designacao',
 
 ]
 
