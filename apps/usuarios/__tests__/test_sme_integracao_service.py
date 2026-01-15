@@ -230,3 +230,62 @@ class TestAlteraEmail:
 
         assert "Falha de rede" in str(exc.value)
         mock_post.assert_called_once()
+
+
+class TestDesignacao:
+
+    def test_consulta_cargos_funcionario_sem_registro(self):
+        """Deve lançar exceção se RF não for informado"""
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.consulta_cargos_funcionario("")
+
+        assert "Registro funcional é obrigatório" in str(exc.value)
+
+
+    def test_consulta_cargos_funcionario_success(self):
+        """Deve retornar lista de cargos quando API responde 200"""
+        cargos_mock = [
+            {
+                "cargoBase": "Professor",
+                "cargoSobreposto": None,
+                "funcaoAtividade": "Docência"
+            }
+        ]
+
+        with patch("apps.usuarios.services.sme_integracao_service.requests.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.status_code = status.HTTP_200_OK
+            mock_response.json.return_value = cargos_mock
+            mock_get.return_value = mock_response
+
+            result = SmeIntegracaoService.consulta_cargos_funcionario("123456")
+
+            assert result == cargos_mock
+            mock_get.assert_called_once()
+
+
+    def test_consulta_cargos_funcionario_status_invalido(self):
+        """Deve lançar exceção quando API retorna status diferente de 200"""
+        with patch("apps.usuarios.services.sme_integracao_service.requests.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            mock_response.text = "Erro interno"
+            mock_get.return_value = mock_response
+
+            with pytest.raises(SmeIntegracaoException) as exc:
+                SmeIntegracaoService.consulta_cargos_funcionario("123456")
+
+            assert "Erro ao consultar cargos do servidor" in str(exc.value)
+            mock_get.assert_called_once()
+
+
+    def test_consulta_cargos_funcionario_request_exception(self):
+        """Deve lançar exceção quando ocorre erro de comunicação"""
+        with patch(
+            "apps.usuarios.services.sme_integracao_service.requests.get",
+            side_effect=requests.exceptions.RequestException("timeout")
+        ):
+            with pytest.raises(SmeIntegracaoException) as exc:
+                SmeIntegracaoService.consulta_cargos_funcionario("123456")
+
+            assert "Erro de comunicação com SME" in str(exc.value)
