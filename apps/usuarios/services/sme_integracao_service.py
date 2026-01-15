@@ -179,3 +179,42 @@ class SmeIntegracaoService:
                 raise SmeIntegracaoException(mensagem)
         except Exception as err:
             raise SmeIntegracaoException(str(err))
+        
+
+    @classmethod
+    def consulta_cargos_funcionario(cls, registro_funcional: str) -> list:
+        """
+        Consulta cargos (base e sobreposto) de um servidor pelo RF.
+        """
+        if not registro_funcional:
+            raise SmeIntegracaoException("Registro funcional é obrigatório")
+
+        logger.info(
+            "Consultando cargos do servidor no SME. RF: %s",
+            registro_funcional
+        )
+
+        try:
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"
+            )
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            logger.error(
+                "Erro ao consultar cargos. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException("Erro ao consultar cargos do servidor")
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de cargos")
+            raise SmeIntegracaoException("Erro de comunicação com SME") from e
