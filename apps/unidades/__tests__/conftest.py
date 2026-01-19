@@ -1,8 +1,33 @@
-# apps/unidades/__tests__/conftest.py (ou tests/conftest.py)
 import pytest
 from unittest.mock import Mock
 from rest_framework.test import APIRequestFactory
 from rest_framework.request import Request
+
+# ==================== CONSTANTES ====================
+
+# Códigos de teste
+CODIGO_DRE_BUTANTA = '108200'
+CODIGO_DRE_CAMPO_LIMPO = '108300'
+CODIGO_EOL_EMEF = '019456'
+CODIGO_EOL_EMEI = '019457'
+
+# Nomes de DRE
+NOME_DRE_BUTANTA = 'Diretoria Regional de Educação Butantã'
+NOME_DRE_CAMPO_LIMPO = 'Diretoria Regional de Educação Campo Limpo'
+NOME_DRE_CENTRO = 'DRE Centro'
+
+# Siglas de DRE
+SIGLA_DRE_BUTANTA = 'DRE-BT'
+SIGLA_DRE_CAMPO_LIMPO = 'DRE-CL'
+SIGLA_DRE_CENTRO = 'DRE-CT'
+
+# Nomes de unidades
+NOME_EMEF = 'EMEF - Escola Municipal de Ensino Fundamental'
+NOME_EMEI = 'EMEI - Escola Municipal de Educação Infantil'
+
+# Tipos de unidade
+TIPO_UE_EMEF = 'EMEF'
+TIPO_UE_EMEI = 'EMEI'
 
 # ==================== FIXTURES DE DADOS ====================
 
@@ -11,8 +36,8 @@ def dados_dre_validos():
     """Fixture com dados válidos de DRE"""
     return {
         'codigo_dre': '001',
-        'nome_dre': 'Diretoria Regional de Educação Centro',
-        'sigla_dre': 'DRE-CT'
+        'nome_dre': NOME_DRE_CENTRO,
+        'sigla_dre': SIGLA_DRE_CENTRO
     }
 
 
@@ -23,15 +48,15 @@ def dados_unidade_completos():
         'codigo_eol': '123456',
         'nome_oficial': 'Escola Municipal de Ensino Fundamental',
         'nome_nao_oficial': 'EMEF Centro',
-        'tipo_unidade_admin': 'EMEF',
-        'tipo_ue': 'EMEF',
+        'tipo_unidade_admin': TIPO_UE_EMEF,
+        'tipo_ue': TIPO_UE_EMEF,
         'logradouro': 'Rua das Flores',
         'numero': '100',
         'bairro': 'Centro',
         'cep': 12345678,
         'distrito': 'Centro',
         'sub_prefeitura': 'Sé',
-        'nome_dre': 'DRE Centro',
+        'nome_dre': NOME_DRE_CENTRO,
         'email': 'escola@exemplo.com',
         'telefone1': '11-1234-5678',
         'telefone2': '11-8765-4321',
@@ -56,15 +81,15 @@ def dados_unidade_completos_camelcase():
         'codigoEol': '123456',
         'nomeOficial': 'Escola Municipal de Ensino Fundamental',
         'nomeNaoOficial': 'EMEF Centro',
-        'tipoUnidadeAdmin': 'EMEF',
-        'tipoUE': 'EMEF',
+        'tipoUnidadeAdmin': TIPO_UE_EMEF,
+        'tipoUE': TIPO_UE_EMEF,
         'logradouro': 'Rua das Flores',
         'numero': '100',
         'bairro': 'Centro',
         'cep': 12345678,
         'distrito': 'Centro',
         'subPrefeitura': 'Sé',
-        'nomeDre': 'DRE Centro',
+        'nomeDre': NOME_DRE_CENTRO,
         'email': 'escola@exemplo.com',
         'telefone1': '11-1234-5678',
         'telefone2': '11-8765-4321',
@@ -88,9 +113,9 @@ def dados_unidade_minimos():
     return {
         'codigo_eol': '123456',
         'nome_oficial': 'Escola Municipal',
-        'tipo_unidade_admin': 'EMEF',
-        'tipo_ue': 'EMEF',
-        'nome_dre': 'DRE Centro'
+        'tipo_unidade_admin': TIPO_UE_EMEF,
+        'tipo_ue': TIPO_UE_EMEF,
+        'nome_dre': NOME_DRE_CENTRO
     }
 
 
@@ -100,9 +125,9 @@ def dados_unidade_minimos_camelcase():
     return {
         'codigoEol': '123456',
         'nomeOficial': 'Escola Municipal',
-        'tipoUnidadeAdmin': 'EMEF',
-        'tipoUE': 'EMEF',
-        'nomeDre': 'DRE Centro'
+        'tipoUnidadeAdmin': TIPO_UE_EMEF,
+        'tipoUE': TIPO_UE_EMEF,
+        'nomeDre': NOME_DRE_CENTRO
     }
 
 
@@ -113,14 +138,14 @@ def mock_dres_response():
     """Fixture com resposta mockada de DREs da API"""
     return [
         {
-            'codigoDRE': '108200',
-            'nomeDRE': 'Diretoria Regional de Educação Butantã',
-            'siglaDRE': 'DRE-BT'
+            'codigoDRE': CODIGO_DRE_BUTANTA,
+            'nomeDRE': NOME_DRE_BUTANTA,
+            'siglaDRE': SIGLA_DRE_BUTANTA
         },
         {
-            'codigoDRE': '108300',
-            'nomeDRE': 'Diretoria Regional de Educação Campo Limpo',
-            'siglaDRE': 'DRE-CL'
+            'codigoDRE': CODIGO_DRE_CAMPO_LIMPO,
+            'nomeDRE': NOME_DRE_CAMPO_LIMPO,
+            'siglaDRE': SIGLA_DRE_CAMPO_LIMPO
         }
     ]
 
@@ -130,16 +155,16 @@ def mock_unidades_response():
     """Fixture com resposta mockada de Unidades da API"""
     return [
         {
-            'codigoEol': '019456',
-            'nomeOficial': 'EMEF - Escola Municipal de Ensino Fundamental',
-            'tipoUE': 'EMEF',
-            'nomeDRE': 'DRE Butantã'
+            'codigoEol': CODIGO_EOL_EMEF,
+            'nomeOficial': NOME_EMEF,
+            'tipoUE': TIPO_UE_EMEF,
+            'nomeDRE': NOME_DRE_BUTANTA
         },
         {
-            'codigoEol': '019457',
-            'nomeOficial': 'EMEI - Escola Municipal de Educação Infantil',
-            'tipoUE': 'EMEI',
-            'nomeDRE': 'DRE Butantã'
+            'codigoEol': CODIGO_EOL_EMEI,
+            'nomeOficial': NOME_EMEI,
+            'tipoUE': TIPO_UE_EMEI,
+            'nomeDRE': NOME_DRE_BUTANTA
         }
     ]
 
@@ -157,14 +182,14 @@ def mock_dres_viewset():
     """Fixture com dados mockados de DREs para ViewSet (formato snake_case)"""
     return [
         {
-            'codigo_dre': '108200',
-            'nome_dre': 'Diretoria Regional de Educação Butantã',
-            'sigla_dre': 'DRE-BT'
+            'codigo_dre': CODIGO_DRE_BUTANTA,
+            'nome_dre': NOME_DRE_BUTANTA,
+            'sigla_dre': SIGLA_DRE_BUTANTA
         },
         {
-            'codigo_dre': '108300',
-            'nome_dre': 'Diretoria Regional de Educação Campo Limpo',
-            'sigla_dre': 'DRE-CL'
+            'codigo_dre': CODIGO_DRE_CAMPO_LIMPO,
+            'nome_dre': NOME_DRE_CAMPO_LIMPO,
+            'sigla_dre': SIGLA_DRE_CAMPO_LIMPO
         }
     ]
 
@@ -174,16 +199,16 @@ def mock_ues_viewset():
     """Fixture com dados mockados de UEs para ViewSet (formato snake_case)"""
     return [
         {
-            'codigo_eol': '019456',
-            'nome_oficial': 'EMEF - Escola Municipal de Ensino Fundamental',
-            'tipo_ue': 'EMEF',
-            'nome_dre': 'DRE Butantã'
+            'codigo_eol': CODIGO_EOL_EMEF,
+            'nome_oficial': NOME_EMEF,
+            'tipo_ue': TIPO_UE_EMEF,
+            'nome_dre': NOME_DRE_BUTANTA
         },
         {
-            'codigo_eol': '019457',
-            'nome_oficial': 'EMEI - Escola Municipal de Educação Infantil',
-            'tipo_ue': 'EMEI',
-            'nome_dre': 'DRE Butantã'
+            'codigo_eol': CODIGO_EOL_EMEI,
+            'nome_oficial': NOME_EMEI,
+            'tipo_ue': TIPO_UE_EMEI,
+            'nome_dre': NOME_DRE_BUTANTA
         }
     ]
 
@@ -222,7 +247,7 @@ def create_drf_request(api_factory):
     return _create_request
 
 
-# ==================== FIXTURES DE MOCK HTTP (já existentes, mantém) ====================
+# ==================== FIXTURES DE MOCK HTTP ====================
 
 @pytest.fixture
 def mock_http_response_success():
@@ -253,7 +278,7 @@ def mock_http_response_error():
 @pytest.fixture
 def mock_env_config():
     """Fixture para configurar variáveis de ambiente mockadas"""
-    def _config(url='http://api.test.com', token='test-token-123'):
+    def _config(url='https://api.test.com', token='test-token-123'):
         return lambda key, default='': {
             'SME_INTEGRACAO_URL': url,
             'SME_INTEGRACAO_TOKEN': token
@@ -264,7 +289,7 @@ def mock_env_config():
 @pytest.fixture
 def api_base_url():
     """URL base da API para testes"""
-    return 'http://api.test.com'
+    return 'https://api.test.com'
 
 
 @pytest.fixture
@@ -278,7 +303,7 @@ def api_token():
 @pytest.fixture
 def codigo_dre_valido():
     """Código de DRE válido para testes"""
-    return '108200'
+    return CODIGO_DRE_BUTANTA
 
 
 @pytest.fixture
@@ -290,4 +315,4 @@ def codigo_dre_invalido():
 @pytest.fixture
 def codigo_eol_valido():
     """Código EOL válido para testes"""
-    return '019456'
+    return CODIGO_EOL_EMEF
