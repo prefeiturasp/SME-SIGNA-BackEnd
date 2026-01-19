@@ -11,7 +11,7 @@ class TestDRESerializer:
         serializer = DRESerializer(data=dados_dre_validos)
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data['codigoDRE'] == '001'
-        assert serializer.validated_data['nomeDRE'] == 'Diretoria Regional de Educação Centro'
+        assert serializer.validated_data['nomeDRE'] == 'DRE Centro'
         assert serializer.validated_data['siglaDRE'] == 'DRE-CT'
     
     def test_serializer_com_dados_faltando(self):

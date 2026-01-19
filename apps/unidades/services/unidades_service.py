@@ -8,6 +8,27 @@ env = environ.Env()
 logger = logging.getLogger(__name__)
 
 
+# Exceções customizadas
+class EOLIntegrationError(Exception):
+    """Erro base para integrações com EOL"""
+    pass
+
+
+class EOLTimeoutError(EOLIntegrationError):
+    """Erro de timeout na comunicação com EOL"""
+    pass
+
+
+class EOLCommunicationError(EOLIntegrationError):
+    """Erro de comunicação com EOL"""
+    pass
+
+
+class EOLUnexpectedResponseError(EOLIntegrationError):
+    """Resposta inesperada da API EOL"""
+    pass
+
+
 class DREIntegracaoService:
     """Serviço para busca de unidades no sistema EOL"""
     
@@ -38,7 +59,7 @@ class DREIntegracaoService:
             
             if response.status_code != 200:
                 logger.error("Erro ao buscar DREs no EOL. Status: %s", response.status_code)
-                raise Exception(f"Erro na consulta de DREs: {response.status_code}")
+                raise EOLIntegrationError(f"Erro na consulta de DREs: {response.status_code}")
             
             dres_data = response.json()
             logger.info("DREs encontradas: %s", len(dres_data))
@@ -47,15 +68,21 @@ class DREIntegracaoService:
             
         except requests.exceptions.Timeout:
             logger.error("Timeout ao buscar DREs no EOL")
-            raise Exception("Tempo limite excedido ao consultar DREs")
+            raise EOLTimeoutError("Tempo limite excedido ao consultar DREs")
         
         except requests.exceptions.RequestException as e:
             logger.error("Erro de comunicação com EOL: %s", str(e))
-            raise Exception(f"Erro de comunicação com sistema de DREs: {str(e)}")
+            raise EOLCommunicationError(f"Erro de comunicação com sistema de DREs: {str(e)}")
+        
+        except PermissionError:
+            raise
+        
+        except EOLIntegrationError:
+            raise
         
         except Exception as e:
             logger.error("Erro inesperado ao buscar DREs: %s", str(e))
-            raise
+            raise EOLIntegrationError(f"Erro inesperado ao buscar DREs: {str(e)}")
     
     @classmethod
     def get_dre_by_codigo(cls, codigo_dre: str) -> dict | None:
@@ -72,8 +99,12 @@ class DREIntegracaoService:
             logger.warning("DRE não encontrada com código: %s", codigo_dre)
             return None
             
-        except Exception as e:
-            logger.error("Erro ao buscar DRE por código: %s", str(e))
+        except PermissionError:
+            logger.error("Erro ao buscar DRE por código: %s", codigo_dre)
+            raise
+        
+        except EOLIntegrationError:
+            logger.error("Erro ao buscar DRE por código: %s", codigo_dre)
             raise
 
 
@@ -124,7 +155,7 @@ class UnidadeIntegracaoService:
                     "Erro ao buscar UEs da DRE '%s'. Status=%s Body=%s",
                     dre_codigo, response.status_code, response.text
                 )
-                raise Exception(f"Erro na consulta de UEs por DRE: {response.status_code}")
+                raise EOLIntegrationError(f"Erro na consulta de UEs por DRE: {response.status_code}")
 
             unidades_data = response.json()
 
@@ -133,20 +164,31 @@ class UnidadeIntegracaoService:
                     "Resposta inesperada ao buscar UEs da DRE '%s'. Tipo=%s",
                     dre_codigo, type(unidades_data).__name__
                 )
-                raise Exception("Resposta inesperada da API ao consultar UEs por DRE (esperado uma lista).")
+                raise EOLUnexpectedResponseError("Resposta inesperada da API ao consultar UEs por DRE (esperado uma lista).")
 
             logger.info("UEs encontradas para DRE '%s': %d", dre_codigo, len(unidades_data))
             return unidades_data
 
         except requests.exceptions.Timeout:
             logger.error("Timeout ao buscar UEs da DRE '%s' no EOL", dre_codigo)
-            raise Exception("Tempo limite excedido ao consultar UEs por DRE.")
+            raise EOLTimeoutError("Tempo limite excedido ao consultar UEs por DRE.")
 
         except requests.exceptions.RequestException as e:
             logger.error("Erro de comunicação com EOL ao buscar UEs da DRE '%s': %s", dre_codigo, str(e))
-            raise Exception(f"Erro de comunicação com sistema de unidades: {str(e)}")
+            raise EOLCommunicationError(f"Erro de comunicação com sistema de unidades: {str(e)}")
+
+        except ValueError:
+            raise
+        
+        except PermissionError:
+            raise
+        
+        except LookupError:
+            raise
+        
+        except EOLIntegrationError:
+            raise
 
         except Exception as e:
             logger.error("Erro inesperado ao buscar UEs da DRE '%s': %s", dre_codigo, str(e))
-            raise
-        
+            raise EOLIntegrationError(f"Erro inesperado ao buscar UEs: {str(e)}")
