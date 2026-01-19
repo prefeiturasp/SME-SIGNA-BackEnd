@@ -1,0 +1,51 @@
+[run]
+# Pacotes principais
+source =
+    apps
+
+# Arquivos que NÃO devem entrar na cobertura
+omit =
+    # Arquivos de projeto Django / infra
+    */manage.py
+    */wsgi.py
+    */asgi.py
+    */settings.py
+    */urls.py
+
+    # Arquivos de configuração de apps Django
+    */apps.py
+    */admin.py
+
+    # Migrations não precisam de teste
+    */migrations/*
+    
+    # Arquivos de testes
+    */tests/*
+    */__tests__/*
+    *_test.py
+    test_*.py
+
+    # Outras coisas opcionais que você queira excluir
+    # */venv/*
+    # */config/*
+    
+[report]
+# Mostra linhas não cobertas explicitamente
+show_missing = True
+
+# limite mínimo desejado de cobertura (quebra o build se ficar abaixo)
+fail_under = 95
+
+# Não diferenciar maiúsculas/minúsculas em caminhos
+ignore_errors = True
+
+# Ajustar o que aparece no relatório de terminal
+exclude_lines =
+    # Não contamos como "não coberto" coisas que não fazem sentido testar
+    pragma: no cover
+    if settings.DEBUG
+    if __name__ == .__main__.:
+    raise NotImplementedError
+
+[html]
+directory = htmlcov
