@@ -16,6 +16,9 @@ urlpatterns = [
     # APIs da sua app (apps.designacao)
     path("api/designacao/", include("apps.designacao.urls", namespace="designacao")),
 
+    # APIs da sua app (apps.unidades)
+    path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),
 
+    # não enviar para produção
     path("admin/", admin.site.urls),
 ]
