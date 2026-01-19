@@ -42,7 +42,7 @@ class DREIntegracaoService:
     def get_dres(cls) -> list[dict]:
         """Busca todas as DREs do sistema EOL"""
         
-        url = f"{env('SME_INTEGRACAO_URL', default='')}/api/DREs"
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/DREs"
         
         try:
             logger.info("Buscando DREs no EOL")
@@ -131,7 +131,7 @@ class UnidadeIntegracaoService:
 
         base_url = env("SME_INTEGRACAO_URL", default="")
         # Usa a versão limpa (string) na URL
-        url = f"{base_url}/api/DREs/{dre_codigo_str}/unidades"
+        url = f"{base_url}/DREs/{dre_codigo_str}/unidades"
 
         try:
             logger.info("Buscando UEs da DRE '%s' no EOL", dre_codigo_str)

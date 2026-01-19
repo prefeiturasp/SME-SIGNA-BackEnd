@@ -321,7 +321,7 @@ class TestUnidadeIntegracaoService:
         UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
         
         called_url = mock_get.call_args[0][0]
-        assert called_url == f'{api_base_url}/api/DREs/{codigo_dre_valido}/unidades'
+        assert called_url == f'{api_base_url}/DREs/{codigo_dre_valido}/unidades'
     
     @patch('apps.unidades.services.unidades_service.requests.get')
     @patch('apps.unidades.services.unidades_service.env')
