@@ -25,7 +25,7 @@ omit =
     *_test.py
     test_*.py
 
-    # Outras coisas opcionais que você queira excluir
+    # Opcionais
     # */venv/*
     # */config/*
     
