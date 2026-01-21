@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PATH=/home/app/.local/bin:$PATH
+
+WORKDIR /app
+
+# Dependências do SO (mínimas; ajusta conforme suas libs)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copia apenas requirements para cache de build
+COPY requirements/ requirements/
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements/local.txt
+
+# Copia o restante (no dev o código será sobrescrito pelo volume)
+COPY . .
+
+# Cria usuário não-root (opcional)
+RUN useradd --create-home --no-log-init appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000

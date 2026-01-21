@@ -1,0 +1,50 @@
+# ====================
+# Python
+# ====================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+env/
+venv/
+.venv/
+
+# ====================
+# Django
+# ====================
+db.sqlite3
+/media/
+staticfiles/
+
+# ====================
+# Environment variables
+# ====================
+.env
+
+# ====================
+# IDEs / Tools
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ====================
+# Docker
+# ====================
+/data/
+docker-cache/
+__docker__/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
