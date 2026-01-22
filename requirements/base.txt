@@ -1,0 +1,33 @@
+# Core Django
+Django>=4.2,<5
+
+# DRF
+djangorestframework>=3.15
+
+# JWT
+djangorestframework-simplejwt>=5.3
+
+# CORS
+django-cors-headers>=4.3
+
+# Env
+python-dotenv>=1.0
+django-environ>=0.12
+
+# PostgreSQL driver
+psycopg2-binary>=2.9
+
+# Servidor WSGI (pode estar no production também)
+gunicorn>=21.0
+
+# Static files (para produção)
+whitenoise>=6.5
+
+# HTTP requests
+requests==2.32.5
+
+#test
+pytest==9.0.1
+pytest-cov==7.0.0
+pytest-django==4.11.1
+pytest-mock==3.15.1
