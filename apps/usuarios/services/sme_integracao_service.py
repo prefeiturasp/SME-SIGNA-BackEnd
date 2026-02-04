@@ -22,6 +22,12 @@ class SmeIntegracaoService:
         "x-api-eol-key": env("SME_INTEGRACAO_TOKEN", default=""),
     }
     TIMEOUT = 30
+    CARGOS_GESTAO_ESCOLAR = [
+        {"codigo": 3360, "nome": "DIRETOR DE ESCOLA"},
+        {"codigo": 3379, "nome": "COORDENADOR PEDAGOGICO"},
+        {"codigo": 3352, "nome": "SUPERVISOR ESCOLAR"},
+    ]
+
 
     @classmethod
     def autentica(cls, login: str, senha: str) -> dict:
@@ -218,3 +224,97 @@ class SmeIntegracaoService:
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
             raise SmeIntegracaoException("Erro de comunicação com SME") from e
+
+
+    @classmethod
+    def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
+        """
+        Busca os servidores de cargos de gestão escolar vinculados a uma UE.
+        """
+
+        if not codigo_ue:
+            raise SmeIntegracaoException("Código da UE é obrigatório")
+
+        funcionarios = []
+
+        for cargo in cls.CARGOS_GESTAO_ESCOLAR:
+            codigo_cargo = cargo["codigo"]
+
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}"
+                f"/escolas/{codigo_ue}/funcionarios/cargos/{codigo_cargo}"
+            )
+
+            logger.info(
+                "Consultando funcionários da UE %s para o cargo %s",
+                codigo_ue,
+                codigo_cargo
+            )
+
+            try:
+                response = requests.get(
+                    url,
+                    headers=cls.DEFAULT_HEADERS,
+                    timeout=cls.TIMEOUT,
+                )
+
+                if response.status_code not in (
+                    status.HTTP_200_OK,
+                    status.HTTP_204_NO_CONTENT,
+                ):
+                    logger.error(
+                        "Erro ao buscar cargo %s da UE %s | Status: %s | Body: %s",
+                        codigo_cargo,
+                        codigo_ue,
+                        response.status_code,
+                        response.text,
+                    )
+                    raise SmeIntegracaoException(
+                        "Erro ao buscar funcionários da gestão escolar"
+                    )
+
+                if response.status_code == status.HTTP_204_NO_CONTENT:
+                    servidores_api = []
+
+                else:
+                    try:
+                        servidores_api = response.json()
+                    except ValueError:
+                        logger.error(
+                            "Resposta inválida da SME | UE %s | Cargo %s | Body: %s",
+                            codigo_ue,
+                            codigo_cargo,
+                            response.text,
+                        )
+                        servidores_api = []
+
+                servidores_normalizados = [
+                    {
+                        "rf": servidor.get("codigoRF"),
+                        "nome": servidor.get("nomeServidor"),
+                        "data_inicio": servidor.get("dataInicio"),
+                        "data_fim": servidor.get("dataFim"),
+                        "esta_afastado": servidor.get("estaAfastado"),
+                    }
+                    for servidor in servidores_api
+                ]
+
+                funcionarios.append({
+                    "codigo_cargo": codigo_cargo,
+                    "nome_cargo": cargo["nome"],
+                    "servidores": servidores_normalizados,
+                })
+
+
+            except requests.exceptions.RequestException as e:
+                logger.exception(
+                    "Erro de comunicação com SME | UE %s | Cargo %s",
+                    codigo_ue,
+                    codigo_cargo,
+                )
+                raise SmeIntegracaoException(
+                    "Erro de comunicação com SME"
+                ) from e
+
+        return funcionarios
+
