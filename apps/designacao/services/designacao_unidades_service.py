@@ -14,12 +14,12 @@ class DesignacaoUnidadeService:
     """
 
     @classmethod
-    def obter_informacoes_escolares(cls, codigo_ue: str) -> list:
-        cargos = SmeIntegracaoService.buscar_funcionarios_escolares(
-            codigo_ue
+    def obter_informacoes_escolares(cls, codigo_ue: str) -> dict:
+        cargos = (
+            SmeIntegracaoService.buscar_funcionarios_escolares(
+                codigo_ue
+            )
         )
-
-        resultado = []
 
         for cargo in cargos:
             servidores = cargo.get("servidores", [])
@@ -33,7 +33,12 @@ class DesignacaoUnidadeService:
                         .consulta_cargos_funcionario(rf)
                     )
                 except SmeIntegracaoException:
-                    cargos_servidor = []
+                    logger.warning(
+                        "Falha ao consultar cargos do servidor RF %s",
+                        rf
+                    )
+                    servidor["cargoSobreposto"] = None
+                    continue
 
                 cargo_sobreposto = None
                 if cargos_servidor:
@@ -41,13 +46,13 @@ class DesignacaoUnidadeService:
                         "cargoSobreposto"
                     )
 
-                resultado.append({
-                    "rf": rf,
-                    "nome": servidor.get("nome"),
-                    "cargoSobreposto": (
-                        f"{cargo_sobreposto} - v1"
-                        if cargo_sobreposto else None
-                    ),
-                })
+                servidor["cargoSobreposto"] = cargo_sobreposto
 
-        return resultado
+        cargos_por_codigo = {
+            cargo["codigo_cargo"]: cargo
+            for cargo in cargos
+        }
+
+        return {
+            "funcionarios_unidade": cargos_por_codigo
+        }
