@@ -292,8 +292,6 @@ class SmeIntegracaoService:
                     {
                         "rf": servidor.get("codigoRF"),
                         "nome": servidor.get("nomeServidor"),
-                        "data_inicio": servidor.get("dataInicio"),
-                        "data_fim": servidor.get("dataFim"),
                         "esta_afastado": servidor.get("estaAfastado"),
                     }
                     for servidor in servidores_api
