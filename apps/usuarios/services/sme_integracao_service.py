@@ -7,6 +7,9 @@ from apps.helpers.exceptions import (
     InternalError,
     SmeIntegracaoException
 )
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR
+)
 
 from rest_framework import status
 
@@ -22,12 +25,6 @@ class SmeIntegracaoService:
         "x-api-eol-key": env("SME_INTEGRACAO_TOKEN", default=""),
     }
     TIMEOUT = 30
-    CARGOS_GESTAO_ESCOLAR = [
-        {"codigo": 3360, "nome": "DIRETOR DE ESCOLA"},
-        {"codigo": 3379, "nome": "COORDENADOR PEDAGOGICO"},
-        {"codigo": 3352, "nome": "SUPERVISOR ESCOLAR"},
-    ]
-
 
     @classmethod
     def autentica(cls, login: str, senha: str) -> dict:
@@ -237,8 +234,8 @@ class SmeIntegracaoService:
 
         funcionarios = []
 
-        for cargo in cls.CARGOS_GESTAO_ESCOLAR:
-            codigo_cargo = cargo["codigo"]
+        for cargo in CARGOS_GESTAO_ESCOLAR:
+            codigo_cargo = cargo["codigoCargo"]
 
             url = (
                 f"{env('SME_INTEGRACAO_URL', default='')}"
@@ -299,7 +296,7 @@ class SmeIntegracaoService:
 
                 funcionarios.append({
                     "codigo_cargo": codigo_cargo,
-                    "nome_cargo": cargo["nome"],
+                    "nome_cargo": cargo["nomeCargo"],
                     "servidores": servidores_normalizados,
                 })
 

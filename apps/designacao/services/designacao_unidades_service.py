@@ -3,6 +3,9 @@ import logging
 from apps.usuarios.services.sme_integracao_service import (
     SmeIntegracaoService
 )
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR
+)
 from apps.helpers.exceptions import SmeIntegracaoException
 
 logger = logging.getLogger(__name__)
@@ -21,8 +24,8 @@ class DesignacaoUnidadeService:
             )
         )
 
-        for cargo in cargos:
-            servidores = cargo.get("servidores", [])
+        for cargo_ue in cargos:
+            servidores = cargo_ue.get("servidores", [])
 
             for servidor in servidores:
                 rf = servidor.get("rf")
@@ -37,16 +40,33 @@ class DesignacaoUnidadeService:
                         "Falha ao consultar cargos do servidor RF %s",
                         rf
                     )
-                    servidor["cargoSobreposto"] = None
+                    servidor.update({
+                        "cargo_sobreposto": None,
+                        "vinculo_cargo_sobreposto": None,
+                        "lotacao_cargo_sobreposto": None,
+                        "cargo_base": None,
+                        "funcao_atividade": None,
+                    })
                     continue
 
-                cargo_sobreposto = None
                 if cargos_servidor:
-                    cargo_sobreposto = cargos_servidor[0].get(
-                        "cargoSobreposto"
-                    )
-
-                servidor["cargoSobreposto"] = cargo_sobreposto
+                    info_cargo = cargos_servidor[0]
+                    
+                    servidor.update({
+                        "cargo_sobreposto": info_cargo.get("cargoSobreposto"),
+                        "vinculo_cargo_sobreposto": info_cargo.get("tipoVinculoCargoSobreposto"),
+                        "lotacao_cargo_sobreposto": info_cargo.get("ueCargoSobreposto"),
+                        "cargo_base": info_cargo.get("cargoBase"),
+                        "funcao_atividade": info_cargo.get("funcaoAtividade"),
+                    })
+                else:
+                    servidor.update({
+                        "cargo_sobreposto": None,
+                        "vinculo_cargo_sobreposto": None,
+                        "lotacao_cargo_sobreposto": None,
+                        "cargo_base": None,
+                        "funcao_atividade": None,
+                    })
 
         cargos_por_codigo = {
             cargo["codigo_cargo"]: cargo
@@ -54,5 +74,6 @@ class DesignacaoUnidadeService:
         }
 
         return {
-            "funcionarios_unidade": cargos_por_codigo
+            "cargos": CARGOS_GESTAO_ESCOLAR,
+            "funcionarios_unidade": cargos_por_codigo,
         }

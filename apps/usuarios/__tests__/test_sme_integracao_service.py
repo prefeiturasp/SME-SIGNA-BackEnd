@@ -1,11 +1,14 @@
 import pytest
+import requests
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 from apps.helpers.exceptions import (
     AuthenticationError,
     SmeIntegracaoException,
     InternalError
 )
-import requests
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR
+)
 from rest_framework import status
 from unittest.mock import patch, MagicMock
 
@@ -319,7 +322,7 @@ class TestBuscarFuncionariosEscolares:
         result = SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
         assert isinstance(result, list)
-        assert len(result) == len(SmeIntegracaoService.CARGOS_GESTAO_ESCOLAR)
+        assert len(result) == len(CARGOS_GESTAO_ESCOLAR)
 
         primeiro_cargo = result[0]
         assert "codigo_cargo" in primeiro_cargo
@@ -336,7 +339,7 @@ class TestBuscarFuncionariosEscolares:
 
         result = SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
-        assert len(result) == len(SmeIntegracaoService.CARGOS_GESTAO_ESCOLAR)
+        assert len(result) == len(CARGOS_GESTAO_ESCOLAR)
 
         for cargo in result:
             assert cargo["servidores"] == []
