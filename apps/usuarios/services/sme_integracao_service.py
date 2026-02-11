@@ -313,3 +313,41 @@ class SmeIntegracaoService:
 
         return funcionarios
 
+
+    @classmethod
+    def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
+        """
+        Consulta informacoes de unidades escolares pelo código.
+        """
+        if not codigo_ue:
+            raise SmeIntegracaoException("Registro funcional é obrigatório")
+
+        logger.info(
+            "Consultando informações da unidade escolar em SME. código: %s",
+            codigo_ue
+        )
+
+        try:
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}/escolas/dados/{codigo_ue}"
+            )
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            logger.error(
+                "Erro ao consultar informações da unidade escolar. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException("Erro ao consultar informações da unidade escolar")
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de informações da unidade escolar")
+            raise SmeIntegracaoException("Erro de comunicação com SME") from e

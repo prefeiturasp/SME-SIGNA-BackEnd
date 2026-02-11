@@ -6,26 +6,47 @@ from apps.usuarios.services.sme_integracao_service import (
 from apps.designacao.constants.cargos_gestao_escolar import (
     CARGOS_GESTAO_ESCOLAR
 )
+
+from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 from apps.helpers.exceptions import SmeIntegracaoException
+from apps.designacao.modulos import Calculadores
 
 logger = logging.getLogger(__name__)
 
 
 class DesignacaoUnidadeService:
     """
-    Orquestra dados da unidade.
+    Orquestra dados da unidade escolar e delega
+    o cálculo de módulos para os calculators específicos.
     """
 
     @classmethod
     def obter_informacoes_escolares(cls, codigo_ue: str) -> dict:
-        cargos = (
-            SmeIntegracaoService.buscar_funcionarios_escolares(
-                codigo_ue
-            )
+        cargos = SmeIntegracaoService.buscar_funcionarios_escolares(
+            codigo_ue
+        )
+
+        informacoes_ue = (
+            SmeIntegracaoService
+            .consulta_informacoes_unidades_escolares(codigo_ue)
         )
 
         for cargo_ue in cargos:
             servidores = cargo_ue.get("servidores", [])
+            codigo_cargo = str(cargo_ue.get("codigo_cargo"))
+
+            calculator = Calculadores.get(codigo_cargo)
+
+            if not calculator:
+                logger.debug(
+                    "Cargo %s não possui regra de módulo definida.",
+                    codigo_cargo,
+                )
+                cargo_ue["modulo"] = 0
+            else:
+                cargo_ue["modulo"] = calculator.calcular(
+                    cargo_ue, informacoes_ue
+                )
 
             for servidor in servidores:
                 rf = servidor.get("rf")
@@ -38,7 +59,7 @@ class DesignacaoUnidadeService:
                 except SmeIntegracaoException:
                     logger.warning(
                         "Falha ao consultar cargos do servidor RF %s",
-                        rf
+                        rf,
                     )
                     servidor.update({
                         "cargo_sobreposto": None,

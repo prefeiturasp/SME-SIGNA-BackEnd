@@ -381,3 +381,59 @@ class TestBuscarFuncionariosEscolares:
             SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
         assert "Erro de comunicação com SME" in str(exc.value)
+
+        
+class TestConsultaInformacoesUnidadesEscolares:
+
+    def test_consulta_informacoes_unidades_escolares_sem_codigo(self):
+        """Deve lançar exceção se código da UE não for informado"""
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares("")
+
+        assert "Registro funcional é obrigatório" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_consulta_informacoes_unidades_escolares_sucesso(self, mock_get):
+        """Deve retornar dados da unidade escolar quando API responde 200"""
+        dados_mock = {
+            "codigo": "090450",
+            "nome": "EMEF Exemplo",
+            "endereco": "Rua Teste, 123",
+            "bairro": "Centro"
+        }
+
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_200_OK
+        mock_response.json.return_value = dados_mock
+        mock_get.return_value = mock_response
+
+        result = SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+
+        assert result == dados_mock
+        mock_get.assert_called_once()
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_consulta_informacoes_unidades_escolares_status_invalido(self, mock_get):
+        """Deve lançar exceção quando API retorna status diferente de 200"""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_response.text = "Erro interno"
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+
+        assert "Erro ao consultar informações da unidade escolar" in str(exc.value)
+        mock_get.assert_called_once()
+
+    @patch(
+        "apps.usuarios.services.sme_integracao_service.requests.get",
+        side_effect=requests.exceptions.RequestException("timeout")
+    )
+    def test_consulta_informacoes_unidades_escolares_request_exception(self, mock_get):
+        """Deve lançar exceção quando ocorre erro de comunicação"""
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+
+        assert "Erro de comunicação com SME" in str(exc.value)
+
