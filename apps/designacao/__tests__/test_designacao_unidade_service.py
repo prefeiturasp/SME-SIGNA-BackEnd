@@ -17,8 +17,9 @@ class TestDesignacaoUnidadeService:
                     {
                         "rf": "RF001",
                         "nome": "SERVIDOR_TESTE_1",
+                        "esta_afastado": False,
                     }
-                ],
+                ]
             },
             {
                 "codigo_cargo": 1002,
@@ -27,30 +28,34 @@ class TestDesignacaoUnidadeService:
                     {
                         "rf": "RF002",
                         "nome": "SERVIDOR_TESTE_2",
+                        "esta_afastado": False,
                     },
-                    {
-                        "rf": "RF003",
-                        "nome": "SERVIDOR_TESTE_3",
-                    },
-                ],
+                ]
             },
             {
                 "codigo_cargo": 1003,
                 "nome_cargo": "CARGO_SEM_SERVIDOR",
-                "servidores": [],
-            },
-        ]
-
-        mock_consulta_cargos.return_value = [
-            {
-                "cargoSobreposto": "CARGO_SOBREPOSTO_TESTE"
+                "servidores": []
             }
         ]
 
+        def side_effect_consulta_cargos(rf):
+            if rf == "RF001":
+                return [{
+                    "cargoSobreposto": "CARGO_SOBREPOSTO_TESTE",
+                    "tipoVinculoCargoSobreposto": 3,
+                    "ueCargoSobreposto": "ANTONIO BRANCO LEFEVRE, PROF.",
+                    "cargoBase": "PROF.ED.INF.E ENS.FUND.I - v3",
+                    "funcaoAtividade": None
+                }]
+            else:
+                return []
+
+        mock_consulta_cargos.side_effect = side_effect_consulta_cargos
+
         resultado = DesignacaoUnidadeService.obter_informacoes_escolares("UE_TESTE")
 
-        assert resultado == {
-            "funcionarios_unidade": {
+        assert resultado["funcionarios_unidade"] == {
                 1001: {
                     "codigo_cargo": 1001,
                     "nome_cargo": "CARGO_A",
@@ -58,7 +63,12 @@ class TestDesignacaoUnidadeService:
                         {
                             "rf": "RF001",
                             "nome": "SERVIDOR_TESTE_1",
-                            "cargoSobreposto": "CARGO_SOBREPOSTO_TESTE",
+                            "esta_afastado": False,
+                            "cargo_sobreposto": "CARGO_SOBREPOSTO_TESTE",
+                            "vinculo_cargo_sobreposto": 3,
+                            "lotacao_cargo_sobreposto": "ANTONIO BRANCO LEFEVRE, PROF.",
+                            "cargo_base": "PROF.ED.INF.E ENS.FUND.I - v3",
+                            "funcao_atividade": None
                         }
                     ],
                 },
@@ -69,13 +79,13 @@ class TestDesignacaoUnidadeService:
                         {
                             "rf": "RF002",
                             "nome": "SERVIDOR_TESTE_2",
-                            "cargoSobreposto": "CARGO_SOBREPOSTO_TESTE",
-                        },
-                        {
-                            "rf": "RF003",
-                            "nome": "SERVIDOR_TESTE_3",
-                            "cargoSobreposto": "CARGO_SOBREPOSTO_TESTE",
-                        },
+                            "esta_afastado": False,
+                            "cargo_sobreposto": None,
+                            "vinculo_cargo_sobreposto": None,
+                            "lotacao_cargo_sobreposto": None,
+                            "cargo_base": None,
+                            "funcao_atividade": None
+                        }
                     ],
                 },
                 1003: {
@@ -83,11 +93,10 @@ class TestDesignacaoUnidadeService:
                     "nome_cargo": "CARGO_SEM_SERVIDOR",
                     "servidores": [],
                 },
-            }
         }
 
         assert mock_buscar_funcionarios.called
-        assert mock_consulta_cargos.call_count == 3
+        assert mock_consulta_cargos.call_count == 2
 
 
     @patch(
@@ -108,14 +117,12 @@ class TestDesignacaoUnidadeService:
 
         resultado = DesignacaoUnidadeService.obter_informacoes_escolares("UE_TESTE")
 
-        assert resultado == {
-            "funcionarios_unidade": {
+        assert resultado["funcionarios_unidade"] == {
                 9999: {
                     "codigo_cargo": 9999,
                     "nome_cargo": "CARGO_VAZIO",
                     "servidores": [],
                 }
-            }
         }
 
     @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario")
@@ -125,7 +132,7 @@ class TestDesignacaoUnidadeService:
             {
                 "codigo_cargo": 2001,
                 "nome_cargo": "CARGO_TESTE",
-                "servidores": [{"rf": "RF_ERRO", "nome": "SERVIDOR_ERRO"}],
+                "servidores": [{"rf": "RF_ERRO", "nome": "SERVIDOR_ERRO", "esta_afastado": False,}],
             }
         ]
 
@@ -133,8 +140,7 @@ class TestDesignacaoUnidadeService:
 
         resultado = DesignacaoUnidadeService.obter_informacoes_escolares("UE_TESTE")
 
-        assert resultado == {
-            "funcionarios_unidade": {
+        assert resultado["funcionarios_unidade"] == {
                 2001: {
                     "codigo_cargo": 2001,
                     "nome_cargo": "CARGO_TESTE",
@@ -142,9 +148,13 @@ class TestDesignacaoUnidadeService:
                         {
                             "rf": "RF_ERRO",
                             "nome": "SERVIDOR_ERRO",
-                            "cargoSobreposto": None,
+                            "esta_afastado": False,
+                            "cargo_sobreposto": None,
+                            "vinculo_cargo_sobreposto": None,
+                            "lotacao_cargo_sobreposto": None,
+                            "cargo_base": None,
+                            "funcao_atividade": None
                         }
                     ],
                 }
-            }
         }
