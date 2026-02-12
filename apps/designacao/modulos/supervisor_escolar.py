@@ -29,7 +29,7 @@ class ModuloSupervisorEscolarCalculator:
         "108800": 30,  # Jaçanã / Tremembé
     }
 
-    def calcular(self, cargo: dict, informacoes_ue: dict) -> int:
+    def calcular(self, _cargo: dict, informacoes_ue: dict) -> int:
         codigo_dre = informacoes_ue.get("codigoDRE")
 
         if not codigo_dre:

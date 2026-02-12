@@ -105,3 +105,19 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, {})
 
         assert resultado == 0
+
+    @pytest.mark.parametrize(
+        "sigla_tipo",
+        ["DESCONHECIDO", "", None, "OUTRO_TIPO"],
+    )
+    def test_assistente_tipo_invalido_retorna_zero(self, sigla_tipo):
+        cargo = {"codigo_cargo": "3085"}
+        informacoes_ue = {
+            "siglaTipoEscola": sigla_tipo,
+            "quantidade_classes": 10,
+        }
+
+        resultado = self.calculator.calcular(cargo, informacoes_ue)
+
+        assert resultado == 0
+

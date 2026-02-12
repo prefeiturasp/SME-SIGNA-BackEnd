@@ -13,50 +13,69 @@ class ModuloCoordenadorPedagogicoCalculator:
 
     CARGO_COORDENADOR_PEDAGOGICO = "3379"
 
-    def calcular(self, cargo: dict, informacoes_ue: dict) -> int:
-        sigla_tipo = (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
-
+    def calcular(self, _cargo: dict, informacoes_ue: dict) -> int:
+        sigla_tipo = self._obter_sigla(informacoes_ue)
         # --- PONTOS DE INTEGRAÇÃO FUTURA ---
         qtd_classes = informacoes_ue.get("quantidade_classes_api_nova")
         tem_turno_noturno = informacoes_ue.get("possui_turno_noturno", False)
         qtd_turmas_noturno = informacoes_ue.get("quantidade_turmas_noturno", 0)
         # ----------------------------------
 
-        # ================= REGRAS FIXAS =================
-        if sigla_tipo == "CEI":
-            return 1
+        modulo_fixo = self._regra_modulo_fixo(sigla_tipo)
+        if modulo_fixo is not None:
+            return modulo_fixo
 
-        if sigla_tipo == "CEMEI":
-            return 2
-
-        # ================= REGRAS DEPENDENTES DE CLASSES =================
         if qtd_classes is None:
-            logger.warning(
-                "Cálculo de módulo para Coordenador Pedagógico requer "
-                "quantidade de classes (UE %s).",
-                informacoes_ue.get("codigoUE"),
-            )
-            return 0  # valor seguro até integração completa
+            return self._modulo_sem_classes(informacoes_ue)
 
-        # -------- EMEI --------
         if sigla_tipo == "EMEI":
-            return 1 if qtd_classes <= 20 else 2
+            return self._regra_emei(qtd_classes)
 
-        # -------- EMEF / EMEBS --------
         if sigla_tipo in ("EMEF", "EMEBS"):
-            if qtd_classes <= 14:
-                return 1
-
-            if 15 <= qtd_classes <= 35:
-                # Regra especial: noturno com 5+ turmas
-                if tem_turno_noturno and qtd_turmas_noturno >= 5:
-                    return 3
-                return 2
-
-            if 36 <= qtd_classes <= 50:
-                return 3
-
-            if qtd_classes > 50:
-                return 4
+            return self._regra_emef(
+                qtd_classes,
+                tem_turno_noturno,
+                qtd_turmas_noturno,
+            )
 
         return 0
+
+    def _obter_sigla(self, informacoes_ue: dict) -> str:
+        return (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
+
+    def _regra_modulo_fixo(self, sigla_tipo: str):
+        regras = {
+            "CEI": 1,
+            "CEMEI": 2,
+        }
+        return regras.get(sigla_tipo)
+
+    def _modulo_sem_classes(self, informacoes_ue: dict) -> int:
+        logger.warning(
+            "Cálculo de módulo para Coordenador Pedagógico requer "
+            "quantidade de classes (UE %s).",
+            informacoes_ue.get("codigoUE"),
+        )
+        return 0
+
+    def _regra_emei(self, qtd_classes: int) -> int:
+        return 1 if qtd_classes <= 20 else 2
+
+    def _regra_emef(
+        self,
+        qtd_classes: int,
+        tem_turno_noturno: bool,
+        qtd_turmas_noturno: int,
+    ) -> int:
+        if qtd_classes <= 14:
+            return 1
+
+        if qtd_classes <= 35:
+            if tem_turno_noturno and qtd_turmas_noturno >= 5:
+                return 3
+            return 2
+
+        if qtd_classes <= 50:
+            return 3
+
+        return 4
