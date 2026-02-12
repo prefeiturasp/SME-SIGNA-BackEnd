@@ -25,6 +25,9 @@ omit =
     *_test.py
     test_*.py
 
+    #outros
+    */modulos/base.py 
+
     # Opcionais
     # */venv/*
     # */config/*

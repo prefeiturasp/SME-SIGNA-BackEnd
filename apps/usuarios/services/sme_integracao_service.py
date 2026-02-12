@@ -13,6 +13,10 @@ from apps.designacao.constants.cargos_gestao_escolar import (
 
 from rest_framework import status
 
+MSG_RF_OBRIGATORIO = "Registro funcional é obrigatório"
+MSG_ERRO_COMUNICACAO_SME = "Erro de comunicação com SME"
+MSG_ERRO_COMUNICACAO_CORESSO = "Erro de comunicação com CoreSSO"
+MSG_ERRO_CARGOS = "Erro ao consultar cargos do servidor"
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
@@ -58,7 +62,7 @@ class SmeIntegracaoService:
 
         except requests.exceptions.RequestException as e:
             logger.error("Erro de comunicação: %s", e)
-            raise SmeIntegracaoException("Erro de comunicação com CoreSSO")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_CORESSO)
 
         except (AuthenticationError, SmeIntegracaoException):
             raise
@@ -190,7 +194,7 @@ class SmeIntegracaoService:
         Consulta cargos (base e sobreposto) de um servidor pelo RF.
         """
         if not registro_funcional:
-            raise SmeIntegracaoException("Registro funcional é obrigatório")
+            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
 
         logger.info(
             "Consultando cargos do servidor no SME. RF: %s",
@@ -216,11 +220,11 @@ class SmeIntegracaoService:
                 response.status_code,
                 response.text,
             )
-            raise SmeIntegracaoException("Erro ao consultar cargos do servidor")
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
-            raise SmeIntegracaoException("Erro de comunicação com SME") from e
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
 
 
     @classmethod
@@ -308,8 +312,46 @@ class SmeIntegracaoService:
                     codigo_cargo,
                 )
                 raise SmeIntegracaoException(
-                    "Erro de comunicação com SME"
+                    MSG_ERRO_COMUNICACAO_SME
                 ) from e
 
         return funcionarios
 
+
+    @classmethod
+    def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
+        """
+        Consulta informacoes de unidades escolares pelo código.
+        """
+        if not codigo_ue:
+            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
+
+        logger.info(
+            "Consultando informações da unidade escolar em SME. código: %s",
+            codigo_ue
+        )
+
+        try:
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}/escolas/dados/{codigo_ue}"
+            )
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            logger.error(
+                "Erro ao consultar informações da unidade escolar. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException("Erro ao consultar informações da unidade escolar")
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de informações da unidade escolar")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
