@@ -437,3 +437,155 @@ class TestConsultaInformacoesUnidadesEscolares:
 
         assert "Erro de comunicação com SME" in str(exc.value)
 
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_sucesso(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_200_OK
+        mock_response.json.return_value = [{"codigoTurma": 1, "nome": "Turma Teste"}]
+        mock_get.return_value = mock_response
+
+        resultado = SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
+
+        assert resultado == [{"codigoTurma": 1, "nome": "Turma Teste"}]
+        mock_get.assert_called_once()
+
+    def test_buscar_turmas_ue_ano_falta_parametros(self):
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("", None)
+        assert "Código da UE e ano letivo são obrigatórios" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_erro_404(self, mock_get):
+        """Valida se retorna MSG_ERRO_CARGOS em caso de 404"""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_404_NOT_FOUND
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_dados_turma_sucesso(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_200_OK
+        mock_response.json.return_value = {"codigoTurma": 10, "tipoTurno": 1}
+        mock_get.return_value = mock_response
+
+        resultado = SmeIntegracaoService.buscar_dados_turma(10)
+
+        assert resultado["tipoTurno"] == 1
+        url_chamada = mock_get.call_args[0][0]
+        assert "/turmas/10/dados" in url_chamada
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_dados_turma_erro_conexao(self, mock_get):
+        mock_get.side_effect = SmeIntegracaoException("Erro de comunicação com SME")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_dados_turma(10)
+        assert "Erro de comunicação com SME" in str(exc.value)
+
+    def test_buscar_dados_turma_validacao_id(self):
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_dados_turma(None)
+        assert "Código da turma é obrigatório" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_erro_api_status_400(self, mock_get):
+        """Valida raise SmeIntegracaoException(MSG_ERRO_CARGOS)"""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_400_BAD_REQUEST
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_request_exception(self, mock_get, mock_logger):
+        """Valida logger.exception e raise MSG_ERRO_COMUNICACAO_SME"""
+        mock_get.side_effect = requests.exceptions.RequestException("Falha de Conexão")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
+        
+        assert "Erro de comunicação com SME" in str(exc.value)
+        mock_logger.exception.assert_called_with("Erro de comunicação com API de cargos")
+
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_dados_turma_erro_api_status_500(self, mock_get):
+        """Valida raise SmeIntegracaoException(MSG_ERRO_CARGOS) na busca de dados"""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_dados_turma(12345)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_erro_404(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_404_NOT_FOUND
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_erro_api_status_400(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_400_BAD_REQUEST
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_turmas_ue_ano_request_exception(self, mock_get, mock_logger):
+        mock_get.side_effect = requests.exceptions.RequestException("Falha de Conexão")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
+        
+        assert "Erro de comunicação com SME" in str(exc.value)
+        mock_logger.exception.assert_called_with("Erro de comunicação com API de cargos")
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_dados_turma_erro_api_status_500(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_dados_turma(12345)
+        
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_buscar_dados_turma_request_exception_com_logger(self, mock_get, mock_logger):
+        """
+        Testa o bloco 'except requests.exceptions.RequestException'
+        garantindo que o logger.exception foi chamado e a exceção correta lançada.
+        """
+        mock_get.side_effect = requests.exceptions.RequestException("Falha na rede")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_dados_turma(12345)
+        
+        assert "Erro de comunicação com SME" in str(exc.value)
+        
+        mock_logger.exception.assert_called_once_with("Erro de comunicação com API de cargos")
