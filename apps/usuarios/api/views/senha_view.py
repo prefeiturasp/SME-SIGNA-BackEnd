@@ -39,19 +39,34 @@ class EsqueciMinhaSenhaViewSet(APIView):
         try:
             logger.info("Fluxo de recuperação iniciado")
 
-            # 1. Verifica usuário local
+            # 1. Verifica usuário local e cria no banco local caso nao exista
             user_local = User.objects.filter(username=username).first()
+            dados_sme = None
             if not user_local:
-                logger.warning("RF %s não encontrado no banco local", username)
-                raise UserNotFoundError("Usuário não encontrado")
+                logger.info("Usuário %s não encontrado localmente. Consultando SME...", username)
+
+                try:
+                    dados_sme = SmeIntegracaoService.informacao_usuario_sgp(username)
+                except Exception:
+                    logger.warning("Usuário %s não encontrado localmente e falha ao consultar na SME", username)
+                    raise UserNotFoundError("Usuário não encontrado")
+
+                if not dados_sme:
+                    logger.warning("SME não retornou dados para %s", username)
+                    raise UserNotFoundError("Usuário não encontrado")
+
+                user_local = self._criar_usuario_local(username, dados_sme)
 
             # 2. Consulta API coreSSO
+            email = None
             try:
-                result = SmeIntegracaoService.informacao_usuario_sgp(username)
-                email = result.get("email")
+                if dados_sme:
+                    email = dados_sme.get("email")
+                else:
+                    result = SmeIntegracaoService.informacao_usuario_sgp(username)
+                    email = result.get("email")
             except Exception:
-                logger.warning("Falha ao consultar API externa para RF %s", username)
-                email = None
+                logger.warning("Falha ao consultar e-mail para o RF %s", username)
 
             # 3. Se API não retornou email → tenta usar banco local
             if not email:
@@ -102,6 +117,21 @@ class EsqueciMinhaSenhaViewSet(APIView):
             },
             status=200,
         )
+    
+    def _criar_usuario_local(self, username, dados_sme):
+        logger.info("Criando usuário local para %s", username)
+
+        with transaction.atomic():
+            user, _ = User.objects.update_or_create(
+                username=username,
+                defaults={
+                    "name": dados_sme.get("nome"),
+                    "email": dados_sme.get("email"),
+                    "cpf": dados_sme.get("numeroDocumento"),
+                },
+            )
+
+        return user
 
 
 class RedefinirSenhaViewSet(APIView):
