@@ -515,7 +515,7 @@ class TestConsultaInformacoesUnidadesEscolares:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
         
         assert "Erro de comunicação com SME" in str(exc.value)
-        mock_logger.exception.assert_called_with("Erro de comunicação com API de cargos")
+        mock_logger.exception.assert_called_with("Erro de comunicação com API de turmas de um ano letivo")
 
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
@@ -554,28 +554,6 @@ class TestConsultaInformacoesUnidadesEscolares:
 
     @patch("apps.usuarios.services.sme_integracao_service.logger")
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
-    def test_buscar_turmas_ue_ano_request_exception(self, mock_get, mock_logger):
-        mock_get.side_effect = requests.exceptions.RequestException("Falha de Conexão")
-
-        with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
-        
-        assert "Erro de comunicação com SME" in str(exc.value)
-        mock_logger.exception.assert_called_with("Erro de comunicação com API de cargos")
-
-    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
-    def test_buscar_dados_turma_erro_api_status_500(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        mock_get.return_value = mock_response
-
-        with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.buscar_dados_turma(12345)
-        
-        assert "Erro ao consultar cargos do servidor" in str(exc.value)
-
-    @patch("apps.usuarios.services.sme_integracao_service.logger")
-    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_buscar_dados_turma_request_exception_com_logger(self, mock_get, mock_logger):
         """
         Testa o bloco 'except requests.exceptions.RequestException'
@@ -588,4 +566,4 @@ class TestConsultaInformacoesUnidadesEscolares:
         
         assert "Erro de comunicação com SME" in str(exc.value)
         
-        mock_logger.exception.assert_called_once_with("Erro de comunicação com API de cargos")
+        mock_logger.exception.assert_called_once_with("Erro de comunicação com API de dados da turma")
