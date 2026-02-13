@@ -20,3 +20,12 @@ CARGOS_GESTAO_ESCOLAR = [
         "nomeCargo": "SUPERVISOR ESCOLAR"
     }
 ]
+
+TURNOS_MAP = {
+    1: "manhã",
+    2: "intermediário",
+    3: "tarde",
+    4: "vespertino",
+    5: "noite",
+    6: "integral",
+}
