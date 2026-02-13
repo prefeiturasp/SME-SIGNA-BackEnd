@@ -346,7 +346,7 @@ class SmeIntegracaoService:
             raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
-            logger.exception("Erro de comunicação com API de cargos")
+            logger.exception("Erro de comunicação com API de turmas de um ano letivo")
             raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
 
 
@@ -378,7 +378,7 @@ class SmeIntegracaoService:
             raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
-            logger.exception("Erro de comunicação com API de cargos")
+            logger.exception("Erro de comunicação com API de dados da turma")
             raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
