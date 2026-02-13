@@ -15,11 +15,11 @@ class ModuloCoordenadorPedagogicoCalculator:
 
     def calcular(self, _cargo: dict, informacoes_ue: dict) -> int:
         sigla_tipo = self._obter_sigla(informacoes_ue)
-        # --- PONTOS DE INTEGRAÇÃO FUTURA ---
-        qtd_classes = informacoes_ue.get("quantidade_classes_api_nova")
-        tem_turno_noturno = informacoes_ue.get("possui_turno_noturno", False)
-        qtd_turmas_noturno = informacoes_ue.get("quantidade_turmas_noturno", 0)
-        # ----------------------------------
+        dados_turmas = informacoes_ue.get("turmas") or {}
+        por_turno = dados_turmas.get("por_turno") or {}
+        qtd_classes = dados_turmas.get("total")
+        tem_turno_noturno = por_turno.get("noite", 0) > 0
+        qtd_turmas_noturno = por_turno.get("noite", 0)
 
         modulo_fixo = self._regra_modulo_fixo(sigla_tipo)
         if modulo_fixo is not None:

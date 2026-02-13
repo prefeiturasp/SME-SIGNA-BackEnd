@@ -319,6 +319,69 @@ class SmeIntegracaoService:
 
 
     @classmethod
+    def buscar_turmas_ue_ano(cls, codigo_ue: str, ano_letivo: int) -> list:
+        """
+        Busca todas as turmas de uma UE em um determinado ano letivo.
+        """
+        if not codigo_ue or not ano_letivo:
+            raise SmeIntegracaoException(
+                "Código da UE e ano letivo são obrigatórios"
+            )
+
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/escolas/{codigo_ue}/turmas/anos_letivos/{ano_letivo}"
+        )
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de turmas de um ano letivo")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+
+    @classmethod
+    def buscar_dados_turma(cls, codigo_turma: int) -> dict:
+        """
+        Busca dados detalhados de uma turma.
+        """
+        if not codigo_turma:
+            raise SmeIntegracaoException(
+                "Código da turma é obrigatório"
+            )
+
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/turmas/{codigo_turma}/dados"
+        )
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de dados da turma")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+    @classmethod
     def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
         """
         Consulta informacoes de unidades escolares pelo código.
