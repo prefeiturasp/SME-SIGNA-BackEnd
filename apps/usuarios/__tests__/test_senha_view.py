@@ -13,6 +13,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.test import override_settings
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.db import IntegrityError
 
 from apps.usuarios.api.views.senha_view import EsqueciMinhaSenhaViewSet, RedefinirSenhaViewSet, AtualizarSenhaSerializer, AtualizarSenhaViewSet
 from apps.helpers.exceptions import SmeIntegracaoException
@@ -65,7 +66,11 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     ):
         """Testa fluxo normal onde usuário existe localmente e tem email"""
         mock_env.return_value = "http://localhost:8000"
-        mock_informacao_usuario.return_value = {"email": "usuario@teste.com"}
+        mock_informacao_usuario.return_value = {
+            "email": "usuario@teste.com",
+            "nome": "Usuário Teste",
+            "numeroDocumento": "12345678900"
+        }
         mock_gerar_token.return_value = {
             "uid": "test-uid",
             "token": "test-token",
@@ -398,6 +403,138 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         # Verifica que o email foi enviado
         mock_enviar.assert_called_once()
         mock_gerar_token.assert_called_once_with("7777777", "novo_usuario@teste.com")
+
+    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp")
+    @patch("apps.usuarios.api.views.senha_view.User.objects.update_or_create")
+    @patch("apps.usuarios.api.views.senha_view.env")
+    def test_post_integrity_error_creating_local_user(
+        self, mock_env, mock_update_or_create, mock_informacao_usuario
+    ):
+        """
+        Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
+        Deve retornar EmailNaoCadastrado com mensagem amigável.
+        """
+        mock_env.return_value = "http://localhost:8000"
+        
+        # Simula retorno da SME com dados
+        mock_informacao_usuario.return_value = {
+            "email": "duplicado@teste.com",
+            "nome": "Usuário Duplicado",
+            "numeroDocumento": "12345678900"
+        }
+        
+        # Simula IntegrityError no banco de dados ao tentar salvar
+        mock_update_or_create.side_effect = IntegrityError("Duplicate entry for key 'email'")
+        
+        response = self.client.post(
+            self.url,
+            {"username": "8888888"}, # Username novo
+            format="json"
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Verifica se a mensagem de erro personalizada foi retornada
+        self.assertIn("Já existe um usuário com este e-mail", response.data["detail"])
+
+    def test_criar_ou_atualizar_usuario_local_sem_nome(self):
+        """
+        Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME.
+        """
+        view = EsqueciMinhaSenhaViewSet()
+        username = "user_sem_nome"
+        
+        # Cria usuário local para ser retornado
+        user = User.objects.create_user(
+            username=username, 
+            email="original@teste.com", 
+            name="Nome Original"
+        )
+        
+        # Dados simulados da SME sem a chave "nome" ou com valor vazio
+        dados_sme = {"email": "novo@teste.com", "nome": ""} 
+        
+        # Chama o método privado diretamente
+        result = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        
+        # Verifica se retornou o usuário existente sem alterações
+        self.assertEqual(result.id, user.id)
+        
+        user.refresh_from_db()
+        # O email NÃO deve ter sido atualizado para "novo@teste.com"
+        self.assertEqual(user.email, "original@teste.com")
+
+    def test_criar_ou_atualizar_usuario_local_success_direct(self):
+        """
+        Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta.
+        """
+        view = EsqueciMinhaSenhaViewSet()
+        username = "novo_user_direct"
+        dados_sme = {
+            "nome": "Novo Nome",
+            "email": "novo@teste.com",
+            "numeroDocumento": "11122233344"
+        }
+        
+        # Garante que o usuário não existe antes do teste
+        User.objects.filter(username=username).delete()
+        
+        # Chama o método privado diretamente
+        result = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        
+        # Verificações
+        self.assertEqual(result.username, username)
+        self.assertEqual(result.name, "Novo Nome")
+        self.assertEqual(result.email, "novo@teste.com")
+        self.assertTrue(User.objects.filter(username=username).exists())
+
+    def test_criar_ou_atualizar_usuario_local_lines_154_155(self):
+        """
+        Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
+        Executa o método diretamente e verifica o efeito colateral no banco.
+        """
+        view = EsqueciMinhaSenhaViewSet()
+        username = "usuario_teste_transacao"
+        dados_sme = {
+            "nome": "Nome Teste Transação",
+            "email": "transacao@teste.com",
+            "numeroDocumento": "11122233344"
+        }
+        
+        # Garante que o usuário não existe antes
+        User.objects.filter(username=username).delete()
+        
+        # Executa o método que contém o bloco transaction.atomic
+        user_criado = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        
+        # Verificações
+        self.assertIsNotNone(user_criado)
+        self.assertEqual(user_criado.username, username)
+        
+        # Se o usuário existe no banco, o update_or_create (linha 155) funcionou
+        self.assertTrue(User.objects.filter(username=username).exists())
+
+    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp")
+    def test_post_sme_integracao_exception_when_user_not_local(self, mock_informacao_usuario):
+        """
+        Testa SmeIntegracaoException na consulta SME quando usuário não existe localmente.
+        Isso deve acionar a linha 83: raise UserNotFoundError
+        """
+        # 1. Garante que o usuário NÃO existe localmente
+        User.objects.filter(username="8888888").delete()
+        
+        # 2. Faz o mock lançar especificamente SmeIntegracaoException
+        # Importante: A exception deve ser a mesma classe importada na view
+        mock_informacao_usuario.side_effect = SmeIntegracaoException("Erro de conexão com SME")
+        
+        response = self.client.post(
+            self.url,
+            {"username": "8888888"},
+            format="json"
+        )
+        
+        # 3. Verifica se retornou 404 (UserNotFoundError)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "Usuário não encontrado")
 
 class TestRedefinirSenhaViewSet:
     

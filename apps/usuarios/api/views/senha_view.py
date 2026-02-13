@@ -1,7 +1,7 @@
 import environ
 import logging
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 from django.contrib.auth import get_user_model
 
@@ -29,6 +29,8 @@ class EsqueciMinhaSenhaViewSet(APIView):
         "E-mail não encontrado! <br/>"
         "Para resolver este problema, entre em contato com o administrador do sistema."
     )
+    MENSAGEM_USUARIO_NAO_ENCONTRADO = "Usuário não encontrado"
+    MENSAGEM_ERRO_INTERNO = "Erro interno no servidor."
 
     def post(self, request):
         serializer = EsqueciMinhaSenhaSerializer(data=request.data)
@@ -37,47 +39,25 @@ class EsqueciMinhaSenhaViewSet(APIView):
         username = serializer.validated_data["username"]
 
         try:
-            logger.info("Fluxo de recuperação iniciado")
+            logger.info("Fluxo de recuperação iniciado para %s", username)
 
-            # 1. Verifica usuário local e cria no banco local caso nao exista
+            # 1. Busca usuário local
             user_local = User.objects.filter(username=username).first()
-            dados_sme = None
-            if not user_local:
-                logger.info("Usuário %s não encontrado localmente. Consultando SME...", username)
 
-                try:
-                    dados_sme = SmeIntegracaoService.informacao_usuario_sgp(username)
-                except Exception:
-                    logger.warning("Usuário %s não encontrado localmente e falha ao consultar na SME", username)
-                    raise UserNotFoundError("Usuário não encontrado")
+            # 2. Consulta SME
+            dados_sme = self._consultar_sme(username, user_local)
+                
+            # 3. Valida existência do usuário
+            self._validar_usuario_existe(user_local, dados_sme)
 
-                if not dados_sme:
-                    logger.warning("SME não retornou dados para %s", username)
-                    raise UserNotFoundError("Usuário não encontrado")
+            # 4. Determina e valida o email
+            email = self._obter_email(dados_sme, user_local, username)
 
-                user_local = self._criar_usuario_local(username, dados_sme)
+            # 5. Sincroniza usuário local se necessário
+            if dados_sme and dados_sme.get("nome"):
+                user_local = self._criar_ou_atualizar_usuario_local(username, dados_sme)
 
-            # 2. Consulta API coreSSO
-            email = None
-            try:
-                if dados_sme:
-                    email = dados_sme.get("email")
-                else:
-                    result = SmeIntegracaoService.informacao_usuario_sgp(username)
-                    email = result.get("email")
-            except Exception:
-                logger.warning("Falha ao consultar e-mail para o RF %s", username)
-
-            # 3. Se API não retornou email → tenta usar banco local
-            if not email:
-                email = getattr(user_local, "email", None)
-
-            # 4. Ainda sem email → erro
-            if not email:
-                logger.warning("RF %s sem email cadastrado em nenhum lugar", username)
-                raise EmailNaoCadastrado(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
-
-            # 5. gerar token + enviar email
+            # 6. Gera token e envia email
             return self._processar_envio_email(username, email)
 
         except EmailNaoCadastrado as e:
@@ -88,7 +68,51 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
         except Exception:
             logger.exception("Erro inesperado no fluxo de esqueci minha senha")
-            return Response({"detail": "Erro interno no servidor."}, status=500)
+            return Response({"detail": self.MENSAGEM_ERRO_INTERNO}, status=500)
+
+    def _consultar_sme(self, username, user_local):
+        """
+        Consulta dados do usuário na SME.
+        Retorna None se houver erro e não existir usuário local.
+        """
+        try:
+            return SmeIntegracaoService.informacao_usuario_sgp(username)
+        except SmeIntegracaoException as e:
+            logger.error("Erro ao consultar SME para %s: %s", username, str(e))
+            if not user_local:
+                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
+            return None
+        except Exception:
+            logger.exception("Erro inesperado ao consultar SME para %s", username)
+            if not user_local:
+                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
+            return None
+
+    def _validar_usuario_existe(self, user_local, dados_sme):
+        """
+        Valida se o usuário existe localmente ou na SME.
+        """
+        if not user_local and not dados_sme:
+            raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
+
+    def _obter_email(self, dados_sme, user_local, username):
+        """
+        Determina o email do usuário (prioridade: SME > banco local).
+        Valida se o email existe e não está vazio.
+        """
+        email = None
+        
+        if dados_sme:
+            email = dados_sme.get("email")
+        
+        if not email and user_local:
+            email = getattr(user_local, "email", None)
+
+        if not email or not email.strip():
+            logger.warning("RF %s sem email cadastrado", username)
+            raise EmailNaoCadastrado(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
+        
+        return email
 
     def _processar_envio_email(self, username, email):
         logger.info("Gerando token: %s", username)
@@ -118,20 +142,43 @@ class EsqueciMinhaSenhaViewSet(APIView):
             status=200,
         )
     
-    def _criar_usuario_local(self, username, dados_sme):
-        logger.info("Criando usuário local para %s", username)
+    def _criar_ou_atualizar_usuario_local(self, username, dados_sme):
+        """
+        Cria ou atualiza usuário local com dados da SME.
+        Usa update_or_create para evitar duplicação.
+        """
+        logger.info("Sincronizando usuário local para %s", username)
 
-        with transaction.atomic():
-            user, _ = User.objects.update_or_create(
-                username=username,
-                defaults={
-                    "name": dados_sme.get("nome"),
-                    "email": dados_sme.get("email"),
-                    "cpf": dados_sme.get("numeroDocumento"),
-                },
+        nome = dados_sme.get("nome")
+        if not nome:
+            logger.warning("Dados SME sem nome para %s, pulando sincronização", username)
+            return User.objects.get(username=username)  # Retorna usuário existente
+
+        try:
+            with transaction.atomic():
+                user, created = User.objects.update_or_create(
+                    username=username,
+                    defaults={
+                        "name": nome,
+                        "email": dados_sme.get("email", ""),
+                        "cpf": dados_sme.get("numeroDocumento", ""),
+                    },
+                )
+            
+            action = "criado" if created else "atualizado"
+            logger.info("Usuário %s %s localmente", username, action)
+            return user
+
+        except IntegrityError as e:
+            logger.error(
+                "Falha ao sincronizar usuário %s: %s",
+                username,
+                str(e)
             )
-
-        return user
+            raise EmailNaoCadastrado(
+                "Já existe um usuário com este e-mail. <br/>"
+                "Entre em contato com o administrador do sistema."
+            )
 
 
 class RedefinirSenhaViewSet(APIView):
@@ -151,6 +198,11 @@ class RedefinirSenhaViewSet(APIView):
 
     permission_classes = [permissions.AllowAny]
 
+    MENSAGEM_DADOS_INVALIDOS = "Dados inválidos."
+    MENSAGEM_SUCESSO = "Senha redefinida com sucesso."
+    STATUS_ERROR = "error"
+    STATUS_SUCCESS = "success"
+
     def post(self, request, *args, **kwargs):
         serializer = RedefinirSenhaSerializer(data=request.data)
 
@@ -163,8 +215,8 @@ class RedefinirSenhaViewSet(APIView):
             )
             return Response(
                 {
-                    "status": "error",
-                    "detail": "Dados inválidos.",
+                    "status": self.STATUS_ERROR,
+                    "detail": self.MENSAGEM_DADOS_INVALIDOS,
                     "errors": serializer.errors,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -190,7 +242,7 @@ class RedefinirSenhaViewSet(APIView):
             )
             return Response(
                 {
-                    "status": "error",
+                    "status": self.STATUS_ERROR,
                     "detail": str(e),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -215,8 +267,8 @@ class RedefinirSenhaViewSet(APIView):
 
         return Response(
             {
-                "status": "success",
-                "detail": "Senha redefinida com sucesso.",
+                "status": self.STATUS_SUCCESS,
+                "detail": self.MENSAGEM_SUCESSO,
             },
             status=status.HTTP_200_OK,
         )
@@ -224,6 +276,9 @@ class RedefinirSenhaViewSet(APIView):
 
 class AtualizarSenhaViewSet(APIView):
     permission_classes = [IsAuthenticated]
+
+    MENSAGEM_SUCESSO = "Senha alterada com sucesso."
+    MENSAGEM_ERRO_INTERNO = "Erro interno do servidor."
 
     def post(self, request):
         serializer = AtualizarSenhaSerializer(data=request.data, context={"request": request})
@@ -246,7 +301,7 @@ class AtualizarSenhaViewSet(APIView):
                 logger.info("Usuário ID %s alterou a senha com sucesso.", user.id)
 
                 return Response(
-                    {"detail": "Senha alterada com sucesso."},
+                    {"detail": self.MENSAGEM_SUCESSO},
                     status=status.HTTP_200_OK,
                 )
 
@@ -260,6 +315,6 @@ class AtualizarSenhaViewSet(APIView):
         except Exception as e:
             logger.exception("Erro inesperado na alteração de senha do usuário ID: %s", user.id)
             return Response(
-                {"detail": "Erro interno do servidor."},
+                {"detail": self.MENSAGEM_ERRO_INTERNO},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
