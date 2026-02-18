@@ -192,3 +192,86 @@ class UnidadeIntegracaoService:
         except Exception as e:
             logger.error("Erro inesperado ao buscar UEs da DRE '%s': %s", dre_codigo, str(e))
             raise EOLIntegrationError(f"Erro inesperado ao buscar UEs: {str(e)}")
+        
+
+
+    @classmethod
+    def get_unidades_by_dre_com_tipo_unidade(cls, dre_codigo: str | int) -> list[dict]:
+        """
+        Busca todas as Escolas de uma DRE pelo código da DRE e retorno com codigo do tipo de escola.
+        Endpoint: /api/DREs/{codigoEolDRE}/escola
+        """
+
+        dre_codigo_str = str(dre_codigo or "").strip()
+
+        if not dre_codigo_str:
+            logger.warning("dre_codigo não informado ou inválido para consulta de escolas")
+            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+
+        base_url = env("SME_INTEGRACAO_URL", default="")
+        url = f"{base_url}/DREs/{dre_codigo_str}/escola"
+
+        try:
+            logger.info("Buscando Escolas da DRE '%s' no EOL", dre_codigo_str)
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.DEFAULT_TIMEOUT,
+            )
+
+            if response.status_code == 401:
+                logger.error("Não autorizado ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
+                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+
+            if response.status_code == 404:
+                logger.warning("DRE não encontrada ao buscar Escolas. dre_codigo='%s'", dre_codigo_str)
+                raise LookupError(f"DRE não encontrada: {dre_codigo_str}")
+
+            if response.status_code != 200:
+                logger.error(
+                    "Erro ao buscar Escolas da DRE '%s'. Status=%s Body=%s",
+                    dre_codigo_str, response.status_code, response.text
+                )
+                raise EOLIntegrationError(
+                    f"Erro na consulta de Escolas por DRE: {response.status_code}"
+                )
+
+            escolas_data = response.json()
+
+            if not isinstance(escolas_data, list):
+                logger.error(
+                    "Resposta inesperada ao buscar Escolas da DRE '%s'. Tipo=%s",
+                    dre_codigo_str, type(escolas_data).__name__
+                )
+                raise EOLUnexpectedResponseError(
+                    "Resposta inesperada da API ao consultar Escolas por DRE (esperado uma lista)."
+                )
+
+            logger.info("Escolas encontradas para DRE '%s': %d", dre_codigo_str, len(escolas_data))
+            return escolas_data
+
+        except requests.exceptions.Timeout:
+            logger.error("Timeout ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
+            raise EOLTimeoutError("Tempo limite excedido ao consultar Escolas por DRE.")
+
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                "Erro de comunicação com EOL ao buscar Escolas da DRE '%s': %s",
+                dre_codigo_str, str(e)
+            )
+            raise EOLCommunicationError(
+                f"Erro de comunicação com sistema de escolas: {str(e)}"
+            )
+
+        except (ValueError, PermissionError, LookupError, EOLIntegrationError):
+            raise
+
+        except Exception as e:
+            logger.error(
+                "Erro inesperado ao buscar Escolas da DRE '%s': %s",
+                dre_codigo_str, str(e)
+            )
+            raise EOLIntegrationError(
+                f"Erro inesperado ao buscar Escolas: {str(e)}"
+            )
