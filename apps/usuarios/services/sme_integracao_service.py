@@ -7,9 +7,16 @@ from apps.helpers.exceptions import (
     InternalError,
     SmeIntegracaoException
 )
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR
+)
 
 from rest_framework import status
 
+MSG_RF_OBRIGATORIO = "Registro funcional é obrigatório"
+MSG_ERRO_COMUNICACAO_SME = "Erro de comunicação com SME"
+MSG_ERRO_COMUNICACAO_CORESSO = "Erro de comunicação com CoreSSO"
+MSG_ERRO_CARGOS = "Erro ao consultar cargos do servidor"
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
@@ -55,7 +62,7 @@ class SmeIntegracaoService:
 
         except requests.exceptions.RequestException as e:
             logger.error("Erro de comunicação: %s", e)
-            raise SmeIntegracaoException("Erro de comunicação com CoreSSO")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_CORESSO)
 
         except (AuthenticationError, SmeIntegracaoException):
             raise
@@ -187,7 +194,7 @@ class SmeIntegracaoService:
         Consulta cargos (base e sobreposto) de um servidor pelo RF.
         """
         if not registro_funcional:
-            raise SmeIntegracaoException("Registro funcional é obrigatório")
+            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
 
         logger.info(
             "Consultando cargos do servidor no SME. RF: %s",
@@ -213,8 +220,201 @@ class SmeIntegracaoService:
                 response.status_code,
                 response.text,
             )
-            raise SmeIntegracaoException("Erro ao consultar cargos do servidor")
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
-            raise SmeIntegracaoException("Erro de comunicação com SME") from e
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+
+    @classmethod
+    def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
+        """
+        Busca os servidores de cargos de gestão escolar vinculados a uma UE.
+        """
+
+        if not codigo_ue:
+            raise SmeIntegracaoException("Código da UE é obrigatório")
+
+        funcionarios = []
+
+        for cargo in CARGOS_GESTAO_ESCOLAR:
+            codigo_cargo = cargo["codigoCargo"]
+
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}"
+                f"/escolas/{codigo_ue}/funcionarios/cargos/{codigo_cargo}"
+            )
+
+            logger.info(
+                "Consultando funcionários da UE %s para o cargo %s",
+                codigo_ue,
+                codigo_cargo
+            )
+
+            try:
+                response = requests.get(
+                    url,
+                    headers=cls.DEFAULT_HEADERS,
+                    timeout=cls.TIMEOUT,
+                )
+
+                if response.status_code not in (
+                    status.HTTP_200_OK,
+                    status.HTTP_204_NO_CONTENT,
+                ):
+                    logger.error(
+                        "Erro ao buscar cargo %s da UE %s | Status: %s | Body: %s",
+                        codigo_cargo,
+                        codigo_ue,
+                        response.status_code,
+                        response.text,
+                    )
+                    raise SmeIntegracaoException(
+                        "Erro ao buscar funcionários da gestão escolar"
+                    )
+
+                if response.status_code == status.HTTP_204_NO_CONTENT:
+                    servidores_api = []
+
+                else:
+                    try:
+                        servidores_api = response.json()
+                    except ValueError:
+                        logger.error(
+                            "Resposta inválida da SME | UE %s | Cargo %s | Body: %s",
+                            codigo_ue,
+                            codigo_cargo,
+                            response.text,
+                        )
+                        servidores_api = []
+
+                servidores_normalizados = [
+                    {
+                        "rf": servidor.get("codigoRF"),
+                        "nome": servidor.get("nomeServidor"),
+                        "esta_afastado": servidor.get("estaAfastado"),
+                    }
+                    for servidor in servidores_api
+                ]
+
+                funcionarios.append({
+                    "codigo_cargo": codigo_cargo,
+                    "nome_cargo": cargo["nomeCargo"],
+                    "servidores": servidores_normalizados,
+                })
+
+
+            except requests.exceptions.RequestException as e:
+                logger.exception(
+                    "Erro de comunicação com SME | UE %s | Cargo %s",
+                    codigo_ue,
+                    codigo_cargo,
+                )
+                raise SmeIntegracaoException(
+                    MSG_ERRO_COMUNICACAO_SME
+                ) from e
+
+        return funcionarios
+
+
+    @classmethod
+    def buscar_turmas_ue_ano(cls, codigo_ue: str, ano_letivo: int) -> list:
+        """
+        Busca todas as turmas de uma UE em um determinado ano letivo.
+        """
+        if not codigo_ue or not ano_letivo:
+            raise SmeIntegracaoException(
+                "Código da UE e ano letivo são obrigatórios"
+            )
+
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/escolas/{codigo_ue}/turmas/anos_letivos/{ano_letivo}"
+        )
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de turmas de um ano letivo")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+
+    @classmethod
+    def buscar_dados_turma(cls, codigo_turma: int) -> dict:
+        """
+        Busca dados detalhados de uma turma.
+        """
+        if not codigo_turma:
+            raise SmeIntegracaoException(
+                "Código da turma é obrigatório"
+            )
+
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/turmas/{codigo_turma}/dados"
+        )
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de dados da turma")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+    @classmethod
+    def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
+        """
+        Consulta informacoes de unidades escolares pelo código.
+        """
+        if not codigo_ue:
+            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
+
+        logger.info(
+            "Consultando informações da unidade escolar em SME. código: %s",
+            codigo_ue
+        )
+
+        try:
+            url = (
+                f"{env('SME_INTEGRACAO_URL', default='')}/escolas/dados/{codigo_ue}"
+            )
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            logger.error(
+                "Erro ao consultar informações da unidade escolar. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException("Erro ao consultar informações da unidade escolar")
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de informações da unidade escolar")
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
