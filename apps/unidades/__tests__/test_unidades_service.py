@@ -379,3 +379,150 @@ class TestUnidadeIntegracaoService:
             UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
 
         assert "JSON inválido" in str(exc_info.value)
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_get_unidades_by_dre_com_tipo_unidade_sucesso(
+        self, mock_env, mock_get,
+        mock_env_config, mock_http_response_success,
+        mock_unidades_response, codigo_dre_valido
+    ):
+        """Testa busca de escolas por DRE com sucesso"""
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = mock_http_response_success(mock_unidades_response)
+
+        result = UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert result == mock_unidades_response
+        assert len(result) == 2
+        mock_get.assert_called_once()
+        assert codigo_dre_valido in mock_get.call_args[0][0]
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @pytest.mark.parametrize('codigo_invalido', ['', None, '   '])
+    def test_get_unidades_by_dre_com_tipo_unidade_codigo_invalido(self, mock_get, codigo_invalido):
+        """Testa erro quando código da DRE é inválido"""
+        with pytest.raises(ValueError) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_invalido)
+
+        assert "É necessário informar o código da DRE" in str(exc_info.value)
+        mock_get.assert_not_called()
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    @pytest.mark.parametrize('status_code,exception_type,error_message', [
+        (401, PermissionError, 'Não autorizado'),
+        (404, LookupError, 'DRE não encontrada'),
+        (500, EOLIntegrationError, 'Erro na consulta de Escolas por DRE'),
+    ])
+    def test_get_unidades_by_dre_com_tipo_unidade_erros_http(
+        self, mock_env, mock_get,
+        mock_env_config, mock_http_response_error, codigo_dre_valido,
+        status_code, exception_type, error_message
+    ):
+        """Testa diferentes erros HTTP ao buscar escolas"""
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = mock_http_response_error(status_code)
+
+        with pytest.raises(exception_type) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert error_message in str(exc_info.value)
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    @pytest.mark.parametrize('exception_class,expected_exception,error_message', [
+        (requests.exceptions.Timeout, EOLTimeoutError, 'Tempo limite excedido'),
+        (requests.exceptions.ConnectionError, EOLCommunicationError, 'Erro de comunicação'),
+    ])
+    def test_get_unidades_by_dre_com_tipo_unidade_excecoes_requests(
+        self, mock_env, mock_get,
+        mock_env_config, codigo_dre_valido,
+        exception_class, expected_exception, error_message
+    ):
+        """Testa exceções de requests ao buscar escolas"""
+        mock_env.side_effect = mock_env_config()
+        mock_get.side_effect = exception_class("Erro de teste")
+
+        with pytest.raises(expected_exception) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert error_message in str(exc_info.value)
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_get_unidades_by_dre_com_tipo_unidade_resposta_nao_lista(
+        self, mock_env, mock_get,
+        mock_env_config, codigo_dre_valido
+    ):
+        """Testa erro quando resposta não é lista"""
+        mock_env.side_effect = mock_env_config()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {'erro': 'formato inválido'}
+        mock_get.return_value = mock_response
+
+        with pytest.raises(EOLUnexpectedResponseError) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert "Resposta inesperada" in str(exc_info.value)
+        assert "esperado uma lista" in str(exc_info.value)
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_get_unidades_by_dre_com_tipo_unidade_url_correta(
+        self, mock_env, mock_get,
+        mock_env_config, mock_http_response_success,
+        mock_unidades_response, api_base_url, codigo_dre_valido
+    ):
+        """Testa se a URL correta é montada"""
+        mock_env.side_effect = mock_env_config(url=api_base_url)
+        mock_get.return_value = mock_http_response_success(mock_unidades_response)
+
+        UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        called_url = mock_get.call_args[0][0]
+        assert called_url == f'{api_base_url}/DREs/{codigo_dre_valido}/escola'
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_get_unidades_by_dre_com_tipo_unidade_excecao_generica(
+        self, mock_env, mock_get,
+        mock_env_config, codigo_dre_valido
+    ):
+        """Testa exceção genérica"""
+        mock_env.side_effect = mock_env_config()
+        mock_get.side_effect = RuntimeError("Erro inesperado no sistema")
+
+        with pytest.raises(EOLIntegrationError) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert "Erro inesperado ao buscar Escolas" in str(exc_info.value)
+
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_get_unidades_by_dre_com_tipo_unidade_reraise_value_error(
+        self, mock_env, mock_get,
+        mock_env_config, codigo_dre_valido
+    ):
+        mock_env.side_effect = mock_env_config()
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.side_effect = ValueError("JSON inválido")
+
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ValueError) as exc_info:
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert "JSON inválido" in str(exc_info.value)
