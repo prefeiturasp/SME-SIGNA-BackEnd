@@ -114,7 +114,7 @@ class TestUnidadeViewSet:
     
     # ==================== TESTES DE LISTAGEM DE UEs ====================
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_sucesso(self, mock_get_ues, factory, viewset, mock_ues):
         """Testa listagem de UEs com sucesso"""
         mock_get_ues.return_value = mock_ues
@@ -127,7 +127,7 @@ class TestUnidadeViewSet:
         assert response.data == mock_ues
         mock_get_ues.assert_called_once_with('108200')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_sem_codigo_dre(self, mock_get_ues, factory, viewset):
         """Testa listagem de UEs sem informar código da DRE"""
         request = self._create_request(factory, data={'tipo': 'UE'})
@@ -138,7 +138,7 @@ class TestUnidadeViewSet:
         assert 'necessário informar o código da DRE' in response.data['detail']
         mock_get_ues.assert_not_called()
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_codigo_dre_vazio(self, mock_get_ues, factory, viewset):
         """Testa listagem de UEs com código da DRE vazio"""
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': ''})
@@ -148,7 +148,7 @@ class TestUnidadeViewSet:
         assert 'detail' in response.data
         mock_get_ues.assert_not_called()
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_valor_invalido(self, mock_get_ues, factory, viewset):
         """Testa listagem de UEs com código da DRE inválido"""
         mock_get_ues.side_effect = ValueError("Código da DRE deve ser numérico")
@@ -160,7 +160,7 @@ class TestUnidadeViewSet:
         assert 'detail' in response.data
         assert 'numérico' in response.data['detail']
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_dre_nao_encontrada(self, mock_get_ues, factory, viewset):
         """Testa listagem de UEs quando DRE não existe"""
         mock_get_ues.side_effect = LookupError("DRE não encontrada")
@@ -172,7 +172,7 @@ class TestUnidadeViewSet:
         assert 'detail' in response.data
         assert 'não encontrada' in response.data['detail']
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_erro_permissao(self, mock_get_ues, factory, viewset):
         """Testa erro de permissão ao listar UEs"""
         mock_get_ues.side_effect = PermissionError("Token inválido")
@@ -183,7 +183,7 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert 'detail' in response.data
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_erro_generico(self, mock_get_ues, factory, viewset):
         """Testa erro genérico ao listar UEs"""
         mock_get_ues.side_effect = Exception("Erro de conexão")
@@ -195,7 +195,7 @@ class TestUnidadeViewSet:
         assert 'detail' in response.data
         assert 'Erro ao consultar unidades' in response.data['detail']
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
     def test_listar_ues_vazio(self, mock_get_ues, factory, viewset):
         """Testa listagem de UEs quando não há resultados"""
         mock_get_ues.return_value = []

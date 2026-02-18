@@ -84,7 +84,7 @@ class UnidadeViewSet(ViewSet):
             )
  
         try:
-            unidades = UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre)
+            unidades = UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre)
             logger.info("UEs encontradas para DRE '%s': %d", codigo_dre, len(unidades))
             return Response(unidades)
             
