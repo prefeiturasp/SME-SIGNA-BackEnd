@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class EsqueciMinhaSenhaSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True, min_length=7, max_length=8)
+    username = serializers.CharField(required=True)
 
 class RedefinirSenhaSerializer(serializers.Serializer):
     """
