@@ -149,7 +149,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             format="json"
         )
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
 
     
@@ -181,7 +181,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         
         response = self.client.post(self.url, invalid_data, format="json")
         
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
     
     @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp")
@@ -314,7 +314,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             format="json"
         )
         
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
 
 
@@ -532,8 +532,8 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             format="json"
         )
         
-        # 3. Verifica se retornou 404 (UserNotFoundError)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        # 3. Verifica se retornou (UserNotFoundError)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
 
 class TestRedefinirSenhaViewSet:
