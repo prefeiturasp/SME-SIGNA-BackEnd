@@ -181,8 +181,8 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         
         response = self.client.post(self.url, invalid_data, format="json")
         
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("username", response.data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "Usuário não encontrado")
     
     @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp")
     def test_post_api_external_failure(self, mock_informacao_usuario):
