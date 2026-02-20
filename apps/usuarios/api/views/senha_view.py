@@ -64,7 +64,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             return Response({"detail": str(e)}, status=400)
 
         except UserNotFoundError as e:
-            return Response({"detail": str(e)}, status=404)
+            return Response({"detail": str(e)}, status=400)
 
         except Exception:
             logger.exception("Erro inesperado no fluxo de esqueci minha senha")
