@@ -35,6 +35,17 @@ class DesignacaoServidorService:
 
         cargo = cargos[0]
 
+        codigo_unidade = (
+            cargo.get("cdUeCargoSobreposto")
+            if cargo.get("cargoSobreposto")
+            else cargo.get("cdUeCargoBase")
+        )
+
+        unidade = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            codigo_unidade
+        )
+
+
         return {
             #to-do: corrigir nome para que seja valor coeso
             "nome": usuario.get("nome"),
@@ -56,5 +67,6 @@ class DesignacaoServidorService:
             ),
             "funcao_atividade": cargo.get(
                 "funcaoAtividade"
-            )
+            ),
+            "nomeDre": unidade.get("nomeDRE"),
         }
