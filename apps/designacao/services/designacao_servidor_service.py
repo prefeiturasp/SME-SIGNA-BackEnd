@@ -36,17 +36,18 @@ class DesignacaoServidorService:
         cargo = cargos[0]
 
         return {
+            #to-do: corrigir nome para que seja valor coeso
             "nome": usuario.get("nome"),
+            "nome_servidor": usuario.get("nome"),
+            "nome_civil": usuario.get("nome"),
+            #-----------------
             "rf": usuario.get("codigoRf"),
-
             "vinculo_cargo_sobreposto": cargo.get(
                 "tipoVinculoCargoSobreposto"
             ),
-
             "lotacao_cargo_sobreposto": cargo.get(
                 "ueCargoSobreposto"
             ),
-
             "cargo_base": cargo.get(
                 "cargoBase"
             ),

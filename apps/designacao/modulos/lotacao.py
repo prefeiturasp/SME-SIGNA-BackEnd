@@ -11,7 +11,8 @@ class ModuloLotacaoCalculator:
     def calcular(self, cargo: dict, informacoes_ue: dict) -> int:
         codigo_cargo = self._obter_codigo_cargo(cargo)
         sigla_tipo = self._obter_sigla(informacoes_ue)
-        qtd_classes = informacoes_ue.get("quantidade_classes")
+        dados_turmas = informacoes_ue.get("turmas") or {}
+        qtd_classes = dados_turmas.get("total")
 
         if codigo_cargo == self.CARGO_DIRETOR:
             return self._regra_diretor()
