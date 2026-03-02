@@ -35,18 +35,30 @@ class DesignacaoServidorService:
 
         cargo = cargos[0]
 
-        return {
-            "nome": usuario.get("nome"),
-            "rf": usuario.get("codigoRf"),
+        codigo_unidade = (
+            cargo.get("cdUeCargoSobreposto")
+            if cargo.get("cargoSobreposto")
+            else cargo.get("cdUeCargoBase")
+        )
 
+        unidade = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            codigo_unidade
+        )
+
+
+        return {
+            #to-do: corrigir nome para que seja valor coeso
+            "nome": usuario.get("nome"),
+            "nome_servidor": usuario.get("nome"),
+            "nome_civil": usuario.get("nome"),
+            #-----------------
+            "rf": usuario.get("codigoRf"),
             "vinculo_cargo_sobreposto": cargo.get(
                 "tipoVinculoCargoSobreposto"
             ),
-
             "lotacao_cargo_sobreposto": cargo.get(
                 "ueCargoSobreposto"
             ),
-
             "cargo_base": cargo.get(
                 "cargoBase"
             ),
@@ -55,5 +67,6 @@ class DesignacaoServidorService:
             ),
             "funcao_atividade": cargo.get(
                 "funcaoAtividade"
-            )
+            ),
+            "nomeDre": unidade.get("nomeDRE"),
         }

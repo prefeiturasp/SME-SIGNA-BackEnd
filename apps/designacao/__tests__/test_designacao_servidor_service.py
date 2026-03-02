@@ -12,6 +12,10 @@ class TestDesignacaoServidorService:
 
     @patch(
         "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
         "SmeIntegracaoService.informacao_usuario_sgp"
     )
     @patch(
@@ -22,6 +26,8 @@ class TestDesignacaoServidorService:
         self,
         mock_consulta_cargos,
         mock_info_usuario,
+        mock_consulta_unidade,
+
     ):
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
@@ -38,18 +44,25 @@ class TestDesignacaoServidorService:
             }
         ]
 
+        mock_consulta_unidade.return_value = {
+            "nomeDRE": "DRE TESTE",
+        }   
+
         resultado = DesignacaoServidorService.obter_designacao(
             "0000000"
         )
 
         assert resultado == {
             "nome": "João da Silva",
+            "nome_servidor": "João da Silva",
+            "nome_civil": "João da Silva",
             "rf": "0000000",
             "vinculo_cargo_sobreposto": 1,
             "lotacao_cargo_sobreposto": "Escola X",
             "cargo_base": "Cargo Base",
             "cargo_sobreposto": "Cargo Sobreposto",
             "funcao_atividade": "Função Teste",
+            "nomeDre": "DRE TESTE",
         }
 
     def test_obter_designacao_sem_registro_funcional_raises(self):

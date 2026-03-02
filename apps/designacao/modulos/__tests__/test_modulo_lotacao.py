@@ -75,7 +75,7 @@ class TestModuloLotacaoCalculator:
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
             "siglaTipoEscola": f" {sigla_tipo} ",
-            "quantidade_classes": qtd_classes,
+            "turmas": {"total": qtd_classes},
         }
 
         resultado = self.calculator.calcular(cargo, informacoes_ue)
@@ -88,7 +88,7 @@ class TestModuloLotacaoCalculator:
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
-            "quantidade_classes": None,
+            "turmas": {"total": None},
         }
 
         with caplog.at_level(logging.WARNING):
@@ -114,7 +114,7 @@ class TestModuloLotacaoCalculator:
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
             "siglaTipoEscola": sigla_tipo,
-            "quantidade_classes": 10,
+            "turmas": {"total": 10},
         }
 
         resultado = self.calculator.calcular(cargo, informacoes_ue)
