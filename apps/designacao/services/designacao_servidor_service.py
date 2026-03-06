@@ -35,38 +35,31 @@ class DesignacaoServidorService:
 
         cargo = cargos[0]
 
-        codigo_unidade = (
-            cargo.get("cdUeCargoSobreposto")
-            if cargo.get("cargoSobreposto")
-            else cargo.get("cdUeCargoBase")
+        possui_cargo_sobreposto = bool(cargo.get("cargoSobreposto"))
+        
+        cargo_sobreposto_funcao_atividade = (
+            cargo.get("cargoSobreposto")
+            if possui_cargo_sobreposto
+            else cargo.get("funcaoAtividade")
         )
 
-        unidade = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
-            codigo_unidade
+        local_exercicio = (
+            cargo.get("ueCargoSobreposto")
+            if possui_cargo_sobreposto
+            else cargo.get("ueFuncaoAtividade")
         )
-
 
         return {
-            #to-do: corrigir nome para que seja valor coeso
-            "nome": usuario.get("nome"),
             "nome_servidor": usuario.get("nome"),
             "nome_civil": usuario.get("nome"),
-            #-----------------
             "rf": usuario.get("codigoRf"),
-            "vinculo_cargo_sobreposto": cargo.get(
-                "tipoVinculoCargoSobreposto"
-            ),
-            "lotacao_cargo_sobreposto": cargo.get(
-                "ueCargoSobreposto"
-            ),
-            "cargo_base": cargo.get(
-                "cargoBase"
-            ),
-            "cargo_sobreposto": cargo.get(
-                "cargoSobreposto"
-            ),
-            "funcao_atividade": cargo.get(
-                "funcaoAtividade"
-            ),
-            "nomeDre": unidade.get("nomeDRE"),
+            "vinculo": cargo.get("tipoVinculoCargoBase"),
+
+            "cargo_base": cargo.get("cargoBase"),
+            "lotacao": cargo.get("ueCargoBase"),
+
+            "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,
+            "local_de_exercicio": local_exercicio,
+            "laudo_medico": "Indisponível",
+            "local_de_servico": "Indisponível"
         }

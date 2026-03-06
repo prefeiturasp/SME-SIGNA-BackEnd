@@ -39,8 +39,10 @@ class TestDesignacaoServidorService:
                 "tipoVinculoCargoSobreposto": 1,
                 "ueCargoSobreposto": "Escola X",
                 "cargoBase": "Cargo Base",
+                "ueCargoBase": "Escola Base",
                 "cargoSobreposto": "Cargo Sobreposto",
                 "funcaoAtividade": "Função Teste",
+                "tipoVinculoCargoBase": 2
             }
         ]
 
@@ -53,16 +55,16 @@ class TestDesignacaoServidorService:
         )
 
         assert resultado == {
-            "nome": "João da Silva",
             "nome_servidor": "João da Silva",
             "nome_civil": "João da Silva",
             "rf": "0000000",
-            "vinculo_cargo_sobreposto": 1,
-            "lotacao_cargo_sobreposto": "Escola X",
+            "vinculo": 2,
             "cargo_base": "Cargo Base",
-            "cargo_sobreposto": "Cargo Sobreposto",
-            "funcao_atividade": "Função Teste",
-            "nomeDre": "DRE TESTE",
+            "lotacao": "Escola Base",
+            "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
+            "local_de_exercicio": "Escola X",
+            "laudo_medico": "Indisponível",
+            "local_de_servico": "Indisponível"
         }
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
