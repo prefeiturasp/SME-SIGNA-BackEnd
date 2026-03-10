@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
+from apps.designacao.services.designacao_servidor_service import DesignacaoServidorService
 from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLAR, TURNOS_MAP
 from apps.helpers.exceptions import SmeIntegracaoException
 from apps.designacao.modulos import Calculadores
@@ -19,7 +20,6 @@ class DesignacaoUnidadeService:
         informacoes_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
         turmas = cls.calcular_turmas(codigo_ue)
         informacoes_ue.update({'turmas': turmas})
-        print("informacoes_ue", informacoes_ue)
 
         for cargo_ue in cargos:
             cargo_ue["modulo"] = cls._definir_modulo_cargo(cargo_ue, informacoes_ue)
@@ -37,6 +37,7 @@ class DesignacaoUnidadeService:
             "cargos": CARGOS_GESTAO_ESCOLAR,
             "funcionarios_unidade": cargos_por_codigo,
             "turmas": turmas,
+            "codigo_hierarquico": "Indisponível"
         }
 
     @classmethod
@@ -53,16 +54,40 @@ class DesignacaoUnidadeService:
 
     @classmethod
     def _enriquecer_dados_servidor(cls, servidor: dict):
-        """Busca cargos externos e normaliza os dados no dicionário do servidor."""
-        rf = servidor.get("rf")
-        try:
-            cargos_externos = SmeIntegracaoService.consulta_cargos_funcionario(rf)
-            info_cargo = cargos_externos[0] if cargos_externos else {}
-        except SmeIntegracaoException:
-            logger.warning("Falha ao consultar cargos do servidor RF %s", rf)
-            info_cargo = {}
 
-        servidor.update(cls._mapear_info_cargo(info_cargo))
+        rf = servidor.get("rf")
+
+        try:
+            usuario = SmeIntegracaoService.informacao_usuario_sgp(rf)
+
+            cargos = SmeIntegracaoService.consulta_cargos_funcionario(rf)
+
+            cargo = cargos[0] if cargos else {}
+
+            dados_servidor = DesignacaoServidorService.montar_dados_servidor(
+                usuario,
+                cargo
+            )
+
+            servidor.clear()
+            servidor.update(dados_servidor)
+
+        except SmeIntegracaoException:
+            logger.warning("Falha ao montar designação do servidor RF %s", rf)
+
+            servidor.clear()
+            servidor.update({
+                "nome_servidor": None,
+                "nome_civil": None,
+                "rf": rf,
+                "vinculo": None,
+                "cargo_base": None,
+                "lotacao": None,
+                "cargo_sobreposto_funcao_atividade": None,
+                "local_de_exercicio": None,
+                "laudo_medico": None,
+                "local_de_servico": None
+            })
 
     @staticmethod
     def _mapear_info_cargo(info: dict) -> dict:

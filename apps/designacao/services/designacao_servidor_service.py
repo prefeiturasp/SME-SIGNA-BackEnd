@@ -14,13 +14,9 @@ class DesignacaoServidorService:
 
     @classmethod
     def obter_designacao(cls, registro_funcional: str) -> dict:
+
         if not registro_funcional:
             raise SmeIntegracaoException("Registro funcional é obrigatório")
-
-        logger.info(
-            "Montando designação do servidor. RF: %s",
-            registro_funcional
-        )
 
         usuario = SmeIntegracaoService.informacao_usuario_sgp(
             registro_funcional
@@ -35,8 +31,16 @@ class DesignacaoServidorService:
 
         cargo = cargos[0]
 
+        return cls.montar_dados_servidor(usuario, cargo)
+    
+    @classmethod
+    def montar_dados_servidor(cls, usuario: dict, cargo: dict) -> dict:
+        """
+        Monta o dicionário padronizado de designação do servidor.
+        """
+
         possui_cargo_sobreposto = bool(cargo.get("cargoSobreposto"))
-        
+
         cargo_sobreposto_funcao_atividade = (
             cargo.get("cargoSobreposto")
             if possui_cargo_sobreposto
@@ -60,6 +64,7 @@ class DesignacaoServidorService:
 
             "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,
             "local_de_exercicio": local_exercicio,
+
             "laudo_medico": "Indisponível",
             "local_de_servico": "Indisponível"
         }
