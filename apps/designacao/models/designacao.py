@@ -70,7 +70,7 @@ class Designacao(models.Model):
     numero_portaria = models.CharField(max_length=20)
     ano_vigente = models.CharField(max_length=6)
     sei_numero = models.CharField(max_length=30)
-    doc = models.CharField(max_length=100, blank=True, default="")
+    doc = models.CharField(max_length=100, blank=True, default="")#Campo D.O
     data_inicio = models.DateField()
     data_fim = models.DateField(null=True, blank=True)
     carater_excepcional = models.BooleanField(default=False)
