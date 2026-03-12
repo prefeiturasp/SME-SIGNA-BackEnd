@@ -1,0 +1,1 @@
+from .designacao import Designacao
