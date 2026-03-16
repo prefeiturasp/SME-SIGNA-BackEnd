@@ -9,11 +9,16 @@ from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLA
 class TestDesignacaoUnidadeService:
     
     CHAVES_CONTRATO_SERVIDOR = {
-        "cargo_sobreposto", 
-        "vinculo_cargo_sobreposto", 
-        "lotacao_cargo_sobreposto", 
-        "cargo_base", 
-        "funcao_atividade"
+        "nome_servidor",
+        "nome_civil",
+        "rf",
+        "vinculo",
+        "cargo_base",
+        "lotacao",
+        "cargo_sobreposto_funcao_atividade",
+        "local_de_exercicio",
+        "laudo_medico",
+        "local_de_servico"
     }
 
     @patch("apps.designacao.services.designacao_unidades_service.datetime")
@@ -23,10 +28,17 @@ class TestDesignacaoUnidadeService:
     @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares")
     @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario")
     @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares")
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp")
     def test_obter_informacoes_escolares_sucesso_completo(
-        self, mock_buscar_funcionarios, mock_consulta_cargos, 
-        mock_info_ue, mock_buscar_turmas, mock_dados_turma, 
-        mock_calculadores, mock_datetime
+        self, 
+        mock_usuario,
+        mock_buscar_funcionarios,
+        mock_consulta_cargos,
+        mock_info_ue,
+        mock_buscar_turmas,
+        mock_dados_turma,
+        mock_calculadores,
+        mock_datetime             
     ):
         """Teste de caminho feliz: Valida integração, cálculos e contrato de dados."""
         mock_datetime.now.return_value = datetime(2024, 5, 20)
@@ -40,6 +52,11 @@ class TestDesignacaoUnidadeService:
                 "servidores": [{"rf": "RF001", "nome": "JOÃO"}]
             }
         ]
+
+        mock_usuario.return_value = {
+            "nome": "JOÃO",
+            "codigoRf": "RF001"
+        }
 
         def side_effect_cargos(rf):
             if rf == "RF001":
@@ -62,24 +79,37 @@ class TestDesignacaoUnidadeService:
         
         servidor = resultado["funcionarios_unidade"][1001]["servidores"][0]
         assert self.CHAVES_CONTRATO_SERVIDOR.issubset(servidor.keys())
-        assert servidor["cargo_sobreposto"] == "CARGO_S"
-        
+        assert servidor["cargo_sobreposto_funcao_atividade"] == "CARGO_S"        
         assert resultado["turmas"]["total"] == 1
         assert resultado["turmas"]["por_turno"]["manhã"] == 1
 
-    @patch("apps.designacao.services.designacao_unidades_service.Calculadores")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares")
+    @patch("apps.designacao.services.designacao_unidades_service.datetime") 
+    @patch("apps.designacao.services.designacao_unidades_service.Calculadores") 
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano") 
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares") 
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario") 
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares") 
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp") 
     def test_obter_informacoes_escolares_falha_integracao_servidor(
-        self, mock_buscar_funcs, mock_consulta_cargos, mock_info_ue, mock_buscar_turmas, mock_calculadores
+        self, 
+        mock_usuario,          
+        mock_buscar_funcs,     
+        mock_consulta_cargos,  
+        mock_info_ue,          
+        mock_buscar_turmas,    
+        mock_calculadores,     
+        mock_datetime          
     ):
         """Valida que o sistema não quebra se a integração de um RF específico falhar."""
+        mock_datetime.now.return_value = datetime(2024, 1, 1)
+        
         mock_buscar_funcs.return_value = [
             {"codigo_cargo": 1001, "servidores": [{"rf": "RF_ERRO"}]}
         ]
+        
+        mock_usuario.side_effect = SmeIntegracaoException("Erro SME") 
         mock_consulta_cargos.side_effect = SmeIntegracaoException("Erro SME")
+        
         mock_info_ue.return_value = {}
         mock_buscar_turmas.return_value = []
         mock_calculadores.get.return_value = None
@@ -88,7 +118,10 @@ class TestDesignacaoUnidadeService:
 
         servidor = resultado["funcionarios_unidade"][1001]["servidores"][0]
         for chave in self.CHAVES_CONTRATO_SERVIDOR:
-            assert servidor[chave] is None
+            if chave != "rf":
+                assert servidor[chave] is None
+            else:
+                assert servidor["rf"] == "RF_ERRO"
 
     @patch("apps.designacao.services.designacao_unidades_service.Calculadores")
     @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares")
