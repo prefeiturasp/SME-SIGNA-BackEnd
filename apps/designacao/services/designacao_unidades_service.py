@@ -2,9 +2,10 @@ import logging
 from datetime import datetime
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 from apps.designacao.services.designacao_servidor_service import DesignacaoServidorService
-from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLAR, TURNOS_MAP
+from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.helpers.exceptions import SmeIntegracaoException
 from apps.designacao.modulos import Calculadores
+from apps.designacao.models import Designacao
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class DesignacaoUnidadeService:
 
 
         return {
-            "cargos": CARGOS_GESTAO_ESCOLAR,
+            "cargos": Designacao.get_cargos_formatados(),
             "funcionarios_unidade": cargos_por_codigo,
             "turmas": turmas,
             "codigo_hierarquico": "Indisponível"
@@ -137,3 +138,8 @@ class DesignacaoUnidadeService:
                 resultado["por_turno"][turno] += 1
 
         return resultado
+    
+    @staticmethod
+    def listar_cargos_vaga():
+            """Para o endpoint unidade/cargos/"""
+            return Designacao.get_cargos_formatados()

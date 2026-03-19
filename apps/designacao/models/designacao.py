@@ -97,3 +97,11 @@ class Designacao(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+
+    @classmethod
+    def get_cargos_formatados(cls):
+        """Substitui a constante CARGOS_GESTAO_ESCOLAR"""
+        return [
+            {"codigoCargo": choice.value, "nomeCargo": choice.label}
+            for choice in cls.CargoVaga
+        ]
