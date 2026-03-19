@@ -44,3 +44,20 @@ class DesignacaoUnidadeView(APIView):
             )
 
 
+class DesignacaoUnidadeCargosView(APIView):
+    """
+    Retorna os cargos disponíveis (Choices do Model Designacao).
+    Endpoint: unidade/cargos/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            cargos = DesignacaoUnidadeService.listar_cargos_vaga()
+            return Response(cargos, status=status.HTTP_200_OK)
+        except Exception:
+            logger.exception("Erro ao buscar lista de cargos")
+            return Response(
+                {"detail": "Erro interno ao buscar cargos"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
