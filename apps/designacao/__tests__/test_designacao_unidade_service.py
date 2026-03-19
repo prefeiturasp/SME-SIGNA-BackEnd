@@ -3,7 +3,8 @@ from unittest.mock import patch, Mock, MagicMock
 from datetime import datetime
 from apps.designacao.services.designacao_unidades_service import DesignacaoUnidadeService
 from apps.helpers.exceptions import SmeIntegracaoException
-from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLAR
+from apps.designacao.models import Designacao
+
 
 @pytest.mark.django_db
 class TestDesignacaoUnidadeService:
@@ -168,3 +169,28 @@ class TestDesignacaoUnidadeService:
         assert resultado["lotacao_cargo_sobreposto"] == "B"
         assert resultado["cargo_base"] == "C"
         assert resultado["funcao_atividade"] == "D"
+
+
+    def test_listar_cargos_vaga_sucesso(self):
+        """
+        Valida se a listagem de cargos extrai corretamente as 
+        informações definidas no IntegerChoices do Model Designacao.
+        """
+
+        resultado = DesignacaoUnidadeService.listar_cargos_vaga()
+
+        assert isinstance(resultado, list)
+        assert len(resultado) == len(Designacao.CargoVaga.choices)
+
+        primeiro_cargo = resultado[0]
+
+        assert "codigoCargo" in primeiro_cargo
+        assert "nomeCargo" in primeiro_cargo
+        
+        diretor = next(c for c in resultado if c["codigoCargo"] == 3360)
+
+        assert diretor["nomeCargo"] == "DIRETOR DE ESCOLA"
+
+        for cargo in resultado:
+            assert isinstance(cargo["codigoCargo"], int)
+            assert isinstance(cargo["nomeCargo"], str)
