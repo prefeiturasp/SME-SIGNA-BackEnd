@@ -2,7 +2,7 @@ from django.db import migrations
 
 
 def populate_impedimentos(apps, schema_editor):
-    Impedimento = apps.get_model('designacao', 'ImpedimentoSubstituicao')
+    impedimento_model = apps.get_model('designacao', 'ImpedimentoSubstituicao')
 
     dados = [
         ('LIC_GESTANTE', 'Por licença gestante'),
@@ -31,15 +31,15 @@ def populate_impedimentos(apps, schema_editor):
     ]
 
     for codigo, descricao in dados:
-        Impedimento.objects.get_or_create(
+        impedimento_model.objects.get_or_create(
             codigo=codigo,
             defaults={"descricao": descricao}
         )
 
 
 def reverse_func(apps, schema_editor):
-    Impedimento = apps.get_model('designacao', 'ImpedimentoSubstituicao')
-    Impedimento.objects.all().delete()
+    impedimento_model = apps.get_model('designacao', 'ImpedimentoSubstituicao')
+    impedimento_model.objects.all().delete()
 
 
 class Migration(migrations.Migration):
