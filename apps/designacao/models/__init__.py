@@ -1,1 +1,1 @@
-from .designacao import Designacao
+from .designacao import Designacao, ImpedimentoSubstituicao
