@@ -15,7 +15,6 @@ class DesignacaoViewSet(mixins.CreateModelMixin,
                         mixins.ListModelMixin,
                         mixins.RetrieveModelMixin,
                         viewsets.GenericViewSet):
-    queryset = Designacao.objects.all().order_by('-criado_em')
     serializer_class = DesignacaoSerializer
     pagination_class = DesignacaoPagination
 
@@ -29,3 +28,17 @@ class DesignacaoViewSet(mixins.CreateModelMixin,
     ]
 
     ordering_fields = ['criado_em', 'data_inicio', 'data_fim', 'ano_vigente']
+
+    def get_queryset(self):
+        queryset = Designacao.objects.all().order_by('-criado_em')
+
+        PAGINATION_PARAMS = {'page', 'page_size', 'format'}
+
+        has_active_filter = bool(
+            set(self.request.query_params.keys()) - PAGINATION_PARAMS
+        )
+
+        if not has_active_filter:
+            queryset = queryset[:1000]
+
+        return queryset

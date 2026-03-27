@@ -7,8 +7,8 @@ class DesignacaoFilter(django_filters.FilterSet):
     rf = django_filters.CharFilter(method='filter_rf')
     nome = django_filters.CharFilter(method='filter_nome')
     periodo = django_filters.DateFromToRangeFilter(field_name='data_inicio')
-    cargo_base = django_filters.CharFilter(field_name='indicado_cargo_base', lookup_expr='icontains')
-    cargo_sobreposto = django_filters.CharFilter(field_name='indicado_cargo_sobreposto', lookup_expr='icontains')
+    cargo_base = django_filters.CharFilter(method='filter_cargo_base')
+    cargo_sobreposto = django_filters.CharFilter(method='filter_cargo_sobreposto')
     dre = django_filters.CharFilter(field_name='dre_nome', lookup_expr='icontains')
     unidade = django_filters.CharFilter(field_name='unidade_proponente', lookup_expr='icontains')
     ano = django_filters.CharFilter(field_name='ano_vigente', lookup_expr='exact')
@@ -30,7 +30,18 @@ class DesignacaoFilter(django_filters.FilterSet):
             models.Q(indicado_nome_servidor__icontains=value) |
             models.Q(titular_nome_servidor__icontains=value)
         )
+    
+    def filter_cargo_base(self, queryset, name, value):
+        return queryset.filter(
+            models.Q(indicado_cargo_base__icontains=value) |
+            models.Q(titular_cargo_base__icontains=value)
+        )
 
+    def filter_cargo_sobreposto(self, queryset, name, value):
+        return queryset.filter(
+            models.Q(indicado_cargo_sobreposto__icontains=value) |
+            models.Q(titular_cargo_sobreposto__icontains=value)
+        )
     class Meta:
         model = Designacao
         fields = [

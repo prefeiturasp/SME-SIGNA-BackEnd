@@ -1,5 +1,5 @@
 from django.test import TestCase
-from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
 from apps.designacao.api.filters.designacao_filter import DesignacaoFilter
 import datetime
 
@@ -7,6 +7,15 @@ import datetime
 class DesignacaoFilterTest(TestCase):
 
     def setUp(self):
+        self.impedimento1 = ImpedimentoSubstituicao.objects.create(
+            codigo='IMP1',
+            descricao='Impedimento 1'
+        )
+        self.impedimento2 = ImpedimentoSubstituicao.objects.create(
+            codigo='IMP2',
+            descricao='Impedimento 2'
+        )
+
         self.designacao1 = Designacao.objects.create(
             dre_nome='DRE Norte',
             unidade_proponente='EMEF Teste 1',
@@ -16,16 +25,21 @@ class DesignacaoFilterTest(TestCase):
             indicado_rf='1234567',
             indicado_vinculo=1,
             indicado_cargo_base='Professor',
+            indicado_cargo_sobreposto='Diretor',
             indicado_lotacao='Unidade A',
             indicado_local_exercicio='Unidade A',
             titular_nome_servidor='Maria Souza',
             titular_rf='9999999',
+            titular_cargo_base='Professor',
+            titular_cargo_sobreposto='Vice-Diretor',
             numero_portaria='001',
             ano_vigente='2024',
             sei_numero='SEI-001',
             data_inicio=datetime.date(2024, 1, 1),
             tipo_vaga=Designacao.TipoVaga.VAGO,
+            impedimento_substituicao=self.impedimento1
         )
+
         self.designacao2 = Designacao.objects.create(
             dre_nome='DRE Sul',
             unidade_proponente='EMEF Teste 2',
@@ -35,37 +49,76 @@ class DesignacaoFilterTest(TestCase):
             indicado_rf='0000000',
             indicado_vinculo=2,
             indicado_cargo_base='Coordenador',
+            indicado_cargo_sobreposto='Supervisor',
             indicado_lotacao='Unidade B',
             indicado_local_exercicio='Unidade B',
             titular_nome_servidor='Ana Paula',
             titular_rf='7654321',
+            titular_cargo_base='Coordenador',
+            titular_cargo_sobreposto='Diretor',
             numero_portaria='002',
             ano_vigente='2024',
             sei_numero='SEI-002',
             data_inicio=datetime.date(2024, 2, 1),
             tipo_vaga=Designacao.TipoVaga.DISPONIVEL,
+            impedimento_substituicao=self.impedimento2
         )
 
-    def test_filter_rf_por_indicado(self):
-        """Cobre linha 24 - filtra pelo rf do indicado"""
+    def test_filter_rf(self):
         f = DesignacaoFilter({'rf': '1234567'}, queryset=Designacao.objects.all())
         self.assertIn(self.designacao1, f.qs)
         self.assertNotIn(self.designacao2, f.qs)
 
-    def test_filter_rf_por_titular(self):
-        """Cobre linha 24 - filtra pelo rf do titular"""
-        f = DesignacaoFilter({'rf': '7654321'}, queryset=Designacao.objects.all())
+    def test_filter_nome(self):
+        f = DesignacaoFilter({'nome': 'Ana'}, queryset=Designacao.objects.all())
         self.assertIn(self.designacao2, f.qs)
         self.assertNotIn(self.designacao1, f.qs)
 
-    def test_filter_nome_por_indicado(self):
-        """Cobre linha 29 - filtra pelo nome do indicado"""
-        f = DesignacaoFilter({'nome': 'João'}, queryset=Designacao.objects.all())
+    def test_filter_cargo_base(self):
+        f = DesignacaoFilter({'cargo_base': 'Professor'}, queryset=Designacao.objects.all())
         self.assertIn(self.designacao1, f.qs)
         self.assertNotIn(self.designacao2, f.qs)
 
-    def test_filter_nome_por_titular(self):
-        """Cobre linha 29 - filtra pelo nome do titular"""
-        f = DesignacaoFilter({'nome': 'Ana'}, queryset=Designacao.objects.all())
+    def test_filter_cargo_sobreposto(self):
+        f = DesignacaoFilter({'cargo_sobreposto': 'Supervisor'}, queryset=Designacao.objects.all())
+        self.assertIn(self.designacao2, f.qs)
+        self.assertNotIn(self.designacao1, f.qs)
+
+    def test_filter_dre(self):
+        f = DesignacaoFilter({'dre': 'Norte'}, queryset=Designacao.objects.all())
+        self.assertIn(self.designacao1, f.qs)
+        self.assertNotIn(self.designacao2, f.qs)
+
+    def test_filter_unidade(self):
+        f = DesignacaoFilter({'unidade': 'Teste 2'}, queryset=Designacao.objects.all())
+        self.assertIn(self.designacao2, f.qs)
+        self.assertNotIn(self.designacao1, f.qs)
+
+    def test_filter_ano(self):
+        f = DesignacaoFilter({'ano': '2024'}, queryset=Designacao.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+
+    def test_filter_periodo(self):
+        f = DesignacaoFilter({
+            'periodo_after': '2024-01-15',
+            'periodo_before': '2024-12-31'
+        }, queryset=Designacao.objects.all())
+
+        self.assertIn(self.designacao2, f.qs)
+        self.assertNotIn(self.designacao1, f.qs)
+
+    def test_filter_impedimento_substituicao(self):
+        f = DesignacaoFilter({
+            'impedimento_substituicao': self.impedimento1.id
+        }, queryset=Designacao.objects.all())
+
+        self.assertIn(self.designacao1, f.qs)
+        self.assertNotIn(self.designacao2, f.qs)
+
+    def test_filter_impedimento_codigo(self):
+        f = DesignacaoFilter({
+            'impedimento_codigo': 'IMP2'
+        }, queryset=Designacao.objects.all())
+
         self.assertIn(self.designacao2, f.qs)
         self.assertNotIn(self.designacao1, f.qs)
