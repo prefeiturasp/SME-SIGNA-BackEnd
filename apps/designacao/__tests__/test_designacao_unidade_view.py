@@ -112,3 +112,56 @@ class TestDesignacaoUnidadeView:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
+@pytest.mark.django_db
+class TestDesignacaoUnidadeCargosView:
+
+    password = secrets.token_urlsafe(16)
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.url = "/api/designacao/unidade/cargos/"
+
+    @patch("apps.designacao.services.designacao_unidades_service.DesignacaoUnidadeService.listar_cargos_vaga")
+    def test_get_cargos_sucesso(self, mock_listar_cargos, django_user_model):
+        """Valida se a view retorna a lista de cargos corretamente quando autenticado."""
+        user = django_user_model.objects.create_user(
+            username="user_cargos",
+            password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        # Mock do retorno esperado da service
+        mock_data = [
+            {"codigoCargo": 3360, "nomeCargo": "DIRETOR DE ESCOLA"},
+            {"codigoCargo": 3379, "nomeCargo": "COORDENADOR PEDAGOGICO"}
+        ]
+        mock_listar_cargos.return_value = mock_data
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.json()) == 2
+        assert response.json() == mock_data
+        mock_listar_cargos.assert_called_once()
+
+    def test_get_cargos_nao_autenticado(self):
+        """Valida que usuários não autenticados são barrados."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    @patch("apps.designacao.services.designacao_unidades_service.DesignacaoUnidadeService.listar_cargos_vaga")
+    def test_get_cargos_erro_interno(self, mock_listar_cargos, django_user_model):
+        """Valida o tratamento de erro 500 caso ocorra uma exceção na service."""
+        user = django_user_model.objects.create_user(
+            username="user_erro",
+            password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_listar_cargos.side_effect = Exception("Erro inesperado")
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.json() == {"detail": "Erro interno ao buscar cargos"}
