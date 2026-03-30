@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+
+
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImpedimentoSubstituicao
@@ -7,10 +9,13 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 
 
 class DesignacaoSerializer(serializers.ModelSerializer):
+    impedimento_display = serializers.SerializerMethodField()
+
     impedimento_substituicao_detail = ImpedimentoSubstituicaoSerializer(
         source='impedimento_substituicao',
         read_only=True
     )
+
     impedimento_substituicao = serializers.PrimaryKeyRelatedField(
         queryset=ImpedimentoSubstituicao.objects.all(),
         required=False,
@@ -24,6 +29,15 @@ class DesignacaoSerializer(serializers.ModelSerializer):
         model = Designacao
         fields = '__all__'
 
-    def get_field_names(self, declared_fields, info):
-        fields = super().get_field_names(declared_fields, info)
-        return fields + ['impedimento_substituicao_detail', 'tipo_vaga_display', 'cargo_vaga_display']
+    def get_impedimento_display(self, obj):
+        if obj.impedimento_substituicao:
+            return obj.impedimento_substituicao.descricao
+        return None
+
+    def update(self, instance, validated_data):
+        protected_fields = ['is_deleted', 'deleted_at', 'criado_em', 'id']
+
+        for field in protected_fields:
+            validated_data.pop(field, None)
+
+        return super().update(instance, validated_data)
