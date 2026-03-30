@@ -16,5 +16,12 @@ urlpatterns = [
     # Tipos de Impedimentos
     path("designacoes/impedimentos/", ImpedimentoSubstituicaoView.as_view(), name="impedimentos"),
     # Acesso as designacoes retrieve
-    path("designacoes/<int:pk>/", DesignacaoViewSet.as_view({'get': 'retrieve'}), name="designacao-detail"),
+    path(
+        "designacoes/<int:pk>/", 
+        DesignacaoViewSet.as_view({
+            'get': 'retrieve', 
+            'delete': 'destroy',
+            'patch': 'partial_update',
+        }), 
+        name="designacao-detail"),
 ]

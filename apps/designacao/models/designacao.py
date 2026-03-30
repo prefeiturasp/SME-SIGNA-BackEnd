@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class ImpedimentoSubstituicao(models.Model):
     codigo = models.CharField(max_length=50, unique=True)
@@ -34,8 +35,10 @@ class Designacao(models.Model):
     indicado_rf = models.CharField(max_length=8)
     indicado_vinculo = models.IntegerField()
     indicado_cargo_base = models.CharField(max_length=255)
+    indicado_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     indicado_lotacao = models.CharField(max_length=255)
     indicado_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
+    indicado_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
     indicado_local_exercicio = models.CharField(max_length=255)
     indicado_local_servico = models.CharField(max_length=255, blank=True, default="")
 
@@ -45,8 +48,10 @@ class Designacao(models.Model):
     titular_rf = models.CharField(max_length=8, blank=True, default="")
     titular_vinculo = models.IntegerField(null=True, blank=True)
     titular_cargo_base = models.CharField(max_length=255, blank=True, default="")
+    titular_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     titular_lotacao = models.CharField(max_length=255, blank=True, default="")
     titular_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
+    titular_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
     titular_local_exercicio = models.CharField(max_length=255, blank=True, default="")
     titular_local_servico = models.CharField(max_length=255, blank=True, default="")
 
@@ -76,6 +81,8 @@ class Designacao(models.Model):
 
     # --- Controle ---
     criado_em = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'designacao'
@@ -89,3 +96,8 @@ class Designacao(models.Model):
             for choice in cls.CargoVaga
         ]
     
+
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
