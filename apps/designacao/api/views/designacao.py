@@ -15,7 +15,7 @@ class DesignacaoPagination(PageNumberPagination):
     def paginate_queryset(self, queryset, request, view=None):
         no_pagination = request.query_params.get('no_pagination')=="true"
         if no_pagination:
-            return None
+            return None 
         return super().paginate_queryset(queryset, request, view)
 
 

@@ -1,10 +1,13 @@
 import pytest
 import secrets
 from rest_framework.test import APIClient
+from rest_framework.test import APIRequestFactory
+from rest_framework.request import Request
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from apps.designacao.models.designacao import Designacao
+from apps.designacao.api.views.designacao import DesignacaoPagination
 
 User = get_user_model()
 
@@ -19,6 +22,9 @@ def auth_client():
     client = APIClient()
     client.force_authenticate(user=user)
     return client
+
+
+
 
 
 @pytest.mark.django_db
@@ -129,12 +135,45 @@ def test_list_designacoes_com_filtro_sem_paginacao(auth_client):
         for i in range(20)
     ])
     url = reverse("designacao:designacoes")
-    response = auth_client.get(url, { "no_pagination": "true"})
+    response = auth_client.get(url, {"no_pagination": "true"})
 
-    assert response.status_code == 200    
+    assert response.status_code == 200
     assert len(response.data['results']) == 20
 
 
+
+@pytest.mark.django_db
+def test_paginate_queryset_retorna_none_quando_no_pagination_true(auth_client):
+    Designacao.objects.bulk_create([
+        Designacao(
+            dre_nome="DRE",
+            unidade_proponente="UP",
+            codigo_hierarquico="1",
+            indicado_nome_civil="Nome",
+            indicado_nome_servidor="Nome",
+            indicado_rf=str(i).zfill(8),
+            indicado_vinculo=1,
+            indicado_cargo_base="Cargo",
+            indicado_lotacao="Lotacao",
+            indicado_local_exercicio="Local",
+            numero_portaria="123",
+            ano_vigente="2024",
+            sei_numero="SEI",
+            data_inicio="2024-01-01",
+            tipo_vaga="VAGO"
+        )
+        for i in range(20)
+    ])
+
+    paginator = DesignacaoPagination()
+    url = reverse("designacao:designacoes")
+    request = Request(APIRequestFactory().get(url, {"no_pagination": "true"}))
+    queryset = Designacao.objects.all()
+
+    page = paginator.paginate_queryset(queryset, request)
+
+    assert page is None
+    
 
 @pytest.mark.django_db
 def test_destroy_designacao_soft_delete(auth_client):
