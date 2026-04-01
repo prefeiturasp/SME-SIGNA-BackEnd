@@ -107,6 +107,36 @@ def test_list_designacoes_com_filtro_nao_limita_queryset(auth_client):
 
 
 @pytest.mark.django_db
+def test_list_designacoes_com_filtro_sem_paginacao(auth_client):
+    Designacao.objects.bulk_create([
+        Designacao(
+            dre_nome="DRE",
+            unidade_proponente="UP",
+            codigo_hierarquico="1",
+            indicado_nome_civil="Nome",
+            indicado_nome_servidor="Nome",
+            indicado_rf=str(i).zfill(8),
+            indicado_vinculo=1,   
+            indicado_cargo_base="Cargo",
+            indicado_lotacao="Lotacao",
+            indicado_local_exercicio="Local",
+            numero_portaria="123",
+            ano_vigente="2024",
+            sei_numero="SEI",
+            data_inicio="2024-01-01",
+            tipo_vaga="VAGO"
+        )
+        for i in range(20)
+    ])
+    url = reverse("designacao:designacoes")
+    response = auth_client.get(url, { "no_pagination": "true"})
+
+    assert response.status_code == 200    
+    assert len(response.data['results']) == 20
+
+
+
+@pytest.mark.django_db
 def test_destroy_designacao_soft_delete(auth_client):
     designacao = Designacao.objects.create(
         dre_nome="DRE",

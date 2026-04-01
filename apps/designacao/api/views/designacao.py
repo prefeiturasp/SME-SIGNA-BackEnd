@@ -12,6 +12,11 @@ class DesignacaoPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
+    def paginate_queryset(self, queryset, request, view=None):
+        no_pagination = request.query_params.get('no_pagination')=="true"
+        if no_pagination:
+            return None
+        return super().paginate_queryset(queryset, request, view)
 
 
 class DesignacaoViewSet(
@@ -52,12 +57,23 @@ class DesignacaoViewSet(
 
         return queryset
     
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs):        
         base_queryset = self.get_queryset()
         filtered_queryset = self.filter_queryset(base_queryset)
 
         if getattr(self, '_limit_to_1000', False):
             filtered_queryset = filtered_queryset[:1000]
+
+        no_pagination = request.query_params.get('no_pagination')=="true"
+        if no_pagination:
+            serializer = self.get_serializer(filtered_queryset, many=True)
+            return Response({
+                "count": len(serializer.data),
+                "next": None,
+                "previous": None,
+                "results": serializer.data
+            })
+
 
         page = self.paginate_queryset(filtered_queryset)
 
@@ -67,6 +83,7 @@ class DesignacaoViewSet(
 
         serializer = self.get_serializer(filtered_queryset, many=True)
         return Response(serializer.data)
+
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
