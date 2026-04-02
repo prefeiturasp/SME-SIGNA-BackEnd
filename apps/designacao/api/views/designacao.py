@@ -67,12 +67,7 @@ class DesignacaoViewSet(
         no_pagination = request.query_params.get('no_pagination')=="true"
         if no_pagination:
             serializer = self.get_serializer(filtered_queryset, many=True)
-            return Response({
-                "count": len(serializer.data),
-                "next": None,
-                "previous": None,
-                "results": serializer.data
-            })
+            return Response(serializer.data)
 
 
         page = self.paginate_queryset(filtered_queryset)
