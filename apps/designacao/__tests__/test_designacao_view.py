@@ -138,7 +138,7 @@ def test_list_designacoes_com_filtro_sem_paginacao(auth_client):
     response = auth_client.get(url, {"no_pagination": "true"})
 
     assert response.status_code == 200
-    assert len(response.data.length()) == 20
+    assert len(response.data) == 20
 
 
 
