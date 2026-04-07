@@ -47,6 +47,12 @@ class DesignacaoServidorService:
             else cargo.get("funcaoAtividade")
         )
 
+        cd_cargo_sobreposto_funcao_atividade = (
+            cargo.get("cdCargoSobreposto")
+            if possui_cargo_sobreposto
+            else cargo.get("cdUeFuncaoAtividade")
+        )
+
         local_exercicio = (
             cargo.get("ueCargoSobreposto")
             if possui_cargo_sobreposto
@@ -59,9 +65,11 @@ class DesignacaoServidorService:
             "rf": usuario.get("codigoRf"),
             "vinculo": cargo.get("tipoVinculoCargoBase"),
 
+            "cd_cargo_base": cargo.get("cdCargoBase"),
             "cargo_base": cargo.get("cargoBase"),
             "lotacao": cargo.get("ueCargoBase"),
-
+            
+            "cd_cargo_sobreposto_funcao_atividade": cd_cargo_sobreposto_funcao_atividade,
             "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,
             "local_de_exercicio": local_exercicio,
 

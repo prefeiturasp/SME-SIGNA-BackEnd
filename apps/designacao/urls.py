@@ -24,4 +24,16 @@ urlpatterns = [
             'patch': 'partial_update',
         }), 
         name="designacao-detail"),
+
+    path(
+        "designacoes/cargos-base-pareados/",
+        DesignacaoViewSet.as_view({'get': 'cargos_base_pareados'}),
+        name="cargos-base-pareados"
+    ),
+
+    path(
+        "designacoes/cargos-sobrepostos-pareados/",
+        DesignacaoViewSet.as_view({'get': 'cargos_sobrepostos_pareados'}),
+        name="cargos-sobrepostos-pareados"
+    ),
 ]
