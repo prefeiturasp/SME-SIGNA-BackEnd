@@ -7,8 +7,8 @@ class DesignacaoFilter(django_filters.FilterSet):
     rf = django_filters.CharFilter(method='filter_rf')
     nome = django_filters.CharFilter(method='filter_nome')
     periodo = django_filters.DateFromToRangeFilter(field_name='data_inicio')
-    cargo_base = django_filters.CharFilter(method='filter_cargo_base')
-    cargo_sobreposto = django_filters.CharFilter(method='filter_cargo_sobreposto')
+    cargo_base = django_filters.NumberFilter(method='filter_cargo_base')
+    cargo_sobreposto = django_filters.NumberFilter(field_name='cargo_vaga')
     dre = django_filters.CharFilter(field_name='dre_nome', lookup_expr='icontains')
     unidade = django_filters.CharFilter(field_name='unidade_proponente', lookup_expr='icontains')
     ano = django_filters.CharFilter(field_name='ano_vigente', lookup_expr='exact')
@@ -33,14 +33,8 @@ class DesignacaoFilter(django_filters.FilterSet):
     
     def filter_cargo_base(self, queryset, name, value):
         return queryset.filter(
-            models.Q(indicado_cargo_base__icontains=value) |
-            models.Q(titular_cargo_base__icontains=value)
-        )
-
-    def filter_cargo_sobreposto(self, queryset, name, value):
-        return queryset.filter(
-            models.Q(indicado_cargo_sobreposto__icontains=value) |
-            models.Q(titular_cargo_sobreposto__icontains=value)
+            models.Q(indicado_codigo_cargo_base=value) |
+            models.Q(titular_codigo_cargo_base=value)
         )
     class Meta:
         model = Designacao

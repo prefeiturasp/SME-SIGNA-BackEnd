@@ -24,20 +24,21 @@ class DesignacaoFilterTest(TestCase):
             indicado_nome_servidor='João Silva',
             indicado_rf='1234567',
             indicado_vinculo=1,
-            indicado_cargo_base='Professor',
+            indicado_codigo_cargo_base=1,
             indicado_cargo_sobreposto='Diretor',
             indicado_lotacao='Unidade A',
             indicado_local_exercicio='Unidade A',
             titular_nome_servidor='Maria Souza',
             titular_rf='9999999',
-            titular_cargo_base='Professor',
+            titular_codigo_cargo_base=1,
             titular_cargo_sobreposto='Vice-Diretor',
             numero_portaria='001',
             ano_vigente='2024',
             sei_numero='SEI-001',
             data_inicio=datetime.date(2024, 1, 1),
             tipo_vaga=Designacao.TipoVaga.VAGO,
-            impedimento_substituicao=self.impedimento1
+            impedimento_substituicao=self.impedimento1,
+            cargo_vaga=1,
         )
 
         self.designacao2 = Designacao.objects.create(
@@ -48,20 +49,21 @@ class DesignacaoFilterTest(TestCase):
             indicado_nome_servidor='Carlos Lima',
             indicado_rf='0000000',
             indicado_vinculo=2,
-            indicado_cargo_base='Coordenador',
+            indicado_codigo_cargo_base=2,
             indicado_cargo_sobreposto='Supervisor',
             indicado_lotacao='Unidade B',
             indicado_local_exercicio='Unidade B',
             titular_nome_servidor='Ana Paula',
             titular_rf='7654321',
-            titular_cargo_base='Coordenador',
+            titular_codigo_cargo_base=2,
             titular_cargo_sobreposto='Diretor',
             numero_portaria='002',
             ano_vigente='2024',
             sei_numero='SEI-002',
             data_inicio=datetime.date(2024, 2, 1),
             tipo_vaga=Designacao.TipoVaga.DISPONIVEL,
-            impedimento_substituicao=self.impedimento2
+            impedimento_substituicao=self.impedimento2,
+            cargo_vaga=2,
         )
 
     def test_filter_rf(self):
@@ -75,12 +77,12 @@ class DesignacaoFilterTest(TestCase):
         self.assertNotIn(self.designacao1, f.qs)
 
     def test_filter_cargo_base(self):
-        f = DesignacaoFilter({'cargo_base': 'Professor'}, queryset=Designacao.objects.all())
+        f = DesignacaoFilter({'cargo_base': 1}, queryset=Designacao.objects.all())
         self.assertIn(self.designacao1, f.qs)
         self.assertNotIn(self.designacao2, f.qs)
 
     def test_filter_cargo_sobreposto(self):
-        f = DesignacaoFilter({'cargo_sobreposto': 'Supervisor'}, queryset=Designacao.objects.all())
+        f = DesignacaoFilter({'cargo_sobreposto': 2}, queryset=Designacao.objects.all())
         self.assertIn(self.designacao2, f.qs)
         self.assertNotIn(self.designacao1, f.qs)
 

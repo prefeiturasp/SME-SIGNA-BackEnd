@@ -38,11 +38,17 @@ class TestDesignacaoServidorService:
             {
                 "tipoVinculoCargoSobreposto": 1,
                 "ueCargoSobreposto": "Escola X",
-                "cargoBase": "Cargo Base",
-                "ueCargoBase": "Escola Base",
+                "cdCargoSobreposto": 123,
                 "cargoSobreposto": "Cargo Sobreposto",
-                "funcaoAtividade": "Função Teste",
-                "tipoVinculoCargoBase": 2
+
+                "cargoBase": "Cargo Base",
+                "cdCargoBase": 456,
+                "ueCargoBase": "Escola Base",
+                "tipoVinculoCargoBase": 2,
+
+                "funcaoAtividade": None,
+                "cdUeFuncaoAtividade": None,
+                "ueFuncaoAtividade": None,
             }
         ]
 
@@ -59,10 +65,15 @@ class TestDesignacaoServidorService:
             "nome_civil": "João da Silva",
             "rf": "0000000",
             "vinculo": 2,
+
+            "cd_cargo_base": 456,
             "cargo_base": "Cargo Base",
             "lotacao": "Escola Base",
+
+            "cd_cargo_sobreposto_funcao_atividade": 123,
             "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
             "local_de_exercicio": "Escola X",
+
             "laudo_medico": "Indisponível",
             "local_de_servico": "Indisponível"
         }
