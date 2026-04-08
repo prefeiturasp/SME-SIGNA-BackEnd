@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
+
 
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
@@ -9,6 +11,7 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 
 
 class DesignacaoSerializer(serializers.ModelSerializer):
+    cessacao = CessacaoSerializer(read_only=True)
     impedimento_display = serializers.SerializerMethodField()
 
     impedimento_substituicao_detail = ImpedimentoSubstituicaoSerializer(
