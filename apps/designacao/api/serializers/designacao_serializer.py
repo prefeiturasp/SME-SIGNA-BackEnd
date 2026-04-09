@@ -11,7 +11,7 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 
 
 class DesignacaoSerializer(serializers.ModelSerializer):
-    cessacao = CessacaoSerializer(read_only=True)
+    cessacao = serializers.SerializerMethodField()
     impedimento_display = serializers.SerializerMethodField()
 
     impedimento_substituicao_detail = ImpedimentoSubstituicaoSerializer(
@@ -31,6 +31,15 @@ class DesignacaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Designacao
         fields = '__all__'
+
+    def get_cessacao(self, obj):
+        try:
+            cessacao = obj.cessacao
+            if cessacao and not cessacao.is_deleted:
+                return CessacaoSerializer(cessacao).data
+        except Exception: 
+            pass
+        return None
 
     def get_impedimento_display(self, obj):
         if obj.impedimento_substituicao:
