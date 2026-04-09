@@ -4,6 +4,7 @@ from django.test import TestCase
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
+from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
 
 
 class CessacaoSerializerTest(TestCase):
@@ -132,3 +133,33 @@ class CessacaoSerializerTest(TestCase):
 
         assert not serializer.is_valid()
         assert "designacao" in serializer.errors
+
+
+    @pytest.mark.django_db
+    def test_designacao_nao_deve_exibir_cessacao_com_soft_delete(self):
+        """
+        Verifica se ao marcar uma cessação como is_deleted=True,
+        ela para de aparecer na serialização da Designação.
+        """
+        designacao = self._criar_designacao()
+
+        cessacao = Cessacao.objects.create(
+            designacao=designacao,
+            numero_portaria="12345",
+            ano_vigente="2024",
+            sei_numero="999999",
+            data_designacao="2024-03-10"
+        )
+
+        serializer_antes = DesignacaoSerializer(instance=designacao)
+        assert serializer_antes.data['cessacao'] is not None
+        assert serializer_antes.data['cessacao']['id'] == cessacao.id
+
+        cessacao.delete()
+        
+        designacao.refresh_from_db()
+
+        serializer_depois = DesignacaoSerializer(instance=designacao)
+        
+        assert serializer_depois.data['cessacao'] is None, \
+            "A cessação deveria ser nula no serializer após o soft delete."
