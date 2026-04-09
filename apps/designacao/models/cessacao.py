@@ -6,7 +6,7 @@ class Cessacao(models.Model):
 
     designacao = models.OneToOneField(
         'Designacao',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='cessacao'
     )
 
