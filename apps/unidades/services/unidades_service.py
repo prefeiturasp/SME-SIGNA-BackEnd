@@ -4,6 +4,8 @@ import environ
 from typing import Dict, List, Optional
 from django.conf import settings
 
+from apps.unidades.constants.utils import SUPERVISAO_ESCOLAR_DRES_MAP
+
 env = environ.Env()
 logger = logging.getLogger(__name__)
 
@@ -110,7 +112,8 @@ class DREIntegracaoService:
 
 class UnidadeIntegracaoService:
     """Serviço para busca de unidades no sistema EOL"""
-    
+    ERRO_CODIGO_DRE_INVALIDO = "É necessário informar o código da DRE (dre_codigo)."
+    ERRO_NAO_AUTORIZADO = "Não autorizado a acessar o sistema EOL (verifique x-api-eol-key)."
     DEFAULT_HEADERS = {
         'Content-Type': 'application/json',
         'x-api-eol-key': env('SME_INTEGRACAO_TOKEN', default='')
@@ -127,7 +130,10 @@ class UnidadeIntegracaoService:
         
         if not dre_codigo_str:
             logger.warning("dre_codigo não informado ou inválido para consulta de unidades")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            raise ValueError(cls.ERRO_CODIGO_DRE_INVALIDO)
+
+
+
 
         base_url = env("SME_INTEGRACAO_URL", default="")
         # Usa a versão limpa (string) na URL
@@ -144,7 +150,7 @@ class UnidadeIntegracaoService:
 
             if response.status_code == 401:
                 logger.error("Não autorizado ao buscar UEs da DRE '%s' no EOL", dre_codigo)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+                raise PermissionError(cls.ERRO_NAO_AUTORIZADO)
 
             if response.status_code == 404:
                 logger.warning("DRE não encontrada ao buscar UEs. dre_codigo='%s'", dre_codigo)
@@ -206,7 +212,8 @@ class UnidadeIntegracaoService:
 
         if not dre_codigo_str:
             logger.warning("dre_codigo não informado ou inválido para consulta de escolas")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            raise ValueError(cls.ERRO_CODIGO_DRE_INVALIDO)
+
 
         base_url = env("SME_INTEGRACAO_URL", default="")
         url = f"{base_url}/DREs/{dre_codigo_str}/escola"
@@ -222,7 +229,7 @@ class UnidadeIntegracaoService:
 
             if response.status_code == 401:
                 logger.error("Não autorizado ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+                raise PermissionError(cls.ERRO_NAO_AUTORIZADO)
 
             if response.status_code == 404:
                 logger.warning("DRE não encontrada ao buscar Escolas. dre_codigo='%s'", dre_codigo_str)
@@ -274,4 +281,93 @@ class UnidadeIntegracaoService:
             )
             raise EOLIntegrationError(
                 f"Erro inesperado ao buscar Escolas: {str(e)}"
+            )
+    @classmethod
+    def get_unidade_supervisao_by_dre(cls, dre_codigo: str | int) -> dict:
+        """
+        Busca todas as Unidade de supervisão de uma DRE pelo código da DRE e retorno com codigo do tipo de escola.
+        Endpoint: /api/escolas/dados/{codigoEscolaEol}
+        """
+
+        dre_codigo_str = str(dre_codigo or "").strip()
+        
+        codigo_escola_eol = SUPERVISAO_ESCOLAR_DRES_MAP[dre_codigo_str]
+
+        if not dre_codigo_str:
+            logger.warning("dre_codigo não informado ou inválido para consulta de escolas")
+            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+
+        if not codigo_escola_eol:
+            logger.warning("codigo_escola_eol não encontrado para a DRE '%s'", dre_codigo_str)
+            raise ValueError("É necessário informar o código da DRE (dre_codigo) correspondente a unidade de supervisão.")
+
+        base_url = env("SME_INTEGRACAO_URL", default="")
+        url = f"{base_url}/escolas/dados/{codigo_escola_eol}"
+
+        try:
+            logger.info("Buscando Unidades de supervisão da DRE '%s' no EOL", dre_codigo_str)
+
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.DEFAULT_TIMEOUT,
+            )
+
+            if response.status_code == 401:
+                logger.error("Não autorizado ao buscar Unidades de supervisão da DRE '%s' no EOL", dre_codigo_str)
+                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+
+            if response.status_code == 404:
+                logger.warning("DRE não encontrada ao buscar Unidades de supervisão. dre_codigo='%s'", dre_codigo_str)
+                raise LookupError(f"DRE não encontrada: {dre_codigo_str}")
+
+            if response.status_code != 200:
+                logger.error(
+                    "Erro ao buscar Unidades de supervisão da DRE '%s'. Status=%s Body=%s",
+                    dre_codigo_str, response.status_code, response.text
+                )
+                raise EOLIntegrationError(
+                    f"Erro na consulta de Unidades de supervisão por DRE: {response.status_code}"
+                )
+
+            escolas_data = response.json()
+ 
+
+            logger.info("Unidades de supervisão encontradas para DRE '%s': %d", dre_codigo_str, len(escolas_data))
+            return {
+                "codigoEscola": escolas_data.get('codigo'),
+                "nomeEscola": escolas_data.get('nome'),
+                "codigoDRE": escolas_data.get('codigoDRE'),
+                "tipoEscola": escolas_data.get('tipoUnidade'),
+                "siglaTipoEscola": 'UA',
+                "nomeDRE": escolas_data.get('nomeDRE'),
+                "siglaDRE": escolas_data.get('siglaDRE'),
+                "codigoSubprefeitura": None,
+                "nomeSubprefeitura": None
+            }
+ 
+
+        except requests.exceptions.Timeout:
+            logger.error("Timeout ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
+            raise EOLTimeoutError("Tempo limite excedido ao consultar Escolas por DRE.")
+
+        except requests.exceptions.RequestException as e:
+            logger.error(
+                "Erro de comunicação com EOL ao buscar Escolas da DRE '%s': %s",
+                dre_codigo_str, str(e)
+            )
+            raise EOLCommunicationError(
+                f"Erro de comunicação com sistema de escolas: {str(e)}"
+            )
+
+        except (ValueError, PermissionError, LookupError, EOLIntegrationError):
+            raise
+
+        except Exception as e:
+            logger.error(
+                "Erro inesperado ao buscar Unidades de supervisão da DRE '%s': %s",
+                dre_codigo_str, str(e)
+            )
+            raise EOLIntegrationError(
+                f"Erro inesperado ao buscar Unidades de supervisão: {str(e)}"
             )
