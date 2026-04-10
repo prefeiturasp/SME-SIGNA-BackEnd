@@ -36,6 +36,7 @@ class UnidadeViewSet(ViewSet):
             return self._listar_dres()
  
         if tipo == "UE":
+
             return self._listar_ues(codigo_dre)
  
         if tipo is None:
@@ -82,10 +83,25 @@ class UnidadeViewSet(ViewSet):
                 "É necessário informar o código da DRE no parâmetro 'dre'.",
                 status.HTTP_400_BAD_REQUEST
             )
- 
+        
+        unidade_supervisao = None
+        try:         
+            unidade_supervisao = UnidadeIntegracaoService.get_unidade_supervisao_by_dre(codigo_dre)
+            logger.info("Unidades de supervisão encontradas para DRE '%s'", codigo_dre)
+        except Exception as e:
+            logger.error("Erro ao buscar Unidade de supervisão da DRE '%s': %s", codigo_dre, str(e))
+            
+            
+        
         try:
+
             unidades = UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre)
+            
             logger.info("UEs encontradas para DRE '%s': %d", codigo_dre, len(unidades))
+
+            if unidade_supervisao:
+                unidades.append(unidade_supervisao)
+
             return Response(unidades)
             
         except ValueError as e:
