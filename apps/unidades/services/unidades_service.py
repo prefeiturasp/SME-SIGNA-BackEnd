@@ -112,7 +112,8 @@ class DREIntegracaoService:
 
 class UnidadeIntegracaoService:
     """Serviço para busca de unidades no sistema EOL"""
-    
+    ERRO_CODIGO_DRE_INVALIDO = "É necessário informar o código da DRE (dre_codigo)."
+    ERRO_NAO_AUTORIZADO = "Não autorizado a acessar o sistema EOL (verifique x-api-eol-key)."
     DEFAULT_HEADERS = {
         'Content-Type': 'application/json',
         'x-api-eol-key': env('SME_INTEGRACAO_TOKEN', default='')
@@ -129,7 +130,10 @@ class UnidadeIntegracaoService:
         
         if not dre_codigo_str:
             logger.warning("dre_codigo não informado ou inválido para consulta de unidades")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            raise ValueError(cls.ERRO_CODIGO_DRE_INVALIDO)
+
+
+
 
         base_url = env("SME_INTEGRACAO_URL", default="")
         # Usa a versão limpa (string) na URL
@@ -146,7 +150,7 @@ class UnidadeIntegracaoService:
 
             if response.status_code == 401:
                 logger.error("Não autorizado ao buscar UEs da DRE '%s' no EOL", dre_codigo)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+                raise PermissionError(cls.ERRO_NAO_AUTORIZADO)
 
             if response.status_code == 404:
                 logger.warning("DRE não encontrada ao buscar UEs. dre_codigo='%s'", dre_codigo)
@@ -208,7 +212,8 @@ class UnidadeIntegracaoService:
 
         if not dre_codigo_str:
             logger.warning("dre_codigo não informado ou inválido para consulta de escolas")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            raise ValueError(cls.ERRO_CODIGO_DRE_INVALIDO)
+
 
         base_url = env("SME_INTEGRACAO_URL", default="")
         url = f"{base_url}/DREs/{dre_codigo_str}/escola"
@@ -224,7 +229,7 @@ class UnidadeIntegracaoService:
 
             if response.status_code == 401:
                 logger.error("Não autorizado ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+                raise PermissionError(cls.ERRO_NAO_AUTORIZADO)
 
             if response.status_code == 404:
                 logger.warning("DRE não encontrada ao buscar Escolas. dre_codigo='%s'", dre_codigo_str)
@@ -278,7 +283,7 @@ class UnidadeIntegracaoService:
                 f"Erro inesperado ao buscar Escolas: {str(e)}"
             )
     @classmethod
-    def get_unidade_supervisao_by_dre(cls, dre_codigo: str | int) -> list[dict]:
+    def get_unidade_supervisao_by_dre(cls, dre_codigo: str | int) -> dict:
         """
         Busca todas as Unidade de supervisão de uma DRE pelo código da DRE e retorno com codigo do tipo de escola.
         Endpoint: /api/escolas/dados/{codigoEscolaEol}
