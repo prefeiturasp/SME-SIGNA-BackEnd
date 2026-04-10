@@ -43,9 +43,6 @@ class DesignacaoViewSet(
 
     ordering_fields = ['criado_em', 'data_inicio', 'data_fim', 'ano_vigente']
 
-    # -------------------------
-    # Helpers
-    # -------------------------
 
     def _is_no_pagination(self):
         return self.request.query_params.get('no_pagination', '').lower() == 'true'
@@ -65,7 +62,7 @@ class DesignacaoViewSet(
         return (
             Designacao.objects
             .filter(is_deleted=False)
-            .select_related('impedimento_substituicao')
+            .select_related('impedimento_substituicao', 'cessacao')
             .order_by('-criado_em')
         )
 
