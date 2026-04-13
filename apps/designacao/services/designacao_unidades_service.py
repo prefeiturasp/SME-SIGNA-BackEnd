@@ -26,6 +26,21 @@ def normalizar(texto: str) -> str:
 
 
 class CicloService:
+    CICLOS_MAPEADOS = {
+        "alfabetizacao": "cicloAlfabetizacao",
+        "interdisciplinar": "cicloInterdisciplinar",
+        "autoral": "cicloAutoral",
+        "basica": "cicloBasicoEja",
+        "complementar": "cicloComplementarEja",
+        "final": "cicloFinalEja",
+        "bercario_i": "cicloBercarioI",
+        "bercario_ii": "cicloBercarioII",
+        "mini_grupo_i": "cicloMiniGrupoI",
+        "mini_grupo_ii": "cicloMiniGrupoII",
+        "infantil": "cicloInfantil",
+        "sem_ciclo": "semCiclo",
+    }
+
     @staticmethod
     def extrair_numero(nome: str) -> int | None:
         match = re.search(r"\d+", nome or "")
@@ -107,35 +122,20 @@ class CicloService:
 
         return "sem_ciclo"
 
-    @staticmethod
-    def mapear_nome_ciclo(ciclo: str) -> str:
-        mapa = {
-            "alfabetizacao": "cicloAlfabetizacao",
-            "interdisciplinar": "cicloInterdisciplinar",
-            "autoral": "cicloAutoral",
-            "basica": "cicloBasicoEja",
-            "complementar": "cicloComplementarEja",
-            "final": "cicloFinalEja",
-            "bercario_i": "cicloBercarioI",
-            "bercario_ii": "cicloBercarioII",
-            "mini_grupo_i": "cicloMiniGrupoI",
-            "mini_grupo_ii": "cicloMiniGrupoII",
-            "infantil": "cicloInfantil",
-            "sem_ciclo": "semCiclo",
-        }
+    @classmethod
+    def mapear_nome_ciclo(cls, ciclo: str) -> str:
+        return cls.CICLOS_MAPEADOS.get(ciclo, "semCiclo")
 
-        return mapa.get(ciclo, "semCiclo")
+    @classmethod
+    def listar_ciclos_saida(cls) -> list[str]:
+        return list(set(cls.CICLOS_MAPEADOS.values()))
 
 
 class TurmaService:
     @staticmethod
     def estrutura_turnos() -> Dict[str, Dict[str, Any]]:
-        base = {
-            "cicloAlfabetizacao": 0,
-            "cicloInterdisciplinar": 0,
-            "cicloAutoral": 0,
-            "semCiclo": 0,
-        }
+        ciclos = CicloService.listar_ciclos_saida()
+        base = dict.fromkeys(ciclos, 0)
 
         return {
             k: {"turno": v, "total": 0, **base}
@@ -170,6 +170,11 @@ class TurmaService:
 
             turno = turnos[turno_key]
             turno["total"] += 1
+
+            if ciclo_key not in turno:
+                logger.warning("Ciclo não mapeado: %s", ciclo_key)
+                turno[ciclo_key] = 0
+
             turno[ciclo_key] += 1
 
         return {

@@ -175,6 +175,29 @@ class TestDesignacaoUnidadeService:
 
         assert diretor["nomeCargo"] == "DIRETOR DE ESCOLA"
 
+    @patch("apps.designacao.services.designacao_unidades_service.CicloService.mapear_nome_ciclo")
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
+    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    def test_calcular_turmas_ciclo_nao_mapeado(
+        self,
+        mock_buscar_turmas,
+        mock_dados_turma,
+        mock_mapear_ciclo
+    ):
+        # força um ciclo que NÃO existe na estrutura
+        mock_mapear_ciclo.return_value = "cicloInexistente"
+
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
+        ]
+
+        mock_dados_turma.return_value = {"tipoTurno": 1}
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        turno = next(t for t in resultado["turnos"] if t["total"] == 1)
+
+        assert turno["cicloInexistente"] == 1
 
 class TestCicloService:
 
