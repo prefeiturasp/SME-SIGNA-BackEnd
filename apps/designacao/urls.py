@@ -3,6 +3,7 @@ from apps.designacao.api.views.designacao_servidor_view import DesignacaoServido
 from apps.designacao.api.views.designacao_unidades_view import DesignacaoUnidadeView, DesignacaoUnidadeCargosView
 from apps.designacao.api.views.designacao import DesignacaoViewSet
 from apps.designacao.api.views.designacao_impedimentos_view import ImpedimentoSubstituicaoView
+from apps.designacao.api.views.cessacao_view import CessacaoViewSet
 
 
 app_name = "designacao"
@@ -24,4 +25,32 @@ urlpatterns = [
             'patch': 'partial_update',
         }), 
         name="designacao-detail"),
-]
+
+    path(
+        "designacoes/cargos-base-pareados/",
+        DesignacaoViewSet.as_view({'get': 'cargos_base_pareados'}),
+        name="cargos-base-pareados"
+    ),
+
+    path(
+        "designacoes/cargos-sobrepostos-pareados/",
+        DesignacaoViewSet.as_view({'get': 'cargos_sobrepostos_pareados'}),
+        name="cargos-sobrepostos-pareados"
+    ),
+    # Acesso às cessações (list e create)
+    path(
+        "cessacoes/",
+        CessacaoViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name="cessacoes"
+    ),
+
+    # Acesso a uma cessação específica (retrieve e delete)
+    path(
+        "cessacoes/<int:pk>/",
+        CessacaoViewSet.as_view({
+            'get': 'retrieve',
+            'delete': 'destroy',
+        }),
+        name="cessacao-detail"
+    ),
+    ]

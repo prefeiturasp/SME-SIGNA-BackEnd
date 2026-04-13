@@ -3,275 +3,234 @@ import requests
 import environ
 from typing import Dict, List, Optional
 from django.conf import settings
+from apps.unidades.constants.utils import SUPERVISAO_ESCOLAR_DRES_MAP
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
 
+MSG_DRE_OBRIGATORIO = "É necessário informar o código da DRE."
+MSG_RESPOSTA_INVALIDA_LISTA = "Resposta inesperada da API (esperado uma lista)."
+MSG_DRE_INVALIDO = "dre_codigo não informado ou inválido"
+
+ENV_URL = "SME_INTEGRACAO_URL"
+
+ENDPOINT_DRES = "/DREs"
+ENDPOINT_UNIDADES = "/DREs/{}/unidades"
+ENDPOINT_ESCOLAS = "/DREs/{}/escola"
+ENDPOINT_CODIGO_INTEGRACAO = "/DREs/{}/unidades/codigo-integracao"
+
 
 # Exceções customizadas
 class EOLIntegrationError(Exception):
-    """Erro base para integrações com EOL"""
     pass
 
 
 class EOLTimeoutError(EOLIntegrationError):
-    """Erro de timeout na comunicação com EOL"""
     pass
 
 
 class EOLCommunicationError(EOLIntegrationError):
-    """Erro de comunicação com EOL"""
     pass
 
 
 class EOLUnexpectedResponseError(EOLIntegrationError):
-    """Resposta inesperada da API EOL"""
     pass
 
 
-class DREIntegracaoService:
-    """Serviço para busca de unidades no sistema EOL"""
-    
+class BaseEOLService:
     DEFAULT_HEADERS = {
-        'Content-Type': 'application/json',
-        'x-api-eol-key': env('SME_INTEGRACAO_TOKEN', default='')
+        "Content-Type": "application/json",
+        "x-api-eol-key": env("SME_INTEGRACAO_TOKEN", default=""),
     }
     DEFAULT_TIMEOUT = 30
-    
+
     @classmethod
-    def get_dres(cls) -> list[dict]:
-        """Busca todas as DREs do sistema EOL"""
-        
-        url = f"{env('SME_INTEGRACAO_URL', default='')}/DREs"
-        
+    def _get(cls, url: str, context: str) -> list | dict:
         try:
-            logger.info("Buscando DREs no EOL")
-            
+            logger.info("Iniciando requisição ao EOL: %s", context)
+
             response = requests.get(
                 url,
                 headers=cls.DEFAULT_HEADERS,
-                timeout=cls.DEFAULT_TIMEOUT
+                timeout=cls.DEFAULT_TIMEOUT,
             )
-            
+
             if response.status_code == 401:
-                logger.error("Não autorizado ao buscar DREs no EOL")
-                raise PermissionError("Não autorizado a acessar o sistema EOL")
-            
+                logger.error("Não autorizado: %s", context)
+                raise PermissionError("Não autorizado ao sistema EOL")
+
+            if response.status_code == 404:
+                logger.warning("Recurso não encontrado: %s", context)
+                raise LookupError(f"Recurso não encontrado: {context}")
+
             if response.status_code != 200:
-                logger.error("Erro ao buscar DREs no EOL. Status: %s", response.status_code)
-                raise EOLIntegrationError(f"Erro na consulta de DREs: {response.status_code}")
-            
-            dres_data = response.json()
-            logger.info("DREs encontradas: %s", len(dres_data))
-            
-            return dres_data
-            
+                logger.error(
+                    "Erro na requisição (%s). Status=%s Body=%s",
+                    context,
+                    response.status_code,
+                    response.text,
+                )
+                raise EOLIntegrationError(
+                    f"Erro na integração com EOL: {response.status_code}"
+                )
+
+            data = response.json()
+
+            logger.info("Sucesso na requisição: %s", context)
+            return data
+
         except requests.exceptions.Timeout:
-            logger.error("Timeout ao buscar DREs no EOL")
-            raise EOLTimeoutError("Tempo limite excedido ao consultar DREs")
-        
+            logger.error("Timeout: %s", context)
+            raise EOLTimeoutError("Tempo limite excedido")
+
         except requests.exceptions.RequestException as e:
-            logger.error("Erro de comunicação com EOL: %s", str(e))
-            raise EOLCommunicationError(f"Erro de comunicação com sistema de DREs: {str(e)}")
-        
-        except PermissionError:
-            raise
-        
-        except EOLIntegrationError:
-            raise
-        
-        except Exception as e:
-            logger.error("Erro inesperado ao buscar DREs: %s", str(e))
-            raise EOLIntegrationError(f"Erro inesperado ao buscar DREs: {str(e)}")
-    
+            logger.error("Erro de comunicação (%s): %s", context, str(e))
+            raise EOLCommunicationError(str(e))
+
+
+class DREIntegracaoService(BaseEOLService):
+    @classmethod
+    def get_dres(cls) -> list[dict]:
+        base_url = env(ENV_URL, default="")
+        url = f"{base_url}{ENDPOINT_DRES}"
+
+        data = cls._get(url, "Listagem de DREs")
+
+        if not isinstance(data, list):
+            raise EOLUnexpectedResponseError(MSG_RESPOSTA_INVALIDA_LISTA)
+
+        logger.info("DREs encontradas: %s", len(data))
+        return data
+
     @classmethod
     def get_dre_by_codigo(cls, codigo_dre: str) -> dict | None:
-        """Busca uma DRE específica pelo código"""
-        
         try:
             dres = cls.get_dres()
-            
+
             for dre in dres:
-                if dre.get('codigoDRE') == codigo_dre:
-                    logger.info("DRE encontrada: %s", dre.get('nomeDRE'))
+                if dre.get("codigoDRE") == codigo_dre:
+                    logger.info("DRE encontrada: %s", dre.get("nomeDRE"))
                     return dre
-            
+
             logger.warning("DRE não encontrada com código: %s", codigo_dre)
             return None
-            
+
         except PermissionError:
             logger.error("Erro ao buscar DRE por código: %s", codigo_dre)
             raise
-        
+
         except EOLIntegrationError:
             logger.error("Erro ao buscar DRE por código: %s", codigo_dre)
             raise
 
 
-class UnidadeIntegracaoService:
-    """Serviço para busca de unidades no sistema EOL"""
-    
-    DEFAULT_HEADERS = {
-        'Content-Type': 'application/json',
-        'x-api-eol-key': env('SME_INTEGRACAO_TOKEN', default='')
-    }
+class UnidadeIntegracaoService(BaseEOLService):
     DEFAULT_TIMEOUT = 50
 
     @classmethod
     def get_unidades_by_dre(cls, dre_codigo: str | int) -> list[dict]:
-        """
-        Busca todas as Unidades (UEs) de uma DRE pelo código da DRE.
-        """
-        # Normaliza: converte para string e remove espaços. Se for None, vira string vazia.
         dre_codigo_str = str(dre_codigo or "").strip()
-        
+
         if not dre_codigo_str:
-            logger.warning("dre_codigo não informado ou inválido para consulta de unidades")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            logger.warning("dre_codigo não informado ou inválido")
+            raise ValueError(MSG_DRE_OBRIGATORIO)
 
-        base_url = env("SME_INTEGRACAO_URL", default="")
-        # Usa a versão limpa (string) na URL
-        url = f"{base_url}/DREs/{dre_codigo_str}/unidades"
+        base_url = env(ENV_URL, default="")
+        url = f"{base_url}{ENDPOINT_UNIDADES.format(dre_codigo_str)}"
 
-        try:
-            logger.info("Buscando UEs da DRE '%s' no EOL", dre_codigo_str)
+        data = cls._get(url, f"UEs da DRE {dre_codigo_str}")
 
-            response = requests.get(
-                url,
-                headers=cls.DEFAULT_HEADERS,
-                timeout=cls.DEFAULT_TIMEOUT,
-            )
+        if not isinstance(data, list):
+            raise EOLUnexpectedResponseError(MSG_RESPOSTA_INVALIDA_LISTA)
 
-            if response.status_code == 401:
-                logger.error("Não autorizado ao buscar UEs da DRE '%s' no EOL", dre_codigo)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
-
-            if response.status_code == 404:
-                logger.warning("DRE não encontrada ao buscar UEs. dre_codigo='%s'", dre_codigo)
-                raise LookupError(f"DRE não encontrada: {dre_codigo}")
-
-            if response.status_code != 200:
-                logger.error(
-                    "Erro ao buscar UEs da DRE '%s'. Status=%s Body=%s",
-                    dre_codigo, response.status_code, response.text
-                )
-                raise EOLIntegrationError(f"Erro na consulta de UEs por DRE: {response.status_code}")
-
-            unidades_data = response.json()
-
-            if not isinstance(unidades_data, list):
-                logger.error(
-                    "Resposta inesperada ao buscar UEs da DRE '%s'. Tipo=%s",
-                    dre_codigo, type(unidades_data).__name__
-                )
-                raise EOLUnexpectedResponseError("Resposta inesperada da API ao consultar UEs por DRE (esperado uma lista).")
-
-            logger.info("UEs encontradas para DRE '%s': %d", dre_codigo, len(unidades_data))
-            return unidades_data
-
-        except requests.exceptions.Timeout:
-            logger.error("Timeout ao buscar UEs da DRE '%s' no EOL", dre_codigo)
-            raise EOLTimeoutError("Tempo limite excedido ao consultar UEs por DRE.")
-
-        except requests.exceptions.RequestException as e:
-            logger.error("Erro de comunicação com EOL ao buscar UEs da DRE '%s': %s", dre_codigo, str(e))
-            raise EOLCommunicationError(f"Erro de comunicação com sistema de unidades: {str(e)}")
-
-        except ValueError:
-            raise
-        
-        except PermissionError:
-            raise
-        
-        except LookupError:
-            raise
-        
-        except EOLIntegrationError:
-            raise
-
-        except Exception as e:
-            logger.error("Erro inesperado ao buscar UEs da DRE '%s': %s", dre_codigo, str(e))
-            raise EOLIntegrationError(f"Erro inesperado ao buscar UEs: {str(e)}")
-        
-
+        logger.info("UEs encontradas: %s", len(data))
+        return data
 
     @classmethod
     def get_unidades_by_dre_com_tipo_unidade(cls, dre_codigo: str | int) -> list[dict]:
-        """
-        Busca todas as Escolas de uma DRE pelo código da DRE e retorno com codigo do tipo de escola.
-        Endpoint: /api/DREs/{codigoEolDRE}/escola
-        """
-
         dre_codigo_str = str(dre_codigo or "").strip()
 
         if not dre_codigo_str:
-            logger.warning("dre_codigo não informado ou inválido para consulta de escolas")
-            raise ValueError("É necessário informar o código da DRE (dre_codigo).")
+            logger.warning(MSG_DRE_INVALIDO)
+            raise ValueError(MSG_DRE_OBRIGATORIO)
 
-        base_url = env("SME_INTEGRACAO_URL", default="")
-        url = f"{base_url}/DREs/{dre_codigo_str}/escola"
+        base_url = env(ENV_URL, default="")
+        url = f"{base_url}{ENDPOINT_ESCOLAS.format(dre_codigo_str)}"
 
-        try:
-            logger.info("Buscando Escolas da DRE '%s' no EOL", dre_codigo_str)
+        data = cls._get(url, f"Escolas da DRE {dre_codigo_str}")
 
-            response = requests.get(
-                url,
-                headers=cls.DEFAULT_HEADERS,
-                timeout=cls.DEFAULT_TIMEOUT,
+        if not isinstance(data, list):
+            raise EOLUnexpectedResponseError(MSG_RESPOSTA_INVALIDA_LISTA)
+
+        logger.info("Escolas encontradas: %s", len(data))
+        return data
+
+    @classmethod
+    def get_unidades_codigo_integracao_by_dre(cls, dre_codigo: str | int) -> list[dict]:
+        dre_codigo_str = str(dre_codigo or "").strip()
+
+        if not dre_codigo_str:
+            logger.warning(MSG_DRE_INVALIDO)
+            raise ValueError(MSG_DRE_OBRIGATORIO)
+
+        base_url = env(ENV_URL, default="")
+        url = f"{base_url}{ENDPOINT_CODIGO_INTEGRACAO.format(dre_codigo_str)}"
+
+        data = cls._get(url, f"Códigos integração da DRE {dre_codigo_str}")
+
+        if not isinstance(data, list):
+            raise EOLUnexpectedResponseError(MSG_RESPOSTA_INVALIDA_LISTA)
+
+        logger.info("Códigos encontrados: %s", len(data))
+        return data
+
+    @classmethod
+    def get_unidade_supervisao_by_dre(cls, dre_codigo: str | int) -> dict:
+        dre_codigo_str = str(dre_codigo or "").strip()
+
+        if not dre_codigo_str:
+            logger.warning(MSG_DRE_INVALIDO)
+            raise ValueError(MSG_DRE_OBRIGATORIO)
+
+        codigo_escola_eol = SUPERVISAO_ESCOLAR_DRES_MAP.get(dre_codigo_str)
+
+        if not codigo_escola_eol:
+            logger.warning(
+                "codigo_escola_eol não encontrado para a DRE '%s'",
+                dre_codigo_str
+            )
+            raise ValueError(
+                "DRE não possui unidade de supervisão configurada."
             )
 
-            if response.status_code == 401:
-                logger.error("Não autorizado ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
-                raise PermissionError("Não autorizado a acessar o sistema EOL (verifique x-api-eol-key).")
+        base_url = env(ENV_URL, default="")
+        url = f"{base_url}/escolas/dados/{codigo_escola_eol}"
 
-            if response.status_code == 404:
-                logger.warning("DRE não encontrada ao buscar Escolas. dre_codigo='%s'", dre_codigo_str)
-                raise LookupError(f"DRE não encontrada: {dre_codigo_str}")
+        data = cls._get(url, f"Unidade de supervisão da DRE {dre_codigo_str}")
 
-            if response.status_code != 200:
-                logger.error(
-                    "Erro ao buscar Escolas da DRE '%s'. Status=%s Body=%s",
-                    dre_codigo_str, response.status_code, response.text
-                )
-                raise EOLIntegrationError(
-                    f"Erro na consulta de Escolas por DRE: {response.status_code}"
-                )
-
-            escolas_data = response.json()
-
-            if not isinstance(escolas_data, list):
-                logger.error(
-                    "Resposta inesperada ao buscar Escolas da DRE '%s'. Tipo=%s",
-                    dre_codigo_str, type(escolas_data).__name__
-                )
-                raise EOLUnexpectedResponseError(
-                    "Resposta inesperada da API ao consultar Escolas por DRE (esperado uma lista)."
-                )
-
-            logger.info("Escolas encontradas para DRE '%s': %d", dre_codigo_str, len(escolas_data))
-            return escolas_data
-
-        except requests.exceptions.Timeout:
-            logger.error("Timeout ao buscar Escolas da DRE '%s' no EOL", dre_codigo_str)
-            raise EOLTimeoutError("Tempo limite excedido ao consultar Escolas por DRE.")
-
-        except requests.exceptions.RequestException as e:
-            logger.error(
-                "Erro de comunicação com EOL ao buscar Escolas da DRE '%s': %s",
-                dre_codigo_str, str(e)
-            )
-            raise EOLCommunicationError(
-                f"Erro de comunicação com sistema de escolas: {str(e)}"
+        if not isinstance(data, dict):
+            raise EOLUnexpectedResponseError(
+                "Resposta inesperada da API (esperado um objeto)."
             )
 
-        except (ValueError, PermissionError, LookupError, EOLIntegrationError):
-            raise
+        logger.info(
+            "Unidade de supervisão encontrada para DRE '%s'",
+            dre_codigo_str
+        )
 
-        except Exception as e:
-            logger.error(
-                "Erro inesperado ao buscar Escolas da DRE '%s': %s",
-                dre_codigo_str, str(e)
-            )
-            raise EOLIntegrationError(
-                f"Erro inesperado ao buscar Escolas: {str(e)}"
-            )
+        return cls._formatar_unidade_supervisao(data)
+
+
+    @staticmethod
+    def _formatar_unidade_supervisao(data: dict) -> dict:
+        return {
+            "codigoEscola": data.get("codigo"),
+            "nomeEscola": data.get("nome"),
+            "codigoDRE": data.get("codigoDRE"),
+            "tipoEscola": data.get("tipoUnidade"),
+            "siglaTipoEscola": "UA",
+            "nomeDRE": data.get("nomeDRE"),
+            "siglaDRE": data.get("siglaDRE"),
+            "codigoSubprefeitura": None,
+            "nomeSubprefeitura": None,
+        }
