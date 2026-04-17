@@ -79,7 +79,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
                 and cessacao_sem_insubsistencia
             ):
                 data['cessacao'] = cessacao_relacionada
-                cessacao = cessacao_relacionada
+                
  
 
         return data
