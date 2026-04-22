@@ -3,7 +3,7 @@ from typing import Any
 from django.db.models import F
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.insubsistencia import Insubsistencia
-from apps.helpers.exceptions import CessacaoNotFoundError, InsubsistenciaNotFoundError
+from apps.helpers.exceptions import CessacaoNotFoundError
 
 
 class InsubsistenciaService:
