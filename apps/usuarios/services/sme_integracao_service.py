@@ -212,15 +212,34 @@ class SmeIntegracaoService:
                 timeout=cls.TIMEOUT,
             )
 
-            if response.status_code == status.HTTP_200_OK:
-                return response.json()
+            if response.status_code != status.HTTP_200_OK:
+                logger.error(
+                    "Erro ao consultar cargos. Status: %s | Body: %s",
+                    response.status_code,
+                    response.text,
+                )
+                raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
-            logger.error(
-                "Erro ao consultar cargos. Status: %s | Body: %s",
-                response.status_code,
-                response.text,
-            )
-            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+            cargos = response.json()
+
+            for cargo in cargos:
+                cd_ue_base = cargo.get("cdUeCargoBase")
+                if cd_ue_base:
+                    info_base = cls.consulta_informacoes_unidades_escolares(cd_ue_base)
+                    sigla_base = info_base.get("siglaTipoEscola")
+
+                    if sigla_base:
+                        cargo["ueCargoBase"] = f"{sigla_base} - {cargo.get('ueCargoBase')}"
+
+                cd_ue_sobreposto = cargo.get("cdUeCargoSobreposto")
+                if cd_ue_sobreposto:
+                    info_sobreposto = cls.consulta_informacoes_unidades_escolares(cd_ue_sobreposto)
+                    sigla_sobreposto = info_sobreposto.get("siglaTipoEscola")
+
+                    if sigla_sobreposto:
+                        cargo["ueCargoSobreposto"] = f"{sigla_sobreposto} - {cargo.get('ueCargoSobreposto')}"
+
+            return cargos
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
