@@ -3,6 +3,7 @@ from typing import Any
 from django.db.models import F
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.insubsistencia import Insubsistencia
+from apps.helpers.exceptions import CessacaoNotFoundError, InsubsistenciaNotFoundError
 
 
 class InsubsistenciaService:
@@ -24,7 +25,7 @@ class InsubsistenciaService:
 
         cessacao_relacionada = getattr(designacao_obj, 'cessacao', None)
         if not cessacao_relacionada:
-            raise Exception("Cessação não encontrada")
+            raise CessacaoNotFoundError("Cessação não encontrada")
 
         serializer.validated_data['cessacao'] = cessacao_relacionada
         serializer.validated_data['designacao'] = None
