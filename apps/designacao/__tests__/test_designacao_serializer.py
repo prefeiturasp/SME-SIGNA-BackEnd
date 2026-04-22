@@ -1,7 +1,9 @@
 import pytest
 from django.test import TestCase
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
+from apps.designacao.__tests__.factories import criar_designacao
 
 class DesignacaoSerializerTest(TestCase):
     def test_get_field_names_inclui_campos_extras(self):
@@ -97,6 +99,24 @@ class DesignacaoSerializerTest(TestCase):
         assert updated.is_deleted is False
         assert updated.deleted_at is None
 
+
+    @pytest.mark.django_db
+    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(self):
+        """
+        Deve retornar os dados da insubsistência ativa vinculada à designação.
+        """
+        designacao = criar_designacao()
+        insubsistencia = Insubsistencia.objects.create(
+            designacao=designacao,
+            numero_portaria="11111",
+            ano_vigente="2024",
+            sei_numero="888888",
+        )
+
+        serializer = DesignacaoSerializer(instance=designacao)
+
+        assert serializer.data["insubsistencia"] is not None
+        assert serializer.data["insubsistencia"]["id"] == insubsistencia.id
 
     @pytest.mark.django_db
     def test_update_com_impedimento(self):

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 
+from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.insubsistencia import Insubsistencia
 
@@ -53,13 +54,26 @@ def insubsistencia(db, designacao):
         sei_numero="88888",
         doc="DOE",
         observacoes="Observacao teste",
-        tipo_insubsistencia="designacao",
     )
+
+
+
+@pytest.fixture
+def cessacao(db, designacao):
+    return Cessacao.objects.create(
+        designacao=designacao,
+        numero_portaria="12345",
+        ano_vigente="2024",
+        sei_numero="999999",
+        doc="DOE",
+        data_designacao="2024-03-10"
+    )
+
 
 
 class TestInsubsistenciaViewSet:
     @pytest.mark.django_db
-    def test_create_insubsistencia(self, auth_client, designacao):
+    def test_create_insubsistencia_designacao(self, auth_client, designacao):
         url = reverse("designacao:insubsistencias")
         payload = {
             "designacao": designacao.id,
@@ -69,6 +83,50 @@ class TestInsubsistenciaViewSet:
             "doc": "DOE",
             "observacoes": "Criada via teste",
             "tipo_insubsistencia": "designacao",
+        }
+        response = auth_client.post(url, data=payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+ 
+    @pytest.mark.django_db
+    def test_create_insubsistencia_de_cessacao_sem_cessacao(self, auth_client,designacao):
+        url = reverse("designacao:insubsistencias")
+        payload = {
+            "designacao": designacao.id,
+            "numero_portaria": "12345",
+            "ano_vigente": "2024",
+            "sei_numero": "999999",
+            "doc": "DOE",
+            "observacoes": "Criada via teste",
+            "tipo_insubsistencia": "cessacao",
+        }
+        response = auth_client.post(url, data=payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_create_insubsistencia_de_sem_tipo(self, auth_client,designacao):
+        url = reverse("designacao:insubsistencias")
+        payload = {
+            "designacao": designacao.id,
+            "numero_portaria": "12345",
+            "ano_vigente": "2024",
+            "sei_numero": "999999",
+            "doc": "DOE",
+            "observacoes": "Criada via teste",
+        }
+        response = auth_client.post(url, data=payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_create_insubsistencia_cessacao(self, auth_client, cessacao, designacao):
+        url = reverse("designacao:insubsistencias")
+        payload = {
+            "designacao": designacao.id,
+            "numero_portaria": "12345",
+            "ano_vigente": "2024",
+            "sei_numero": "999999",
+            "doc": "DOE",
+            "observacoes": "Criada via teste",
+            "tipo_insubsistencia": "cessacao",
         }
         response = auth_client.post(url, data=payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED

@@ -23,7 +23,7 @@ class Insubsistencia(models.Model):
         related_name='insubsistencia'
     )
 
-    tipo_insubsistencia = models.CharField(max_length=255, choices=TipoInsubsistencia.choices)
+    
     numero_portaria = models.CharField(max_length=20)
     ano_vigente = models.CharField(max_length=6)
     sei_numero = models.CharField(max_length=30)

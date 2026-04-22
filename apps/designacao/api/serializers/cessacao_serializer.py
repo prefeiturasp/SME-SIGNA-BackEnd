@@ -13,12 +13,11 @@ class CessacaoSerializer(serializers.ModelSerializer):
         fields = '__all__'
  
     def get_insubsistencia(self, obj):
-        try:
-            insubsistencia = obj.insubsistencia.filter(is_deleted=False).order_by('-criado_em').first()
-            if insubsistencia and not insubsistencia.is_deleted:
-                return InsubsistenciaSerializer(insubsistencia).data
-        except Exception: 
-            pass
+        
+        insubsistencia = obj.insubsistencia.filter(is_deleted=False).order_by('-criado_em').first()
+        if insubsistencia and not insubsistencia.is_deleted:
+            return InsubsistenciaSerializer(insubsistencia).data
+ 
         return None
     
     def validate_numero_portaria(self, value):

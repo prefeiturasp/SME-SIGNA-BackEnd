@@ -3,7 +3,7 @@ from django.utils.timezone import now
 
 from apps.designacao.__tests__.factories import criar_designacao
 from apps.designacao.models.cessacao import Cessacao
-from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
+from apps.designacao.models.insubsistencia import Insubsistencia
 
 
 def _criar_cessacao(designacao):
@@ -23,7 +23,6 @@ def test_delete_soft_delete_model():
     cessacao = _criar_cessacao(designacao)
     insubsistencia = Insubsistencia.objects.create(
         cessacao=cessacao,
-        tipo_insubsistencia=TipoInsubsistencia.CESSACAO,
         numero_portaria="12345",
         ano_vigente="2024",
         sei_numero="999999",
@@ -44,7 +43,6 @@ def test_defaults_doc_observacoes_e_is_deleted():
     designacao = criar_designacao()
     insubsistencia = Insubsistencia.objects.create(
         designacao=designacao,
-        tipo_insubsistencia=TipoInsubsistencia.DESIGNACAO,
         numero_portaria="98765",
         ano_vigente="2024",
         sei_numero="111222",
@@ -66,7 +64,6 @@ def test_permite_criacao_com_cessacao():
     cessacao = _criar_cessacao(designacao)
     insubsistencia = Insubsistencia.objects.create(
         cessacao_id=cessacao.id,
-        tipo_insubsistencia=TipoInsubsistencia.CESSACAO,
         numero_portaria="22222",
         ano_vigente="2025",
         sei_numero="555666",
@@ -81,7 +78,6 @@ def test_permite_criacao_com_designacao():
     designacao = criar_designacao()
     insubsistencia = Insubsistencia.objects.create(
         designacao_id=designacao.id,
-        tipo_insubsistencia=TipoInsubsistencia.DESIGNACAO,
         numero_portaria="22222",
         ano_vigente="2025",
         sei_numero="555666",
@@ -98,7 +94,6 @@ def test_permite_criacao_com_cessacao_e_designacao():
     insubsistencia = Insubsistencia.objects.create(
         cessacao_id=cessacao.id,
         designacao_id=designacao.id,
-        tipo_insubsistencia=TipoInsubsistencia.DESIGNACAO,
         numero_portaria="22222",
         ano_vigente="2025",
         sei_numero="555666",    
@@ -106,7 +101,6 @@ def test_permite_criacao_com_cessacao_e_designacao():
 
     assert insubsistencia.designacao_id == designacao.id
     assert insubsistencia.cessacao_id == cessacao.id
-    assert insubsistencia.tipo_insubsistencia == TipoInsubsistencia.DESIGNACAO
     assert insubsistencia.numero_portaria == "22222"
     assert insubsistencia.ano_vigente == "2025"
     assert insubsistencia.sei_numero == "555666"
