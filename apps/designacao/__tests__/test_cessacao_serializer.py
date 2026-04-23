@@ -3,6 +3,7 @@ from django.test import TestCase
 
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.cessacao import Cessacao
+from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
 from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
 
@@ -134,6 +135,31 @@ class CessacaoSerializerTest(TestCase):
         assert not serializer.is_valid()
         assert "designacao" in serializer.errors
 
+
+    @pytest.mark.django_db
+    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(self):
+        """
+        Deve retornar os dados da insubsistência ativa vinculada à cessação.
+        """
+        designacao = self._criar_designacao()
+        cessacao = Cessacao.objects.create(
+            designacao=designacao,
+            numero_portaria="12345",
+            ano_vigente="2024",
+            sei_numero="999999",
+            data_designacao="2024-03-10",
+        )
+        insubsistencia = Insubsistencia.objects.create(
+            cessacao=cessacao,
+            numero_portaria="11111",
+            ano_vigente="2024",
+            sei_numero="888888",
+        )
+
+        serializer = CessacaoSerializer(instance=cessacao)
+
+        assert serializer.data["insubsistencia"] is not None
+        assert serializer.data["insubsistencia"]["id"] == insubsistencia.id
 
     @pytest.mark.django_db
     def test_designacao_nao_deve_exibir_cessacao_com_soft_delete(self):
