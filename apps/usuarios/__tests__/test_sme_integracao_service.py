@@ -353,6 +353,25 @@ class TestConsultaCargos:
 
         assert "Erro de comunicação com SME" in str(exc.value)
 
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_sucesso_com_cargo_sobreposto_formatado(self, mock_get):
+        cargos_mock = [
+            {
+                "cargoBase": None,
+                "cargoSobreposto": "COORDENADOR - PEDAGÓGICO",
+                "cdUeCargoBase": None,
+                "cdUeCargoSobreposto": None,
+            }
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=cargos_mock),
+        )
+
+        result = SmeIntegracaoService.consulta_cargos_funcionario("123456")
+
+        assert result[0]["cargoSobreposto"] == "COORDENADOR"
+
 
 # ---------------------------------------------------------------------------
 # buscar_funcionarios_escolares
@@ -595,3 +614,96 @@ class TestBuscarDadosTurma:
         mock_logger.exception.assert_called_once_with(
             "Erro de comunicação com API de dados da turma"
         )
+
+# ---------------------------------------------------------------------------
+# buscar_disciplinas_turma
+# ---------------------------------------------------------------------------
+
+class TestBuscarDisciplinasTurma:
+
+    def test_sem_codigo_turma(self):
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_disciplinas_turma(None)
+        assert "Código da turma é obrigatório" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_sucesso_200(self, mock_get):
+        disciplinas_mock = [
+            {"disciplina": "Matemática"},
+            {"disciplina": "SP INTEGRAL - Atividade"},
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=disciplinas_mock),
+        )
+
+        resultado = SmeIntegracaoService.buscar_disciplinas_turma(10)
+
+        assert resultado == disciplinas_mock
+        mock_get.assert_called_once()
+        url_chamada = mock_get.call_args[0][0]
+        assert "/funcionarios/turmas/10/disciplinas" in url_chamada
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_204_retorna_lista_vazia(self, mock_get):
+        mock_get.return_value = MagicMock(status_code=status.HTTP_204_NO_CONTENT)
+
+        resultado = SmeIntegracaoService.buscar_disciplinas_turma(10)
+
+        assert resultado == []
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_json_invalido_retorna_lista_vazia(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_200_OK
+        mock_response.json.side_effect = ValueError("JSON inválido")
+        mock_response.text = "erro"
+        mock_get.return_value = mock_response
+
+        resultado = SmeIntegracaoService.buscar_disciplinas_turma(10)
+
+        assert resultado == []
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_status_invalido_levanta_excecao(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_response.text = "Erro interno"
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_disciplinas_turma(10)
+
+        assert "Erro de comunicação com SME" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_request_exception(self, mock_get, mock_logger):
+        mock_get.side_effect = requests.exceptions.RequestException("timeout")
+
+        with pytest.raises(SmeIntegracaoException) as exc:
+            SmeIntegracaoService.buscar_disciplinas_turma(10)
+
+        assert "Erro de comunicação com SME" in str(exc.value)
+        mock_logger.exception.assert_called_once_with(
+            "Erro de comunicação com API de disciplinas da turma %s",
+            10,
+        )
+
+# ---------------------------------------------------------------------------
+# formatar_cargo
+# ---------------------------------------------------------------------------
+
+class TestFormatarCargo:
+
+    def test_texto_none_retorna_vazio(self):
+        assert SmeIntegracaoService.formatar_cargo(None) == ""
+
+    def test_texto_vazio_retorna_vazio(self):
+        assert SmeIntegracaoService.formatar_cargo("") == ""
+
+    def test_texto_com_hifen_retorna_parte_antes(self):
+        assert SmeIntegracaoService.formatar_cargo("DIRETOR - ESCOLA") == "DIRETOR"
+
+    def test_texto_sem_hifen_retorna_inteiro(self):
+        assert SmeIntegracaoService.formatar_cargo("PROFESSOR") == "PROFESSOR"
