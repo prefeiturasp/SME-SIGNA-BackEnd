@@ -202,48 +202,66 @@ class SmeIntegracaoService:
         )
 
         try:
-            url = (
-                f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"
-            )
-
-            response = requests.get(
-                url,
-                headers=cls.DEFAULT_HEADERS,
-                timeout=cls.TIMEOUT,
-            )
-
-            if response.status_code != status.HTTP_200_OK:
-                logger.error(
-                    "Erro ao consultar cargos. Status: %s | Body: %s",
-                    response.status_code,
-                    response.text,
-                )
-                raise SmeIntegracaoException(MSG_ERRO_CARGOS)
-
-            cargos = response.json()
-
-            for cargo in cargos:
-                cd_ue_base = cargo.get("cdUeCargoBase")
-                if cd_ue_base:
-                    info_base = cls.consulta_informacoes_unidades_escolares(cd_ue_base)
-                    sigla_base = info_base.get("siglaTipoEscola")
-
-                    if sigla_base:
-                        cargo["ueCargoBase"] = f"{sigla_base} - {cargo.get('ueCargoBase')}"
-
-                cd_ue_sobreposto = cargo.get("cdUeCargoSobreposto")
-                if cd_ue_sobreposto:
-                    info_sobreposto = cls.consulta_informacoes_unidades_escolares(cd_ue_sobreposto)
-                    sigla_sobreposto = info_sobreposto.get("siglaTipoEscola")
-
-                    if sigla_sobreposto:
-                        cargo["ueCargoSobreposto"] = f"{sigla_sobreposto} - {cargo.get('ueCargoSobreposto')}"
-
-            return cargos
+            cargos = cls._buscar_cargos(registro_funcional)
+            return [cls._normalizar_cargo(cargo) for cargo in cargos]
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
             raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+
+    @classmethod
+    def _buscar_cargos(cls, registro_funcional: str) -> list:
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"
+
+        response = requests.get(
+            url,
+            headers=cls.DEFAULT_HEADERS,
+            timeout=cls.TIMEOUT,
+        )
+
+        if response.status_code != status.HTTP_200_OK:
+            logger.error(
+                "Erro ao consultar cargos. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+
+        return response.json()
+
+    @classmethod
+    def _normalizar_cargo(cls, cargo: dict) -> dict:
+        if cargo.get("cargoBase"):
+            cargo["cargoBase"] = cls.formatar_cargo(cargo["cargoBase"])
+
+        if cargo.get("cargoSobreposto"):
+            cargo["cargoSobreposto"] = cls.formatar_cargo(cargo["cargoSobreposto"])
+
+        cargo["ueCargoBase"] = cls._montar_ue(
+            cargo.get("cdUeCargoBase"),
+            cargo.get("ueCargoBase")
+        )
+
+        cargo["ueCargoSobreposto"] = cls._montar_ue(
+            cargo.get("cdUeCargoSobreposto"),
+            cargo.get("ueCargoSobreposto")
+        )
+
+        return cargo
+
+    @classmethod
+    def _montar_ue(cls, codigo_ue, nome_ue):
+        if not codigo_ue:
+            return nome_ue
+
+        info = cls.consulta_informacoes_unidades_escolares(codigo_ue)
+        sigla = info.get("siglaTipoEscola")
+
+        if not sigla:
+            return nome_ue
+
+        nome_formatado = nome_ue
+        return f"{sigla.upper()} - {nome_formatado}"        
 
 
     @classmethod
@@ -437,3 +455,65 @@ class SmeIntegracaoService:
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de informações da unidade escolar")
             raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+        
+    @classmethod
+    def buscar_disciplinas_turma(cls, codigo_turma: int) -> list:
+        """
+        Busca disciplinas vinculadas a uma turma.
+        """
+        if not codigo_turma:
+            raise SmeIntegracaoException("Código da turma é obrigatório")
+
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/funcionarios/turmas/{codigo_turma}/disciplinas"
+        )
+
+        logger.info(
+            "Consultando disciplinas da turma no SME. Turma: %s",
+            codigo_turma
+        )
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                try:
+                    return response.json()
+                except ValueError:
+                    logger.error(
+                        "Resposta inválida ao consultar disciplinas da turma %s | Body: %s",
+                        codigo_turma,
+                        response.text,
+                    )
+                    return []
+
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                return []
+
+            logger.error(
+                "Erro ao consultar disciplinas da turma %s | Status: %s | Body: %s",
+                codigo_turma,
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception(
+                "Erro de comunicação com API de disciplinas da turma %s",
+                codigo_turma,
+            )
+            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+        
+        
+    @staticmethod
+    def formatar_cargo(texto: str) -> str:
+        if not texto:
+            return ""
+
+        return texto.split("-")[0].strip()

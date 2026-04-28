@@ -153,11 +153,44 @@ class TurmaService:
     def calcular_turmas(cls, codigo_ue: str) -> Dict[str, Any]:
         ano = datetime.now().year
         turmas = SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano)
-
         turnos = cls.estrutura_turnos()
+        spi = {
+            "tipo": "",
+            "total": 0,
+            "turnos": [
+                {
+                    "turno": "SPI",
+                    "cicloAlfabetizacao": 0,
+                    "cicloInterdisciplinar": 0,
+                    "cicloAutoral": 0,
+                    "semCiclo": 0,
+                    "total": 0,
+                }
+            ]
+        }
 
         for turma in turmas:
             codigo = turma.get("codigoTurma")
+
+            disciplinas = SmeIntegracaoService.buscar_disciplinas_turma(codigo)
+
+            tem_spi = cls.turma_tem_spi(disciplinas)
+
+            if tem_spi:
+                spi["tipo"] = "São Paulo Integral"
+
+                ciclo = CicloService.definir_ciclo_turma(turma)
+                ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
+
+                spi_turno = spi["turnos"][0]
+
+                spi_turno["total"] += 1
+                spi["total"] += 1
+
+                if ciclo_key not in spi_turno:
+                    spi_turno[ciclo_key] = 0
+
+                spi_turno[ciclo_key] += 1
 
             dados = SmeIntegracaoService.buscar_dados_turma(codigo)
 
@@ -179,8 +212,17 @@ class TurmaService:
 
         return {
             "total": sum(t["total"] for t in turnos.values()),
-            "turnos": list(turnos.values())
+            "turnos": list(turnos.values()),
+            "spi": spi
         }
+    
+    @staticmethod
+    def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
+        for d in disciplinas:
+            nome = d.get("disciplina", "")
+            if "SP INTEGRAL" in nome.upper():
+                return True
+        return False
 
 
 class ServidorService:
@@ -249,20 +291,7 @@ class DesignacaoUnidadeService:
             "funcionarios_unidade": {c["codigo_cargo"]: c for c in cargos},
             "turmas": turmas,
             "codigo_hierarquico": unidade.get("codigoIntegracao") if unidade else None,
-            "spi": {
-                "tipo": "Indisponível",
-                "total": 0,
-                "turnos": [
-                    {
-                        "turno": "SPI",
-                        "cicloAlfabetizacao": 0,
-                        "cicloInterdisciplinar": 0,
-                        "cicloAutoral": 0,
-                        "semCiclo": 0,
-                        "total": 0,
-                    }
-                ]
-            }
+            "spi": turmas.get("spi"),
         }
 
     @staticmethod
