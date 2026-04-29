@@ -1,7 +1,8 @@
 from rest_framework import serializers
+from apps.designacao.api.serializers.insubsistencia_serializer import InsubsistenciaSerializer
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
-
+from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
 
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
@@ -12,7 +13,9 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 
 class DesignacaoSerializer(serializers.ModelSerializer):
     cessacao = serializers.SerializerMethodField()
+    insubsistencia = serializers.SerializerMethodField()
     impedimento_display = serializers.SerializerMethodField()
+    apostilas = serializers.SerializerMethodField()
 
     impedimento_substituicao_detail = ImpedimentoSubstituicaoSerializer(
         source='impedimento_substituicao',
@@ -31,6 +34,14 @@ class DesignacaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Designacao
         fields = '__all__'
+        
+    def get_insubsistencia(self, obj):
+        
+        insubsistencia = obj.insubsistencia.filter(is_deleted=False).order_by('-criado_em').first()
+        if insubsistencia and not insubsistencia.is_deleted:
+            return InsubsistenciaSerializer(insubsistencia).data
+ 
+        return None
 
     def get_cessacao(self, obj):
         try:
@@ -40,6 +51,10 @@ class DesignacaoSerializer(serializers.ModelSerializer):
         except Exception: 
             pass
         return None
+    
+    def get_apostilas(self, obj):
+        apostilas = obj.apostilas.filter(is_deleted=False).order_by('-criado_em')
+        return ApostilaSerializer(apostilas, many=True).data
 
     def get_impedimento_display(self, obj):
         if obj.impedimento_substituicao:

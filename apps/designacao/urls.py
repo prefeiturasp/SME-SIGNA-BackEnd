@@ -4,6 +4,8 @@ from apps.designacao.api.views.designacao_unidades_view import DesignacaoUnidade
 from apps.designacao.api.views.designacao import DesignacaoViewSet
 from apps.designacao.api.views.designacao_impedimentos_view import ImpedimentoSubstituicaoView
 from apps.designacao.api.views.cessacao_view import CessacaoViewSet
+from apps.designacao.api.views.insubsistencia_view import InsubsistenciaViewSet
+from apps.designacao.api.views.apostila_view import ApostilaViewSet
 
 
 app_name = "designacao"
@@ -53,4 +55,33 @@ urlpatterns = [
         }),
         name="cessacao-detail"
     ),
+
+    # Acesso às insubsistências (list e create)
+    path(
+        "insubsistencias/",
+        InsubsistenciaViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name="insubsistencias"
+    ),
+
+    # Acesso a uma insubsistência específica (retrieve e delete)
+    path(
+        "insubsistencias/<int:pk>/",
+        InsubsistenciaViewSet.as_view({
+            'get': 'retrieve',
+         }),
+        name="insubsistencia-detail"
+    ),
+
+    path(
+        "apostilas/",
+        ApostilaViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name="apostilas"
+    ),
+    path(
+        "apostilas/<int:pk>/",
+        ApostilaViewSet.as_view({'get': 'retrieve'}),
+        name="apostila-detail"
+    ),
+
+    
     ]
