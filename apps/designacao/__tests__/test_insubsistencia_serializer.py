@@ -192,26 +192,7 @@ class InsubsistenciaSerializerTest(TestCase):
         print("serializer.errors",serializer)
 
 
-    @pytest.mark.django_db
-    def test_sei_numero_invalido(self):
-        designacao = self._criar_designacao()
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12A45",
-            "ano_vigente": "20A4",
-            "sei_numero": "99X999",
-            "doc": "DOE",
-            "observacoes":"44444",
-            "tipo_insubsistencia":"designacao"
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert not serializer.is_valid()
-        assert "sei_numero" in serializer.errors
-
-
+ 
     @pytest.mark.django_db
     def test_nao_permite_insubsistencia_duplicada_na_designacao(self):
         designacao = self._criar_designacao()

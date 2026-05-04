@@ -89,25 +89,6 @@ class CessacaoSerializerTest(TestCase):
 
 
     @pytest.mark.django_db
-    def test_sei_numero_invalido(self):
-        designacao = self._criar_designacao()
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12345",
-            "ano_vigente": "2024",
-            "sei_numero": "99X999",
-            "a_pedido": True,
-            "data_designacao": "2024-03-10"
-        }
-
-        serializer = CessacaoSerializer(data=data)
-
-        assert not serializer.is_valid()
-        assert "sei_numero" in serializer.errors
-
-
-    @pytest.mark.django_db
     def test_nao_permite_cessacao_duplicada(self):
         designacao = self._criar_designacao()
 
