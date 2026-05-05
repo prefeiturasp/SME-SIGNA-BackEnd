@@ -62,7 +62,7 @@ class TestDesignacaoServidorService:
 
         assert resultado == {
             "nome_servidor": "João da Silva",
-            "nome_civil": "João da Silva",
+            "nome_civil": "",
             "rf": "0000000",
             "vinculo": 2,
 

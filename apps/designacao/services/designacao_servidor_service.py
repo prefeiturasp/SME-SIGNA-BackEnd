@@ -61,7 +61,7 @@ class DesignacaoServidorService:
 
         return {
             "nome_servidor": usuario.get("nome"),
-            "nome_civil": usuario.get("nome"),
+            "nome_civil": "", #to-do: ajustar quando tiver api eol que traga valor
             "rf": usuario.get("codigoRf"),
             "vinculo": cargo.get("tipoVinculoCargoBase"),
 
