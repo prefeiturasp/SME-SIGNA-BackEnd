@@ -22,8 +22,6 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
     def validate_ano_vigente(self, value):
         return validar_somente_numeros(value)
 
-    def validate_sei_numero(self, value):
-        return validar_somente_numeros(value)
 
     def create(self, validated_data):
         validated_data.pop('tipo_insubsistencia', None)

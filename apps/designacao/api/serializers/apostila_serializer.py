@@ -24,8 +24,6 @@ class ApostilaSerializer(serializers.ModelSerializer):
             "d_o",
         ]
 
-    def validate_sei_numero(self, value):
-        return validar_somente_numeros(value)
 
     def validate(self, data):
         if not data.get("designacao"):
