@@ -112,7 +112,7 @@ class TestMontarDadosInsubsistenciaDesignacao:
         resultado = InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
 
         assert resultado.validated_data["cessacao"] == cessacao
-        assert resultado.validated_data["designacao"] is None # Como está no seu Service
+        assert resultado.validated_data["designacao"] is None
 
     def test_nao_seta_cessacao_quando_insubsistencia_ja_existe(self):
         """
@@ -137,7 +137,7 @@ class TestMontarDadosInsubsistenciaDesignacao:
         
         serializer = _mock_serializer({"designacao": designacao})
 
-        with pytest.raises(Exception): # Use Exception ou o erro específico do Django
+        with pytest.raises(Exception):
             InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
 
     def test_designacao_sem_cessacao(self):
