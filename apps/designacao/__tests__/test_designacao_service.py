@@ -36,9 +36,9 @@ class TestDesignacaoService:
         )
 
         assert resultado == [
-            {"codigoCargo": 3, "nomeCargo": "Coordenador"},
-            {"codigoCargo": 2, "nomeCargo": "Diretor"},
-            {"codigoCargo": 1, "nomeCargo": "Professor"},
+            {"codigoCargo": 3, "nomeCargo": "COORDENADOR"},
+            {"codigoCargo": 2, "nomeCargo": "DIRETOR"},
+            {"codigoCargo": 1, "nomeCargo": "PROFESSOR"},
         ]
 
     def test_get_cargos_pareados_remove_invalidos(self):
@@ -88,5 +88,5 @@ class TestDesignacaoService:
         )
 
         assert resultado == [
-            {"codigoCargo": 1, "nomeCargo": "Professor"},
+            {"codigoCargo": 1, "nomeCargo": "PROFESSOR"},
         ]
