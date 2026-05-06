@@ -1,7 +1,6 @@
 from rest_framework import mixins, viewsets, status
 from rest_framework.response import Response
-from django.core.exceptions import ValidationError
-
+from rest_framework.exceptions import ValidationError
 from apps.designacao.models.apostila import Apostila
 from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
 from apps.designacao.services.apostila_service import ApostilaService
@@ -30,9 +29,17 @@ class ApostilaViewSet(
 
         try:
             apostila = ApostilaService.criar_apostila(serializer.validated_data)
+
         except ValidationError as e:
+            if isinstance(e.detail, list):
+                message = e.detail[0]
+            elif isinstance(e.detail, dict):
+                message = next(iter(e.detail.values()))[0]
+            else:
+                message = str(e.detail)
+
             return Response(
-                {"detail": str(e)},
+                {"detail": message},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
