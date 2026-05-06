@@ -7,7 +7,7 @@ from apps.designacao.models.apostila import Apostila
 from apps.designacao.models.designacao import Designacao
 from django.utils import timezone
 from rest_framework.test import APIClient
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
 @pytest.mark.django_db
 class TestApostilaViewSet:
@@ -111,7 +111,8 @@ class TestApostilaViewSet:
 
     @patch('apps.designacao.api.views.apostila_view.ApostilaService.criar_apostila')
     def test_create_apostila_validation_error_exception(self, mock_service, api_client, designacao):
-        url = reverse('designacao:apostilas')
+        url = reverse('designacao:apostilas') 
+        
         data = {
             "designacao": designacao.id,
             "ato_apostilado": "designacao",
@@ -120,7 +121,7 @@ class TestApostilaViewSet:
             "observacao": "Teste"
         }
 
-        mock_service.side_effect = ValidationError("Erro do Service")
+        mock_service.side_effect = DRFValidationError("Erro do Service")
         
         response = api_client.post(url, data, format='json')
         
