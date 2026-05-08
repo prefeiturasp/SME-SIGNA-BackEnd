@@ -75,6 +75,10 @@ class Designacao(models.Model):
     pendencias = models.TextField(blank=True, default="")
     motivo_afastamento = models.TextField(blank=True, default="")
 
+    # --- Informações Adicionais --- 
+    informacoes_adicionais = models.TextField(blank=True, default="")
+    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
+
     # --- Vaga ---
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)
     cargo_vaga = models.IntegerField(choices=CargoVaga.choices, null=True, blank=True)
