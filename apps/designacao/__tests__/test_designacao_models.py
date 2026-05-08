@@ -23,6 +23,8 @@ def test_criar_designacao():
         numero_portaria="123",
         ano_vigente="2024",
         sei_numero="123456789",
+        informacoes_adicionais="Informações adicionais",
+        detalhe_para_quadro_de_historico_por_ano=False,
 
         data_inicio=date(2024, 1, 1),
 
@@ -34,6 +36,8 @@ def test_criar_designacao():
     assert designacao.id is not None
     assert designacao.dre_nome == "DRE TESTE"
     assert designacao.tipo_vaga == Designacao.TipoVaga.VAGO
+    assert designacao.informacoes_adicionais == "Informações adicionais"
+    assert designacao.detalhe_para_quadro_de_historico_por_ano == False
 
 @pytest.mark.django_db
 def test_impedimento_str():
