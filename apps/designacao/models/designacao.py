@@ -29,6 +29,7 @@ class Designacao(models.Model):
     unidade_proponente = models.CharField(max_length=255)
     codigo_hierarquico = models.CharField(max_length=50)
 
+
     # --- Indicado ---
     indicado_nome_civil = models.CharField(max_length=255, blank=True, default="")
     indicado_nome_servidor = models.CharField(max_length=255)
