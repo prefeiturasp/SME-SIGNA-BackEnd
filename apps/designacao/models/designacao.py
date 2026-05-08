@@ -28,7 +28,9 @@ class Designacao(models.Model):
     dre_nome = models.CharField(max_length=255)
     unidade_proponente = models.CharField(max_length=255)
     codigo_hierarquico = models.CharField(max_length=50)
-
+    ue = models.CharField(max_length=50)
+    dre = models.CharField(max_length=50)
+    funcionarios_da_unidade = models.CharField(max_length=50)
 
     # --- Indicado ---
     indicado_nome_civil = models.CharField(max_length=255, blank=True, default="")
