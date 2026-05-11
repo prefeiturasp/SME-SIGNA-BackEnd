@@ -1,7 +1,7 @@
 import pytest
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.services.designacao_service import DesignacaoService
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao_legado as criar_designacao
 
 
 @pytest.mark.django_db
@@ -36,9 +36,9 @@ class TestDesignacaoService:
         )
 
         assert resultado == [
-            {"codigoCargo": 3, "nomeCargo": "COORDENADOR"},
-            {"codigoCargo": 2, "nomeCargo": "DIRETOR"},
-            {"codigoCargo": 1, "nomeCargo": "PROFESSOR"},
+            {"codigoCargo": 3, "nomeCargo": "Coordenador"},
+            {"codigoCargo": 2, "nomeCargo": "Diretor"},
+            {"codigoCargo": 1, "nomeCargo": "Professor"},
         ]
 
     def test_get_cargos_pareados_remove_invalidos(self):
@@ -88,5 +88,5 @@ class TestDesignacaoService:
         )
 
         assert resultado == [
-            {"codigoCargo": 1, "nomeCargo": "PROFESSOR"},
+            {"codigoCargo": 1, "nomeCargo": "Professor"},
         ]

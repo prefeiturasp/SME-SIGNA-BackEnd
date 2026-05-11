@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao_legado as criar_designacao
 from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.services.insubsistencia_service import InsubsistenciaService

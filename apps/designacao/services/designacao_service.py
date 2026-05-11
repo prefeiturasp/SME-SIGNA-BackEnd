@@ -7,34 +7,38 @@ class DesignacaoService:
     @staticmethod
     def get_cargos_pareados(queryset, cod1, nome1, cod2, nome2):
         """
-        Retorna cargos pareados (codigo + nome), sem duplicatas por codigo,
-        priorizando o último cadastrado.
+        Retorna cargos pareados (codigo + nome).
         """
 
-        def get_ultimos(qs, campo_codigo, campo_nome):
-            resultado = {}
-            items = (
-                qs
-                .filter(**{f'{campo_codigo}__isnull': False})
-                .exclude(**{campo_nome: ''})
-                .order_by('-id')
-                .values(campo_codigo, campo_nome)
-            )
-            for item in items:
-                codigo = item[campo_codigo]
-                if codigo not in resultado:
-                    resultado[codigo] = item[campo_nome]
-            return resultado
+        qs1 = queryset.values(
+            codigo=F(cod1),
+            nome=F(nome1),
+        ).filter(
+            **{f"{cod1}__isnull": False}
+        ).exclude(
+            **{nome1: ""}
+        )
 
-        merged = get_ultimos(queryset, cod2, nome2)
-        merged.update(get_ultimos(queryset, cod1, nome1))
+        qs2 = queryset.values(
+            codigo=F(cod2),
+            nome=F(nome2),
+        ).filter(
+            **{f"{cod2}__isnull": False}
+        ).exclude(
+            **{nome2: ""}
+        )
+
+        pares = qs1.union(qs2)
 
         resultado = [
-            {'codigoCargo': codigo, 'nomeCargo': nome.upper()}
-            for codigo, nome in merged.items()
-            if nome
+            {
+                "codigoCargo": item["codigo"],
+                "nomeCargo": item["nome"],
+            }
+            for item in pares
+            if item["nome"]
         ]
 
-        resultado.sort(key=lambda x: x['nomeCargo'])
+        resultado.sort(key=lambda x: x["nomeCargo"])
 
         return resultado

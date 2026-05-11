@@ -7,14 +7,14 @@ from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
 from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
 from apps.designacao.api.serializers.insubsistencia_serializer import InsubsistenciaSerializer
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao_legado
 from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
 
 
 class InsubsistenciaSerializerTest(TestCase):
 
     def _criar_designacao(self):
-        return criar_designacao()
+        return criar_designacao_legado()
 
     @pytest.mark.django_db
     def test_serializer_valido_na_designacao(self):
