@@ -5,6 +5,7 @@ from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.apostila_detalhe import ApostilaDetalhe
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
+from apps.designacao.models.designacao import Designacao
 
 _ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
@@ -43,6 +44,30 @@ def criar_ato_designacao(**kwargs):
 # Alias mantido para compatibilidade com testes que usam criar_designacao()
 def criar_designacao(**kwargs):
     return criar_ato_designacao(**kwargs)
+
+
+def criar_designacao_legado(**kwargs):
+    base = dict(
+        dre_nome='DRE Teste',
+        unidade_proponente='Escola Teste',
+        codigo_hierarquico='001',
+        ue='000001',
+        dre='000001',
+        funcionarios_da_unidade='10',
+        indicado_nome_servidor='Nome Servidor',
+        indicado_rf='1234567',
+        indicado_vinculo=1,
+        indicado_cargo_base='Cargo Base',
+        indicado_lotacao='Lotacao',
+        indicado_local_exercicio='Local',
+        numero_portaria='123',
+        ano_vigente='2024',
+        sei_numero='SEI-1',
+        data_inicio=datetime.date(2024, 1, 1),
+        tipo_vaga=Designacao.TipoVaga.VAGO,
+    )
+    base.update(kwargs)
+    return Designacao.objects.create(**base)
 
 
 def criar_ato_cessacao(ato_pai, **kwargs):

@@ -3,7 +3,7 @@ from django.test import TestCase
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
 from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao, criar_designacao_legado
 
 class DesignacaoSerializerTest(TestCase):
     def test_get_field_names_inclui_campos_extras(self):
@@ -105,7 +105,7 @@ class DesignacaoSerializerTest(TestCase):
         """
         Deve retornar os dados da insubsistência ativa vinculada à designação.
         """
-        designacao = criar_designacao()
+        designacao = criar_designacao_legado()
         insubsistencia = Insubsistencia.objects.create(
             designacao=designacao,
             numero_portaria="11111",

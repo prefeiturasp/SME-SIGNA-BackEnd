@@ -118,9 +118,6 @@ class Migration(migrations.Migration):
                 'db_table': 'insubsistencia_detalhe',
             },
         ),
-        migrations.DeleteModel(
-            name='Insubsistencia',
-        ),
         migrations.AddField(
             model_name='apostilaalteracao',
             name='apostila',

@@ -1,7 +1,7 @@
 import pytest
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.services.designacao_service import DesignacaoService
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao_legado as criar_designacao
 
 
 @pytest.mark.django_db
