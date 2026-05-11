@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -8,6 +9,12 @@ class AtoAdministrativo(models.Model):
         CESSACAO       = 'CESSACAO',       'Cessação'
         APOSTILA       = 'APOSTILA',       'Apostila'
         INSUBSISTENCIA = 'INSUBSISTENCIA', 'Insubsistência'
+
+    _TIPOS_PAI_VALIDOS = {
+        'CESSACAO':       {'DESIGNACAO'},
+        'APOSTILA':       {'DESIGNACAO', 'CESSACAO'},
+        'INSUBSISTENCIA': {'DESIGNACAO', 'CESSACAO', 'APOSTILA', 'INSUBSISTENCIA'},
+    }
 
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
 
@@ -26,33 +33,48 @@ class AtoAdministrativo(models.Model):
     sei_numero      = models.CharField(max_length=30)
     doc             = models.CharField(max_length=100, blank=True, default='')
 
+    ativo     = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'ato_administrativo'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['ato_pai'],
-                condition=models.Q(tipo='CESSACAO'),
-                name='unique_cessacao_por_ato_pai'
+
+    def clean(self):
+        if self.ato_pai_id:
+            tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
+            if self.ato_pai.tipo not in tipos_validos:
+                raise ValidationError(
+                    f'{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai.'
+                )
+        elif self.tipo != self.Tipo.DESIGNACAO:
+            raise ValidationError(f'{self.tipo} precisa de um ato pai.')
+
+        # Uma designação só pode ter uma cessação ativa por vez
+        if self.tipo == self.Tipo.CESSACAO and self.ato_pai_id:
+            qs = AtoAdministrativo.objects.filter(
+                tipo=self.Tipo.CESSACAO,
+                ato_pai_id=self.ato_pai_id,
+                ativo=True,
             )
-        ]
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError(
+                    {'ato_pai': 'Esta designação já possui uma cessação ativa.'}
+                )
 
     def save(self, *args, **kwargs):
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
             self.ato_raiz_id = pai.ato_raiz_id if pai.ato_raiz_id else pai.pk
+        if not kwargs.get('update_fields'):
+            self.full_clean()
         super().save(*args, **kwargs)
 
     @property
     def status(self):
-        for filho in self.filhos.filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA):
-            if filho.status == 'ativo':
-                return 'insubsistente'
-        if self.ato_pai_id and self.ato_pai.status == 'insubsistente':
-            return 'invalido'
-        return 'ativo'
+        return 'ativo' if self.ativo else 'insubsistente'
 
     @property
     def eh_valido(self):
-        return self.status == 'ativo'
+        return self.ativo
