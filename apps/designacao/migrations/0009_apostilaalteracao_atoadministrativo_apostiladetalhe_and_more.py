@@ -3,6 +3,8 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
+ATO_ADMINISTRATIVO = 'designacao.atoadministrativo'
+
 
 class Migration(migrations.Migration):
 
@@ -34,8 +36,8 @@ class Migration(migrations.Migration):
                 ('doc', models.CharField(blank=True, default='', max_length=100)),
                 ('ativo', models.BooleanField(default=True)),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
-                ('ato_pai', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='filhos', to='designacao.atoadministrativo')),
-                ('ato_raiz', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='descendentes', to='designacao.atoadministrativo')),
+                ('ato_pai', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='filhos', to=ATO_ADMINISTRATIVO)),
+                ('ato_raiz', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='descendentes', to=ATO_ADMINISTRATIVO)),
             ],
             options={
                 'db_table': 'ato_administrativo',
@@ -44,7 +46,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='ApostilaDetalhe',
             fields=[
-                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='apostila_detalhe', serialize=False, to='designacao.atoadministrativo')),
+                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='apostila_detalhe', serialize=False, to=ATO_ADMINISTRATIVO)),
                 ('observacao', models.TextField()),
             ],
             options={
@@ -54,7 +56,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CessacaoDetalhe',
             fields=[
-                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='cessacao_detalhe', serialize=False, to='designacao.atoadministrativo')),
+                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='cessacao_detalhe', serialize=False, to=ATO_ADMINISTRATIVO)),
                 ('a_pedido', models.BooleanField(default=False)),
                 ('remocao', models.BooleanField(default=False)),
                 ('aposentadoria', models.BooleanField(default=False)),
@@ -67,7 +69,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DesignacaoDetalhe',
             fields=[
-                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='designacao_detalhe', serialize=False, to='designacao.atoadministrativo')),
+                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='designacao_detalhe', serialize=False, to=ATO_ADMINISTRATIVO)),
                 ('dre_nome', models.CharField(max_length=255)),
                 ('unidade_proponente', models.CharField(max_length=255)),
                 ('codigo_hierarquico', models.CharField(max_length=50)),
@@ -111,7 +113,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='InsubsistenciaDetalhe',
             fields=[
-                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='insubsistencia_detalhe', serialize=False, to='designacao.atoadministrativo')),
+                ('ato', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='insubsistencia_detalhe', serialize=False, to=ATO_ADMINISTRATIVO)),
                 ('observacoes', models.TextField(blank=True, default='')),
             ],
             options={
