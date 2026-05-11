@@ -22,12 +22,15 @@ class DesignacaoDetalhe(models.Model):
     )
 
     # Unidade
-    dre_nome           = models.CharField(max_length=255)
-    unidade_proponente = models.CharField(max_length=255)
-    codigo_hierarquico = models.CharField(max_length=50)
+    dre_nome                = models.CharField(max_length=255)
+    unidade_proponente      = models.CharField(max_length=255)
+    codigo_hierarquico      = models.CharField(max_length=50)
+    ue                      = models.CharField(max_length=50, blank=True, default='')
+    dre                     = models.CharField(max_length=50, blank=True, default='')
+    funcionarios_da_unidade = models.CharField(max_length=50, blank=True, default='')
 
     # Indicado
-    indicado_nome_civil              = models.CharField(max_length=255)
+    indicado_nome_civil              = models.CharField(max_length=255, blank=True, default='')
     indicado_nome_servidor           = models.CharField(max_length=255)
     indicado_rf                      = models.CharField(max_length=8)
     indicado_vinculo                 = models.IntegerField()
@@ -60,8 +63,10 @@ class DesignacaoDetalhe(models.Model):
     carater_excepcional = models.BooleanField(default=False)
     com_afastamento     = models.BooleanField(default=False)
     possui_pendencia    = models.BooleanField(default=False)
-    pendencias          = models.TextField(blank=True, default='')
-    motivo_afastamento  = models.TextField(blank=True, default='')
+    pendencias                              = models.TextField(blank=True, default='')
+    motivo_afastamento                      = models.TextField(blank=True, default='')
+    informacoes_adicionais                  = models.TextField(blank=True, default='')
+    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
 
     impedimento_substituicao = models.ForeignKey(
         ImpedimentoSubstituicao, on_delete=models.SET_NULL,
