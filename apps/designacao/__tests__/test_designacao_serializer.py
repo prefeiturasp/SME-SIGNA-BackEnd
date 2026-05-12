@@ -2,7 +2,7 @@ import pytest
 from django.test import TestCase
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
 from apps.designacao.models.insubsistencia import Insubsistencia
-from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
+from apps.designacao.api.serializers.designacao_legado_serializer import DesignacaoLegadoSerializer as DesignacaoSerializer
 from apps.designacao.__tests__.factories import criar_designacao, criar_designacao_legado
 
 class DesignacaoSerializerTest(TestCase):

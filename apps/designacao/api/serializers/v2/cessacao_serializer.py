@@ -41,10 +41,23 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
     aposentadoria = serializers.BooleanField(source='cessacao_detalhe.aposentadoria', read_only=True)
     data_cessacao = serializers.DateField(source='cessacao_detalhe.data_cessacao',    read_only=True)
 
+    insubsistencia = serializers.SerializerMethodField()
+
     class Meta:
         model = AtoAdministrativo
         fields = [
             'id', 'tipo', 'status', 'ato_pai_id', 'ato_raiz_id',
             'numero_portaria', 'ano_vigente', 'sei_numero', 'doc', 'criado_em',
             'a_pedido', 'remocao', 'aposentadoria', 'data_cessacao',
+            'insubsistencia',
         ]
+
+    def get_insubsistencia(self, obj):
+        for filho in obj.filhos.all():
+            if filho.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
+                detalhe = getattr(filho, 'insubsistencia_detalhe', None)
+                return {
+                    'id': filho.id,
+                    'observacoes': detalhe.observacoes if detalhe else '',
+                }
+        return None

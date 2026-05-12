@@ -5,7 +5,6 @@ from rest_framework import serializers as drf_serializers
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
-from apps.designacao.api.serializers.designacao_serializer import DesignacaoSerializer
 from apps.designacao.api.serializers.insubsistencia_serializer import InsubsistenciaSerializer
 from apps.designacao.__tests__.factories import criar_designacao_legado
 from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
