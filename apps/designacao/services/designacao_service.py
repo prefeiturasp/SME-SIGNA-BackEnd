@@ -10,7 +10,8 @@ _CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
 class DesignacaoService:
 
-    def criar(data: dict) -> AtoAdministrativo:
+    @classmethod
+    def criar(cls, data: dict) -> AtoAdministrativo:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
 
