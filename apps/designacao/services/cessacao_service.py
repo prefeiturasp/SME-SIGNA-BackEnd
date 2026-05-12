@@ -10,8 +10,8 @@ _CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
 class CessacaoService:
 
-    @staticmethod
-    def criar(data: dict) -> AtoAdministrativo:
+    @classmethod
+    def criar(cls, data: dict) -> AtoAdministrativo:
         ato_pai: AtoAdministrativo = data['ato_pai']
 
         if not ato_pai.eh_valido:
