@@ -15,6 +15,7 @@ urlpatterns = [
 
     # APIs da sua app (apps.designacao)
     path("api/designacao/", include("apps.designacao.urls", namespace="designacao")),
+    path("api/designacao/v2/", include("apps.designacao.urls_v2", namespace="designacao_v2")),
 
     # APIs da sua app (apps.unidades)
     path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),
