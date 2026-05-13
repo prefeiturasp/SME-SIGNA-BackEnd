@@ -8,7 +8,7 @@ from apps.designacao.services.designacao_unidades_service import (
     TurmaService
 )
 from apps.helpers.exceptions import SmeIntegracaoException
-from apps.designacao.models import Designacao
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.designacao_unidades_service import CicloService
 
 
@@ -178,7 +178,7 @@ class TestDesignacaoUnidadeService:
         resultado = DesignacaoUnidadeService.listar_cargos_vaga()
 
         assert isinstance(resultado, list)
-        assert len(resultado) == len(Designacao.CargoVaga.choices)
+        assert len(resultado) == len(DesignacaoDetalhe.CargoVaga.choices)
 
         primeiro_cargo = resultado[0]
 

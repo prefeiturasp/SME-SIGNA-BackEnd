@@ -1,0 +1,46 @@
+from rest_framework import mixins, viewsets, status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.api.serializers.v2.cessacao_serializer import (
+    CessacaoV2ReadSerializer,
+    CessacaoV2WriteSerializer,
+)
+from apps.designacao.services.cessacao_service import CessacaoService
+
+
+class CessacaoV2Pagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class CessacaoV2ViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    serializer_class = CessacaoV2ReadSerializer
+    pagination_class = CessacaoV2Pagination
+
+    def get_queryset(self):
+        return (
+            AtoAdministrativo.objects
+            .filter(tipo=AtoAdministrativo.Tipo.CESSACAO)
+            .select_related('cessacao_detalhe')
+            .order_by('-criado_em')
+        )
+
+    def create(self, request, *args, **kwargs):
+        serializer = CessacaoV2WriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ato = CessacaoService.criar(serializer.validated_data)
+
+        ato_criado = self.get_queryset().filter(pk=ato.pk).first()
+        return Response(
+            CessacaoV2ReadSerializer(ato_criado).data,
+            status=status.HTTP_201_CREATED,
+        )
