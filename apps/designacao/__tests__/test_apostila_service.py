@@ -1,122 +1,125 @@
+import datetime
 import pytest
 from rest_framework.exceptions import ValidationError
-from apps.designacao.models.apostila import Apostila
+
 from apps.designacao.services.apostila_service import ApostilaService
-from apps.designacao.models.designacao import Designacao
-from apps.designacao.models.cessacao import Cessacao
-from django.utils import timezone
+from apps.designacao.__tests__.factories import (
+    criar_ato_designacao,
+    criar_ato_cessacao,
+    criar_ato_apostila,
+    criar_ato_insubsistencia,
+)
+
 
 @pytest.mark.django_db
 class TestApostilaService:
 
-    @pytest.fixture
-    def designacao(self):
-        return Designacao.objects.create(
-            dre_nome="DRE ITAQUERA",
-            unidade_proponente="EMEF TESTE",
-            codigo_hierarquico="123",
-            indicado_nome_civil="JOSE",
-            indicado_nome_servidor="JOSE",
-            indicado_rf="1234567",
-            indicado_vinculo=1,
-            indicado_cargo_base="PROFESSOR",
-            indicado_lotacao="ESCOLA A",
-            indicado_local_exercicio="ESCOLA A",
-            numero_portaria="123",
-            ano_vigente="2026",
-            sei_numero="111",
-            data_inicio=timezone.now().date(),
-            tipo_vaga=Designacao.TipoVaga.DISPONIVEL,
-            is_deleted=False
-        )
-
-    @pytest.fixture
-    def cessacao(self, designacao):
-        return Cessacao.objects.create(
-            designacao=designacao,
-            numero_portaria="456",
-            ano_vigente="2026",
-            sei_numero="222",
-            data_designacao=timezone.now().date(),
-            is_deleted=False
-        )
-
-    def test_criar_apostila_designacao_sucesso(self, designacao):
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "designacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "12345",
-            "observacao": "Teste",
-            "d_o": "2026-01-01"
+    def _data(self, ato_pai, **kwargs):
+        base = {
+            'ato_pai': ato_pai,
+            'sei_numero': '12345',
+            'observacao': 'Obs',
+            'alteracoes': [],
         }
-        apostila = ApostilaService.criar_apostila(data)
-        assert apostila.id is not None
-        assert apostila.designacao == designacao
-        assert apostila.cessacao is None
+        base.update(kwargs)
+        return base
 
-    def test_criar_apostila_cessacao_sucesso(self, designacao, cessacao):
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "cessacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "54321",
-            "observacao": "Teste",
-        }
-        apostila = ApostilaService.criar_apostila(data)
-        assert apostila.id is not None
-        assert apostila.cessacao == cessacao
-        assert apostila.designacao is None
+    # ── Criação básica ────────────────────────────────────────────────────────
 
-    def test_erro_tipo_ato_invalido(self, designacao):
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "invalido",
-            "tipo": Apostila.Tipo.APOSTILA
-        }
-        with pytest.raises(ValidationError):
-            ApostilaService.criar_apostila(data)
+    def test_criar_apostila_designacao_sucesso(self):
+        d = criar_ato_designacao()
+        ato = ApostilaService.criar(self._data(d))
+        assert ato.pk is not None
+        assert ato.ato_pai_id == d.pk
 
-    def test_erro_designacao_nao_encontrada(self):
-        data = {"designacao": 9999, "ato_apostilado": "designacao"}
-        with pytest.raises(ValidationError) as excinfo:
-            ApostilaService.criar_apostila(data)
-        assert "Designação não encontrada" in str(excinfo.value)
+    def test_criar_apostila_cessacao_sucesso(self):
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        ato = ApostilaService.criar(self._data(c))
+        assert ato.pk is not None
+        assert ato.ato_pai_id == c.pk
 
-    def test_erro_ja_existe_apostila_ativa(self, designacao):
-        Apostila.objects.create(
-            tipo=Apostila.Tipo.APOSTILA,
-            designacao=designacao,
-            sei_numero="1",
-            observacao="Obs"
-        )
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "designacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "2"
-        }
-        with pytest.raises(ValidationError):
-            ApostilaService.criar_apostila(data)
+    # ── Cenário 2: múltiplas apostilas permitidas ─────────────────────────────
 
-    def test_permite_apos_anulacao(self, designacao):
-        ap = Apostila.objects.create(tipo=Apostila.Tipo.APOSTILA, designacao=designacao, sei_numero="1", observacao="X")
-        Apostila.objects.create(tipo=Apostila.Tipo.ANULACAO, designacao=designacao, apostila_referencia=ap, sei_numero="2", observacao="Y")
-        
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "designacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "3",
-            "observacao": "Nova"
-        }
-        assert ApostilaService.criar_apostila(data).id is not None
+    def test_permite_criar_segunda_apostila_sem_anular_primeira(self):
+        d = criar_ato_designacao()
+        criar_ato_apostila(d)
+        ato2 = ApostilaService.criar(self._data(d))
+        assert ato2.pk is not None
 
-    def test_erro_cessacao_inexistente_ou_deletada(self, designacao):
-        data = {
-            "designacao": designacao.id, 
-            "ato_apostilado": "cessacao",
-            "tipo": Apostila.Tipo.APOSTILA
-        }
-        with pytest.raises(ValidationError, match="Não existe cessação válida"):
-            ApostilaService.criar_apostila(data)
+    def test_permite_criar_apostila_apos_insubsistencia_da_anterior(self):
+        d = criar_ato_designacao()
+        ap = criar_ato_apostila(d)
+        criar_ato_insubsistencia(ap)
+        ap.ativo = False
+        ap.save(update_fields=['ativo'])
+        ato = ApostilaService.criar(self._data(d))
+        assert ato.pk is not None
+
+    # ── Cenário 3: validações de estado da designação ─────────────────────────
+
+    def test_erro_designacao_cessada(self):
+        d = criar_ato_designacao()
+        criar_ato_cessacao(d)
+        with pytest.raises(ValidationError, match='cessada'):
+            ApostilaService.criar(self._data(d))
+
+    def test_erro_designacao_prazo_finalizado(self):
+        ontem = datetime.date.today() - datetime.timedelta(days=1)
+        d = criar_ato_designacao()
+        d.designacao_detalhe.data_fim = ontem
+        d.designacao_detalhe.save(update_fields=['data_fim'])
+        with pytest.raises(ValidationError, match='prazo finalizado'):
+            ApostilaService.criar(self._data(d))
+
+    def test_permite_apostila_designacao_com_data_fim_futura(self):
+        amanha = datetime.date.today() + datetime.timedelta(days=1)
+        d = criar_ato_designacao()
+        d.designacao_detalhe.data_fim = amanha
+        d.designacao_detalhe.save(update_fields=['data_fim'])
+        ato = ApostilaService.criar(self._data(d))
+        assert ato.pk is not None
+
+    def test_permite_apostila_cessacao_mesmo_com_data_fim(self):
+        # Validação de data_fim não se aplica a cessações
+        ontem = datetime.date.today() - datetime.timedelta(days=1)
+        d = criar_ato_designacao()
+        d.designacao_detalhe.data_fim = ontem
+        d.designacao_detalhe.save(update_fields=['data_fim'])
+        c = criar_ato_cessacao(d)
+        ato = ApostilaService.criar(self._data(c))
+        assert ato.pk is not None
+
+    def test_erro_ato_pai_insubsistente(self):
+        d = criar_ato_designacao()
+        criar_ato_insubsistencia(d)
+        d.ativo = False
+        d.save(update_fields=['ativo'])
+        with pytest.raises(ValidationError, match='insubsistente'):
+            ApostilaService.criar(self._data(d))
+
+    # ── Cenário 1: edição de campos via alterações ────────────────────────────
+
+    def test_criar_com_alteracao_em_campo_do_ato(self):
+        d = criar_ato_designacao(numero_portaria='001')
+        ApostilaService.criar(self._data(d, alteracoes=[
+            {'campo_alterado': 'numero_portaria', 'valor_novo': '999'},
+        ]))
+        d.refresh_from_db()
+        assert d.numero_portaria == '999'
+
+    def test_criar_com_alteracao_em_campo_do_detalhe(self):
+        d = criar_ato_designacao()
+        ApostilaService.criar(self._data(d, alteracoes=[
+            {'campo_alterado': 'unidade_proponente', 'valor_novo': 'Nova Escola'},
+        ]))
+        d.designacao_detalhe.refresh_from_db()
+        assert d.designacao_detalhe.unidade_proponente == 'Nova Escola'
+
+    def test_criar_com_alteracao_tipo_vaga(self):
+        d = criar_ato_designacao()
+        ApostilaService.criar(self._data(d, alteracoes=[
+            {'campo_alterado': 'tipo_vaga', 'valor_novo': 'DISPONIVEL'},
+        ]))
+        d.designacao_detalhe.refresh_from_db()
+        assert d.designacao_detalhe.tipo_vaga == 'DISPONIVEL'

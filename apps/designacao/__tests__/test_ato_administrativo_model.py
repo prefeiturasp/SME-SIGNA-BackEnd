@@ -39,6 +39,27 @@ class TestAtoAdministrativoStatus:
         d.save(update_fields=['ativo'])
         assert d.eh_valido is False
 
+    def test_status_cessada_quando_possui_cessacao_ativa(self):
+        d = criar_ato_designacao()
+        criar_ato_cessacao(d)
+        d.refresh_from_db()
+        assert d.status == 'cessada'
+
+    def test_status_volta_para_ativo_quando_cessacao_insubsistida(self):
+        d = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(d)
+        criar_ato_insubsistencia(cessacao)
+        cessacao.ativo = False
+        cessacao.save(update_fields=['ativo'])
+        d.refresh_from_db()
+        assert d.status == 'ativo'
+
+    def test_status_cessada_nao_afeta_eh_valido(self):
+        d = criar_ato_designacao()
+        criar_ato_cessacao(d)
+        d.refresh_from_db()
+        assert d.eh_valido is True
+
 
 @pytest.mark.django_db
 class TestAtoAdministrativoAtoRaiz:
