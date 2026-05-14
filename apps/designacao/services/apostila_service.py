@@ -145,10 +145,12 @@ class ApostilaService:
                 )
 
             if hasattr(ato_pai, campo):
-                valor_anterior = str(getattr(ato_pai, campo) or '')
+                raw = getattr(ato_pai, campo)
+                valor_anterior = '' if raw is None else str(raw)
                 ato_pai_updates[campo] = valor_novo
             elif detalhe and hasattr(detalhe, campo) and campo not in ('ato_id', 'ato'):
-                valor_anterior = str(getattr(detalhe, campo) or '')
+                raw = getattr(detalhe, campo)
+                valor_anterior = '' if raw is None else str(raw)
                 detalhe_updates[campo] = valor_novo
             else:
                 raise ValidationError(

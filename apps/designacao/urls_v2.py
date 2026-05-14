@@ -9,6 +9,7 @@ from apps.designacao.api.views.designacao_unidades_view import (
 )
 from apps.designacao.api.views.v2.cessacao_view import CessacaoV2ViewSet
 from apps.designacao.api.views.v2.apostila_view import ApostilaV2ViewSet
+from apps.designacao.api.views.v2.insubsistencia_view import InsubsistenciaV2ViewSet
 
 app_name = "designacao_v2"
 
@@ -77,5 +78,20 @@ urlpatterns = [
             'delete': 'destroy',
         }),
         name="apostila-detail",
+    ),
+
+    # Insubsistências (nova modelagem — AtoAdministrativo + InsubsistenciaDetalhe)
+    path(
+        "insubsistencias/",
+        InsubsistenciaV2ViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name="insubsistencias",
+    ),
+    path(
+        "insubsistencias/<int:pk>/",
+        InsubsistenciaV2ViewSet.as_view({
+            'get': 'retrieve',
+            'delete': 'destroy',
+        }),
+        name="insubsistencia-detail",
     ),
 ]
