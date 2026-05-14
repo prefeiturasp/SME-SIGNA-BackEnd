@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -9,12 +11,6 @@ from apps.designacao.models.apostila_detalhe import ApostilaDetalhe, ApostilaAlt
 
 _CAMPOS_ATO = frozenset({'sei_numero', 'doc'})
 _CAMPOS_PROTEGIDOS = frozenset({'id', 'tipo', 'ato_pai', 'ato_pai_id', 'ato_raiz', 'ato_raiz_id', 'criado_em'})
-
-
-def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]:
-    return list(
-        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list('pk', flat=True)
-    )
 
 
 class ApostilaService:
@@ -98,8 +94,16 @@ class ApostilaService:
         if not ato_pai.eh_valido:
             raise ValidationError({'ato_pai': 'Este ato está insubsistente.'})
 
-        if _filhos_ativos_ids(ato_pai, AtoAdministrativo.Tipo.APOSTILA):
-            raise ValidationError({'ato_pai': 'Já existe uma apostila válida para este ato.'})
+        if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+            tem_cessacao_ativa = ato_pai.filhos.filter(
+                tipo=AtoAdministrativo.Tipo.CESSACAO, ativo=True
+            ).exists()
+            if tem_cessacao_ativa:
+                raise ValidationError({'ato_pai': 'Não é possível apostilar uma designação cessada.'})
+
+            detalhe = getattr(ato_pai, 'designacao_detalhe', None)
+            if detalhe and detalhe.data_fim and detalhe.data_fim < datetime.date.today():
+                raise ValidationError({'ato_pai': 'Não é possível apostilar uma designação com prazo finalizado.'})
 
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
 
