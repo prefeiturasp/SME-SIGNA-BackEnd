@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: sme-signa-backend
+Version: 1.0.0
+Summary: Backend do SME Signa
+Requires-Python: >=3.11
+License-File: LICENSE
+Dynamic: license-file

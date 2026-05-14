@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sme-signa-backend"
+version = "1.0.0"
+description = "Backend do SME Signa"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+include = ["apps*", "config*"]
+exclude = ["node_modules*", "staticfiles*"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
