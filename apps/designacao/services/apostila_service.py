@@ -163,16 +163,18 @@ class ApostilaService:
             ))
 
         if ato_pai_updates:
-            for campo, valor in ato_pai_updates.items():
-                setattr(ato_pai, campo, valor)
-            ato_pai.save(update_fields=list(ato_pai_updates.keys()))
+            ApostilaService._salvar_updates(ato_pai, ato_pai_updates)
 
         if detalhe_updates:
-            for campo, valor in detalhe_updates.items():
-                setattr(detalhe, campo, valor)
-            detalhe.save(update_fields=list(detalhe_updates.keys()))
+            ApostilaService._salvar_updates(detalhe, detalhe_updates)
 
         ApostilaAlteracao.objects.bulk_create(registros)
+
+    @staticmethod
+    def _salvar_updates(obj, updates: dict) -> None:
+        for campo, valor in updates.items():
+            setattr(obj, campo, valor)
+        obj.save(update_fields=list(updates.keys()))
 
     @staticmethod
     def _get_detalhe(ato_pai: AtoAdministrativo):
