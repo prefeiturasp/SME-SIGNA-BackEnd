@@ -73,7 +73,16 @@ class AtoAdministrativo(models.Model):
 
     @property
     def status(self):
-        return 'ativo' if self.ativo else 'insubsistente'
+        if not self.ativo:
+            return 'insubsistente'
+        if self.tipo == self.Tipo.DESIGNACAO:
+            tem_cessacao_ativa = any(
+                f.tipo == self.Tipo.CESSACAO and f.ativo
+                for f in self.filhos.all()
+            )
+            if tem_cessacao_ativa:
+                return 'cessada'
+        return 'ativo'
 
     @property
     def eh_valido(self):

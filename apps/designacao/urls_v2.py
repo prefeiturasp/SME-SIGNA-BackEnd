@@ -8,6 +8,7 @@ from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
 )
 from apps.designacao.api.views.v2.cessacao_view import CessacaoV2ViewSet
+from apps.designacao.api.views.v2.apostila_view import ApostilaV2ViewSet
 
 app_name = "designacao_v2"
 
@@ -61,5 +62,20 @@ urlpatterns = [
             'delete': 'destroy',
         }),
         name="cessacao-detail",
+    ),
+
+    # Apostilas (nova modelagem — AtoAdministrativo + ApostilaDetalhe)
+    path(
+        "apostilas/",
+        ApostilaV2ViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name="apostilas",
+    ),
+    path(
+        "apostilas/<int:pk>/",
+        ApostilaV2ViewSet.as_view({
+            'get': 'retrieve',
+            'delete': 'destroy',
+        }),
+        name="apostila-detail",
     ),
 ]
