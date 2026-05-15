@@ -7,6 +7,7 @@ from apps.designacao.api.views.designacao_unidades_view import DesignacaoUnidade
 from apps.designacao.api.views.cessacao_view import CessacaoViewSet
 from apps.designacao.api.views.insubsistencia_view import InsubsistenciaViewSet
 from apps.designacao.api.views.apostila_view import ApostilaViewSet
+from apps.designacao.api.views.portaria import PortariaListViewSet
 
 
 app_name = "designacao"
@@ -81,5 +82,17 @@ urlpatterns = [
         "apostilas/<int:pk>/",
         ApostilaViewSet.as_view({'get': 'retrieve'}),
         name="apostila-detail",
+    ),
+
+    # Portarias — listagem para publicação no D.O.
+    path(
+        "portarias/",
+        PortariaListViewSet.as_view({'get': 'list'}),
+        name="portarias",
+    ),
+    path(
+        "portarias/atualizar-data-publicacao/",
+        PortariaListViewSet.as_view({'post': 'atualizar_data_publicacao'}),
+        name="portarias-atualizar-data-publicacao",
     ),
 ]
