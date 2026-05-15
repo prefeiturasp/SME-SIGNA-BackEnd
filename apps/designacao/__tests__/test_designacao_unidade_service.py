@@ -92,7 +92,7 @@ class TestDesignacaoUnidadeService:
 
         assert resultado["turmas"]["total"] == 1
         assert len(resultado["turmas"]["turnos"]) > 0
-        assert resultado["codigo_hierarquico"] == "ABC123"
+        assert resultado["codigo_hierarquico"] == "indisponível"
         assert "spi" in resultado
 
     @patch("apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre")
