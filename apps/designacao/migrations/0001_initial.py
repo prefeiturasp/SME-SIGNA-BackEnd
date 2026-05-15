@@ -7,53 +7,171 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Designacao',
+            name="Designacao",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('dre_nome', models.CharField(max_length=255)),
-                ('unidade_proponente', models.CharField(max_length=255)),
-                ('codigo_hierarquico', models.CharField(max_length=50)),
-                ('indicado_nome_civil', models.CharField(max_length=255)),
-                ('indicado_nome_servidor', models.CharField(max_length=255)),
-                ('indicado_rf', models.CharField(max_length=8)),
-                ('indicado_vinculo', models.IntegerField()),
-                ('indicado_cargo_base', models.CharField(max_length=255)),
-                ('indicado_lotacao', models.CharField(max_length=255)),
-                ('indicado_cargo_sobreposto', models.CharField(blank=True, default='', max_length=255)),
-                ('indicado_local_exercicio', models.CharField(max_length=255)),
-                ('indicado_local_servico', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_nome_civil', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_nome_servidor', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_rf', models.CharField(blank=True, default='', max_length=8)),
-                ('titular_vinculo', models.IntegerField(blank=True, null=True)),
-                ('titular_cargo_base', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_lotacao', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_cargo_sobreposto', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_local_exercicio', models.CharField(blank=True, default='', max_length=255)),
-                ('titular_local_servico', models.CharField(blank=True, default='', max_length=255)),
-                ('numero_portaria', models.CharField(max_length=20)),
-                ('ano_vigente', models.CharField(max_length=6)),
-                ('sei_numero', models.CharField(max_length=30)),
-                ('doc', models.CharField(blank=True, default='', max_length=100)),
-                ('data_inicio', models.DateField()),
-                ('data_fim', models.DateField(blank=True, null=True)),
-                ('carater_excepcional', models.BooleanField(default=False)),
-                ('impedimento_substituicao', models.CharField(blank=True, choices=[('LIC_GESTANTE', 'Por licença gestante'), ('LIC_MEDICA', 'Por licença médica'), ('LIC_PATERNIDADE', 'Por licença paternidade'), ('FERIAS', 'Por férias'), ('LIC_MAT_ESP', 'Por licença maternidade especial'), ('LIC_ADOCAO', 'Por licença adoção'), ('LIC_GUARDA', 'Por licença guarda de menor'), ('MANDATO_ELETIVO', 'Para concorrer a mandato eletivo (Portaria 20/SEGES/2024)'), ('LIC_NOJO', 'Por licença nojo'), ('LIC_GALA', 'Por licença gala'), ('AFAST_CURSOS', 'Por afastamento Por Cursos/Congressos/Competições'), ('LIC_MATERNIDADE', 'Por licença maternidade'), ('PRORROG_GESTANTE', 'Por prorrogação da licença à gestante'), ('PARENTAL_CURTA', 'Por licença parental de curta duração'), ('PARENTAL_LONGA', 'Por licença parental de longa duração'), ('EVENTO_REUNIAO', 'Por Evento/Reunião'), ('READAPT_FUNC', 'Por readaptação funcional (Art. 39 Lei 8.979/79)'), ('SERV_TEC_A', 'Para prestar serviços técnico-educacionais (Art. 66, IX, a)'), ('CARGO_COMISSAO', 'Por exercer cargos em comissão (Art. 45 Lei 8.989/79)'), ('SERV_TEC_B', 'Para prestar serviços técnico-educacionais (Art. 66, IX, b)'), ('TRANSF_TEMP', 'Por transferência temporária (Decreto 57.444/16)'), ('DIRIGENTE_SINDICAL', 'Por exercer mandato de dirigente sindical'), ('AFAST_EXCEP', 'Pelo afastamento excepcional (Art. 66, IX, b)')], default='', max_length=50)),
-                ('com_afastamento', models.BooleanField(default=False)),
-                ('possui_pendencia', models.BooleanField(default=False)),
-                ('pendencias', models.TextField(blank=True, default='')),
-                ('motivo_afastamento', models.TextField(blank=True, default='')),
-                ('tipo_vaga', models.CharField(choices=[('VAGO', 'Cargo Vago'), ('DISPONIVEL', 'Cargo Disponível')], max_length=15)),
-                ('cargo_vaga', models.IntegerField(blank=True, choices=[(3085, 'ASSISTENTE DE DIRETOR DE ESCOLA'), (3360, 'DIRETOR DE ESCOLA'), (3379, 'COORDENADOR PEDAGOGICO'), (3182, 'SECRETARIO DE ESCOLA'), (3352, 'SUPERVISOR ESCOLAR')], null=True)),
-                ('criado_em', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("dre_nome", models.CharField(max_length=255)),
+                ("unidade_proponente", models.CharField(max_length=255)),
+                ("codigo_hierarquico", models.CharField(max_length=50)),
+                ("indicado_nome_civil", models.CharField(max_length=255)),
+                ("indicado_nome_servidor", models.CharField(max_length=255)),
+                ("indicado_rf", models.CharField(max_length=8)),
+                ("indicado_vinculo", models.IntegerField()),
+                ("indicado_cargo_base", models.CharField(max_length=255)),
+                ("indicado_lotacao", models.CharField(max_length=255)),
+                (
+                    "indicado_cargo_sobreposto",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                ("indicado_local_exercicio", models.CharField(max_length=255)),
+                (
+                    "indicado_local_servico",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_nome_civil",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_nome_servidor",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                ("titular_rf", models.CharField(blank=True, default="", max_length=8)),
+                ("titular_vinculo", models.IntegerField(blank=True, null=True)),
+                (
+                    "titular_cargo_base",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_lotacao",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_cargo_sobreposto",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_local_exercicio",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                (
+                    "titular_local_servico",
+                    models.CharField(blank=True, default="", max_length=255),
+                ),
+                ("numero_portaria", models.CharField(max_length=20)),
+                ("ano_vigente", models.CharField(max_length=6)),
+                ("sei_numero", models.CharField(max_length=30)),
+                ("doc", models.CharField(blank=True, default="", max_length=100)),
+                ("data_inicio", models.DateField()),
+                ("data_fim", models.DateField(blank=True, null=True)),
+                ("carater_excepcional", models.BooleanField(default=False)),
+                (
+                    "impedimento_substituicao",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("LIC_GESTANTE", "Por licença gestante"),
+                            ("LIC_MEDICA", "Por licença médica"),
+                            ("LIC_PATERNIDADE", "Por licença paternidade"),
+                            ("FERIAS", "Por férias"),
+                            ("LIC_MAT_ESP", "Por licença maternidade especial"),
+                            ("LIC_ADOCAO", "Por licença adoção"),
+                            ("LIC_GUARDA", "Por licença guarda de menor"),
+                            (
+                                "MANDATO_ELETIVO",
+                                "Para concorrer a mandato eletivo (Portaria 20/SEGES/2024)",
+                            ),
+                            ("LIC_NOJO", "Por licença nojo"),
+                            ("LIC_GALA", "Por licença gala"),
+                            (
+                                "AFAST_CURSOS",
+                                "Por afastamento Por Cursos/Congressos/Competições",
+                            ),
+                            ("LIC_MATERNIDADE", "Por licença maternidade"),
+                            (
+                                "PRORROG_GESTANTE",
+                                "Por prorrogação da licença à gestante",
+                            ),
+                            ("PARENTAL_CURTA", "Por licença parental de curta duração"),
+                            ("PARENTAL_LONGA", "Por licença parental de longa duração"),
+                            ("EVENTO_REUNIAO", "Por Evento/Reunião"),
+                            (
+                                "READAPT_FUNC",
+                                "Por readaptação funcional (Art. 39 Lei 8.979/79)",
+                            ),
+                            (
+                                "SERV_TEC_A",
+                                "Para prestar serviços técnico-educacionais (Art. 66, IX, a)",
+                            ),
+                            (
+                                "CARGO_COMISSAO",
+                                "Por exercer cargos em comissão (Art. 45 Lei 8.989/79)",
+                            ),
+                            (
+                                "SERV_TEC_B",
+                                "Para prestar serviços técnico-educacionais (Art. 66, IX, b)",
+                            ),
+                            (
+                                "TRANSF_TEMP",
+                                "Por transferência temporária (Decreto 57.444/16)",
+                            ),
+                            (
+                                "DIRIGENTE_SINDICAL",
+                                "Por exercer mandato de dirigente sindical",
+                            ),
+                            (
+                                "AFAST_EXCEP",
+                                "Pelo afastamento excepcional (Art. 66, IX, b)",
+                            ),
+                        ],
+                        default="",
+                        max_length=50,
+                    ),
+                ),
+                ("com_afastamento", models.BooleanField(default=False)),
+                ("possui_pendencia", models.BooleanField(default=False)),
+                ("pendencias", models.TextField(blank=True, default="")),
+                ("motivo_afastamento", models.TextField(blank=True, default="")),
+                (
+                    "tipo_vaga",
+                    models.CharField(
+                        choices=[
+                            ("VAGO", "Cargo Vago"),
+                            ("DISPONIVEL", "Cargo Disponível"),
+                        ],
+                        max_length=15,
+                    ),
+                ),
+                (
+                    "cargo_vaga",
+                    models.IntegerField(
+                        blank=True,
+                        choices=[
+                            (3085, "ASSISTENTE DE DIRETOR DE ESCOLA"),
+                            (3360, "DIRETOR DE ESCOLA"),
+                            (3379, "COORDENADOR PEDAGOGICO"),
+                            (3182, "SECRETARIO DE ESCOLA"),
+                            (3352, "SUPERVISOR ESCOLAR"),
+                        ],
+                        null=True,
+                    ),
+                ),
+                ("criado_em", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'db_table': 'designacao',
+                "db_table": "designacao",
             },
         ),
     ]

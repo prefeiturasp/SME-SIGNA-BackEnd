@@ -1,8 +1,9 @@
-import pytest
 import secrets
+
+import pytest
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -11,7 +12,6 @@ User = get_user_model()
 def test_me_view_authenticated_user_returns_user_data():
     client = APIClient()
     password = secrets.token_urlsafe(16)
-
 
     user = User.objects.create_user(
         username="teste",

@@ -1,15 +1,16 @@
-import pytest
-from unittest.mock import patch, Mock
 from datetime import datetime
+from unittest.mock import Mock, patch
 
+import pytest
+
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.designacao_unidades_service import (
+    CicloService,
     DesignacaoUnidadeService,
     ModuloService,
-    TurmaService
+    TurmaService,
 )
 from apps.helpers.exceptions import SmeIntegracaoException
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
-from apps.designacao.services.designacao_unidades_service import CicloService
 
 
 @pytest.mark.django_db
@@ -25,19 +26,35 @@ class TestDesignacaoUnidadeService:
         "cargo_sobreposto_funcao_atividade",
         "local_de_exercicio",
         "laudo_medico",
-        "local_de_servico"
+        "local_de_servico",
     }
 
-    @patch("apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre"
+    )
     @patch("apps.designacao.services.designacao_unidades_service.datetime")
     @patch("apps.designacao.services.designacao_unidades_service.Calculadores")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp"
+    )
     def test_obter_informacoes_escolares_sucesso_completo(
         self,
         mock_usuario,
@@ -49,7 +66,7 @@ class TestDesignacaoUnidadeService:
         mock_dados_turma,
         mock_calculadores,
         mock_datetime,
-        mock_unidades
+        mock_unidades,
     ):
         mock_datetime.now.return_value = datetime(2024, 5, 20)
 
@@ -61,21 +78,20 @@ class TestDesignacaoUnidadeService:
         ]
 
         mock_buscar_funcionarios.return_value = [
-            {
-                "codigo_cargo": 1001,
-                "servidores": [{"rf": "RF001"}]
-            }
+            {"codigo_cargo": 1001, "servidores": [{"rf": "RF001"}]}
         ]
 
         mock_usuario.return_value = {"nome": "JOÃO", "codigoRf": "RF001"}
 
-        mock_consulta_cargos.return_value = [{
-            "cargoSobreposto": "CARGO_S",
-            "tipoVinculoCargoSobreposto": 3,
-            "ueCargoSobreposto": "UE_X",
-            "cargoBase": "BASE_X",
-            "funcaoAtividade": "FUNCAO_X"
-        }]
+        mock_consulta_cargos.return_value = [
+            {
+                "cargoSobreposto": "CARGO_S",
+                "tipoVinculoCargoSobreposto": 3,
+                "ueCargoSobreposto": "UE_X",
+                "cargoBase": "BASE_X",
+                "funcaoAtividade": "FUNCAO_X",
+            }
+        ]
 
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
@@ -95,16 +111,32 @@ class TestDesignacaoUnidadeService:
         assert resultado["codigo_hierarquico"] == "ABC123"
         assert "spi" in resultado
 
-    @patch("apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre"
+    )
     @patch("apps.designacao.services.designacao_unidades_service.datetime")
     @patch("apps.designacao.services.designacao_unidades_service.Calculadores")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp"
+    )
     def test_obter_informacoes_escolares_falha_integracao_servidor(
         self,
         mock_usuario,
@@ -116,7 +148,7 @@ class TestDesignacaoUnidadeService:
         mock_dados_turma,
         mock_calculadores,
         mock_datetime,
-        mock_unidades
+        mock_unidades,
     ):
         mock_datetime.now.return_value = datetime(2024, 1, 1)
 
@@ -150,19 +182,24 @@ class TestDesignacaoUnidadeService:
 
         with patch(
             "apps.designacao.services.designacao_unidades_service.Calculadores",
-            {"1001": mock_calc}
+            {"1001": mock_calc},
         ):
             resultado = ModuloService.definir_modulo(
-                {"codigo_cargo": "1001"},
-                {"totalAlunos": 500}
+                {"codigo_cargo": "1001"}, {"totalAlunos": 500}
             )
 
         assert resultado == 8
         mock_calc.calcular.assert_called_once()
 
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
     def test_calcular_turmas_turno_desconhecido(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
@@ -189,16 +226,24 @@ class TestDesignacaoUnidadeService:
 
         assert diretor["nomeCargo"] == "DIRETOR DE ESCOLA"
 
-    @patch("apps.designacao.services.designacao_unidades_service.CicloService.mapear_nome_ciclo")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.CicloService.mapear_nome_ciclo"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
     def test_calcular_turmas_ciclo_nao_mapeado(
         self,
         mock_buscar_turmas,
         mock_buscar_disciplinas,
         mock_dados_turma,
-        mock_mapear_ciclo
+        mock_mapear_ciclo,
     ):
         mock_mapear_ciclo.return_value = "cicloInexistente"
 
@@ -215,9 +260,15 @@ class TestDesignacaoUnidadeService:
 
         assert turno["cicloInexistente"] == 1
 
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
     def test_calcular_turmas_com_spi(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
@@ -237,18 +288,22 @@ class TestDesignacaoUnidadeService:
         assert spi["turnos"][0]["total"] == 1
         assert spi["turnos"][0]["cicloAlfabetizacao"] == 1
 
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
     def test_calcular_turmas_sem_spi(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
         ]
-        mock_buscar_disciplinas.return_value = [
-            {"disciplina": "Matemática"}
-        ]
+        mock_buscar_disciplinas.return_value = [{"disciplina": "Matemática"}]
         mock_dados_turma.return_value = {"tipoTurno": 1}
 
         resultado = TurmaService.calcular_turmas("UE123")
@@ -258,12 +313,24 @@ class TestDesignacaoUnidadeService:
         assert spi["total"] == 0
         assert spi["turnos"][0]["total"] == 0
 
-    @patch("apps.designacao.services.designacao_unidades_service.CicloService.mapear_nome_ciclo")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma")
-    @patch("apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.CicloService.mapear_nome_ciclo"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
     def test_calcular_turmas_spi_ciclo_nao_inicializado(
-        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma, mock_mapear_ciclo
+        self,
+        mock_buscar_turmas,
+        mock_buscar_disciplinas,
+        mock_dados_turma,
+        mock_mapear_ciclo,
     ):
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1 ano"}
@@ -281,6 +348,7 @@ class TestDesignacaoUnidadeService:
 
         assert spi_turno.get("cicloInexistenteNoSpi") == 1
         assert spi["total"] == 1
+
 
 class TestCicloService:
 
@@ -376,4 +444,5 @@ class TestFuncaoNormalizar:
 
     def test_normalizar_none(self):
         from apps.designacao.services.designacao_unidades_service import normalizar
+
         assert normalizar(None) == ""

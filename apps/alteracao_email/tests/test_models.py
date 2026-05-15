@@ -1,5 +1,7 @@
 import secrets
+
 import pytest
+
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
 
 

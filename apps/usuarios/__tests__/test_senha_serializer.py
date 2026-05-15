@@ -1,10 +1,8 @@
 import pytest
-
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-
-from django.contrib.auth import get_user_model
 
 from apps.usuarios.api.serializers.senha_serializer import (
     RedefinirSenhaSerializer,
@@ -18,8 +16,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_valid_data(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -45,8 +42,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_password_mismatch(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -81,8 +77,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_invalid_token(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -113,12 +108,9 @@ class TestRedefinirSenhaSerializer:
         assert serializer.errors["non_field_errors"][0] == "UID inválido ou malformado."
 
     def test_serializer_uid_not_numeric(self, django_user_model):
-        """
-        UID decodificado não numérico deve retornar uid_invalid
-        """
+        """UID decodificado não numérico deve retornar uid_invalid"""
         user = django_user_model.objects.create_user(
-            username="teste",
-            password="Senha@123"
+            username="teste", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes("abc"))

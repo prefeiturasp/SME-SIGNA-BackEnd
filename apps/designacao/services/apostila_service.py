@@ -4,14 +4,15 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila import Apostila
-from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.apostila_detalhe import ApostilaAlteracao, ApostilaDetalhe
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.apostila_detalhe import ApostilaDetalhe, ApostilaAlteracao
+from apps.designacao.models.designacao import Designacao
 
-
-_CAMPOS_ATO = frozenset({'sei_numero', 'doc'})
-_CAMPOS_PROTEGIDOS = frozenset({'id', 'tipo', 'ato_pai', 'ato_pai_id', 'ato_raiz', 'ato_raiz_id', 'criado_em'})
-_CAMPOS_EXCLUIDOS_DETALHE = frozenset({'ato_id', 'ato'})
+_CAMPOS_ATO = frozenset({"sei_numero", "doc"})
+_CAMPOS_PROTEGIDOS = frozenset(
+    {"id", "tipo", "ato_pai", "ato_pai_id", "ato_raiz", "ato_raiz_id", "criado_em"}
+)
+_CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 
 
 class ApostilaService:
@@ -23,10 +24,11 @@ class ApostilaService:
         designacao_id = data.pop("designacao")
         ato_apostilado = data.pop("ato_apostilado")
 
-        designacao = Designacao.objects.filter(
-            id=designacao_id,
-            is_deleted=False
-        ).select_related("cessacao").first()
+        designacao = (
+            Designacao.objects.filter(id=designacao_id, is_deleted=False)
+            .select_related("cessacao")
+            .first()
+        )
 
         if not designacao:
             raise ValidationError("Designação não encontrada.")
@@ -55,8 +57,7 @@ class ApostilaService:
             raise ValidationError("Não é possível apostilar um ato deletado.")
 
         queryset = Apostila.objects.filter(
-            is_deleted=False,
-            tipo=Apostila.Tipo.APOSTILA
+            is_deleted=False, tipo=Apostila.Tipo.APOSTILA
         )
 
         if alvo_designacao:
@@ -72,9 +73,7 @@ class ApostilaService:
         )
 
         if apostilas_ativas.exists():
-            raise ValidationError(
-                "Já existe uma apostila válida para este ato."
-            )
+            raise ValidationError("Já existe uma apostila válida para este ato.")
 
         return Apostila.objects.create(
             tipo=data.get("tipo"),
@@ -89,22 +88,32 @@ class ApostilaService:
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
-        ato_pai: AtoAdministrativo = data['ato_pai']
-        alteracoes: list = data.get('alteracoes', [])
+        ato_pai: AtoAdministrativo = data["ato_pai"]
+        alteracoes: list = data.get("alteracoes", [])
 
         if not ato_pai.eh_valido:
-            raise ValidationError({'ato_pai': 'Este ato está insubsistente.'})
+            raise ValidationError({"ato_pai": "Este ato está insubsistente."})
 
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             tem_cessacao_ativa = ato_pai.filhos.filter(
                 tipo=AtoAdministrativo.Tipo.CESSACAO, ativo=True
             ).exists()
             if tem_cessacao_ativa:
-                raise ValidationError({'ato_pai': 'Não é possível apostilar uma designação cessada.'})
+                raise ValidationError(
+                    {"ato_pai": "Não é possível apostilar uma designação cessada."}
+                )
 
-            detalhe = getattr(ato_pai, 'designacao_detalhe', None)
-            if detalhe and detalhe.data_fim and detalhe.data_fim < datetime.date.today():
-                raise ValidationError({'ato_pai': 'Não é possível apostilar uma designação com prazo finalizado.'})
+            detalhe = getattr(ato_pai, "designacao_detalhe", None)
+            if (
+                detalhe
+                and detalhe.data_fim
+                and detalhe.data_fim < datetime.date.today()
+            ):
+                raise ValidationError(
+                    {
+                        "ato_pai": "Não é possível apostilar uma designação com prazo finalizado."
+                    }
+                )
 
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
 
@@ -116,11 +125,13 @@ class ApostilaService:
             )
             apostila_detalhe = ApostilaDetalhe.objects.create(
                 ato=ato,
-                observacao=data['observacao'],
+                observacao=data["observacao"],
             )
 
             if alteracoes:
-                ApostilaService._aplicar_alteracoes(ato_pai, apostila_detalhe, alteracoes)
+                ApostilaService._aplicar_alteracoes(
+                    ato_pai, apostila_detalhe, alteracoes
+                )
 
         return ato
 
@@ -133,12 +144,16 @@ class ApostilaService:
         """Retorna (destino, valor_anterior) onde destino é 'ato_pai' ou 'detalhe'."""
         if hasattr(ato_pai, campo):
             raw = getattr(ato_pai, campo)
-            return 'ato_pai', ('' if raw is None else str(raw))
-        if detalhe and hasattr(detalhe, campo) and campo not in _CAMPOS_EXCLUIDOS_DETALHE:
+            return "ato_pai", ("" if raw is None else str(raw))
+        if (
+            detalhe
+            and hasattr(detalhe, campo)
+            and campo not in _CAMPOS_EXCLUIDOS_DETALHE
+        ):
             raw = getattr(detalhe, campo)
-            return 'detalhe', ('' if raw is None else str(raw))
+            return "detalhe", ("" if raw is None else str(raw))
         raise ValidationError(
-            {'alteracoes': f"Campo '{campo}' não encontrado no ato pai."}
+            {"alteracoes": f"Campo '{campo}' não encontrado no ato pai."}
         )
 
     @staticmethod
@@ -148,33 +163,39 @@ class ApostilaService:
         alteracoes: list,
     ) -> None:
         detalhe = ApostilaService._get_detalhe(ato_pai)
-        buckets: dict[str, dict] = {'ato_pai': {}, 'detalhe': {}}
+        buckets: dict[str, dict] = {"ato_pai": {}, "detalhe": {}}
         registros = []
 
         for alt in alteracoes:
-            campo = alt['campo_alterado']
-            valor_novo = str(alt['valor_novo'])
+            campo = alt["campo_alterado"]
+            valor_novo = str(alt["valor_novo"])
 
             if campo in _CAMPOS_PROTEGIDOS:
                 raise ValidationError(
-                    {'alteracoes': f"Campo '{campo}' não pode ser alterado via apostila."}
+                    {
+                        "alteracoes": f"Campo '{campo}' não pode ser alterado via apostila."
+                    }
                 )
 
-            destino, valor_anterior = ApostilaService._encontrar_campo(campo, ato_pai, detalhe)
+            destino, valor_anterior = ApostilaService._encontrar_campo(
+                campo, ato_pai, detalhe
+            )
             buckets[destino][campo] = valor_novo
 
-            registros.append(ApostilaAlteracao(
-                apostila=apostila_detalhe,
-                campo_alterado=campo,
-                valor_anterior=valor_anterior,
-                valor_novo=valor_novo,
-            ))
+            registros.append(
+                ApostilaAlteracao(
+                    apostila=apostila_detalhe,
+                    campo_alterado=campo,
+                    valor_anterior=valor_anterior,
+                    valor_novo=valor_novo,
+                )
+            )
 
-        if buckets['ato_pai']:
-            ApostilaService._salvar_updates(ato_pai, buckets['ato_pai'])
+        if buckets["ato_pai"]:
+            ApostilaService._salvar_updates(ato_pai, buckets["ato_pai"])
 
-        if buckets['detalhe']:
-            ApostilaService._salvar_updates(detalhe, buckets['detalhe'])
+        if buckets["detalhe"]:
+            ApostilaService._salvar_updates(detalhe, buckets["detalhe"])
 
         ApostilaAlteracao.objects.bulk_create(registros)
 
@@ -187,7 +208,7 @@ class ApostilaService:
     @staticmethod
     def _get_detalhe(ato_pai: AtoAdministrativo):
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
-            return getattr(ato_pai, 'designacao_detalhe', None)
+            return getattr(ato_pai, "designacao_detalhe", None)
         if ato_pai.tipo == AtoAdministrativo.Tipo.CESSACAO:
-            return getattr(ato_pai, 'cessacao_detalhe', None)
+            return getattr(ato_pai, "cessacao_detalhe", None)
         return None

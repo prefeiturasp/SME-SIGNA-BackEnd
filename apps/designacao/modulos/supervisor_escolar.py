@@ -4,8 +4,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModuloSupervisorEscolarCalculator:
-    """
-    Regra de cálculo de módulo para o cargo:
+    """Regra de cálculo de módulo para o cargo:
     - 3352 (Supervisor Escolar)
 
     O módulo é definido exclusivamente pela DRE da unidade escolar.

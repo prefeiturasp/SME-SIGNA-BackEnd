@@ -1,6 +1,8 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
+
 
 class AlteracaoEmail(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

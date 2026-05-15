@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="designacao",
             name="dre",
-            field=models.CharField(default='109200', max_length=50),
+            field=models.CharField(default="109200", max_length=50),
             preserve_default=False,
         ),
         migrations.AddField(

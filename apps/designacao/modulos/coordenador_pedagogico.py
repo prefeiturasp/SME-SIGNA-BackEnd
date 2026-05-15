@@ -4,8 +4,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModuloCoordenadorPedagogicoCalculator:
-    """
-    Regra de cálculo de módulo para o cargo:
+    """Regra de cálculo de módulo para o cargo:
     - 3379 (Coordenador Pedagógico)
 
     Baseado nas normas vigentes da SME.

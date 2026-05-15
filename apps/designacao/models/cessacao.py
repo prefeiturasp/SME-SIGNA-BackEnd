@@ -5,9 +5,7 @@ from django.utils import timezone
 class Cessacao(models.Model):
 
     designacao = models.OneToOneField(
-        'Designacao',
-        on_delete=models.PROTECT,
-        related_name='cessacao'
+        "Designacao", on_delete=models.PROTECT, related_name="cessacao"
     )
 
     numero_portaria = models.CharField(max_length=20)
@@ -18,18 +16,14 @@ class Cessacao(models.Model):
     remocao = models.BooleanField(default=False)
     aposentadoria = models.BooleanField(default=False)
     data_designacao = models.DateField()
-    doc = models.CharField(  # D.O
-        max_length=100,
-        blank=True,
-        default=""
-    )
+    doc = models.CharField(max_length=100, blank=True, default="")  # D.O
 
     criado_em = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = 'cessacao'
+        db_table = "cessacao"
 
     def delete(self, *args, **kwargs):
         self.is_deleted = True

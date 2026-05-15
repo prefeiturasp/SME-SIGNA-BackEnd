@@ -1,8 +1,21 @@
-from .designacao import Designacao, ImpedimentoSubstituicao
-from .cessacao import Cessacao
 from .apostila import Apostila
+from .apostila_detalhe import ApostilaAlteracao, ApostilaDetalhe
 from .ato_administrativo import AtoAdministrativo
-from .designacao_detalhe import DesignacaoDetalhe
+from .cessacao import Cessacao
 from .cessacao_detalhe import CessacaoDetalhe
-from .apostila_detalhe import ApostilaDetalhe, ApostilaAlteracao
+from .designacao import Designacao, ImpedimentoSubstituicao
+from .designacao_detalhe import DesignacaoDetalhe
 from .insubsistencia_detalhe import InsubsistenciaDetalhe
+
+__all__ = [
+    "Apostila",
+    "ApostilaAlteracao",
+    "ApostilaDetalhe",
+    "AtoAdministrativo",
+    "Cessacao",
+    "CessacaoDetalhe",
+    "Designacao",
+    "DesignacaoDetalhe",
+    "ImpedimentoSubstituicao",
+    "InsubsistenciaDetalhe",
+]

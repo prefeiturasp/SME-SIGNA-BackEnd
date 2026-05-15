@@ -1,0 +1,73 @@
+[project]
+name = "sme-signa-backend"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "I", # isort
+    "D", # pydocstyle / PEP 257
+]
+
+ignore = [
+    # Docstrings excessivamente burocráticas
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D106", # Missing docstring in nested class
+    "D107", # Missing docstring in __init__
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/__init__.py" = ["F401"]
+"*/migrations/*" = ["D", "E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+ignore_missing_imports = false
+
+exclude = [
+    "venv",
+    "migrations",
+]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.base"
+
+[[tool.mypy.overrides]]
+module = ["*.migrations.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["environ"]
+ignore_missing_imports = true

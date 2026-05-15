@@ -2,6 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ModuloLotacaoCalculator:
 
     CARGO_DIRETOR = "3360"

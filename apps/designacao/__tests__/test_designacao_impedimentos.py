@@ -1,23 +1,26 @@
+from unittest.mock import MagicMock
+
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
-from unittest.mock import MagicMock
-from apps.designacao.api.views.designacao_impedimentos_view import ImpedimentoSubstituicaoView
+
+from apps.designacao.api.views.designacao_impedimentos_view import (
+    ImpedimentoSubstituicaoView,
+)
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
+
 
 class TestImpedimentoSubstituicaoView(TestCase):
 
     def test_get_impedimento_substituicao_choices_success(self):
         ImpedimentoSubstituicao.objects.get_or_create(
-            codigo='LIC_MEDICA',
-            defaults={"descricao": "Por licença médica"}
+            codigo="LIC_MEDICA", defaults={"descricao": "Por licença médica"}
         )
         ImpedimentoSubstituicao.objects.get_or_create(
-            codigo='FERIAS',
-            defaults={"descricao": "Por férias"}
+            codigo="FERIAS", defaults={"descricao": "Por férias"}
         )
 
         factory = APIRequestFactory()
-        request = factory.get('/qualquer-url/')
+        request = factory.get("/qualquer-url/")
 
         user = MagicMock()
         force_authenticate(request, user=user)

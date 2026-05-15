@@ -1,9 +1,9 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 
 from apps.designacao.models.apostila import Apostila
 from apps.designacao.models.designacao import Designacao
@@ -14,7 +14,9 @@ User = get_user_model()
 @pytest.fixture
 def api_client(django_user_model):
     client = APIClient()
-    user = django_user_model.objects.create_user(username='testuser_apostila', password='password123')
+    user = django_user_model.objects.create_user(
+        username="testuser_apostila", password="password123"
+    )
     client.force_authenticate(user=user)
     return client
 
@@ -55,35 +57,35 @@ def apostila(db, designacao):
 class TestApostilaViewSet:
 
     def test_list_apostilas(self, api_client, apostila):
-        url = reverse('designacao:apostilas')
+        url = reverse("designacao:apostilas")
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
 
     def test_retrieve_apostila(self, api_client, apostila):
-        url = reverse('designacao:apostila-detail', kwargs={'pk': apostila.id})
+        url = reverse("designacao:apostila-detail", kwargs={"pk": apostila.id})
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['id'] == apostila.id
+        assert response.data["id"] == apostila.id
 
     def test_create_apostila_sucesso(self, api_client, designacao):
-        url = reverse('designacao:apostilas')
+        url = reverse("designacao:apostilas")
         data = {
-            'designacao': designacao.id,
-            'ato_apostilado': 'designacao',
-            'tipo': Apostila.Tipo.APOSTILA,
-            'sei_numero': '999',
-            'observacao': 'Criado via View',
+            "designacao": designacao.id,
+            "ato_apostilado": "designacao",
+            "tipo": Apostila.Tipo.APOSTILA,
+            "sei_numero": "999",
+            "observacao": "Criado via View",
         }
-        response = api_client.post(url, data, format='json')
+        response = api_client.post(url, data, format="json")
         assert response.status_code == status.HTTP_201_CREATED
         assert Apostila.objects.filter(designacao=designacao).exists()
 
     def test_create_apostila_erro_validacao(self, api_client):
-        url = reverse('designacao:apostilas')
-        response = api_client.post(url, {}, format='json')
+        url = reverse("designacao:apostilas")
+        response = api_client.post(url, {}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_retrieve_apostila_nao_encontrada(self, api_client):
-        url = reverse('designacao:apostila-detail', kwargs={'pk': 9999})
+        url = reverse("designacao:apostila-detail", kwargs={"pk": 9999})
         response = api_client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND

@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from django.core.validators import validate_email
+from rest_framework import serializers
 
 from apps.usuarios.models import User
 
@@ -10,7 +10,7 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         error_messages={
             "blank": "O campo de e-mail é obrigatório.",
             "required": "O campo de e-mail é obrigatório.",
-        }
+        },
     )
 
     def is_valid(self, raise_exception=False):
@@ -19,7 +19,9 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         if not valid:
 
             first_error = next(iter(self.errors.values()))
-            message = first_error[0] if isinstance(first_error, list) else str(first_error)
+            message = (
+                first_error[0] if isinstance(first_error, list) else str(first_error)
+            )
 
             self._errors = {"detail": message}
 
@@ -32,11 +34,13 @@ class AlteracaoEmailSerializer(serializers.Serializer):
 
         usuario = self.context["request"].user
         if usuario.email == value:
-            raise serializers.ValidationError("O novo e-mail não pode ser igual ao atual.")
+            raise serializers.ValidationError(
+                "O novo e-mail não pode ser igual ao atual."
+            )
 
         if not value.endswith("@sme.prefeitura.sp.gov.br"):
             raise serializers.ValidationError("Utilize seu e-mail institucional.")
-        
+
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Este e-mail já está cadastrado.")
 
