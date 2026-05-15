@@ -11,6 +11,7 @@ from apps.designacao.models.apostila_detalhe import ApostilaDetalhe, ApostilaAlt
 
 _CAMPOS_ATO = frozenset({'sei_numero', 'doc'})
 _CAMPOS_PROTEGIDOS = frozenset({'id', 'tipo', 'ato_pai', 'ato_pai_id', 'ato_raiz', 'ato_raiz_id', 'criado_em'})
+_CAMPOS_EXCLUIDOS_DETALHE = frozenset({'ato_id', 'ato'})
 
 
 class ApostilaService:
@@ -124,15 +125,30 @@ class ApostilaService:
         return ato
 
     @staticmethod
+    def _encontrar_campo(
+        campo: str,
+        ato_pai: AtoAdministrativo,
+        detalhe,
+    ) -> tuple[str, str]:
+        """Retorna (destino, valor_anterior) onde destino é 'ato_pai' ou 'detalhe'."""
+        if hasattr(ato_pai, campo):
+            raw = getattr(ato_pai, campo)
+            return 'ato_pai', ('' if raw is None else str(raw))
+        if detalhe and hasattr(detalhe, campo) and campo not in _CAMPOS_EXCLUIDOS_DETALHE:
+            raw = getattr(detalhe, campo)
+            return 'detalhe', ('' if raw is None else str(raw))
+        raise ValidationError(
+            {'alteracoes': f"Campo '{campo}' não encontrado no ato pai."}
+        )
+
+    @staticmethod
     def _aplicar_alteracoes(
         ato_pai: AtoAdministrativo,
         apostila_detalhe: ApostilaDetalhe,
         alteracoes: list,
     ) -> None:
         detalhe = ApostilaService._get_detalhe(ato_pai)
-
-        ato_pai_updates = {}
-        detalhe_updates = {}
+        buckets: dict[str, dict] = {'ato_pai': {}, 'detalhe': {}}
         registros = []
 
         for alt in alteracoes:
@@ -144,16 +160,8 @@ class ApostilaService:
                     {'alteracoes': f"Campo '{campo}' não pode ser alterado via apostila."}
                 )
 
-            if hasattr(ato_pai, campo):
-                valor_anterior = str(getattr(ato_pai, campo) or '')
-                ato_pai_updates[campo] = valor_novo
-            elif detalhe and hasattr(detalhe, campo) and campo not in ('ato_id', 'ato'):
-                valor_anterior = str(getattr(detalhe, campo) or '')
-                detalhe_updates[campo] = valor_novo
-            else:
-                raise ValidationError(
-                    {'alteracoes': f"Campo '{campo}' não encontrado no ato pai."}
-                )
+            destino, valor_anterior = ApostilaService._encontrar_campo(campo, ato_pai, detalhe)
+            buckets[destino][campo] = valor_novo
 
             registros.append(ApostilaAlteracao(
                 apostila=apostila_detalhe,
@@ -162,11 +170,11 @@ class ApostilaService:
                 valor_novo=valor_novo,
             ))
 
-        if ato_pai_updates:
-            ApostilaService._salvar_updates(ato_pai, ato_pai_updates)
+        if buckets['ato_pai']:
+            ApostilaService._salvar_updates(ato_pai, buckets['ato_pai'])
 
-        if detalhe_updates:
-            ApostilaService._salvar_updates(detalhe, detalhe_updates)
+        if buckets['detalhe']:
+            ApostilaService._salvar_updates(detalhe, buckets['detalhe'])
 
         ApostilaAlteracao.objects.bulk_create(registros)
 

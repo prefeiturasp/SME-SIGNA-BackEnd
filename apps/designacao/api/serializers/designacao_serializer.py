@@ -22,9 +22,12 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     doc             = serializers.CharField(max_length=100, required=False, default='', allow_blank=True)
 
     # Unidade
-    dre_nome           = serializers.CharField(max_length=255)
-    unidade_proponente = serializers.CharField(max_length=255)
-    codigo_hierarquico = serializers.CharField(max_length=50)
+    dre_nome                = serializers.CharField(max_length=255)
+    unidade_proponente      = serializers.CharField(max_length=255)
+    codigo_hierarquico      = serializers.CharField(max_length=50)
+    dre                     = serializers.CharField(max_length=50, required=False, default='', allow_blank=True)
+    ue                      = serializers.CharField(max_length=50, required=False, default='', allow_blank=True)
+    funcionarios_da_unidade = serializers.CharField(max_length=50, required=False, default='', allow_blank=True)
 
     # Indicado
     indicado_nome_civil              = serializers.CharField(max_length=255, allow_blank=True)
@@ -57,11 +60,13 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     data_fim    = serializers.DateField(required=False, allow_null=True)
 
     # Flags
-    carater_excepcional = serializers.BooleanField(required=False, default=False)
-    com_afastamento     = serializers.BooleanField(required=False, default=False)
-    possui_pendencia    = serializers.BooleanField(required=False, default=False)
-    pendencias          = serializers.CharField(required=False, default='', allow_blank=True)
-    motivo_afastamento  = serializers.CharField(required=False, default='', allow_blank=True)
+    carater_excepcional                      = serializers.BooleanField(required=False, default=False)
+    com_afastamento                          = serializers.BooleanField(required=False, default=False)
+    possui_pendencia                         = serializers.BooleanField(required=False, default=False)
+    pendencias                               = serializers.CharField(required=False, default='', allow_blank=True)
+    motivo_afastamento                       = serializers.CharField(required=False, default='', allow_blank=True)
+    informacoes_adicionais                   = serializers.CharField(required=False, default='', allow_blank=True)
+    detalhe_para_quadro_de_historico_por_ano = serializers.BooleanField(required=False, default=True)
 
     # Impedimento
     impedimento_substituicao = serializers.PrimaryKeyRelatedField(
@@ -86,9 +91,12 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
 
     # Unidade
-    dre_nome           = serializers.CharField(source='designacao_detalhe.dre_nome',           read_only=True)
-    unidade_proponente = serializers.CharField(source='designacao_detalhe.unidade_proponente', read_only=True)
-    codigo_hierarquico = serializers.CharField(source='designacao_detalhe.codigo_hierarquico', read_only=True)
+    dre_nome                = serializers.CharField(source='designacao_detalhe.dre_nome',                read_only=True)
+    unidade_proponente      = serializers.CharField(source='designacao_detalhe.unidade_proponente',      read_only=True)
+    codigo_hierarquico      = serializers.CharField(source='designacao_detalhe.codigo_hierarquico',      read_only=True)
+    dre                     = serializers.CharField(source='designacao_detalhe.dre',                     read_only=True)
+    ue                      = serializers.CharField(source='designacao_detalhe.ue',                      read_only=True)
+    funcionarios_da_unidade = serializers.CharField(source='designacao_detalhe.funcionarios_da_unidade', read_only=True)
 
     # Indicado
     indicado_nome_civil              = serializers.CharField(source='designacao_detalhe.indicado_nome_civil',              read_only=True)
@@ -121,11 +129,13 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     data_fim    = serializers.DateField(source='designacao_detalhe.data_fim',    read_only=True, allow_null=True)
 
     # Flags
-    carater_excepcional = serializers.BooleanField(source='designacao_detalhe.carater_excepcional', read_only=True)
-    com_afastamento     = serializers.BooleanField(source='designacao_detalhe.com_afastamento',     read_only=True)
-    possui_pendencia    = serializers.BooleanField(source='designacao_detalhe.possui_pendencia',    read_only=True)
-    pendencias          = serializers.CharField(source='designacao_detalhe.pendencias',             read_only=True)
-    motivo_afastamento  = serializers.CharField(source='designacao_detalhe.motivo_afastamento',     read_only=True)
+    carater_excepcional                      = serializers.BooleanField(source='designacao_detalhe.carater_excepcional',                      read_only=True)
+    com_afastamento                          = serializers.BooleanField(source='designacao_detalhe.com_afastamento',                          read_only=True)
+    possui_pendencia                         = serializers.BooleanField(source='designacao_detalhe.possui_pendencia',                         read_only=True)
+    pendencias                               = serializers.CharField(source='designacao_detalhe.pendencias',                                  read_only=True)
+    motivo_afastamento                       = serializers.CharField(source='designacao_detalhe.motivo_afastamento',                          read_only=True)
+    informacoes_adicionais                   = serializers.CharField(source='designacao_detalhe.informacoes_adicionais',                      read_only=True)
+    detalhe_para_quadro_de_historico_por_ano = serializers.BooleanField(source='designacao_detalhe.detalhe_para_quadro_de_historico_por_ano', read_only=True)
 
     # Impedimento
     impedimento_substituicao = serializers.PrimaryKeyRelatedField(
@@ -154,6 +164,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             'numero_portaria', 'ano_vigente', 'sei_numero', 'doc', 'criado_em',
             # Unidade
             'dre_nome', 'unidade_proponente', 'codigo_hierarquico',
+            'dre', 'ue', 'funcionarios_da_unidade',
             # Indicado
             'indicado_nome_civil', 'indicado_nome_servidor', 'indicado_rf',
             'indicado_vinculo', 'indicado_cargo_base', 'indicado_codigo_cargo_base',
@@ -169,6 +180,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             # Flags
             'carater_excepcional', 'com_afastamento', 'possui_pendencia',
             'pendencias', 'motivo_afastamento',
+            'informacoes_adicionais', 'detalhe_para_quadro_de_historico_por_ano',
             # Impedimento
             'impedimento_substituicao', 'impedimento_substituicao_detail', 'impedimento_display',
             # Vaga
@@ -222,6 +234,24 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
                 'data_cessacao': d.data_cessacao,
                 'criado_em': cessacao_ato.criado_em,
                 'apostilas': self._serializar_apostilas(cessacao_ato),
+                'insubsistencia': self._serializar_insubsistencia(cessacao_ato),
+            }
+        except Exception:
+            return None
+
+    def _serializar_insubsistencia(self, ato):
+        insub = next(
+            (f for f in ato.filhos.all()
+             if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido),
+            None,
+        )
+        if not insub:
+            return None
+        try:
+            d = insub.insubsistencia_detalhe
+            return {
+                'id': insub.id,
+                'observacoes': d.observacoes,
             }
         except Exception:
             return None
