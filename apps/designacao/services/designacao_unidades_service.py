@@ -272,10 +272,7 @@ class DesignacaoUnidadeService:
         cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
         info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
         # to-do ajustar apos a API DO EOL voltar a funcionar 
-        # codigo_dre = info_ue.get("codigoDRE")
-        # unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre)
-
-        # unidade = next((u for u in unidades if u.get("codigoUe") == codigo_ue), None)
+        
 
         turmas = TurmaService.calcular_turmas(codigo_ue)
         info_ue["turmas"] = turmas
