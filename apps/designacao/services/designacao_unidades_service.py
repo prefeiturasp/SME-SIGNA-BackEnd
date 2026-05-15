@@ -271,11 +271,11 @@ class DesignacaoUnidadeService:
     def obter_informacoes_escolares(cls, codigo_ue: str) -> Dict[str, Any]:
         cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
         info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
+        # to-do ajustar apos a API DO EOL voltar a funcionar 
+        # codigo_dre = info_ue.get("codigoDRE")
+        # unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre)
 
-        codigo_dre = info_ue.get("codigoDRE")
-        unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre)
-
-        unidade = next((u for u in unidades if u.get("codigoUe") == codigo_ue), None)
+        # unidade = next((u for u in unidades if u.get("codigoUe") == codigo_ue), None)
 
         turmas = TurmaService.calcular_turmas(codigo_ue)
         info_ue["turmas"] = turmas
@@ -290,7 +290,8 @@ class DesignacaoUnidadeService:
             "cargos": DesignacaoDetalhe.get_cargos_formatados(),
             "funcionarios_unidade": {c["codigo_cargo"]: c for c in cargos},
             "turmas": turmas,
-            "codigo_hierarquico": unidade.get("codigoIntegracao") if unidade else None,
+            # "codigo_hierarquico": unidade.get("codigoIntegracao") if unidade else None,
+            "codigo_hierarquico":"indisponível",
             "spi": turmas.get("spi"),
         }
 
