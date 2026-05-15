@@ -47,7 +47,6 @@ class PortariaListViewSet(
     def get_queryset(self):
         return (
             AtoAdministrativo.objects
-            .filter(ativo=True)
             .select_related(
                 'designacao_detalhe',
                 'cessacao_detalhe',

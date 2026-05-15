@@ -173,11 +173,6 @@ class TestPortariaListView:
         assert isinstance(response.data, list)
         assert len(response.data) == 2
 
-    def test_nao_retorna_inativos(self, auth_client, designacao, inativo):
-        response = auth_client.get(URL_LIST)
-        ids = [item['id'] for item in response.data]
-        assert inativo.pk not in ids
-
     def test_campos_retornados(self, auth_client, designacao):
         response = auth_client.get(URL_LIST)
         item = response.data[0]
