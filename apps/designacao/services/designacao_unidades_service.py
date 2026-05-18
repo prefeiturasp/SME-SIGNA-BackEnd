@@ -7,7 +7,7 @@ from apps.designacao.services.designacao_servidor_service import DesignacaoServi
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.helpers.exceptions import SmeIntegracaoException
 from apps.designacao.modulos import Calculadores
-from apps.designacao.models import Designacao
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.unidades.services.unidades_service import UnidadeIntegracaoService
 
 import re
@@ -287,7 +287,7 @@ class DesignacaoUnidadeService:
             ]
 
         return {
-            "cargos": Designacao.get_cargos_formatados(),
+            "cargos": DesignacaoDetalhe.get_cargos_formatados(),
             "funcionarios_unidade": {c["codigo_cargo"]: c for c in cargos},
             "turmas": turmas,
             "codigo_hierarquico": unidade.get("codigoIntegracao") if unidade else None,
@@ -296,4 +296,4 @@ class DesignacaoUnidadeService:
 
     @staticmethod
     def listar_cargos_vaga():
-        return Designacao.get_cargos_formatados()
+        return DesignacaoDetalhe.get_cargos_formatados()

@@ -28,9 +28,12 @@ class Designacao(models.Model):
     dre_nome = models.CharField(max_length=255)
     unidade_proponente = models.CharField(max_length=255)
     codigo_hierarquico = models.CharField(max_length=50)
+    ue = models.CharField(max_length=50)
+    dre = models.CharField(max_length=50)
+    funcionarios_da_unidade = models.CharField(max_length=50)
 
     # --- Indicado ---
-    indicado_nome_civil = models.CharField(max_length=255)
+    indicado_nome_civil = models.CharField(max_length=255, blank=True, default="")
     indicado_nome_servidor = models.CharField(max_length=255)
     indicado_rf = models.CharField(max_length=8)
     indicado_vinculo = models.IntegerField()
@@ -74,6 +77,10 @@ class Designacao(models.Model):
     possui_pendencia = models.BooleanField(default=False)
     pendencias = models.TextField(blank=True, default="")
     motivo_afastamento = models.TextField(blank=True, default="")
+
+    # --- Informações Adicionais --- 
+    informacoes_adicionais = models.TextField(blank=True, default="")
+    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
 
     # --- Vaga ---
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)

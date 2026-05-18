@@ -1,9 +1,11 @@
 import pytest
+from django.utils import timezone
+
 from apps.designacao.models.apostila import Apostila
-from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.cessacao import Cessacao
-from django.utils import timezone
+from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
+
 
 @pytest.mark.django_db
 class TestApostilaSerializer:
@@ -25,7 +27,7 @@ class TestApostilaSerializer:
             ano_vigente="2026",
             sei_numero="111",
             data_inicio=timezone.now().date(),
-            tipo_vaga=Designacao.TipoVaga.DISPONIVEL
+            tipo_vaga=Designacao.TipoVaga.DISPONIVEL,
         )
 
     @pytest.fixture
@@ -35,11 +37,10 @@ class TestApostilaSerializer:
             designacao=designacao,
             sei_numero="555",
             observacao="Obs Teste",
-            d_o="2026-01-01"
+            d_o="2026-01-01",
         )
 
     def test_serialization_campos_reais(self, apostila):
-        """Testa se o serializer renderiza os dados básicos corretamente"""
         serializer = ApostilaSerializer(instance=apostila)
         data = serializer.data
         assert data['id'] == apostila.id
@@ -47,56 +48,44 @@ class TestApostilaSerializer:
         assert 'tipo' in data
 
     def test_deserialization_e_validacao(self, designacao):
-            """Testa se o serializer valida os IDs de entrada corretamente"""
-            input_data = {
-                "designacao": designacao.id,
-                "ato_apostilado": "designacao",
-                "tipo": Apostila.Tipo.APOSTILA,
-                "sei_numero": "999",
-                "observacao": "Teste"
-            }
-            serializer = ApostilaSerializer(data=input_data)
-
-            assert serializer.is_valid(), serializer.errors
-
-            if 'designacao' in serializer.validated_data:
-                valor_designacao = serializer.validated_data['designacao']
-                
-                if hasattr(valor_designacao, 'id'):
-                    assert valor_designacao.id == designacao.id
-                else:
-                    assert valor_designacao == designacao.id
+        input_data = {
+            "designacao": designacao.id,
+            "ato_apostilado": "designacao",
+            "tipo": Apostila.Tipo.APOSTILA,
+            "sei_numero": "999",
+            "observacao": "Teste",
+        }
+        serializer = ApostilaSerializer(data=input_data)
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data['designacao'] == designacao.id
 
     def test_to_representation_com_cessacao(self, designacao):
-        """Testa o output com objeto de cessação"""
         cessacao = Cessacao.objects.create(
             designacao=designacao,
             numero_portaria="456",
             ano_vigente="2026",
             sei_numero="222",
-            data_designacao=timezone.now().date()
+            data_designacao=timezone.now().date(),
         )
         apostila_cessacao = Apostila.objects.create(
             tipo=Apostila.Tipo.APOSTILA,
             cessacao=cessacao,
-            sei_numero="777"
+            sei_numero="777",
         )
         serializer = ApostilaSerializer(instance=apostila_cessacao)
         assert serializer.data['sei_numero'] == '777'
 
     def test_validacao_erro_vazio(self):
-        """Garante que dados inválidos barram a validação"""
         serializer = ApostilaSerializer(data={})
         assert not serializer.is_valid()
         assert len(serializer.errors) > 0
 
     def test_apostila_anulacao(self, designacao, apostila):
-        """Testa o vínculo de referência em anulações"""
         apostila_anulacao = Apostila.objects.create(
             tipo=Apostila.Tipo.ANULACAO,
             designacao=designacao,
             apostila_referencia=apostila,
-            sei_numero="888"
+            sei_numero="888",
         )
         serializer = ApostilaSerializer(instance=apostila_anulacao)
         assert 'tipo' in serializer.data

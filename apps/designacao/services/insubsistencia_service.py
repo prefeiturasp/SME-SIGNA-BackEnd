@@ -1,61 +1,160 @@
-from ast import Dict
-from typing import Any
-from django.db.models import F
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
+
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 from apps.designacao.models.designacao import Designacao
-from apps.designacao.models.insubsistencia import Insubsistencia
-from apps.helpers.exceptions import CessacaoNotFoundError
+
+
+_CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
+
+
+def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]:
+    return list(
+        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list('pk', flat=True)
+    )
 
 
 class InsubsistenciaService:
 
     @staticmethod
-    def montar_dados_insubsistencia_cessacao(serializer):
-        """
-        Monta o dicionário padronizado de insubsistência de cessação.
-        """
+    def criar(data: dict) -> AtoAdministrativo:
+        ato_pai: AtoAdministrativo = data['ato_pai']
 
-        designacao = serializer.validated_data.get('designacao')
- 
- 
-        designacao_obj = Designacao.objects.select_related('cessacao').filter(
-            id=designacao.id,
-            is_deleted=False,
-        ).first()
+        if not ato_pai.eh_valido:
+            raise ValidationError({'ato_pai': 'Este ato já está insubsistente.'})
 
+        if ato_pai.filhos.filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ativo=True).exists():
+            raise ValidationError({'ato_pai': 'Este ato já possui uma insubsistência ativa.'})
 
-        cessacao_relacionada = getattr(designacao_obj, 'cessacao', None)
-        if not cessacao_relacionada:
-            raise CessacaoNotFoundError("Cessação não encontrada")
+        data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
+        observacoes = data.get('observacoes', '')
 
-        serializer.validated_data['cessacao'] = cessacao_relacionada
-        serializer.validated_data['designacao'] = None
+        with transaction.atomic():
+            ato = AtoAdministrativo.objects.create(
+                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+                ato_pai=ato_pai,
+                **data_ato,
+            )
+            InsubsistenciaDetalhe.objects.create(ato=ato, observacoes=observacoes)
 
-        return serializer
+            ato_pai.ativo = False
+            ato_pai.save(update_fields=['ativo'])
+
+            tipo_pai = ato_pai.tipo
+
+            if tipo_pai == AtoAdministrativo.Tipo.INSUBSISTENCIA and ato_pai.ato_pai_id:
+                # TSE: insubsistindo uma Insubsistência — restaura o ato original
+                avo = ato_pai.ato_pai
+                avo.ativo = True
+                avo.save(update_fields=['ativo'])
+
+            elif tipo_pai == AtoAdministrativo.Tipo.APOSTILA:
+                avo = ato_pai.ato_pai
+                if avo:
+                    InsubsistenciaService._reverter_apostila(ato_pai, avo)
+
+            elif tipo_pai in (AtoAdministrativo.Tipo.DESIGNACAO, AtoAdministrativo.Tipo.CESSACAO):
+                ids_ativos = _filhos_ativos_ids(ato_pai, AtoAdministrativo.Tipo.APOSTILA)
+                apostilas_validas = AtoAdministrativo.objects.filter(
+                    pk__in=ids_ativos
+                ).prefetch_related('apostila_detalhe__alteracoes')
+
+                for apostila in apostilas_validas:
+                    InsubsistenciaService._reverter_apostila(apostila, ato_pai)
+                    apostila.ativo = False
+                    apostila.save(update_fields=['ativo'])
+
+        return ato
+
+    @staticmethod
+    def _reverter_apostila(apostila_ato: AtoAdministrativo, alvo: AtoAdministrativo) -> None:
+        try:
+            alteracoes = list(apostila_ato.apostila_detalhe.alteracoes.all())
+        except Exception:
+            return
+
+        if not alteracoes:
+            return
+
+        detalhe_alvo = InsubsistenciaService._get_detalhe(alvo)
+
+        ato_updates = {}
+        detalhe_updates = {}
+
+        for alt in alteracoes:
+            campo = alt.campo_alterado
+            valor = InsubsistenciaService._coerce_valor(alvo, detalhe_alvo, campo, alt.valor_anterior)
+
+            if hasattr(alvo, campo):
+                ato_updates[campo] = valor
+            elif detalhe_alvo and hasattr(detalhe_alvo, campo) and campo not in ('ato_id', 'ato'):
+                detalhe_updates[campo] = valor
+
+        if ato_updates:
+            for campo, valor in ato_updates.items():
+                setattr(alvo, campo, valor)
+            alvo.save(update_fields=list(ato_updates.keys()))
+
+        if detalhe_updates:
+            for campo, valor in detalhe_updates.items():
+                setattr(detalhe_alvo, campo, valor)
+            detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
+
+    @staticmethod
+    def _get_detalhe(ato: AtoAdministrativo):
+        if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+            return getattr(ato, 'designacao_detalhe', None)
+        if ato.tipo == AtoAdministrativo.Tipo.CESSACAO:
+            return getattr(ato, 'cessacao_detalhe', None)
+        return None
+
+    @staticmethod
+    def _coerce_valor(ato, detalhe, campo, valor_str):
+        from django.db.models import BooleanField, IntegerField, FloatField, DateField, DateTimeField
+        try:
+            if hasattr(ato, campo):
+                field = ato._meta.get_field(campo)
+            elif detalhe and hasattr(detalhe, campo):
+                field = detalhe._meta.get_field(campo)
+            else:
+                return valor_str
+
+            if valor_str == '' and field.null:
+                return None
+
+            if isinstance(field, BooleanField):
+                return valor_str in (True, 'True', 'true', '1', 1)
+
+            if isinstance(field, IntegerField):
+                return int(valor_str) if valor_str not in ('', None) else None
+
+            if isinstance(field, FloatField):
+                return float(valor_str) if valor_str not in ('', None) else None
+
+        except Exception:
+            pass
+        return valor_str
+
+    # ── Métodos legado ────────────────────────────────────────────────────────
 
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer):
-        """
-        Monta o dicionário padronizado de insubsistência de designação.
-        """
+        return serializer
 
-        designacao = serializer.validated_data.get('designacao')
- 
- 
-        designacao_obj = Designacao.objects.select_related('cessacao').filter(
-            id=designacao.id,
-            is_deleted=False,
-        ).first()
+    @staticmethod
+    def montar_dados_insubsistencia_cessacao(serializer):
+        designacao_obj = serializer.validated_data.get('designacao')
 
+        designacao_completa = Designacao.objects.select_related('cessacao').get(
+            id=designacao_obj.id, is_deleted=False
+        )
+        cessacao_obj = getattr(designacao_completa, 'cessacao', None)
 
-        cessacao_relacionada = getattr(designacao_obj, 'cessacao', None)
-        if cessacao_relacionada and not cessacao_relacionada.is_deleted:
-            queryset_cessacao = Insubsistencia.objects.filter(
-                cessacao_id=cessacao_relacionada.id,
-                is_deleted=False,
-            ) if cessacao_relacionada else Insubsistencia.objects.none()
-            
-            if not queryset_cessacao.exists():
-                serializer.validated_data['cessacao'] = cessacao_relacionada
+        if not cessacao_obj:
+            raise ValidationError("Cessação não encontrada para esta designação.")
 
-        
+        serializer.validated_data['cessacao'] = cessacao_obj
+        serializer.validated_data['designacao'] = None
+
         return serializer

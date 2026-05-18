@@ -1,163 +1,170 @@
 import pytest
-from unittest.mock import MagicMock
+from rest_framework.exceptions import ValidationError
 
-from apps.designacao.__tests__.factories import criar_designacao
+from apps.designacao.__tests__.factories import criar_designacao_legado as criar_designacao
 from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.services.insubsistencia_service import InsubsistenciaService
+from apps.designacao.models.apostila_detalhe import ApostilaAlteracao
+from apps.designacao.__tests__.factories import (
+    criar_ato_designacao,
+    criar_ato_cessacao,
+    criar_ato_apostila,
+    criar_ato_insubsistencia,
+)
 
 
-def _criar_cessacao(designacao, **kwargs):
+def _data(ato_pai, **kwargs):
     base = {
-        "designacao": designacao,
-        "numero_portaria": "12345",
-        "ano_vigente": "2024",
-        "sei_numero": "999999",
-        "data_designacao": "2024-03-10",
+        'ato_pai': ato_pai,
+        'numero_portaria': '111',
+        'ano_vigente': '2024',
+        'sei_numero': 'SEI-I',
+        'observacoes': '',
     }
     base.update(kwargs)
-    return Cessacao.objects.create(**base)
-
-
-def _criar_insubsistencia(cessacao=None, designacao=None):
-    return Insubsistencia.objects.create(
-        cessacao=cessacao,
-        designacao=designacao,
-        numero_portaria="11111",
-        ano_vigente="2024",
-        sei_numero="888888",
-    )
-
-
-def _mock_serializer(validated_data):
-    serializer = MagicMock()
-    serializer.validated_data = validated_data
-    return serializer
+    return base
 
 
 @pytest.mark.django_db
-class TestMontarDadosInsubsistenciaCessacao:
+class TestInsubsistenciaService:
 
-    def test_seta_cessacao_e_limpa_designacao_quando_cessacao_existe(self):
-        """
-        Deve preencher cessacao e definir designacao como None
-        quando a designacao possui uma cessacao vinculada.
-        """
-        designacao = criar_designacao()
-        cessacao = _criar_cessacao(designacao)
-        serializer = _mock_serializer({"designacao": designacao})
+    def test_criar_insubsistencia_de_designacao(self):
+        d = criar_ato_designacao()
+        ato = InsubsistenciaService.criar(_data(d))
+        assert ato.pk is not None
+        assert ato.ato_pai_id == d.pk
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
+    def test_criar_insubsistencia_de_cessacao(self):
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        ato = InsubsistenciaService.criar(_data(c))
+        assert ato.pk is not None
 
-        assert resultado.validated_data["cessacao"] == cessacao
-        assert resultado.validated_data["designacao"] is None
+    def test_erro_ato_ja_insubsistente(self):
+        d = criar_ato_designacao()
+        InsubsistenciaService.criar(_data(d))
+        d.refresh_from_db()
+        with pytest.raises(ValidationError, match='insubsistente'):
+            InsubsistenciaService.criar(_data(d))
 
+    def test_erro_insubsistencia_duplicada(self):
+        d = criar_ato_designacao()
+        criar_ato_insubsistencia(d)
+        with pytest.raises(ValidationError):
+            InsubsistenciaService.criar(_data(d))
 
-    def test_lanca_excecao_quando_designacao_nao_tem_cessacao(self):
-        """
-        Deve lançar Exception quando a designacao não possui cessacao vinculada.
-        """
-        designacao = criar_designacao()
-        serializer = _mock_serializer({"designacao": designacao})
+    def test_tornar_sem_efeito_insubsistencia(self):
+        d = criar_ato_designacao()
+        insub = InsubsistenciaService.criar(_data(d))
+        d.refresh_from_db()
+        assert not d.eh_valido
 
-        with pytest.raises(Exception, match="Cessação não encontrada"):
-            InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
+        InsubsistenciaService.criar(_data(insub, sei_numero='SEI-TSE'))
+        d.refresh_from_db()
+        assert d.eh_valido
 
-    def test_lanca_excecao_quando_designacao_esta_deletada(self):
-        """
-        Deve lançar Exception quando a designacao está marcada como deletada
-        (is_deleted=True), pois o filtro não a encontra.
-        """
-        designacao = criar_designacao()
-        _criar_cessacao(designacao)
-        designacao.delete()
-        serializer = _mock_serializer({"designacao": designacao})
+    def test_insubsistencia_de_apostila_reverte_campos(self):
+        d = criar_ato_designacao(numero_portaria='001')
+        from apps.designacao.services.apostila_service import ApostilaService
+        ApostilaService.criar({
+            'ato_pai': d,
+            'sei_numero': 'SEI-A',
+            'observacao': 'X',
+            'alteracoes': [{'campo_alterado': 'numero_portaria', 'valor_novo': '999'}],
+        })
+        d.refresh_from_db()
+        assert d.numero_portaria == '999'
 
-        with pytest.raises(Exception, match="Cessação não encontrada"):
-            InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
+        ap = d.filhos.filter(tipo='APOSTILA').first()
+        InsubsistenciaService.criar(_data(ap))
 
+        d.refresh_from_db()
+        assert d.numero_portaria == '001'
 
-@pytest.mark.django_db
-class TestMontarDadosInsubsistenciaDesignacao:
+    def test_insubsistencia_de_designacao_reverte_apostilas_filhas(self):
+        d = criar_ato_designacao(numero_portaria='001')
+        from apps.designacao.services.apostila_service import ApostilaService
+        ApostilaService.criar({
+            'ato_pai': d,
+            'sei_numero': 'SEI-A',
+            'observacao': 'X',
+            'alteracoes': [{'campo_alterado': 'numero_portaria', 'valor_novo': '999'}],
+        })
+        d.refresh_from_db()
+        assert d.numero_portaria == '999'
 
-    def test_nao_altera_serializer_quando_designacao_nao_tem_cessacao(self):
-        """
-        Deve retornar o serializer sem modificações quando a designacao
-        não possui cessacao vinculada.
-        """
-        designacao = criar_designacao()
-        serializer = _mock_serializer({"designacao": designacao})
+        InsubsistenciaService.criar(_data(d))
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+        d.refresh_from_db()
+        assert d.numero_portaria == '001'
 
-        assert "cessacao" not in resultado.validated_data
+    def test_insubsistencia_de_designacao_anula_apostilas_ativas(self):
+        from apps.designacao.services.apostila_service import ApostilaService
+        from apps.designacao.models.ato_administrativo import AtoAdministrativo
+        d = criar_ato_designacao()
+        ApostilaService.criar({
+            'ato_pai': d, 'sei_numero': 'SEI-A', 'observacao': 'X', 'alteracoes': [],
+        })
+        apostila = d.filhos.filter(tipo=AtoAdministrativo.Tipo.APOSTILA).first()
+        assert apostila.ativo
 
-    def test_nao_altera_serializer_quando_cessacao_esta_deletada(self):
-        """
-        Deve retornar o serializer sem modificações quando a cessacao
-        vinculada possui is_deleted=True.
-        """
-        designacao = criar_designacao()
-        cessacao = _criar_cessacao(designacao)
-        cessacao.delete()
-        serializer = _mock_serializer({"designacao": designacao})
+        InsubsistenciaService.criar(_data(d))
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+        apostila.refresh_from_db()
+        assert not apostila.ativo
 
-        assert "cessacao" not in resultado.validated_data
+    def test_insubsistencia_de_cessacao_anula_apostilas_da_cessacao(self):
+        from apps.designacao.services.apostila_service import ApostilaService
+        from apps.designacao.models.ato_administrativo import AtoAdministrativo
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        ApostilaService.criar({
+            'ato_pai': c, 'sei_numero': 'SEI-A', 'observacao': 'X', 'alteracoes': [],
+        })
+        apostila = c.filhos.filter(tipo=AtoAdministrativo.Tipo.APOSTILA).first()
+        assert apostila.ativo
 
-    def test_seta_cessacao_quando_cessacao_ativa_e_sem_insubsistencia(self):
-        """
-        Deve preencher cessacao no validated_data quando a cessacao está
-        ativa e não há insubsistencia registrada para ela.
-        """
-        designacao = criar_designacao()
-        cessacao = _criar_cessacao(designacao)
-        serializer = _mock_serializer({"designacao": designacao})
+        InsubsistenciaService.criar(_data(c))
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+        apostila.refresh_from_db()
+        assert not apostila.ativo
 
-        assert resultado.validated_data["cessacao"] == cessacao
-        assert resultado.validated_data["designacao"] == designacao
+    def test_insubsistencia_reverte_booleano_de_designacao_detalhe(self):
+        from apps.designacao.services.apostila_service import ApostilaService
+        d = criar_ato_designacao()
+        assert not d.designacao_detalhe.carater_excepcional
 
-    def test_nao_seta_cessacao_quando_insubsistencia_ja_existe(self):
-        """
-        Deve NÃO preencher cessacao no validated_data quando já existe
-        uma insubsistencia ativa vinculada à cessacao.
-        """
-        designacao = criar_designacao()
-        cessacao = _criar_cessacao(designacao)
-        _criar_insubsistencia(cessacao=cessacao)
-        serializer = _mock_serializer({"designacao": designacao})
+        ApostilaService.criar({
+            'ato_pai': d,
+            'sei_numero': 'SEI-B',
+            'observacao': 'X',
+            'alteracoes': [{'campo_alterado': 'carater_excepcional', 'valor_novo': 'True'}],
+        })
+        d.designacao_detalhe.refresh_from_db()
+        assert d.designacao_detalhe.carater_excepcional
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+        InsubsistenciaService.criar(_data(d))
 
-        assert "cessacao" not in resultado.validated_data
-        assert resultado.validated_data["designacao"] == designacao
+        d.designacao_detalhe.refresh_from_db()
+        assert not d.designacao_detalhe.carater_excepcional
 
-    def test_seta_cessacao_quando_insubsistencia_existente_esta_deletada(self):
-        """
-        Deve preencher cessacao quando a insubsistencia vinculada à cessacao
-        está deletada (is_deleted=True), pois o filtro a exclui.
-        """
-        designacao = criar_designacao()
-        cessacao = _criar_cessacao(designacao)
-        insubsistencia = _criar_insubsistencia(cessacao=cessacao)
-        insubsistencia.delete()
-        serializer = _mock_serializer({"designacao": designacao})
+    def test_insubsistencia_reverte_booleano_de_cessacao_detalhe(self):
+        from apps.designacao.services.apostila_service import ApostilaService
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        assert not c.cessacao_detalhe.a_pedido
 
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+        ApostilaService.criar({
+            'ato_pai': c,
+            'sei_numero': 'SEI-C',
+            'observacao': 'X',
+            'alteracoes': [{'campo_alterado': 'a_pedido', 'valor_novo': 'True'}],
+        })
+        c.cessacao_detalhe.refresh_from_db()
+        assert c.cessacao_detalhe.a_pedido
 
-        assert resultado.validated_data["cessacao"] == cessacao
-        assert resultado.validated_data["designacao"] == designacao
+        InsubsistenciaService.criar(_data(c))
 
-    def test_designacao_sem_cessacao(self):
-        """
-        Deve retornar o mesmo objeto serializer recebido.
-        """
-        designacao = criar_designacao()
-        serializer = _mock_serializer({"designacao": designacao})
-
-        resultado = InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
-
-        assert resultado is serializer
+        c.cessacao_detalhe.refresh_from_db()
+        assert not c.cessacao_detalhe.a_pedido

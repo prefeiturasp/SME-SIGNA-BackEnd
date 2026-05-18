@@ -26,9 +26,6 @@ class CessacaoSerializer(serializers.ModelSerializer):
     def validate_ano_vigente(self, value):
         return validar_somente_numeros(value)
 
-    def validate_sei_numero(self, value):
-        return validar_somente_numeros(value)
-
     def validate(self, data):
         designacao = data.get('designacao')
 
