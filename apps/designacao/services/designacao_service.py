@@ -4,8 +4,9 @@ from django.db.models import F
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
-
-_CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
+_CAMPOS_ATO = frozenset(
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+)
 
 
 class DesignacaoService:
@@ -52,22 +53,20 @@ class DesignacaoService:
         nome2: str,
     ) -> list:
         qs1 = (
-            queryset
-            .values(codigo=F(cod1), nome=F(nome1))
-            .filter(**{f'{cod1}__isnull': False})
-            .exclude(**{nome1: ''})
+            queryset.values(codigo=F(cod1), nome=F(nome1))
+            .filter(**{f"{cod1}__isnull": False})
+            .exclude(**{nome1: ""})
         )
         qs2 = (
-            queryset
-            .values(codigo=F(cod2), nome=F(nome2))
-            .filter(**{f'{cod2}__isnull': False})
-            .exclude(**{nome2: ''})
+            queryset.values(codigo=F(cod2), nome=F(nome2))
+            .filter(**{f"{cod2}__isnull": False})
+            .exclude(**{nome2: ""})
         )
 
         resultado = [
-            {'codigoCargo': item['codigo'], 'nomeCargo': item['nome']}
+            {"codigoCargo": item["codigo"], "nomeCargo": item["nome"]}
             for item in qs1.union(qs2)
-            if item['nome']
+            if item["nome"]
         ]
-        resultado.sort(key=lambda x: x['nomeCargo'])
+        resultado.sort(key=lambda x: x["nomeCargo"])
         return resultado

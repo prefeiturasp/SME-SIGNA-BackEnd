@@ -1,18 +1,20 @@
-from rest_framework import mixins, viewsets, status
+from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.api.serializers.v2.insubsistencia_serializer import (
     InsubsistenciaV2ReadSerializer,
     InsubsistenciaV2WriteSerializer,
 )
-from apps.designacao.services.insubsistencia_service import InsubsistenciaService
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.services.insubsistencia_service import (
+    InsubsistenciaService,
+)
 
 
 class InsubsistenciaV2Pagination(PageNumberPagination):
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -27,10 +29,11 @@ class InsubsistenciaV2ViewSet(
 
     def get_queryset(self):
         return (
-            AtoAdministrativo.objects
-            .filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA)
-            .select_related('insubsistencia_detalhe')
-            .order_by('-criado_em')
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
+            )
+            .select_related("insubsistencia_detalhe")
+            .order_by("-criado_em")
         )
 
     def create(self, request, *args, **kwargs):
@@ -50,6 +53,6 @@ class InsubsistenciaV2ViewSet(
         ato_pai = instancia.ato_pai
         if ato_pai:
             ato_pai.ativo = True
-            ato_pai.save(update_fields=['ativo'])
+            ato_pai.save(update_fields=["ativo"])
         instancia.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

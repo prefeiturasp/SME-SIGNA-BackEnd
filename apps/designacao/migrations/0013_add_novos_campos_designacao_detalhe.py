@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('designacao', '0012_merge_20260511_1042'),
+        ("designacao", "0012_merge_20260511_1042"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='designacaodetalhe',
-            name='detalhe_para_quadro_de_historico_por_ano',
+            model_name="designacaodetalhe",
+            name="detalhe_para_quadro_de_historico_por_ano",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='designacaodetalhe',
-            name='dre',
-            field=models.CharField(blank=True, default='', max_length=50),
+            model_name="designacaodetalhe",
+            name="dre",
+            field=models.CharField(blank=True, default="", max_length=50),
         ),
         migrations.AddField(
-            model_name='designacaodetalhe',
-            name='funcionarios_da_unidade',
-            field=models.CharField(blank=True, default='', max_length=50),
+            model_name="designacaodetalhe",
+            name="funcionarios_da_unidade",
+            field=models.CharField(blank=True, default="", max_length=50),
         ),
         migrations.AddField(
-            model_name='designacaodetalhe',
-            name='informacoes_adicionais',
-            field=models.TextField(blank=True, default=''),
+            model_name="designacaodetalhe",
+            name="informacoes_adicionais",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AddField(
-            model_name='designacaodetalhe',
-            name='ue',
-            field=models.CharField(blank=True, default='', max_length=50),
+            model_name="designacaodetalhe",
+            name="ue",
+            field=models.CharField(blank=True, default="", max_length=50),
         ),
         migrations.AlterField(
-            model_name='designacaodetalhe',
-            name='indicado_nome_civil',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="designacaodetalhe",
+            name="indicado_nome_civil",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
     ]

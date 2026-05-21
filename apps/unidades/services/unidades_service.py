@@ -1,15 +1,18 @@
 import logging
-import requests
+
+
 import environ
-from typing import Dict, List, Optional
-from django.conf import settings
+import requests
+
 from apps.unidades.constants.utils import SUPERVISAO_ESCOLAR_DRES_MAP
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
 
 MSG_DRE_OBRIGATORIO = "É necessário informar o código da DRE."
-MSG_RESPOSTA_INVALIDA_LISTA = "Resposta inesperada da API (esperado uma lista)."
+MSG_RESPOSTA_INVALIDA_LISTA = (
+    "Resposta inesperada da API (esperado uma lista)."
+)
 MSG_DRE_INVALIDO = "dre_codigo não informado ou inválido"
 
 ENV_URL = "SME_INTEGRACAO_URL"
@@ -147,7 +150,9 @@ class UnidadeIntegracaoService(BaseEOLService):
         return data
 
     @classmethod
-    def get_unidades_by_dre_com_tipo_unidade(cls, dre_codigo: str | int) -> list[dict]:
+    def get_unidades_by_dre_com_tipo_unidade(
+        cls, dre_codigo: str | int
+    ) -> list[dict]:
         dre_codigo_str = str(dre_codigo or "").strip()
 
         if not dre_codigo_str:
@@ -166,7 +171,9 @@ class UnidadeIntegracaoService(BaseEOLService):
         return data
 
     @classmethod
-    def get_unidades_codigo_integracao_by_dre(cls, dre_codigo: str | int) -> list[dict]:
+    def get_unidades_codigo_integracao_by_dre(
+        cls, dre_codigo: str | int
+    ) -> list[dict]:
         dre_codigo_str = str(dre_codigo or "").strip()
 
         if not dre_codigo_str:
@@ -197,7 +204,7 @@ class UnidadeIntegracaoService(BaseEOLService):
         if not codigo_escola_eol:
             logger.warning(
                 "codigo_escola_eol não encontrado para a DRE '%s'",
-                dre_codigo_str
+                dre_codigo_str,
             )
             raise ValueError(
                 "DRE não possui unidade de supervisão configurada."
@@ -214,12 +221,10 @@ class UnidadeIntegracaoService(BaseEOLService):
             )
 
         logger.info(
-            "Unidade de supervisão encontrada para DRE '%s'",
-            dre_codigo_str
+            "Unidade de supervisão encontrada para DRE '%s'", dre_codigo_str
         )
 
         return cls._formatar_unidade_supervisao(data)
-
 
     @staticmethod
     def _formatar_unidade_supervisao(data: dict) -> dict:

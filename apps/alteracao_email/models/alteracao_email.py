@@ -1,9 +1,13 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
+
 
 class AlteracaoEmail(models.Model):
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
     novo_email = models.EmailField()
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     criado_em = models.DateTimeField(auto_now_add=True)

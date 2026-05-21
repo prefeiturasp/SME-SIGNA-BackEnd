@@ -1,0 +1,14 @@
+================================================================
+  RESUMO DE BOAS PRÁTICAS DO CÓDIGO PYTHON (PEPs)
+  SME-SIGNA-BACKEND
+================================================================
+
+Data: 2026-05-21 13:04:46 UTC
+Commit: e050c33
+
+PEP 8  — 97.6% (Bom) — 67 linha(s) acima de 79 chars de 2776.
+PEP 257 — 27.5% (Precisa melhorar) — 57/207 documentados.
+PEP 484 — completo 5.6% / com parcial 6.8% (Precisa melhorar) — 10/177 completos.
+PEP 440 — 100.0% (Bom) — 26/26 linhas válidas, 0 inválidas.
+
+Estimativa grosseira de ajuste: ~12h

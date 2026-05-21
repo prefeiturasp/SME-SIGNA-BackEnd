@@ -1,0 +1,380 @@
+{
+  "generated_at": "2026-05-21 13:04:45 UTC",
+  "command": "python manage.py gerar_relatorio_pep --app alteracao_email",
+  "git_commit": "e050c33",
+  "app": "alteracao_email",
+  "max_line_length": 79,
+  "summary": {
+    "files_count": 8,
+    "loc_total": 269,
+    "lines_over_79": 1,
+    "lines_length_eligible": 203,
+    "modules_with_docstring": 0,
+    "modules_without_docstring": 8,
+    "functions_methods_total": 7,
+    "functions_methods_with_docstring": 0,
+    "functions_methods_without_docstring": 7,
+    "classes_total": 6,
+    "classes_with_docstring": 0,
+    "classes_without_docstring": 6,
+    "symbols_with_docstring": 0,
+    "symbols_without_docstring": 13,
+    "hints_completo": 0,
+    "hints_parcial": 0,
+    "hints_sem": 7,
+    "missing_docstrings_top": [
+      {
+        "path": "api/serializers/alteracao_email_serializer.py",
+        "lineno": 8,
+        "name": "AlteracaoEmailSerializer",
+        "kind": "class"
+      },
+      {
+        "path": "api/serializers/alteracao_email_serializer.py",
+        "lineno": 17,
+        "name": "AlteracaoEmailSerializer.is_valid",
+        "kind": "function"
+      },
+      {
+        "path": "api/serializers/alteracao_email_serializer.py",
+        "lineno": 36,
+        "name": "AlteracaoEmailSerializer.validate_new_email",
+        "kind": "function"
+      },
+      {
+        "path": "api/views/alteracao_email_viewset.py",
+        "lineno": 25,
+        "name": "SolicitarAlteracaoEmailViewSet",
+        "kind": "class"
+      },
+      {
+        "path": "api/views/alteracao_email_viewset.py",
+        "lineno": 28,
+        "name": "SolicitarAlteracaoEmailViewSet.create",
+        "kind": "function"
+      },
+      {
+        "path": "api/views/alteracao_email_viewset.py",
+        "lineno": 52,
+        "name": "ValidarAlteracaoEmailViewSet",
+        "kind": "class"
+      },
+      {
+        "path": "api/views/alteracao_email_viewset.py",
+        "lineno": 55,
+        "name": "ValidarAlteracaoEmailViewSet.update",
+        "kind": "function"
+      },
+      {
+        "path": "apps.py",
+        "lineno": 4,
+        "name": "AlteracaoEmailConfig",
+        "kind": "class"
+      },
+      {
+        "path": "models/alteracao_email.py",
+        "lineno": 7,
+        "name": "AlteracaoEmail",
+        "kind": "class"
+      },
+      {
+        "path": "models/alteracao_email.py",
+        "lineno": 16,
+        "name": "AlteracaoEmail.__str__",
+        "kind": "function"
+      },
+      {
+        "path": "services/alteracao_email_service.py",
+        "lineno": 19,
+        "name": "AlteracaoEmailService",
+        "kind": "class"
+      },
+      {
+        "path": "services/alteracao_email_service.py",
+        "lineno": 22,
+        "name": "AlteracaoEmailService.solicitar",
+        "kind": "function"
+      },
+      {
+        "path": "services/alteracao_email_service.py",
+        "lineno": 43,
+        "name": "AlteracaoEmailService.validar",
+        "kind": "function"
+      }
+    ]
+  },
+  "simple": {
+    "pep8_line_width_compliance_pct": 99.51,
+    "pep8_lines_over_max": 1,
+    "pep8_flake8_violations": 1,
+    "pep257_docstring_compliance_pct": 0.0,
+    "pep484_full_hints_pct": 0.0,
+    "pep484_full_or_partial_pct": 0.0,
+    "pep440_requirement_lines_parseable_pct": 100.0,
+    "max_line_length": 79
+  },
+  "flake8": {
+    "E501": 1
+  },
+  "pep440": {
+    "files_analyzed": [
+      "base.txt",
+      "local.txt",
+      "production.txt",
+      "test.txt"
+    ],
+    "total_dependency_lines": 26,
+    "pypi_valid": 26,
+    "git_pins": 0,
+    "pinned_with_eq": 5,
+    "invalid_lines": [],
+    "entries": [
+      {
+        "file": "base.txt",
+        "line": "Django>=4.2,<5",
+        "type": "pypi",
+        "name": "Django"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework>=3.15",
+        "type": "pypi",
+        "name": "djangorestframework"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework-simplejwt>=5.3",
+        "type": "pypi",
+        "name": "djangorestframework-simplejwt"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-cors-headers>=4.3",
+        "type": "pypi",
+        "name": "django-cors-headers"
+      },
+      {
+        "file": "base.txt",
+        "line": "python-dotenv>=1.0",
+        "type": "pypi",
+        "name": "python-dotenv"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-environ>=0.12",
+        "type": "pypi",
+        "name": "django-environ"
+      },
+      {
+        "file": "base.txt",
+        "line": "psycopg2-binary>=2.9",
+        "type": "pypi",
+        "name": "psycopg2-binary"
+      },
+      {
+        "file": "base.txt",
+        "line": "gunicorn>=21.0",
+        "type": "pypi",
+        "name": "gunicorn"
+      },
+      {
+        "file": "base.txt",
+        "line": "whitenoise>=6.5",
+        "type": "pypi",
+        "name": "whitenoise"
+      },
+      {
+        "file": "base.txt",
+        "line": "requests==2.32.5",
+        "type": "pypi",
+        "name": "requests"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest==9.0.1",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-cov==7.0.0",
+        "type": "pypi",
+        "name": "pytest-cov"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-django==4.11.1",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-mock==3.15.1",
+        "type": "pypi",
+        "name": "pytest-mock"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-filter>=23.0,<25",
+        "type": "pypi",
+        "name": "django-filter"
+      },
+      {
+        "file": "local.txt",
+        "line": "django-debug-toolbar",
+        "type": "pypi",
+        "name": "django-debug-toolbar"
+      },
+      {
+        "file": "local.txt",
+        "line": "ipython",
+        "type": "pypi",
+        "name": "ipython"
+      },
+      {
+        "file": "local.txt",
+        "line": "black>=24.0",
+        "type": "pypi",
+        "name": "black"
+      },
+      {
+        "file": "local.txt",
+        "line": "isort>=5.13",
+        "type": "pypi",
+        "name": "isort"
+      },
+      {
+        "file": "local.txt",
+        "line": "flake8>=7.0",
+        "type": "pypi",
+        "name": "flake8"
+      },
+      {
+        "file": "local.txt",
+        "line": "flake8-bugbear>=24.0",
+        "type": "pypi",
+        "name": "flake8-bugbear"
+      },
+      {
+        "file": "local.txt",
+        "line": "packaging>=24.0",
+        "type": "pypi",
+        "name": "packaging"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest>=7",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest-django",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "test.txt",
+        "line": "coverage",
+        "type": "pypi",
+        "name": "coverage"
+      },
+      {
+        "file": "test.txt",
+        "line": "factory-boy",
+        "type": "pypi",
+        "name": "factory-boy"
+      }
+    ]
+  },
+  "by_file": [
+    {
+      "path": "__init__.py",
+      "loc": 0,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "api/serializers/alteracao_email_serializer.py",
+      "loc": 60,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 2,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 2
+    },
+    {
+      "path": "api/views/alteracao_email_viewset.py",
+      "loc": 104,
+      "lines_over_max": 1,
+      "module_has_docstring": false,
+      "functions_count": 2,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 2
+    },
+    {
+      "path": "apps.py",
+      "loc": 6,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "models/__init__.py",
+      "loc": 1,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "models/alteracao_email.py",
+      "loc": 17,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 1,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 1
+    },
+    {
+      "path": "services/alteracao_email_service.py",
+      "loc": 55,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 2,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 2
+    },
+    {
+      "path": "urls.py",
+      "loc": 26,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    }
+  ]
+}

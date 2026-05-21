@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
-from rest_framework.views import APIView
-from rest_framework.response import Response
+
 from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.usuarios.api.serializers.me_serializer import UserMeSerializer
 
@@ -12,6 +13,7 @@ class MeView(APIView):
     """
     Retorna os dados do usuário autenticado (requer Bearer access token).
     """
+
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):

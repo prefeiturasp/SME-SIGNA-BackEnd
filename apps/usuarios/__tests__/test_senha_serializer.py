@@ -1,10 +1,9 @@
-import pytest
-
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from django.contrib.auth import get_user_model
+import pytest
 
 from apps.usuarios.api.serializers.senha_serializer import (
     RedefinirSenhaSerializer,
@@ -18,8 +17,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_valid_data(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -45,8 +43,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_password_mismatch(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -62,7 +59,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "As senhas não conferem."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "As senhas não conferem."
+        )
 
     def test_serializer_user_not_found(self):
         uid = urlsafe_base64_encode(force_bytes(99999))
@@ -77,12 +77,14 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "Usuário não encontrado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "Usuário não encontrado."
+        )
 
     def test_serializer_invalid_token(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -97,7 +99,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "Token inválido ou expirado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "Token inválido ou expirado."
+        )
 
     def test_serializer_invalid_uid(self):
         data = {
@@ -110,15 +115,17 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "UID inválido ou malformado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "UID inválido ou malformado."
+        )
 
     def test_serializer_uid_not_numeric(self, django_user_model):
         """
         UID decodificado não numérico deve retornar uid_invalid
         """
         user = django_user_model.objects.create_user(
-            username="teste",
-            password="Senha@123"
+            username="teste", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes("abc"))

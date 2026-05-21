@@ -1,6 +1,8 @@
-import pytest
 import secrets
+
 from django.contrib.auth import get_user_model
+
+import pytest
 
 User = get_user_model()
 
@@ -26,10 +28,7 @@ def test_user_creation():
 def test_user_str():
     password = secrets.token_urlsafe(16)
 
-    user = User.objects.create_user(
-        username="testeuser",
-        password=password
-    )
+    user = User.objects.create_user(username="testeuser", password=password)
 
     assert str(user) == "testeuser"
 

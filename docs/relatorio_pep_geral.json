@@ -1,0 +1,2814 @@
+{
+  "generated_at": "2026-05-21 13:04:46 UTC",
+  "apps": [
+    "alteracao_email",
+    "designacao",
+    "unidades",
+    "usuarios"
+  ],
+  "totals": {
+    "files": 126,
+    "loc": 14657,
+    "lines_over": 145,
+    "lines_eligible": 11599,
+    "funcs": 786,
+    "funcs_doc": 129,
+    "classes": 153,
+    "classes_doc": 19,
+    "symbols_doc": 148,
+    "symbols_total": 939,
+    "hints_completo": 57,
+    "hints_parcial": 8,
+    "hints_sem": 721,
+    "flake8": 195
+  },
+  "pep_compliance": {
+    "pep8": 98.75,
+    "pep257": 15.76,
+    "pep484_full": 7.25,
+    "pep484_full_or_partial": 8.27,
+    "pep440": 100.0
+  },
+  "flake8_top": {
+    "E501": 187,
+    "F841": 8
+  },
+  "per_app": [
+    {
+      "generated_at": "2026-05-21 13:04:45 UTC",
+      "command": "python manage.py gerar_relatorio_pep --app alteracao_email",
+      "git_commit": "e050c33",
+      "app": "alteracao_email",
+      "max_line_length": 79,
+      "summary": {
+        "files_count": 8,
+        "loc_total": 269,
+        "lines_over_79": 1,
+        "lines_length_eligible": 203,
+        "modules_with_docstring": 0,
+        "modules_without_docstring": 8,
+        "functions_methods_total": 7,
+        "functions_methods_with_docstring": 0,
+        "functions_methods_without_docstring": 7,
+        "classes_total": 6,
+        "classes_with_docstring": 0,
+        "classes_without_docstring": 6,
+        "symbols_with_docstring": 0,
+        "symbols_without_docstring": 13,
+        "hints_completo": 0,
+        "hints_parcial": 0,
+        "hints_sem": 7,
+        "missing_docstrings_top": [
+          {
+            "path": "api/serializers/alteracao_email_serializer.py",
+            "lineno": 8,
+            "name": "AlteracaoEmailSerializer",
+            "kind": "class"
+          },
+          {
+            "path": "api/serializers/alteracao_email_serializer.py",
+            "lineno": 17,
+            "name": "AlteracaoEmailSerializer.is_valid",
+            "kind": "function"
+          },
+          {
+            "path": "api/serializers/alteracao_email_serializer.py",
+            "lineno": 36,
+            "name": "AlteracaoEmailSerializer.validate_new_email",
+            "kind": "function"
+          },
+          {
+            "path": "api/views/alteracao_email_viewset.py",
+            "lineno": 25,
+            "name": "SolicitarAlteracaoEmailViewSet",
+            "kind": "class"
+          },
+          {
+            "path": "api/views/alteracao_email_viewset.py",
+            "lineno": 28,
+            "name": "SolicitarAlteracaoEmailViewSet.create",
+            "kind": "function"
+          },
+          {
+            "path": "api/views/alteracao_email_viewset.py",
+            "lineno": 52,
+            "name": "ValidarAlteracaoEmailViewSet",
+            "kind": "class"
+          },
+          {
+            "path": "api/views/alteracao_email_viewset.py",
+            "lineno": 55,
+            "name": "ValidarAlteracaoEmailViewSet.update",
+            "kind": "function"
+          },
+          {
+            "path": "apps.py",
+            "lineno": 4,
+            "name": "AlteracaoEmailConfig",
+            "kind": "class"
+          },
+          {
+            "path": "models/alteracao_email.py",
+            "lineno": 7,
+            "name": "AlteracaoEmail",
+            "kind": "class"
+          },
+          {
+            "path": "models/alteracao_email.py",
+            "lineno": 16,
+            "name": "AlteracaoEmail.__str__",
+            "kind": "function"
+          },
+          {
+            "path": "services/alteracao_email_service.py",
+            "lineno": 19,
+            "name": "AlteracaoEmailService",
+            "kind": "class"
+          },
+          {
+            "path": "services/alteracao_email_service.py",
+            "lineno": 22,
+            "name": "AlteracaoEmailService.solicitar",
+            "kind": "function"
+          },
+          {
+            "path": "services/alteracao_email_service.py",
+            "lineno": 43,
+            "name": "AlteracaoEmailService.validar",
+            "kind": "function"
+          }
+        ]
+      },
+      "simple": {
+        "pep8_line_width_compliance_pct": 99.51,
+        "pep8_lines_over_max": 1,
+        "pep8_flake8_violations": 1,
+        "pep257_docstring_compliance_pct": 0.0,
+        "pep484_full_hints_pct": 0.0,
+        "pep484_full_or_partial_pct": 0.0,
+        "pep440_requirement_lines_parseable_pct": 100.0,
+        "max_line_length": 79
+      },
+      "flake8": {
+        "E501": 1
+      },
+      "pep440": {
+        "files_analyzed": [
+          "base.txt",
+          "local.txt",
+          "production.txt",
+          "test.txt"
+        ],
+        "total_dependency_lines": 26,
+        "pypi_valid": 26,
+        "git_pins": 0,
+        "pinned_with_eq": 5,
+        "invalid_lines": [],
+        "entries": [
+          {
+            "file": "base.txt",
+            "line": "Django>=4.2,<5",
+            "type": "pypi",
+            "name": "Django"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework>=3.15",
+            "type": "pypi",
+            "name": "djangorestframework"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework-simplejwt>=5.3",
+            "type": "pypi",
+            "name": "djangorestframework-simplejwt"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-cors-headers>=4.3",
+            "type": "pypi",
+            "name": "django-cors-headers"
+          },
+          {
+            "file": "base.txt",
+            "line": "python-dotenv>=1.0",
+            "type": "pypi",
+            "name": "python-dotenv"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-environ>=0.12",
+            "type": "pypi",
+            "name": "django-environ"
+          },
+          {
+            "file": "base.txt",
+            "line": "psycopg2-binary>=2.9",
+            "type": "pypi",
+            "name": "psycopg2-binary"
+          },
+          {
+            "file": "base.txt",
+            "line": "gunicorn>=21.0",
+            "type": "pypi",
+            "name": "gunicorn"
+          },
+          {
+            "file": "base.txt",
+            "line": "whitenoise>=6.5",
+            "type": "pypi",
+            "name": "whitenoise"
+          },
+          {
+            "file": "base.txt",
+            "line": "requests==2.32.5",
+            "type": "pypi",
+            "name": "requests"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest==9.0.1",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-cov==7.0.0",
+            "type": "pypi",
+            "name": "pytest-cov"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-django==4.11.1",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-mock==3.15.1",
+            "type": "pypi",
+            "name": "pytest-mock"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-filter>=23.0,<25",
+            "type": "pypi",
+            "name": "django-filter"
+          },
+          {
+            "file": "local.txt",
+            "line": "django-debug-toolbar",
+            "type": "pypi",
+            "name": "django-debug-toolbar"
+          },
+          {
+            "file": "local.txt",
+            "line": "ipython",
+            "type": "pypi",
+            "name": "ipython"
+          },
+          {
+            "file": "local.txt",
+            "line": "black>=24.0",
+            "type": "pypi",
+            "name": "black"
+          },
+          {
+            "file": "local.txt",
+            "line": "isort>=5.13",
+            "type": "pypi",
+            "name": "isort"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8>=7.0",
+            "type": "pypi",
+            "name": "flake8"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8-bugbear>=24.0",
+            "type": "pypi",
+            "name": "flake8-bugbear"
+          },
+          {
+            "file": "local.txt",
+            "line": "packaging>=24.0",
+            "type": "pypi",
+            "name": "packaging"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest>=7",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest-django",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "test.txt",
+            "line": "coverage",
+            "type": "pypi",
+            "name": "coverage"
+          },
+          {
+            "file": "test.txt",
+            "line": "factory-boy",
+            "type": "pypi",
+            "name": "factory-boy"
+          }
+        ]
+      },
+      "by_file": [
+        {
+          "path": "__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/serializers/alteracao_email_serializer.py",
+          "loc": 60,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/alteracao_email_viewset.py",
+          "loc": 104,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "apps.py",
+          "loc": 6,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/__init__.py",
+          "loc": 1,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/alteracao_email.py",
+          "loc": 17,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "services/alteracao_email_service.py",
+          "loc": 55,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "urls.py",
+          "loc": 26,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        }
+      ],
+      "_app": "alteracao_email"
+    },
+    {
+      "generated_at": "2026-05-21 13:04:45 UTC",
+      "command": "python manage.py gerar_relatorio_pep --app designacao",
+      "git_commit": "e050c33",
+      "app": "designacao",
+      "max_line_length": 79,
+      "summary": {
+        "files_count": 85,
+        "loc_total": 8910,
+        "lines_over_79": 51,
+        "lines_length_eligible": 7186,
+        "modules_with_docstring": 0,
+        "modules_without_docstring": 85,
+        "functions_methods_total": 498,
+        "functions_methods_with_docstring": 14,
+        "functions_methods_without_docstring": 484,
+        "classes_total": 98,
+        "classes_with_docstring": 6,
+        "classes_without_docstring": 92,
+        "symbols_with_docstring": 20,
+        "symbols_without_docstring": 576,
+        "hints_completo": 39,
+        "hints_parcial": 6,
+        "hints_sem": 453,
+        "missing_docstrings_top": [
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 13,
+            "name": "criar_ato_designacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 45,
+            "name": "criar_designacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 49,
+            "name": "criar_designacao_legado",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 73,
+            "name": "criar_ato_cessacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 97,
+            "name": "criar_ato_apostila",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/factories.py",
+            "lineno": 110,
+            "name": "criar_ato_insubsistencia",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 14,
+            "name": "TestApostilaSerializer",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 17,
+            "name": "TestApostilaSerializer.designacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 37,
+            "name": "TestApostilaSerializer.apostila",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 46,
+            "name": "TestApostilaSerializer.test_serialization_campos_reais",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 53,
+            "name": "TestApostilaSerializer.test_deserialization_e_validacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 65,
+            "name": "TestApostilaSerializer.test_to_representation_com_cessacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 81,
+            "name": "TestApostilaSerializer.test_validacao_erro_vazio",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_serializers.py",
+            "lineno": 86,
+            "name": "TestApostilaSerializer.test_apostila_anulacao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 16,
+            "name": "TestApostilaService",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 18,
+            "name": "TestApostilaService._data",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 30,
+            "name": "TestApostilaService.test_criar_apostila_designacao_sucesso",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 36,
+            "name": "TestApostilaService.test_criar_apostila_cessacao_sucesso",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 45,
+            "name": "TestApostilaService.test_permite_criar_segunda_apostila_sem_anular_primeira",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 51,
+            "name": "TestApostilaService.test_permite_criar_apostila_apos_insubsistencia_da_anterior",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 62,
+            "name": "TestApostilaService.test_erro_designacao_cessada",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 68,
+            "name": "TestApostilaService.test_erro_designacao_prazo_finalizado",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 76,
+            "name": "TestApostilaService.test_permite_apostila_designacao_com_data_fim_futura",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 84,
+            "name": "TestApostilaService.test_permite_apostila_cessacao_mesmo_com_data_fim",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_apostila_service.py",
+            "lineno": 94,
+            "name": "TestApostilaService.test_erro_ato_pai_insubsistente",
+            "kind": "function"
+          }
+        ]
+      },
+      "simple": {
+        "pep8_line_width_compliance_pct": 99.29,
+        "pep8_lines_over_max": 51,
+        "pep8_flake8_violations": 92,
+        "pep257_docstring_compliance_pct": 3.36,
+        "pep484_full_hints_pct": 7.83,
+        "pep484_full_or_partial_pct": 9.04,
+        "pep440_requirement_lines_parseable_pct": 100.0,
+        "max_line_length": 79
+      },
+      "flake8": {
+        "E501": 91,
+        "F841": 1
+      },
+      "pep440": {
+        "files_analyzed": [
+          "base.txt",
+          "local.txt",
+          "production.txt",
+          "test.txt"
+        ],
+        "total_dependency_lines": 26,
+        "pypi_valid": 26,
+        "git_pins": 0,
+        "pinned_with_eq": 5,
+        "invalid_lines": [],
+        "entries": [
+          {
+            "file": "base.txt",
+            "line": "Django>=4.2,<5",
+            "type": "pypi",
+            "name": "Django"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework>=3.15",
+            "type": "pypi",
+            "name": "djangorestframework"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework-simplejwt>=5.3",
+            "type": "pypi",
+            "name": "djangorestframework-simplejwt"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-cors-headers>=4.3",
+            "type": "pypi",
+            "name": "django-cors-headers"
+          },
+          {
+            "file": "base.txt",
+            "line": "python-dotenv>=1.0",
+            "type": "pypi",
+            "name": "python-dotenv"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-environ>=0.12",
+            "type": "pypi",
+            "name": "django-environ"
+          },
+          {
+            "file": "base.txt",
+            "line": "psycopg2-binary>=2.9",
+            "type": "pypi",
+            "name": "psycopg2-binary"
+          },
+          {
+            "file": "base.txt",
+            "line": "gunicorn>=21.0",
+            "type": "pypi",
+            "name": "gunicorn"
+          },
+          {
+            "file": "base.txt",
+            "line": "whitenoise>=6.5",
+            "type": "pypi",
+            "name": "whitenoise"
+          },
+          {
+            "file": "base.txt",
+            "line": "requests==2.32.5",
+            "type": "pypi",
+            "name": "requests"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest==9.0.1",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-cov==7.0.0",
+            "type": "pypi",
+            "name": "pytest-cov"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-django==4.11.1",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-mock==3.15.1",
+            "type": "pypi",
+            "name": "pytest-mock"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-filter>=23.0,<25",
+            "type": "pypi",
+            "name": "django-filter"
+          },
+          {
+            "file": "local.txt",
+            "line": "django-debug-toolbar",
+            "type": "pypi",
+            "name": "django-debug-toolbar"
+          },
+          {
+            "file": "local.txt",
+            "line": "ipython",
+            "type": "pypi",
+            "name": "ipython"
+          },
+          {
+            "file": "local.txt",
+            "line": "black>=24.0",
+            "type": "pypi",
+            "name": "black"
+          },
+          {
+            "file": "local.txt",
+            "line": "isort>=5.13",
+            "type": "pypi",
+            "name": "isort"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8>=7.0",
+            "type": "pypi",
+            "name": "flake8"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8-bugbear>=24.0",
+            "type": "pypi",
+            "name": "flake8-bugbear"
+          },
+          {
+            "file": "local.txt",
+            "line": "packaging>=24.0",
+            "type": "pypi",
+            "name": "packaging"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest>=7",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest-django",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "test.txt",
+            "line": "coverage",
+            "type": "pypi",
+            "name": "coverage"
+          },
+          {
+            "file": "test.txt",
+            "line": "factory-boy",
+            "type": "pypi",
+            "name": "factory-boy"
+          }
+        ]
+      },
+      "by_file": [
+        {
+          "path": "__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "__tests__/factories.py",
+          "loc": 124,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 6
+        },
+        {
+          "path": "__tests__/test_apostila_serializers.py",
+          "loc": 94,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 7,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 7
+        },
+        {
+          "path": "__tests__/test_apostila_service.py",
+          "loc": 147,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 13,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 13
+        },
+        {
+          "path": "__tests__/test_apostila_v2_view.py",
+          "loc": 165,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_apostila_view.py",
+          "loc": 92,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "__tests__/test_ato_administrativo_model.py",
+          "loc": 201,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 26,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 26
+        },
+        {
+          "path": "__tests__/test_cessacao_serializer.py",
+          "loc": 89,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 7,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 7
+        },
+        {
+          "path": "__tests__/test_cessacao_v2_view.py",
+          "loc": 110,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "__tests__/test_cessacao_view.py",
+          "loc": 129,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 9,
+          "functions_with_docstring": 3,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 9
+        },
+        {
+          "path": "__tests__/test_designacao_filters.py",
+          "loc": 110,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_designacao_impedimentos.py",
+          "loc": 40,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "__tests__/test_designacao_legado_filters.py",
+          "loc": 108,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_designacao_legado_view.py",
+          "loc": 102,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "__tests__/test_designacao_serializer.py",
+          "loc": 162,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 6
+        },
+        {
+          "path": "__tests__/test_designacao_service.py",
+          "loc": 83,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "__tests__/test_designacao_servidor_service.py",
+          "loc": 105,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "__tests__/test_designacao_servidor_view.py",
+          "loc": 127,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 9,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 9
+        },
+        {
+          "path": "__tests__/test_designacao_unidade_service.py",
+          "loc": 480,
+          "lines_over_max": 34,
+          "module_has_docstring": false,
+          "functions_count": 31,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 31
+        },
+        {
+          "path": "__tests__/test_designacao_unidade_view.py",
+          "loc": 153,
+          "lines_over_max": 4,
+          "module_has_docstring": false,
+          "functions_count": 10,
+          "functions_with_docstring": 3,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 10
+        },
+        {
+          "path": "__tests__/test_designacao_view.py",
+          "loc": 143,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 9,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 9
+        },
+        {
+          "path": "__tests__/test_insubsistencia_serializer.py",
+          "loc": 275,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 11,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 11
+        },
+        {
+          "path": "__tests__/test_insubsistencia_service.py",
+          "loc": 206,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_insubsistencia_v2_view.py",
+          "loc": 133,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 11,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 11
+        },
+        {
+          "path": "__tests__/test_insubsistencia_view.py",
+          "loc": 157,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_portaria_filter.py",
+          "loc": 178,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 13,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 13
+        },
+        {
+          "path": "__tests__/test_portaria_serializer.py",
+          "loc": 363,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 35,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 35
+        },
+        {
+          "path": "__tests__/test_portaria_viewset.py",
+          "loc": 426,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 39,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 39
+        },
+        {
+          "path": "admin.py",
+          "loc": 2,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/filters/designacao_filter.py",
+          "loc": 77,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/filters/designacao_legado_filter.py",
+          "loc": 66,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/filters/portaria_filter.py",
+          "loc": 84,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/serializers/apostila_serializer.py",
+          "loc": 30,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/serializers/cessacao_serializer.py",
+          "loc": 43,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "api/serializers/designacao_legado_serializer.py",
+          "loc": 99,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 5,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 5
+        },
+        {
+          "path": "api/serializers/designacao_serializer.py",
+          "loc": 495,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 9,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 9
+        },
+        {
+          "path": "api/serializers/designacao_servidor_request_serializer.py",
+          "loc": 5,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/serializers/insubsistencia_serializer.py",
+          "loc": 77,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "api/serializers/portaria_serializer.py",
+          "loc": 98,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 7,
+          "functions_with_docstring": 2,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 7
+        },
+        {
+          "path": "api/serializers/utils.py",
+          "loc": 21,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/serializers/v2/__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/serializers/v2/apostila_serializer.py",
+          "loc": 91,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/serializers/v2/cessacao_serializer.py",
+          "loc": 84,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/serializers/v2/insubsistencia_serializer.py",
+          "loc": 48,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/views/apostila_view.py",
+          "loc": 51,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/cessacao_view.py",
+          "loc": 31,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/views/designacao.py",
+          "loc": 167,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 10,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 10
+        },
+        {
+          "path": "api/views/designacao_impedimentos_view.py",
+          "loc": 14,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/views/designacao_legado.py",
+          "loc": 122,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "api/views/designacao_servidor_view.py",
+          "loc": 51,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/views/designacao_unidades_view.py",
+          "loc": 64,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/insubsistencia_view.py",
+          "loc": 61,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/portaria.py",
+          "loc": 101,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/v2/__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/views/v2/apostila_view.py",
+          "loc": 52,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/v2/cessacao_view.py",
+          "loc": 47,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "api/views/v2/insubsistencia_view.py",
+          "loc": 58,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "apps.py",
+          "loc": 6,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "constants/cargos_gestao_escolar.py",
+          "loc": 16,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/__init__.py",
+          "loc": 8,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/apostila.py",
+          "loc": 61,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "models/apostila_detalhe.py",
+          "loc": 36,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/ato_administrativo.py",
+          "loc": 102,
+          "lines_over_max": 2,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "models/cessacao.py",
+          "loc": 31,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "models/cessacao_detalhe.py",
+          "loc": 21,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models/designacao.py",
+          "loc": 136,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "models/designacao_detalhe.py",
+          "loc": 121,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "models/insubsistencia.py",
+          "loc": 45,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "models/insubsistencia_detalhe.py",
+          "loc": 17,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "modulos/__init__.py",
+          "loc": 15,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "modulos/__tests__/test_modulo_coordenador_pedagogico.py",
+          "loc": 114,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "modulos/__tests__/test_modulo_lotacao.py",
+          "loc": 118,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 9,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 9
+        },
+        {
+          "path": "modulos/__tests__/test_modulo_supervisor_escolar.py",
+          "loc": 64,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "modulos/base.py",
+          "loc": 8,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 1,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "modulos/coordenador_pedagogico.py",
+          "loc": 81,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 0,
+          "hints_completo": 5,
+          "hints_parcial": 1,
+          "hints_sem": 0
+        },
+        {
+          "path": "modulos/lotacao.py",
+          "loc": 61,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 0,
+          "hints_completo": 6,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "modulos/supervisor_escolar.py",
+          "loc": 53,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 1,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/apostila_service.py",
+          "loc": 230,
+          "lines_over_max": 4,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 1,
+          "hints_completo": 3,
+          "hints_parcial": 3,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/cessacao_service.py",
+          "loc": 46,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 1,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/designacao_service.py",
+          "loc": 72,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 2,
+          "hints_parcial": 1,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/designacao_servidor_service.py",
+          "loc": 75,
+          "lines_over_max": 3,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 1,
+          "hints_completo": 2,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/designacao_unidades_service.py",
+          "loc": 315,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 16,
+          "functions_with_docstring": 0,
+          "hints_completo": 15,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "services/insubsistencia_service.py",
+          "loc": 199,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 7,
+          "functions_with_docstring": 0,
+          "hints_completo": 3,
+          "hints_parcial": 1,
+          "hints_sem": 3
+        },
+        {
+          "path": "urls.py",
+          "loc": 107,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "urls_v2.py",
+          "loc": 111,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        }
+      ],
+      "_app": "designacao"
+    },
+    {
+      "generated_at": "2026-05-21 13:04:45 UTC",
+      "command": "python manage.py gerar_relatorio_pep --app unidades",
+      "git_commit": "e050c33",
+      "app": "unidades",
+      "max_line_length": 79,
+      "summary": {
+        "files_count": 11,
+        "loc_total": 1818,
+        "lines_over_79": 26,
+        "lines_length_eligible": 1434,
+        "modules_with_docstring": 0,
+        "modules_without_docstring": 11,
+        "functions_methods_total": 104,
+        "functions_methods_with_docstring": 65,
+        "functions_methods_without_docstring": 39,
+        "classes_total": 19,
+        "classes_with_docstring": 6,
+        "classes_without_docstring": 13,
+        "symbols_with_docstring": 71,
+        "symbols_without_docstring": 52,
+        "hints_completo": 8,
+        "hints_parcial": 0,
+        "hints_sem": 96,
+        "missing_docstrings_top": [
+          {
+            "path": "__tests__/conftest.py",
+            "lineno": 264,
+            "name": "_create_response",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/conftest.py",
+            "lineno": 278,
+            "name": "_create_response",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/conftest.py",
+            "lineno": 295,
+            "name": "_config",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 19,
+            "name": "TestBaseEOLService",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 22,
+            "name": "TestBaseEOLService.test_get_sucesso_dict",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 32,
+            "name": "TestBaseEOLService.test_get_401",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 39,
+            "name": "TestBaseEOLService.test_get_404",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 46,
+            "name": "TestBaseEOLService.test_get_status_erro",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 54,
+            "name": "TestBaseEOLService.test_get_timeout",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 61,
+            "name": "TestBaseEOLService.test_get_request_exception",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 71,
+            "name": "TestDREIntegracaoService",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 75,
+            "name": "TestDREIntegracaoService.test_get_dres",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 87,
+            "name": "TestDREIntegracaoService.test_get_dres_resposta_invalida",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 97,
+            "name": "TestDREIntegracaoService.test_get_dre_by_codigo_encontrada",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 107,
+            "name": "TestDREIntegracaoService.test_get_dre_by_codigo_none",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 116,
+            "name": "TestUnidadeIntegracaoService",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 120,
+            "name": "TestUnidadeIntegracaoService.test_get_unidades",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 138,
+            "name": "TestUnidadeIntegracaoService.test_get_unidades_codigo_invalido",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 146,
+            "name": "TestUnidadeIntegracaoService.test_get_unidades_resposta_invalida",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 157,
+            "name": "TestUnidadeIntegracaoService.test_get_escolas",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 176,
+            "name": "TestUnidadeIntegracaoService.test_get_codigo_integracao",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 199,
+            "name": "TestUnidadeSupervisao",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 206,
+            "name": "TestUnidadeSupervisao.test_sucesso",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 233,
+            "name": "TestUnidadeSupervisao.test_dre_codigo_invalido",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_unidades_service.py",
+            "lineno": 240,
+            "name": "TestUnidadeSupervisao.test_sem_mapeamento",
+            "kind": "function"
+          }
+        ]
+      },
+      "simple": {
+        "pep8_line_width_compliance_pct": 98.19,
+        "pep8_lines_over_max": 26,
+        "pep8_flake8_violations": 27,
+        "pep257_docstring_compliance_pct": 57.72,
+        "pep484_full_hints_pct": 7.69,
+        "pep484_full_or_partial_pct": 7.69,
+        "pep440_requirement_lines_parseable_pct": 100.0,
+        "max_line_length": 79
+      },
+      "flake8": {
+        "E501": 27
+      },
+      "pep440": {
+        "files_analyzed": [
+          "base.txt",
+          "local.txt",
+          "production.txt",
+          "test.txt"
+        ],
+        "total_dependency_lines": 26,
+        "pypi_valid": 26,
+        "git_pins": 0,
+        "pinned_with_eq": 5,
+        "invalid_lines": [],
+        "entries": [
+          {
+            "file": "base.txt",
+            "line": "Django>=4.2,<5",
+            "type": "pypi",
+            "name": "Django"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework>=3.15",
+            "type": "pypi",
+            "name": "djangorestframework"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework-simplejwt>=5.3",
+            "type": "pypi",
+            "name": "djangorestframework-simplejwt"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-cors-headers>=4.3",
+            "type": "pypi",
+            "name": "django-cors-headers"
+          },
+          {
+            "file": "base.txt",
+            "line": "python-dotenv>=1.0",
+            "type": "pypi",
+            "name": "python-dotenv"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-environ>=0.12",
+            "type": "pypi",
+            "name": "django-environ"
+          },
+          {
+            "file": "base.txt",
+            "line": "psycopg2-binary>=2.9",
+            "type": "pypi",
+            "name": "psycopg2-binary"
+          },
+          {
+            "file": "base.txt",
+            "line": "gunicorn>=21.0",
+            "type": "pypi",
+            "name": "gunicorn"
+          },
+          {
+            "file": "base.txt",
+            "line": "whitenoise>=6.5",
+            "type": "pypi",
+            "name": "whitenoise"
+          },
+          {
+            "file": "base.txt",
+            "line": "requests==2.32.5",
+            "type": "pypi",
+            "name": "requests"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest==9.0.1",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-cov==7.0.0",
+            "type": "pypi",
+            "name": "pytest-cov"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-django==4.11.1",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-mock==3.15.1",
+            "type": "pypi",
+            "name": "pytest-mock"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-filter>=23.0,<25",
+            "type": "pypi",
+            "name": "django-filter"
+          },
+          {
+            "file": "local.txt",
+            "line": "django-debug-toolbar",
+            "type": "pypi",
+            "name": "django-debug-toolbar"
+          },
+          {
+            "file": "local.txt",
+            "line": "ipython",
+            "type": "pypi",
+            "name": "ipython"
+          },
+          {
+            "file": "local.txt",
+            "line": "black>=24.0",
+            "type": "pypi",
+            "name": "black"
+          },
+          {
+            "file": "local.txt",
+            "line": "isort>=5.13",
+            "type": "pypi",
+            "name": "isort"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8>=7.0",
+            "type": "pypi",
+            "name": "flake8"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8-bugbear>=24.0",
+            "type": "pypi",
+            "name": "flake8-bugbear"
+          },
+          {
+            "file": "local.txt",
+            "line": "packaging>=24.0",
+            "type": "pypi",
+            "name": "packaging"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest>=7",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest-django",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "test.txt",
+            "line": "coverage",
+            "type": "pypi",
+            "name": "coverage"
+          },
+          {
+            "file": "test.txt",
+            "line": "factory-boy",
+            "type": "pypi",
+            "name": "factory-boy"
+          }
+        ]
+      },
+      "by_file": [
+        {
+          "path": "__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "__tests__/conftest.py",
+          "loc": 334,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 23,
+          "functions_with_docstring": 20,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 23
+        },
+        {
+          "path": "__tests__/test_unidades_serializer.py",
+          "loc": 191,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 15,
+          "functions_with_docstring": 15,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 15
+        },
+        {
+          "path": "__tests__/test_unidades_service.py",
+          "loc": 362,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 28,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 28
+        },
+        {
+          "path": "__tests__/test_unidades_view.py",
+          "loc": 433,
+          "lines_over_max": 26,
+          "module_has_docstring": false,
+          "functions_count": 25,
+          "functions_with_docstring": 25,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 25
+        },
+        {
+          "path": "api/serializers/unidades_serializer.py",
+          "loc": 74,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/views/unidades_viewset.py",
+          "loc": 148,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 4,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "apps.py",
+          "loc": 6,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "constants/utils.py",
+          "loc": 15,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "services/unidades_service.py",
+          "loc": 241,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 0,
+          "hints_completo": 8,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "urls.py",
+          "loc": 14,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        }
+      ],
+      "_app": "unidades"
+    },
+    {
+      "generated_at": "2026-05-21 13:04:46 UTC",
+      "command": "python manage.py gerar_relatorio_pep --app usuarios",
+      "git_commit": "e050c33",
+      "app": "usuarios",
+      "max_line_length": 79,
+      "summary": {
+        "files_count": 22,
+        "loc_total": 3660,
+        "lines_over_79": 67,
+        "lines_length_eligible": 2776,
+        "modules_with_docstring": 0,
+        "modules_without_docstring": 22,
+        "functions_methods_total": 177,
+        "functions_methods_with_docstring": 50,
+        "functions_methods_without_docstring": 127,
+        "classes_total": 30,
+        "classes_with_docstring": 7,
+        "classes_without_docstring": 23,
+        "symbols_with_docstring": 57,
+        "symbols_without_docstring": 150,
+        "hints_completo": 10,
+        "hints_parcial": 2,
+        "hints_sem": 165,
+        "missing_docstrings_top": [
+          {
+            "path": "__tests__/conftest.py",
+            "lineno": 53,
+            "name": "mock_sme_auth_error",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/conftest.py",
+            "lineno": 54,
+            "name": "fake_autentica",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 12,
+            "name": "use_locmem_email_backend",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 18,
+            "name": "TestEnviaEmailService",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 20,
+            "name": "TestEnviaEmailService.email_data",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 28,
+            "name": "TestEnviaEmailService.test_send_email_success",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 39,
+            "name": "TestEnviaEmailService.test_send_email_empty_destinatario_raises",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 44,
+            "name": "TestEnviaEmailService.test_send_email_empty_assunto_raises",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_envia_email_service.py",
+            "lineno": 49,
+            "name": "TestEnviaEmailService.test_send_email_unexpected_exception_raises_runtimeerror",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 16,
+            "name": "set_signa_env",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 21,
+            "name": "test_login_success",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 46,
+            "name": "test_login_unauthorized",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 61,
+            "name": "test_login_sme_error",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 76,
+            "name": "test_login_sme_exception",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 91,
+            "name": "test_login_updates_existing_user",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 121,
+            "name": "test_login_authentication_error",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 133,
+            "name": "test_login_sme_integracao_exception",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 156,
+            "name": "test_login_generic_exception",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 175,
+            "name": "test_login_perfil_nao_autorizado_sem_perfis",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 203,
+            "name": "test_login_perfil_nao_autorizado_perfis_nao_lista",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_login_view.py",
+            "lineno": 232,
+            "name": "test_login_perfil_nao_autorizado_codigo_signa_nao_presente",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_me_viewset.py",
+            "lineno": 13,
+            "name": "test_me_view_authenticated_user_returns_user_data",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_senha_serializer.py",
+            "lineno": 16,
+            "name": "TestRedefinirSenhaSerializer",
+            "kind": "class"
+          },
+          {
+            "path": "__tests__/test_senha_serializer.py",
+            "lineno": 18,
+            "name": "TestRedefinirSenhaSerializer.test_serializer_valid_data",
+            "kind": "function"
+          },
+          {
+            "path": "__tests__/test_senha_serializer.py",
+            "lineno": 44,
+            "name": "TestRedefinirSenhaSerializer.test_serializer_password_mismatch",
+            "kind": "function"
+          }
+        ]
+      },
+      "simple": {
+        "pep8_line_width_compliance_pct": 97.59,
+        "pep8_lines_over_max": 67,
+        "pep8_flake8_violations": 75,
+        "pep257_docstring_compliance_pct": 27.54,
+        "pep484_full_hints_pct": 5.65,
+        "pep484_full_or_partial_pct": 6.78,
+        "pep440_requirement_lines_parseable_pct": 100.0,
+        "max_line_length": 79
+      },
+      "flake8": {
+        "E501": 68,
+        "F841": 7
+      },
+      "pep440": {
+        "files_analyzed": [
+          "base.txt",
+          "local.txt",
+          "production.txt",
+          "test.txt"
+        ],
+        "total_dependency_lines": 26,
+        "pypi_valid": 26,
+        "git_pins": 0,
+        "pinned_with_eq": 5,
+        "invalid_lines": [],
+        "entries": [
+          {
+            "file": "base.txt",
+            "line": "Django>=4.2,<5",
+            "type": "pypi",
+            "name": "Django"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework>=3.15",
+            "type": "pypi",
+            "name": "djangorestframework"
+          },
+          {
+            "file": "base.txt",
+            "line": "djangorestframework-simplejwt>=5.3",
+            "type": "pypi",
+            "name": "djangorestframework-simplejwt"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-cors-headers>=4.3",
+            "type": "pypi",
+            "name": "django-cors-headers"
+          },
+          {
+            "file": "base.txt",
+            "line": "python-dotenv>=1.0",
+            "type": "pypi",
+            "name": "python-dotenv"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-environ>=0.12",
+            "type": "pypi",
+            "name": "django-environ"
+          },
+          {
+            "file": "base.txt",
+            "line": "psycopg2-binary>=2.9",
+            "type": "pypi",
+            "name": "psycopg2-binary"
+          },
+          {
+            "file": "base.txt",
+            "line": "gunicorn>=21.0",
+            "type": "pypi",
+            "name": "gunicorn"
+          },
+          {
+            "file": "base.txt",
+            "line": "whitenoise>=6.5",
+            "type": "pypi",
+            "name": "whitenoise"
+          },
+          {
+            "file": "base.txt",
+            "line": "requests==2.32.5",
+            "type": "pypi",
+            "name": "requests"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest==9.0.1",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-cov==7.0.0",
+            "type": "pypi",
+            "name": "pytest-cov"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-django==4.11.1",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "base.txt",
+            "line": "pytest-mock==3.15.1",
+            "type": "pypi",
+            "name": "pytest-mock"
+          },
+          {
+            "file": "base.txt",
+            "line": "django-filter>=23.0,<25",
+            "type": "pypi",
+            "name": "django-filter"
+          },
+          {
+            "file": "local.txt",
+            "line": "django-debug-toolbar",
+            "type": "pypi",
+            "name": "django-debug-toolbar"
+          },
+          {
+            "file": "local.txt",
+            "line": "ipython",
+            "type": "pypi",
+            "name": "ipython"
+          },
+          {
+            "file": "local.txt",
+            "line": "black>=24.0",
+            "type": "pypi",
+            "name": "black"
+          },
+          {
+            "file": "local.txt",
+            "line": "isort>=5.13",
+            "type": "pypi",
+            "name": "isort"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8>=7.0",
+            "type": "pypi",
+            "name": "flake8"
+          },
+          {
+            "file": "local.txt",
+            "line": "flake8-bugbear>=24.0",
+            "type": "pypi",
+            "name": "flake8-bugbear"
+          },
+          {
+            "file": "local.txt",
+            "line": "packaging>=24.0",
+            "type": "pypi",
+            "name": "packaging"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest>=7",
+            "type": "pypi",
+            "name": "pytest"
+          },
+          {
+            "file": "test.txt",
+            "line": "pytest-django",
+            "type": "pypi",
+            "name": "pytest-django"
+          },
+          {
+            "file": "test.txt",
+            "line": "coverage",
+            "type": "pypi",
+            "name": "coverage"
+          },
+          {
+            "file": "test.txt",
+            "line": "factory-boy",
+            "type": "pypi",
+            "name": "factory-boy"
+          }
+        ]
+      },
+      "by_file": [
+        {
+          "path": "__init__.py",
+          "loc": 0,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "__tests__/conftest.py",
+          "loc": 57,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 4,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 6
+        },
+        {
+          "path": "__tests__/test_envia_email_service.py",
+          "loc": 59,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 6
+        },
+        {
+          "path": "__tests__/test_login_view.py",
+          "loc": 262,
+          "lines_over_max": 6,
+          "module_has_docstring": false,
+          "functions_count": 12,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 12
+        },
+        {
+          "path": "__tests__/test_me_viewset.py",
+          "loc": 36,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "__tests__/test_senha_serializer.py",
+          "loc": 144,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 6,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 6
+        },
+        {
+          "path": "__tests__/test_senha_view.py",
+          "loc": 899,
+          "lines_over_max": 38,
+          "module_has_docstring": false,
+          "functions_count": 38,
+          "functions_with_docstring": 24,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 38
+        },
+        {
+          "path": "__tests__/test_sme_integracao_service.py",
+          "loc": 775,
+          "lines_over_max": 4,
+          "module_has_docstring": false,
+          "functions_count": 67,
+          "functions_with_docstring": 4,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 67
+        },
+        {
+          "path": "__tests__/test_usuarios_models.py",
+          "loc": 44,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "admin.py",
+          "loc": 12,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/serializers/login_serializer.py",
+          "loc": 22,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/serializers/me_serializer.py",
+          "loc": 16,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "api/serializers/senha_serializer.py",
+          "loc": 132,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/views/login_view.py",
+          "loc": 144,
+          "lines_over_max": 2,
+          "module_has_docstring": false,
+          "functions_count": 4,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 1,
+          "hints_sem": 3
+        },
+        {
+          "path": "api/views/me_view.py",
+          "loc": 21,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 1,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 1
+        },
+        {
+          "path": "api/views/senha_view.py",
+          "loc": 344,
+          "lines_over_max": 4,
+          "module_has_docstring": false,
+          "functions_count": 8,
+          "functions_with_docstring": 4,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 8
+        },
+        {
+          "path": "apps.py",
+          "loc": 7,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        },
+        {
+          "path": "models.py",
+          "loc": 36,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 2
+        },
+        {
+          "path": "services/envia_email_service.py",
+          "loc": 55,
+          "lines_over_max": 1,
+          "module_has_docstring": false,
+          "functions_count": 3,
+          "functions_with_docstring": 1,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 3
+        },
+        {
+          "path": "services/senha_service.py",
+          "loc": 47,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 2,
+          "functions_with_docstring": 2,
+          "hints_completo": 0,
+          "hints_parcial": 1,
+          "hints_sem": 1
+        },
+        {
+          "path": "services/sme_integracao_service.py",
+          "loc": 519,
+          "lines_over_max": 11,
+          "module_has_docstring": false,
+          "functions_count": 14,
+          "functions_with_docstring": 8,
+          "hints_completo": 10,
+          "hints_parcial": 0,
+          "hints_sem": 4
+        },
+        {
+          "path": "urls.py",
+          "loc": 29,
+          "lines_over_max": 0,
+          "module_has_docstring": false,
+          "functions_count": 0,
+          "functions_with_docstring": 0,
+          "hints_completo": 0,
+          "hints_parcial": 0,
+          "hints_sem": 0
+        }
+      ],
+      "_app": "usuarios"
+    }
+  ]
+}

@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('designacao', '0003_populate_impedimentos'),
+        ("designacao", "0003_populate_impedimentos"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='designacao',
-            name='deleted_at',
+            model_name="designacao",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='designacao',
-            name='indicado_codigo_cargo_base',
+            model_name="designacao",
+            name="indicado_codigo_cargo_base",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='designacao',
-            name='indicado_codigo_cargo_sobreposto',
+            model_name="designacao",
+            name="indicado_codigo_cargo_sobreposto",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='designacao',
-            name='is_deleted',
+            model_name="designacao",
+            name="is_deleted",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='designacao',
-            name='titular_codigo_cargo_base',
+            model_name="designacao",
+            name="titular_codigo_cargo_base",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='designacao',
-            name='titular_codigo_cargo_sobreposto',
+            model_name="designacao",
+            name="titular_codigo_cargo_sobreposto",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

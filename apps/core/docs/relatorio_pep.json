@@ -1,0 +1,207 @@
+{
+  "generated_at": "2026-05-19 18:52:21 UTC",
+  "command": "python manage.py gerar_relatorio_pep --app core",
+  "git_commit": "e050c33",
+  "app": "core",
+  "max_line_length": 79,
+  "summary": {
+    "files_count": 2,
+    "loc_total": 0,
+    "lines_over_79": 0,
+    "lines_length_eligible": 0,
+    "modules_with_docstring": 0,
+    "modules_without_docstring": 2,
+    "functions_methods_total": 0,
+    "functions_methods_with_docstring": 0,
+    "functions_methods_without_docstring": 0,
+    "classes_total": 0,
+    "classes_with_docstring": 0,
+    "classes_without_docstring": 0,
+    "symbols_with_docstring": 0,
+    "symbols_without_docstring": 0,
+    "hints_completo": 0,
+    "hints_parcial": 0,
+    "hints_sem": 0,
+    "missing_docstrings_top": []
+  },
+  "simple": {
+    "pep8_line_width_compliance_pct": 100.0,
+    "pep8_lines_over_max": 0,
+    "pep8_flake8_violations": 50,
+    "pep257_docstring_compliance_pct": 100.0,
+    "pep484_full_hints_pct": 100.0,
+    "pep484_full_or_partial_pct": 100.0,
+    "pep440_requirement_lines_parseable_pct": 100.0,
+    "max_line_length": 79
+  },
+  "flake8": {
+    "E501": 48,
+    "E231": 1,
+    "W292": 1
+  },
+  "pep440": {
+    "files_analyzed": [
+      "base.txt",
+      "local.txt",
+      "production.txt",
+      "test.txt"
+    ],
+    "total_dependency_lines": 21,
+    "pypi_valid": 21,
+    "git_pins": 0,
+    "pinned_with_eq": 5,
+    "invalid_lines": [],
+    "entries": [
+      {
+        "file": "base.txt",
+        "line": "Django>=4.2,<5",
+        "type": "pypi",
+        "name": "Django"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework>=3.15",
+        "type": "pypi",
+        "name": "djangorestframework"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework-simplejwt>=5.3",
+        "type": "pypi",
+        "name": "djangorestframework-simplejwt"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-cors-headers>=4.3",
+        "type": "pypi",
+        "name": "django-cors-headers"
+      },
+      {
+        "file": "base.txt",
+        "line": "python-dotenv>=1.0",
+        "type": "pypi",
+        "name": "python-dotenv"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-environ>=0.12",
+        "type": "pypi",
+        "name": "django-environ"
+      },
+      {
+        "file": "base.txt",
+        "line": "psycopg2-binary>=2.9",
+        "type": "pypi",
+        "name": "psycopg2-binary"
+      },
+      {
+        "file": "base.txt",
+        "line": "gunicorn>=21.0",
+        "type": "pypi",
+        "name": "gunicorn"
+      },
+      {
+        "file": "base.txt",
+        "line": "whitenoise>=6.5",
+        "type": "pypi",
+        "name": "whitenoise"
+      },
+      {
+        "file": "base.txt",
+        "line": "requests==2.32.5",
+        "type": "pypi",
+        "name": "requests"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest==9.0.1",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-cov==7.0.0",
+        "type": "pypi",
+        "name": "pytest-cov"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-django==4.11.1",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-mock==3.15.1",
+        "type": "pypi",
+        "name": "pytest-mock"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-filter>=23.0,<25",
+        "type": "pypi",
+        "name": "django-filter"
+      },
+      {
+        "file": "local.txt",
+        "line": "django-debug-toolbar",
+        "type": "pypi",
+        "name": "django-debug-toolbar"
+      },
+      {
+        "file": "local.txt",
+        "line": "ipython",
+        "type": "pypi",
+        "name": "ipython"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest>=7",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest-django",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "test.txt",
+        "line": "coverage",
+        "type": "pypi",
+        "name": "coverage"
+      },
+      {
+        "file": "test.txt",
+        "line": "factory-boy",
+        "type": "pypi",
+        "name": "factory-boy"
+      }
+    ]
+  },
+  "by_file": [
+    {
+      "path": "management/__init__.py",
+      "loc": 0,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "management/commands/__init__.py",
+      "loc": 0,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    }
+  ]
+}

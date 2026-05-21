@@ -1,0 +1,485 @@
+{
+  "generated_at": "2026-05-21 13:04:45 UTC",
+  "command": "python manage.py gerar_relatorio_pep --app unidades",
+  "git_commit": "e050c33",
+  "app": "unidades",
+  "max_line_length": 79,
+  "summary": {
+    "files_count": 11,
+    "loc_total": 1818,
+    "lines_over_79": 26,
+    "lines_length_eligible": 1434,
+    "modules_with_docstring": 0,
+    "modules_without_docstring": 11,
+    "functions_methods_total": 104,
+    "functions_methods_with_docstring": 65,
+    "functions_methods_without_docstring": 39,
+    "classes_total": 19,
+    "classes_with_docstring": 6,
+    "classes_without_docstring": 13,
+    "symbols_with_docstring": 71,
+    "symbols_without_docstring": 52,
+    "hints_completo": 8,
+    "hints_parcial": 0,
+    "hints_sem": 96,
+    "missing_docstrings_top": [
+      {
+        "path": "__tests__/conftest.py",
+        "lineno": 264,
+        "name": "_create_response",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/conftest.py",
+        "lineno": 278,
+        "name": "_create_response",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/conftest.py",
+        "lineno": 295,
+        "name": "_config",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 19,
+        "name": "TestBaseEOLService",
+        "kind": "class"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 22,
+        "name": "TestBaseEOLService.test_get_sucesso_dict",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 32,
+        "name": "TestBaseEOLService.test_get_401",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 39,
+        "name": "TestBaseEOLService.test_get_404",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 46,
+        "name": "TestBaseEOLService.test_get_status_erro",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 54,
+        "name": "TestBaseEOLService.test_get_timeout",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 61,
+        "name": "TestBaseEOLService.test_get_request_exception",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 71,
+        "name": "TestDREIntegracaoService",
+        "kind": "class"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 75,
+        "name": "TestDREIntegracaoService.test_get_dres",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 87,
+        "name": "TestDREIntegracaoService.test_get_dres_resposta_invalida",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 97,
+        "name": "TestDREIntegracaoService.test_get_dre_by_codigo_encontrada",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 107,
+        "name": "TestDREIntegracaoService.test_get_dre_by_codigo_none",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 116,
+        "name": "TestUnidadeIntegracaoService",
+        "kind": "class"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 120,
+        "name": "TestUnidadeIntegracaoService.test_get_unidades",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 138,
+        "name": "TestUnidadeIntegracaoService.test_get_unidades_codigo_invalido",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 146,
+        "name": "TestUnidadeIntegracaoService.test_get_unidades_resposta_invalida",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 157,
+        "name": "TestUnidadeIntegracaoService.test_get_escolas",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 176,
+        "name": "TestUnidadeIntegracaoService.test_get_codigo_integracao",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 199,
+        "name": "TestUnidadeSupervisao",
+        "kind": "class"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 206,
+        "name": "TestUnidadeSupervisao.test_sucesso",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 233,
+        "name": "TestUnidadeSupervisao.test_dre_codigo_invalido",
+        "kind": "function"
+      },
+      {
+        "path": "__tests__/test_unidades_service.py",
+        "lineno": 240,
+        "name": "TestUnidadeSupervisao.test_sem_mapeamento",
+        "kind": "function"
+      }
+    ]
+  },
+  "simple": {
+    "pep8_line_width_compliance_pct": 98.19,
+    "pep8_lines_over_max": 26,
+    "pep8_flake8_violations": 27,
+    "pep257_docstring_compliance_pct": 57.72,
+    "pep484_full_hints_pct": 7.69,
+    "pep484_full_or_partial_pct": 7.69,
+    "pep440_requirement_lines_parseable_pct": 100.0,
+    "max_line_length": 79
+  },
+  "flake8": {
+    "E501": 27
+  },
+  "pep440": {
+    "files_analyzed": [
+      "base.txt",
+      "local.txt",
+      "production.txt",
+      "test.txt"
+    ],
+    "total_dependency_lines": 26,
+    "pypi_valid": 26,
+    "git_pins": 0,
+    "pinned_with_eq": 5,
+    "invalid_lines": [],
+    "entries": [
+      {
+        "file": "base.txt",
+        "line": "Django>=4.2,<5",
+        "type": "pypi",
+        "name": "Django"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework>=3.15",
+        "type": "pypi",
+        "name": "djangorestframework"
+      },
+      {
+        "file": "base.txt",
+        "line": "djangorestframework-simplejwt>=5.3",
+        "type": "pypi",
+        "name": "djangorestframework-simplejwt"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-cors-headers>=4.3",
+        "type": "pypi",
+        "name": "django-cors-headers"
+      },
+      {
+        "file": "base.txt",
+        "line": "python-dotenv>=1.0",
+        "type": "pypi",
+        "name": "python-dotenv"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-environ>=0.12",
+        "type": "pypi",
+        "name": "django-environ"
+      },
+      {
+        "file": "base.txt",
+        "line": "psycopg2-binary>=2.9",
+        "type": "pypi",
+        "name": "psycopg2-binary"
+      },
+      {
+        "file": "base.txt",
+        "line": "gunicorn>=21.0",
+        "type": "pypi",
+        "name": "gunicorn"
+      },
+      {
+        "file": "base.txt",
+        "line": "whitenoise>=6.5",
+        "type": "pypi",
+        "name": "whitenoise"
+      },
+      {
+        "file": "base.txt",
+        "line": "requests==2.32.5",
+        "type": "pypi",
+        "name": "requests"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest==9.0.1",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-cov==7.0.0",
+        "type": "pypi",
+        "name": "pytest-cov"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-django==4.11.1",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "base.txt",
+        "line": "pytest-mock==3.15.1",
+        "type": "pypi",
+        "name": "pytest-mock"
+      },
+      {
+        "file": "base.txt",
+        "line": "django-filter>=23.0,<25",
+        "type": "pypi",
+        "name": "django-filter"
+      },
+      {
+        "file": "local.txt",
+        "line": "django-debug-toolbar",
+        "type": "pypi",
+        "name": "django-debug-toolbar"
+      },
+      {
+        "file": "local.txt",
+        "line": "ipython",
+        "type": "pypi",
+        "name": "ipython"
+      },
+      {
+        "file": "local.txt",
+        "line": "black>=24.0",
+        "type": "pypi",
+        "name": "black"
+      },
+      {
+        "file": "local.txt",
+        "line": "isort>=5.13",
+        "type": "pypi",
+        "name": "isort"
+      },
+      {
+        "file": "local.txt",
+        "line": "flake8>=7.0",
+        "type": "pypi",
+        "name": "flake8"
+      },
+      {
+        "file": "local.txt",
+        "line": "flake8-bugbear>=24.0",
+        "type": "pypi",
+        "name": "flake8-bugbear"
+      },
+      {
+        "file": "local.txt",
+        "line": "packaging>=24.0",
+        "type": "pypi",
+        "name": "packaging"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest>=7",
+        "type": "pypi",
+        "name": "pytest"
+      },
+      {
+        "file": "test.txt",
+        "line": "pytest-django",
+        "type": "pypi",
+        "name": "pytest-django"
+      },
+      {
+        "file": "test.txt",
+        "line": "coverage",
+        "type": "pypi",
+        "name": "coverage"
+      },
+      {
+        "file": "test.txt",
+        "line": "factory-boy",
+        "type": "pypi",
+        "name": "factory-boy"
+      }
+    ]
+  },
+  "by_file": [
+    {
+      "path": "__init__.py",
+      "loc": 0,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "__tests__/conftest.py",
+      "loc": 334,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 23,
+      "functions_with_docstring": 20,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 23
+    },
+    {
+      "path": "__tests__/test_unidades_serializer.py",
+      "loc": 191,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 15,
+      "functions_with_docstring": 15,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 15
+    },
+    {
+      "path": "__tests__/test_unidades_service.py",
+      "loc": 362,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 28,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 28
+    },
+    {
+      "path": "__tests__/test_unidades_view.py",
+      "loc": 433,
+      "lines_over_max": 26,
+      "module_has_docstring": false,
+      "functions_count": 25,
+      "functions_with_docstring": 25,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 25
+    },
+    {
+      "path": "api/serializers/unidades_serializer.py",
+      "loc": 74,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 1,
+      "functions_with_docstring": 1,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 1
+    },
+    {
+      "path": "api/views/unidades_viewset.py",
+      "loc": 148,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 4,
+      "functions_with_docstring": 4,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 4
+    },
+    {
+      "path": "apps.py",
+      "loc": 6,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "constants/utils.py",
+      "loc": 15,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "services/unidades_service.py",
+      "loc": 241,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 8,
+      "functions_with_docstring": 0,
+      "hints_completo": 8,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    },
+    {
+      "path": "urls.py",
+      "loc": 14,
+      "lines_over_max": 0,
+      "module_has_docstring": false,
+      "functions_count": 0,
+      "functions_with_docstring": 0,
+      "hints_completo": 0,
+      "hints_parcial": 0,
+      "hints_sem": 0
+    }
+  ]
+}

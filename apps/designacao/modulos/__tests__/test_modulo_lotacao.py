@@ -2,9 +2,7 @@ import logging
 
 import pytest
 
-from apps.designacao.modulos.lotacao import (
-    ModuloLotacaoCalculator,
-)
+from apps.designacao.modulos.lotacao import ModuloLotacaoCalculator
 
 
 class TestModuloLotacaoCalculator:
@@ -35,7 +33,6 @@ class TestModuloLotacaoCalculator:
 
         assert resultado == 1
 
-
     @pytest.mark.parametrize(
         "sigla_tipo",
         ["CEI", "CEMEI", "EMEI", "DESCONHECIDO", None, ""],
@@ -47,7 +44,6 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-
 
     # ================= ASSISTENTE =================
 
@@ -120,4 +116,3 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-

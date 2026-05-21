@@ -1,22 +1,23 @@
-import environ
 import logging
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from rest_framework import status, permissions
+import environ
+from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from apps.usuarios.api.serializers.login_serializer import LoginSerializer
-from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 from apps.helpers.exceptions import (
     AuthenticationError,
+    PerfilNaoAutorizadoError,
     SmeIntegracaoException,
-    PerfilNaoAutorizadoError
 )
+from apps.usuarios.api.serializers.login_serializer import LoginSerializer
+from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -49,7 +50,6 @@ class LoginView(TokenObtainPairView):
             user = self._criar_ou_atualizar_user(login, senha, dados_sme)
             tokens = self._gerar_tokens(user)
 
-
             return Response(
                 {
                     "token": tokens["access"],
@@ -69,10 +69,12 @@ class LoginView(TokenObtainPairView):
         except SmeIntegracaoException as e:
             logger.warning("Falha na autenticação: %s", str(e))
             return Response(
-                {'detail': 'Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco.'}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "detail": "Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         except PerfilNaoAutorizadoError:
             return Response(
                 {
@@ -89,7 +91,7 @@ class LoginView(TokenObtainPairView):
                 {"detail": "Erro interno"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        
+
     def _valida_perfil_signa(self, dados_sme: dict):
         perfis = dados_sme.get("perfis")
 
@@ -98,10 +100,9 @@ class LoginView(TokenObtainPairView):
 
         perfis_normalizados = [p.upper() for p in perfis]
         perfil_signa = env("GUIDE_PERFIL_SIGNA")
-        
+
         if perfil_signa not in perfis_normalizados:
             raise PerfilNaoAutorizadoError()
-
 
     def _criar_ou_atualizar_user(self, login, senha, dados_sme):
         """Cria ou atualiza usuário local"""

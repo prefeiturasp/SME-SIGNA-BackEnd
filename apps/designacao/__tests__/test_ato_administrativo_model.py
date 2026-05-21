@@ -1,13 +1,14 @@
-import pytest
 from django.core.exceptions import ValidationError
 
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
+import pytest
+
 from apps.designacao.__tests__.factories import (
-    criar_ato_designacao,
-    criar_ato_cessacao,
     criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
     criar_ato_insubsistencia,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 T = AtoAdministrativo.Tipo
 
@@ -21,13 +22,13 @@ class TestAtoAdministrativoStatus:
 
     def test_status_ativo(self):
         d = criar_ato_designacao()
-        assert d.status == 'ativo'
+        assert d.status == "ativo"
 
     def test_status_insubsistente(self):
         d = criar_ato_designacao()
         d.ativo = False
-        d.save(update_fields=['ativo'])
-        assert d.status == 'insubsistente'
+        d.save(update_fields=["ativo"])
+        assert d.status == "insubsistente"
 
     def test_eh_valido_true(self):
         d = criar_ato_designacao()
@@ -36,23 +37,23 @@ class TestAtoAdministrativoStatus:
     def test_eh_valido_false(self):
         d = criar_ato_designacao()
         d.ativo = False
-        d.save(update_fields=['ativo'])
+        d.save(update_fields=["ativo"])
         assert d.eh_valido is False
 
     def test_status_cessada_quando_possui_cessacao_ativa(self):
         d = criar_ato_designacao()
         criar_ato_cessacao(d)
         d.refresh_from_db()
-        assert d.status == 'cessada'
+        assert d.status == "cessada"
 
     def test_status_volta_para_ativo_quando_cessacao_insubsistida(self):
         d = criar_ato_designacao()
         cessacao = criar_ato_cessacao(d)
         criar_ato_insubsistencia(cessacao)
         cessacao.ativo = False
-        cessacao.save(update_fields=['ativo'])
+        cessacao.save(update_fields=["ativo"])
         d.refresh_from_db()
-        assert d.status == 'ativo'
+        assert d.status == "ativo"
 
     def test_status_cessada_nao_afeta_eh_valido(self):
         d = criar_ato_designacao()
@@ -82,8 +83,8 @@ class TestAtoAdministrativoAtoRaiz:
     def test_ato_raiz_nao_e_sobrescrito_se_ja_definido(self):
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)
-        c.sei_numero = 'SEI-UPDATED'
-        c.save(update_fields=['sei_numero'])
+        c.sei_numero = "SEI-UPDATED"
+        c.save(update_fields=["sei_numero"])
         c.refresh_from_db()
         assert c.ato_raiz_id == d.pk
 
@@ -135,32 +136,32 @@ class TestAtoAdministrativoCleanHierarquia:
         assert d.ato_pai_id is None
 
     def test_cessacao_sem_pai_levanta_erro(self):
-        with pytest.raises(ValidationError, match='precisa de um ato pai'):
+        with pytest.raises(ValidationError, match="precisa de um ato pai"):
             AtoAdministrativo.objects.create(
                 tipo=T.CESSACAO,
-                sei_numero='SEI-X',
+                sei_numero="SEI-X",
             )
 
     def test_cessacao_com_pai_cessacao_levanta_erro(self):
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)
-        with pytest.raises(ValidationError, match='não pode ter'):
+        with pytest.raises(ValidationError, match="não pode ter"):
             AtoAdministrativo.objects.create(
                 tipo=T.CESSACAO,
                 ato_pai=c,
-                sei_numero='SEI-X',
-                numero_portaria='001',
-                ano_vigente='2024',
+                sei_numero="SEI-X",
+                numero_portaria="001",
+                ano_vigente="2024",
             )
 
     def test_apostila_com_pai_insubsistencia_levanta_erro(self):
         d = criar_ato_designacao()
         i = criar_ato_insubsistencia(d)
-        with pytest.raises(ValidationError, match='não pode ter'):
+        with pytest.raises(ValidationError, match="não pode ter"):
             AtoAdministrativo.objects.create(
                 tipo=T.APOSTILA,
                 ato_pai=i,
-                sei_numero='SEI-X',
+                sei_numero="SEI-X",
             )
 
     def test_designacao_com_pai_levanta_erro(self):
@@ -169,9 +170,9 @@ class TestAtoAdministrativoCleanHierarquia:
             AtoAdministrativo.objects.create(
                 tipo=T.DESIGNACAO,
                 ato_pai=d,
-                sei_numero='SEI-X',
-                numero_portaria='001',
-                ano_vigente='2024',
+                sei_numero="SEI-X",
+                numero_portaria="001",
+                ano_vigente="2024",
             )
 
 
@@ -181,20 +182,20 @@ class TestAtoAdministrativoCleanCessacaoUnica:
     def test_bloqueia_segunda_cessacao_ativa(self):
         d = criar_ato_designacao()
         criar_ato_cessacao(d)
-        with pytest.raises(ValidationError, match='cessação ativa'):
+        with pytest.raises(ValidationError, match="cessação ativa"):
             AtoAdministrativo.objects.create(
                 tipo=T.CESSACAO,
                 ato_pai=d,
-                sei_numero='SEI-C2',
-                numero_portaria='002',
-                ano_vigente='2024',
+                sei_numero="SEI-C2",
+                numero_portaria="002",
+                ano_vigente="2024",
             )
 
     def test_permite_segunda_cessacao_apos_insubsistir_primeira(self):
         d = criar_ato_designacao()
         c1 = criar_ato_cessacao(d)
         c1.ativo = False
-        c1.save(update_fields=['ativo'])
+        c1.save(update_fields=["ativo"])
 
-        c2 = criar_ato_cessacao(d, sei_numero='SEI-C2', numero_portaria='002')
+        c2 = criar_ato_cessacao(d, sei_numero="SEI-C2", numero_portaria="002")
         assert c2.pk is not None

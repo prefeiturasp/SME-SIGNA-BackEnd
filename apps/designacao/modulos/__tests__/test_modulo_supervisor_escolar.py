@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 
 from apps.designacao.modulos.supervisor_escolar import (
     ModuloSupervisorEscolarCalculator,
@@ -27,9 +26,7 @@ class TestModuloSupervisorEscolarCalculator:
 
         assert resultado == 53
 
-    def test_calcular_retorna_zero_quando_codigo_dre_ausente(
-        self, caplog
-    ):
+    def test_calcular_retorna_zero_quando_codigo_dre_ausente(self, caplog):
         cargo = {
             "codigo_cargo": "3352",
         }
@@ -48,9 +45,7 @@ class TestModuloSupervisorEscolarCalculator:
             in caplog.text
         )
 
-    def test_calcular_retorna_zero_quando_dre_nao_mapeada(
-        self, caplog
-    ):
+    def test_calcular_retorna_zero_quando_dre_nao_mapeada(self, caplog):
         cargo = {
             "codigo_cargo": "3352",
         }
@@ -65,6 +60,5 @@ class TestModuloSupervisorEscolarCalculator:
 
         assert resultado == 0
         assert (
-            "não possui módulo definido para Supervisor Escolar"
-            in caplog.text
+            "não possui módulo definido para Supervisor Escolar" in caplog.text
         )

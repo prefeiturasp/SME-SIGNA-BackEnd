@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 79
+target-version = ["py311"]
+extend-exclude = '''
+/(
+    migrations
+  | venv
+  | node_modules
+  | staticfiles
+  | htmlcov
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_django = ["django"]
+known_first_party = ["apps", "config"]
+sections = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip = ["migrations", "venv", "node_modules", "staticfiles", "htmlcov"]

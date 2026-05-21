@@ -1,13 +1,13 @@
 import datetime
 
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
-from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.apostila_detalhe import ApostilaDetalhe
-from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
-_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
+_ATO = frozenset({"numero_portaria", "ano_vigente", "sei_numero", "doc"})
 
 
 def criar_ato_designacao(**kwargs):
@@ -16,23 +16,23 @@ def criar_ato_designacao(**kwargs):
 
     ato = AtoAdministrativo.objects.create(
         tipo=AtoAdministrativo.Tipo.DESIGNACAO,
-        numero_portaria=ato_kwargs.get('numero_portaria', '123'),
-        ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
-        sei_numero=ato_kwargs.get('sei_numero', 'SEI-1'),
-        doc=ato_kwargs.get('doc', ''),
+        numero_portaria=ato_kwargs.get("numero_portaria", "123"),
+        ano_vigente=ato_kwargs.get("ano_vigente", "2024"),
+        sei_numero=ato_kwargs.get("sei_numero", "SEI-1"),
+        doc=ato_kwargs.get("doc", ""),
     )
 
     detalhe_base = dict(
-        dre_nome='DRE Teste',
-        unidade_proponente='Escola Teste',
-        codigo_hierarquico='001',
-        indicado_nome_civil='Nome Civil',
-        indicado_nome_servidor='Nome Servidor',
-        indicado_rf='1234567',
+        dre_nome="DRE Teste",
+        unidade_proponente="Escola Teste",
+        codigo_hierarquico="001",
+        indicado_nome_civil="Nome Civil",
+        indicado_nome_servidor="Nome Servidor",
+        indicado_rf="1234567",
         indicado_vinculo=1,
-        indicado_cargo_base='Cargo Base',
-        indicado_lotacao='Lotacao',
-        indicado_local_exercicio='Local',
+        indicado_cargo_base="Cargo Base",
+        indicado_lotacao="Lotacao",
+        indicado_local_exercicio="Local",
         data_inicio=datetime.date(2024, 1, 1),
         tipo_vaga=DesignacaoDetalhe.TipoVaga.VAGO,
     )
@@ -48,21 +48,21 @@ def criar_designacao(**kwargs):
 
 def criar_designacao_legado(**kwargs):
     base = dict(
-        dre_nome='DRE Teste',
-        unidade_proponente='Escola Teste',
-        codigo_hierarquico='001',
-        ue='000001',
-        dre='000001',
-        funcionarios_da_unidade='10',
-        indicado_nome_servidor='Nome Servidor',
-        indicado_rf='1234567',
+        dre_nome="DRE Teste",
+        unidade_proponente="Escola Teste",
+        codigo_hierarquico="001",
+        ue="000001",
+        dre="000001",
+        funcionarios_da_unidade="10",
+        indicado_nome_servidor="Nome Servidor",
+        indicado_rf="1234567",
         indicado_vinculo=1,
-        indicado_cargo_base='Cargo Base',
-        indicado_lotacao='Lotacao',
-        indicado_local_exercicio='Local',
-        numero_portaria='123',
-        ano_vigente='2024',
-        sei_numero='SEI-1',
+        indicado_cargo_base="Cargo Base",
+        indicado_lotacao="Lotacao",
+        indicado_local_exercicio="Local",
+        numero_portaria="123",
+        ano_vigente="2024",
+        sei_numero="SEI-1",
         data_inicio=datetime.date(2024, 1, 1),
         tipo_vaga=Designacao.TipoVaga.VAGO,
     )
@@ -77,10 +77,10 @@ def criar_ato_cessacao(ato_pai, **kwargs):
     ato = AtoAdministrativo.objects.create(
         tipo=AtoAdministrativo.Tipo.CESSACAO,
         ato_pai=ato_pai,
-        numero_portaria=ato_kwargs.get('numero_portaria', '456'),
-        ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
-        sei_numero=ato_kwargs.get('sei_numero', 'SEI-2'),
-        doc=ato_kwargs.get('doc', ''),
+        numero_portaria=ato_kwargs.get("numero_portaria", "456"),
+        ano_vigente=ato_kwargs.get("ano_vigente", "2024"),
+        sei_numero=ato_kwargs.get("sei_numero", "SEI-2"),
+        doc=ato_kwargs.get("doc", ""),
     )
 
     detalhe_base = dict(
@@ -94,14 +94,14 @@ def criar_ato_cessacao(ato_pai, **kwargs):
     return ato
 
 
-def criar_ato_apostila(ato_pai, observacao='Obs', **kwargs):
+def criar_ato_apostila(ato_pai, observacao="Obs", **kwargs):
     ato_kwargs = {k: v for k, v in kwargs.items() if k in _ATO}
 
     ato = AtoAdministrativo.objects.create(
         tipo=AtoAdministrativo.Tipo.APOSTILA,
         ato_pai=ato_pai,
-        sei_numero=ato_kwargs.get('sei_numero', 'SEI-A'),
-        doc=ato_kwargs.get('doc', ''),
+        sei_numero=ato_kwargs.get("sei_numero", "SEI-A"),
+        doc=ato_kwargs.get("doc", ""),
     )
     ApostilaDetalhe.objects.create(ato=ato, observacao=observacao)
     return ato
@@ -113,12 +113,12 @@ def criar_ato_insubsistencia(ato_pai, **kwargs):
     ato = AtoAdministrativo.objects.create(
         tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
         ato_pai=ato_pai,
-        numero_portaria=ato_kwargs.get('numero_portaria', '789'),
-        ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
-        sei_numero=ato_kwargs.get('sei_numero', 'SEI-I'),
-        doc=ato_kwargs.get('doc', ''),
+        numero_portaria=ato_kwargs.get("numero_portaria", "789"),
+        ano_vigente=ato_kwargs.get("ano_vigente", "2024"),
+        sei_numero=ato_kwargs.get("sei_numero", "SEI-I"),
+        doc=ato_kwargs.get("doc", ""),
     )
     InsubsistenciaDetalhe.objects.create(
-        ato=ato, observacoes=kwargs.get('observacoes', '')
+        ato=ato, observacoes=kwargs.get("observacoes", "")
     )
     return ato
