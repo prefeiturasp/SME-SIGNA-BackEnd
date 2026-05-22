@@ -61,6 +61,17 @@ Feito tudo isso, o projeto estará executando no endereço [localhost:8000](http
 ### 📄 Licença
 Este projeto está sob a licença (sua licença) - veja o arquivo [LICENSE](./LICENSE) para detalhes.
 
-### 🧪 Executando a cobertura de PEPs
-    $python manage.py gerar_relatorio_pep_all
+### 🧪 Executando relatório de cobertura PEPs
+
+# Um app só
+python manage.py gerar_relatorio_pep --app core
+
+# Todos os apps + consolidado
+python manage.py gerar_relatorio_pep --all
+
+# Apps selecionados + consolidado
+python manage.py gerar_relatorio_pep --only core usuarios designacao
+
+# Customizando saída do consolidado
+python manage.py gerar_relatorio_pep --all --output-dir docs/relatorios
 
