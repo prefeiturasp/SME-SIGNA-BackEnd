@@ -60,3 +60,7 @@ Feito tudo isso, o projeto estará executando no endereço [localhost:8000](http
 
 ### 📄 Licença
 Este projeto está sob a licença (sua licença) - veja o arquivo [LICENSE](./LICENSE) para detalhes.
+
+### 🧪 Executando a cobertura de PEPs
+    $python manage.py gerar_relatorio_pep_all
+
