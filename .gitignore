@@ -48,3 +48,10 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+
+# Relatórios PEP gerados via comando
+apps/*/docs/RELATORIO_PEP*.md
+apps/*/docs/RELATORIO_PEP*.txt
+apps/*/docs/relatorio_pep*.json
+docs/RELATORIO_PEP_GERAL.md
+docs/relatorio_pep_geral.json
