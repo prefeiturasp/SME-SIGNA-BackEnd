@@ -12,7 +12,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
     """
 
     portaria      = serializers.CharField(source='numero_portaria')
-    doc           = serializers.CharField()
+    doc           = serializers.DateField(allow_null=True)
     tipo_de_ato   = serializers.SerializerMethodField()
     nome          = serializers.SerializerMethodField()
     cargo         = serializers.SerializerMethodField()
