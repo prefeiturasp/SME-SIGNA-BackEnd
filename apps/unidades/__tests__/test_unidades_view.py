@@ -114,21 +114,37 @@ class TestUnidadeViewSet:
     
     # ==================== TESTES DE LISTAGEM DE UEs ====================
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_sucesso(self, mock_get_ues, factory, viewset, mock_ues):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_sucesso(self, mock_get_ues, mock_get_supervisao, factory, viewset, mock_ues):
         """Testa listagem de UEs com sucesso"""
-        mock_get_ues.return_value = mock_ues
+        unidade_supervisao = {
+            'codigoEscola': 108202,
+            'nomeEscola': 'SUPERVISAO DRE BUTANTA',
+            'codigoDRE': '108200',
+            'tipoEscola': 14,
+            'siglaTipoEscola': 'UA',
+            'nomeDRE': 'DIRETORIA REGIONAL DE EDUCACAO BUTANTA',
+            'siglaDRE': 'BT',
+            'codigoSubprefeitura': None,
+            'nomeSubprefeitura': None
+        }
+        mock_get_ues.return_value = [*mock_ues]
+        expected_response = [*mock_ues, unidade_supervisao]
+        mock_get_supervisao.return_value = unidade_supervisao
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': '108200'})
         response = viewset.list(request)
         
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
-        assert response.data == mock_ues
+        assert len(response.data) == 3
+        assert response.data == expected_response
         mock_get_ues.assert_called_once_with('108200')
+        mock_get_supervisao.assert_called_once_with('108200')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_sem_codigo_dre(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_sem_codigo_dre(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa listagem de UEs sem informar código da DRE"""
         request = self._create_request(factory, data={'tipo': 'UE'})
         response = viewset.list(request)
@@ -137,9 +153,11 @@ class TestUnidadeViewSet:
         assert 'detail' in response.data
         assert 'necessário informar o código da DRE' in response.data['detail']
         mock_get_ues.assert_not_called()
+        mock_get_supervisao.assert_not_called()
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_codigo_dre_vazio(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_codigo_dre_vazio(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa listagem de UEs com código da DRE vazio"""
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': ''})
         response = viewset.list(request)
@@ -147,11 +165,14 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'detail' in response.data
         mock_get_ues.assert_not_called()
+        mock_get_supervisao.assert_not_called()
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_valor_invalido(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_valor_invalido(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa listagem de UEs com código da DRE inválido"""
         mock_get_ues.side_effect = ValueError("Código da DRE deve ser numérico")
+        mock_get_supervisao.return_value = None
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': 'ABC'})
         response = viewset.list(request)
@@ -159,11 +180,14 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'detail' in response.data
         assert 'numérico' in response.data['detail']
+        mock_get_supervisao.assert_called_once_with('ABC')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_dre_nao_encontrada(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_dre_nao_encontrada(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa listagem de UEs quando DRE não existe"""
         mock_get_ues.side_effect = LookupError("DRE não encontrada")
+        mock_get_supervisao.return_value = None
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': '999999'})
         response = viewset.list(request)
@@ -171,22 +195,28 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert 'detail' in response.data
         assert 'não encontrada' in response.data['detail']
+        mock_get_supervisao.assert_called_once_with('999999')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_erro_permissao(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_erro_permissao(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa erro de permissão ao listar UEs"""
         mock_get_ues.side_effect = PermissionError("Token inválido")
+        mock_get_supervisao.return_value = None
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': '108200'})
         response = viewset.list(request)
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert 'detail' in response.data
+        mock_get_supervisao.assert_called_once_with('108200')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_erro_generico(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_erro_generico(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa erro genérico ao listar UEs"""
         mock_get_ues.side_effect = Exception("Erro de conexão")
+        mock_get_supervisao.return_value = None
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': '108200'})
         response = viewset.list(request)
@@ -194,17 +224,49 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert 'detail' in response.data
         assert 'Erro ao consultar unidades' in response.data['detail']
+        mock_get_supervisao.assert_called_once_with('108200')
     
-    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre')
-    def test_listar_ues_vazio(self, mock_get_ues, factory, viewset):
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_vazio(self, mock_get_ues, mock_get_supervisao, factory, viewset):
         """Testa listagem de UEs quando não há resultados"""
+        unidade_supervisao = {
+            'codigoEscola': 108202,
+            'nomeEscola': 'SUPERVISAO DRE BUTANTA',
+            'codigoDRE': '108200',
+            'tipoEscola': 14,
+            'siglaTipoEscola': 'UA',
+            'nomeDRE': 'DIRETORIA REGIONAL DE EDUCACAO BUTANTA',
+            'siglaDRE': 'BT',
+            'codigoSubprefeitura': None,
+            'nomeSubprefeitura': None
+        }
         mock_get_ues.return_value = []
+        mock_get_supervisao.return_value = unidade_supervisao
         
         request = self._create_request(factory, data={'tipo': 'UE', 'dre': '108200'})
         response = viewset.list(request)
         
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == []
+        assert response.data == [unidade_supervisao]
+        mock_get_supervisao.assert_called_once_with('108200')
+
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidade_supervisao_by_dre')
+    @patch('apps.unidades.api.views.unidades_viewset.UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade')
+    def test_listar_ues_sucesso_quando_supervisao_falha(
+        self, mock_get_ues, mock_get_supervisao, factory, viewset, mock_ues
+    ):
+        """Testa que a listagem de UEs continua mesmo com erro na unidade de supervisão"""
+        mock_get_ues.return_value = mock_ues
+        mock_get_supervisao.side_effect = Exception("Erro supervisão")
+
+        request = self._create_request(factory, data={'tipo': 'UE', 'dre': '108200'})
+        response = viewset.list(request)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == mock_ues
+        mock_get_ues.assert_called_once_with('108200')
+        mock_get_supervisao.assert_called_once_with('108200')
     
     # ==================== TESTES DE VALIDAÇÃO DE PARÂMETROS ====================
     

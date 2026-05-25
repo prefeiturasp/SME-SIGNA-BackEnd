@@ -1,381 +1,292 @@
 import pytest
 from unittest.mock import patch, Mock
 import requests
+
 from apps.unidades.services.unidades_service import (
-    DREIntegracaoService, 
+    DREIntegracaoService,
     UnidadeIntegracaoService,
+    BaseEOLService,
     EOLIntegrationError,
     EOLTimeoutError,
     EOLCommunicationError,
-    EOLUnexpectedResponseError
+    EOLUnexpectedResponseError,
 )
 
 
-class TestDREIntegracaoService:
-    """Testes para o DREIntegracaoService"""
-    
-    # ==================== TESTES DE get_dres ====================
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_sucesso(
-        self, mock_env, mock_get, 
-        mock_env_config, mock_http_response_success, mock_dres_response
-    ):
-        """Testa busca de DREs com sucesso"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_success(mock_dres_response)
-        
-        result = DREIntegracaoService.get_dres()
-        
-        assert result == mock_dres_response
-        assert len(result) == 2
-        mock_get.assert_called_once()
-        assert 'x-api-eol-key' in mock_get.call_args[1]['headers']
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    @pytest.mark.parametrize('status_code,exception_type,error_message', [
-        (401, PermissionError, 'Não autorizado'),
-        (500, EOLIntegrationError, 'Erro na consulta de DREs'),
-        (503, EOLIntegrationError, 'Erro na consulta de DREs'),
-    ])
-    def test_get_dres_erros_http(
-        self, mock_env, mock_get, 
-        mock_env_config, mock_http_response_error,
-        status_code, exception_type, error_message
-    ):
-        """Testa diferentes erros HTTP ao buscar DREs"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_error(status_code)
-        
-        with pytest.raises(exception_type) as exc_info:
-            DREIntegracaoService.get_dres()
-        
-        assert error_message in str(exc_info.value)
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    @pytest.mark.parametrize('exception_class,expected_exception,error_message', [
-        (requests.exceptions.Timeout, EOLTimeoutError, 'Tempo limite excedido'),
-        (requests.exceptions.ConnectionError, EOLCommunicationError, 'Erro de comunicação'),
-        (requests.exceptions.RequestException, EOLCommunicationError, 'Erro de comunicação'),
-    ])
-    def test_get_dres_excecoes_requests(
-        self, mock_env, mock_get, 
-        mock_env_config, exception_class, expected_exception, error_message
-    ):
-        """Testa diferentes exceções de requests ao buscar DREs"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.side_effect = exception_class("Erro de teste")
-        
-        with pytest.raises(expected_exception) as exc_info:
-            DREIntegracaoService.get_dres()
-        
-        assert error_message in str(exc_info.value)
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_lista_vazia(
-        self, mock_env, mock_get, 
-        mock_env_config, mock_http_response_success
-    ):
-        """Testa busca de DREs retornando lista vazia"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_success([])
-        
-        result = DREIntegracaoService.get_dres()
-        
-        assert result == []
-        assert len(result) == 0
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_headers_corretos(
-        self, mock_env, mock_get, 
-        mock_env_config, mock_http_response_success, 
-        mock_dres_response, api_token
-    ):
-        """Testa se os headers corretos são enviados"""
-        mock_env.side_effect = mock_env_config(token=api_token)
-        mock_get.return_value = mock_http_response_success(mock_dres_response)
-        
-        DREIntegracaoService.get_dres()
-        
-        call_kwargs = mock_get.call_args[1]
-        assert call_kwargs['headers']['Content-Type'] == 'application/json'
-        assert 'x-api-eol-key' in call_kwargs['headers']
-        assert call_kwargs['timeout'] == 30
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_excecao_generica(
-        self, mock_env, mock_get, 
-        mock_env_config
-    ):
-        """Testa exceção genérica ao buscar DREs (cobre except Exception)"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.side_effect = RuntimeError("Erro inesperado no sistema")
-        
-        with pytest.raises(EOLIntegrationError) as exc_info:
-            DREIntegracaoService.get_dres()
-        
-        assert "Erro inesperado ao buscar DREs" in str(exc_info.value)
-    
-    # ==================== TESTES DE get_dre_by_codigo ====================
-    
-    @patch.object(DREIntegracaoService, 'get_dres')
-    def test_get_dre_by_codigo_encontrada(
-        self, mock_get_dres, 
-        mock_dres_response, codigo_dre_valido
-    ):
-        """Testa busca de DRE por código quando encontrada"""
-        mock_get_dres.return_value = mock_dres_response
-        
-        result = DREIntegracaoService.get_dre_by_codigo(codigo_dre_valido)
-        
-        assert result is not None
-        assert result['codigoDRE'] == codigo_dre_valido
-        assert result['nomeDRE'] == 'Diretoria Regional de Educação Butantã'
-    
-    @patch.object(DREIntegracaoService, 'get_dres')
-    def test_get_dre_by_codigo_nao_encontrada(
-        self, mock_get_dres, 
-        mock_dres_response, codigo_dre_invalido
-    ):
-        """Testa busca de DRE por código quando não encontrada"""
-        mock_get_dres.return_value = mock_dres_response
-        
-        result = DREIntegracaoService.get_dre_by_codigo(codigo_dre_invalido)
-        
-        assert result is None
-    
-    @patch.object(DREIntegracaoService, 'get_dres')
-    def test_get_dre_by_codigo_lista_vazia(self, mock_get_dres, codigo_dre_valido):
-        """Testa busca de DRE por código em lista vazia"""
-        mock_get_dres.return_value = []
-        
-        result = DREIntegracaoService.get_dre_by_codigo(codigo_dre_valido)
-        
-        assert result is None
-    
-    @patch.object(DREIntegracaoService, 'get_dres')
-    def test_get_dre_by_codigo_propaga_permission_error(self, mock_get_dres, codigo_dre_valido):
-        """Testa propagação de PermissionError ao buscar DRE por código"""
-        mock_get_dres.side_effect = PermissionError("Não autorizado")
+# ================= BASE SERVICE =================
 
-        with pytest.raises(PermissionError) as exc_info:
-            DREIntegracaoService.get_dre_by_codigo(codigo_dre_valido)
+class TestBaseEOLService:
 
-        assert "Não autorizado" in str(exc_info.value)
-    
-    @patch.object(DREIntegracaoService, 'get_dres')
-    def test_get_dre_by_codigo_propaga_eol_integration_error(self, mock_get_dres, codigo_dre_valido):
-        """Testa propagação de EOLIntegrationError ao buscar DRE por código"""
-        mock_get_dres.side_effect = EOLIntegrationError("Erro de integração")
-
-        with pytest.raises(EOLIntegrationError) as exc_info:
-            DREIntegracaoService.get_dre_by_codigo(codigo_dre_valido)
-
-        assert "Erro de integração" in str(exc_info.value)
-    
-    # ==================== TESTES DE LOGGING ====================
-    
-    @patch('apps.unidades.services.unidades_service.logger')
     @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_logging_sucesso(
-        self, mock_env, mock_get, mock_logger,
-        mock_env_config, mock_http_response_success, mock_dres_response
-    ):
-        """Testa logging em caso de sucesso"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_success(mock_dres_response)
-        
-        DREIntegracaoService.get_dres()
-        
-        assert mock_logger.info.call_count >= 2
-        mock_logger.info.assert_any_call("Buscando DREs no EOL")
-    
-    @patch('apps.unidades.services.unidades_service.logger')
+    def test_get_sucesso_dict(self, mock_get):
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {"ok": True}
+        mock_get.return_value = mock_response
+
+        result = BaseEOLService._get('url', 'ctx')
+
+        assert result == {"ok": True}
+
     @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_dres_logging_erro_401(
-        self, mock_env, mock_get, mock_logger,
-        mock_env_config, mock_http_response_error
-    ):
-        """Testa logging em caso de erro 401"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_error(401)
-        
+    def test_get_401(self, mock_get):
+        mock_get.return_value = Mock(status_code=401)
+
         with pytest.raises(PermissionError):
-            DREIntegracaoService.get_dres()
-        
-        assert mock_logger.error.call_count >= 1
+            BaseEOLService._get('url', 'ctx')
 
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    def test_get_404(self, mock_get):
+        mock_get.return_value = Mock(status_code=404)
+
+        with pytest.raises(LookupError):
+            BaseEOLService._get('url', 'ctx')
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    def test_get_status_erro(self, mock_get):
+        mock_response = Mock(status_code=500, text='erro')
+        mock_get.return_value = mock_response
+
+        with pytest.raises(EOLIntegrationError):
+            BaseEOLService._get('url', 'ctx')
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    def test_get_timeout(self, mock_get):
+        mock_get.side_effect = requests.exceptions.Timeout()
+
+        with pytest.raises(EOLTimeoutError):
+            BaseEOLService._get('url', 'ctx')
+
+    @patch('apps.unidades.services.unidades_service.requests.get')
+    def test_get_request_exception(self, mock_get):
+        mock_get.side_effect = requests.exceptions.RequestException('erro')
+
+        with pytest.raises(EOLCommunicationError):
+            BaseEOLService._get('url', 'ctx')
+
+
+# ================= DRE =================
+
+class TestDREIntegracaoService:
+
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_dres(self, mock_get, mock_env, mock_env_config, mock_dres_response):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = mock_dres_response
+
+        result = DREIntegracaoService.get_dres()
+
+        assert result == mock_dres_response
+
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_dres_resposta_invalida(self, mock_get, mock_env, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = {}
+
+        with pytest.raises(EOLUnexpectedResponseError):
+            DREIntegracaoService.get_dres()
+
+    @patch.object(DREIntegracaoService, 'get_dres')
+    def test_get_dre_by_codigo_encontrada(self, mock_get_dres, mock_dres_response, codigo_dre_valido):
+        mock_get_dres.return_value = mock_dres_response
+
+        result = DREIntegracaoService.get_dre_by_codigo(codigo_dre_valido)
+
+        assert result['codigoDRE'] == codigo_dre_valido
+
+    @patch.object(DREIntegracaoService, 'get_dres')
+    def test_get_dre_by_codigo_none(self, mock_get_dres):
+        mock_get_dres.return_value = []
+
+        assert DREIntegracaoService.get_dre_by_codigo('1') is None
+
+
+# ================= UNIDADES =================
 
 class TestUnidadeIntegracaoService:
-    """Testes para o UnidadeIntegracaoService"""
-    
-    # ==================== TESTES DE get_unidades_by_dre ====================
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
+
     @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_sucesso(
-        self, mock_env, mock_get,
-        mock_env_config, mock_http_response_success, 
-        mock_unidades_response, codigo_dre_valido
-    ):
-        """Testa busca de unidades por DRE com sucesso"""
+    @patch.object(BaseEOLService, '_get')
+    def test_get_unidades(self, mock_get, mock_env, mock_env_config, mock_unidades_response, codigo_dre_valido):
         mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_success(mock_unidades_response)
-        
+        mock_get.return_value = mock_unidades_response
+
         result = UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
+
         assert result == mock_unidades_response
-        assert len(result) == 2
-        mock_get.assert_called_once()
-        assert codigo_dre_valido in mock_get.call_args[0][0]
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @pytest.mark.parametrize('codigo_invalido', ['', None, '   '])
-    def test_get_unidades_by_dre_codigo_invalido(self, mock_get, codigo_invalido):
-        """Testa erro quando código da DRE é inválido"""
-        with pytest.raises(ValueError) as exc_info:
-            UnidadeIntegracaoService.get_unidades_by_dre(codigo_invalido)
-        
-        assert "É necessário informar o código da DRE" in str(exc_info.value)
+
+    @patch.object(BaseEOLService, '_get')
+    def test_get_unidades_codigo_invalido(self, mock_get):
+        with pytest.raises(ValueError):
+            UnidadeIntegracaoService.get_unidades_by_dre('')
+
         mock_get.assert_not_called()
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    @pytest.mark.parametrize('status_code,exception_type,error_message', [
-        (401, PermissionError, 'Não autorizado'),
-        (404, LookupError, 'DRE não encontrada'),
-        (500, EOLIntegrationError, 'Erro na consulta de UEs por DRE'),
-    ])
-    def test_get_unidades_by_dre_erros_http(
-        self, mock_env, mock_get,
-        mock_env_config, mock_http_response_error, codigo_dre_valido,
-        status_code, exception_type, error_message
-    ):
-        """Testa diferentes erros HTTP ao buscar unidades"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_error(status_code)
-        
-        with pytest.raises(exception_type) as exc_info:
-            UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        assert error_message in str(exc_info.value)
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    @pytest.mark.parametrize('exception_class,expected_exception,error_message', [
-        (requests.exceptions.Timeout, EOLTimeoutError, 'Tempo limite excedido'),
-        (requests.exceptions.ConnectionError, EOLCommunicationError, 'Erro de comunicação'),
-    ])
-    def test_get_unidades_by_dre_excecoes_requests(
-        self, mock_env, mock_get,
-        mock_env_config, codigo_dre_valido,
-        exception_class, expected_exception, error_message
-    ):
-        """Testa diferentes exceções de requests ao buscar unidades"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.side_effect = exception_class("Erro de teste")
-        
-        with pytest.raises(expected_exception) as exc_info:
-            UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        assert error_message in str(exc_info.value)
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_resposta_nao_lista(
-        self, mock_env, mock_get,
-        mock_env_config, codigo_dre_valido
-    ):
-        """Testa erro quando resposta não é uma lista"""
-        mock_env.side_effect = mock_env_config()
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {'erro': 'formato inválido'}
-        mock_get.return_value = mock_response
-        
-        with pytest.raises(EOLUnexpectedResponseError) as exc_info:
-            UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        assert "Resposta inesperada" in str(exc_info.value)
-        assert "esperado uma lista" in str(exc_info.value)
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_url_correta(
-        self, mock_env, mock_get,
-        mock_env_config, mock_http_response_success,
-        mock_unidades_response, api_base_url, codigo_dre_valido
-    ):
-        """Testa se a URL correta é montada"""
-        mock_env.side_effect = mock_env_config(url=api_base_url)
-        mock_get.return_value = mock_http_response_success(mock_unidades_response)
-        
-        UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        called_url = mock_get.call_args[0][0]
-        assert called_url == f'{api_base_url}/DREs/{codigo_dre_valido}/unidades'
-    
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_excecao_generica(
-        self, mock_env, mock_get,
-        mock_env_config, codigo_dre_valido
-    ):
-        """Testa exceção genérica ao buscar unidades (cobre except Exception)"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.side_effect = RuntimeError("Erro inesperado no sistema")
-        
-        with pytest.raises(EOLIntegrationError) as exc_info:
-            UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        assert "Erro inesperado ao buscar UEs" in str(exc_info.value)
-    
-    # ==================== TESTES DE LOGGING ====================
-    
-    @patch('apps.unidades.services.unidades_service.logger')
-    @patch('apps.unidades.services.unidades_service.requests.get')
-    @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_logging_sucesso(
-        self, mock_env, mock_get, mock_logger,
-        mock_env_config, mock_http_response_success,
-        mock_unidades_response, codigo_dre_valido
-    ):
-        """Testa logging em caso de sucesso"""
-        mock_env.side_effect = mock_env_config()
-        mock_get.return_value = mock_http_response_success(mock_unidades_response)
-        
-        UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
-        
-        assert mock_logger.info.call_count >= 2
-        mock_logger.info.assert_any_call("Buscando UEs da DRE '%s' no EOL", codigo_dre_valido)
 
-    @patch('apps.unidades.services.unidades_service.requests.get')
     @patch('apps.unidades.services.unidades_service.env')
-    def test_get_unidades_by_dre_reraise_value_error(
-        self, mock_env, mock_get,
-        mock_env_config, codigo_dre_valido
-    ):
-        """
-        Testa re-raise de ValueError dentro do bloco try
-        (cobre o `except ValueError: raise`)
-        """
+    @patch.object(BaseEOLService, '_get')
+    def test_get_unidades_resposta_invalida(self, mock_get, mock_env, mock_env_config, codigo_dre_valido):
         mock_env.side_effect = mock_env_config()
+        mock_get.return_value = {}
 
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.side_effect = ValueError("JSON inválido")
-
-        mock_get.return_value = mock_response
-
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(EOLUnexpectedResponseError):
             UnidadeIntegracaoService.get_unidades_by_dre(codigo_dre_valido)
 
-        assert "JSON inválido" in str(exc_info.value)
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_escolas(self, mock_get, mock_env, mock_env_config, mock_unidades_response, codigo_dre_valido):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = mock_unidades_response
+
+        result = UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+        assert result == mock_unidades_response
+
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_codigo_integracao(self, mock_get, mock_env, mock_env_config, mock_unidades_response, codigo_dre_valido):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = mock_unidades_response
+
+        result = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre_valido)
+
+        assert result == mock_unidades_response
+
+
+# ================= SUPERVISAO (REFATORADO) =================
+
+class TestUnidadeSupervisao:
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    @patch.object(BaseEOLService, '_get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_sucesso(self, mock_env, mock_get, mock_map, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_map.get.return_value = "123"
+
+        mock_get.return_value = {
+            "codigo": 1,
+            "nome": "Escola Teste",
+            "codigoDRE": "10",
+            "tipoUnidade": "CEU",
+            "nomeDRE": "DRE Teste",
+            "siglaDRE": "DT"
+        }
+
+        result = UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+        assert result == {
+            "codigoEscola": 1,
+            "nomeEscola": "Escola Teste",
+            "codigoDRE": "10",
+            "tipoEscola": "CEU",
+            "siglaTipoEscola": "UA",
+            "nomeDRE": "DRE Teste",
+            "siglaDRE": "DT",
+            "codigoSubprefeitura": None,
+            "nomeSubprefeitura": None,
+        }
+
+    def test_dre_codigo_invalido(self):
+        with pytest.raises(ValueError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("")
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    def test_sem_mapeamento(self, mock_map):
+        mock_map.get.return_value = None
+
+        with pytest.raises(ValueError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    @patch.object(BaseEOLService, '_get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_resposta_invalida(self, mock_env, mock_get, mock_map, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_map.get.return_value = "123"
+
+        mock_get.return_value = []
+
+        with pytest.raises(EOLUnexpectedResponseError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    @patch.object(BaseEOLService, '_get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_propagacao_erro_integracao(self, mock_env, mock_get, mock_map, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_map.get.return_value = "123"
+
+        mock_get.side_effect = EOLIntegrationError("erro")
+
+        with pytest.raises(EOLIntegrationError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    @patch.object(BaseEOLService, '_get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_propagacao_timeout(self, mock_env, mock_get, mock_map, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_map.get.return_value = "123"
+
+        mock_get.side_effect = EOLTimeoutError("timeout")
+
+        with pytest.raises(EOLTimeoutError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+    @patch('apps.unidades.services.unidades_service.SUPERVISAO_ESCOLAR_DRES_MAP')
+    @patch.object(BaseEOLService, '_get')
+    @patch('apps.unidades.services.unidades_service.env')
+    def test_propagacao_erro_comunicacao(self, mock_env, mock_get, mock_map, mock_env_config):
+        mock_env.side_effect = mock_env_config()
+        mock_map.get.return_value = "123"
+
+        mock_get.side_effect = EOLCommunicationError("erro")
+
+        with pytest.raises(EOLCommunicationError):
+            UnidadeIntegracaoService.get_unidade_supervisao_by_dre("10")
+
+
+# ================= COBERTURA EXTRA =================
+
+class TestCoberturaExtra:
+
+    @patch.object(DREIntegracaoService, 'get_dres')
+    def test_get_dre_by_codigo_propaga_permission(self, mock_get_dres):
+        mock_get_dres.side_effect = PermissionError('erro')
+
+        with pytest.raises(PermissionError):
+            DREIntegracaoService.get_dre_by_codigo('1')
+
+    @patch.object(DREIntegracaoService, 'get_dres')
+    def test_get_dre_by_codigo_propaga_eol(self, mock_get_dres):
+        mock_get_dres.side_effect = EOLIntegrationError('erro')
+
+        with pytest.raises(EOLIntegrationError):
+            DREIntegracaoService.get_dre_by_codigo('1')
+
+    def test_get_unidades_tipo_codigo_invalido(self):
+        with pytest.raises(ValueError):
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade('')
+
+    def test_get_codigo_integracao_codigo_invalido(self):
+        with pytest.raises(ValueError):
+            UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre('')
+
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_unidades_tipo_resposta_invalida(self, mock_get, mock_env, mock_env_config, codigo_dre_valido):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = {}
+
+        with pytest.raises(EOLUnexpectedResponseError):
+            UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(codigo_dre_valido)
+
+    @patch('apps.unidades.services.unidades_service.env')
+    @patch.object(BaseEOLService, '_get')
+    def test_get_codigo_integracao_resposta_invalida(self, mock_get, mock_env, mock_env_config, codigo_dre_valido):
+        mock_env.side_effect = mock_env_config()
+        mock_get.return_value = {}
+
+        with pytest.raises(EOLUnexpectedResponseError):
+            UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre_valido)

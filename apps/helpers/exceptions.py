@@ -6,6 +6,9 @@ class CargoNotFoundError(Exception):
     """Erro quando cargo não é encontrado"""
     pass
 
+class CessacaoNotFoundError(Exception):
+    """Erro quando cessação não é encontrada"""
+    pass
 class InternalError(Exception):
     """Erro interno do sistema"""
     pass

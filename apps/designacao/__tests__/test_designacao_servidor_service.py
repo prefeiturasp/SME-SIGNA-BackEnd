@@ -12,6 +12,10 @@ class TestDesignacaoServidorService:
 
     @patch(
         "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
         "SmeIntegracaoService.informacao_usuario_sgp"
     )
     @patch(
@@ -22,6 +26,8 @@ class TestDesignacaoServidorService:
         self,
         mock_consulta_cargos,
         mock_info_usuario,
+        mock_consulta_unidade,
+
     ):
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
@@ -32,24 +38,44 @@ class TestDesignacaoServidorService:
             {
                 "tipoVinculoCargoSobreposto": 1,
                 "ueCargoSobreposto": "Escola X",
-                "cargoBase": "Cargo Base",
+                "cdCargoSobreposto": 123,
                 "cargoSobreposto": "Cargo Sobreposto",
-                "funcaoAtividade": "Função Teste",
+
+                "cargoBase": "Cargo Base",
+                "cdCargoBase": 456,
+                "ueCargoBase": "Escola Base",
+                "tipoVinculoCargoBase": 2,
+
+                "funcaoAtividade": None,
+                "cdUeFuncaoAtividade": None,
+                "ueFuncaoAtividade": None,
             }
         ]
+
+        mock_consulta_unidade.return_value = {
+            "nomeDRE": "DRE TESTE",
+        }   
 
         resultado = DesignacaoServidorService.obter_designacao(
             "0000000"
         )
 
         assert resultado == {
-            "nome": "João da Silva",
+            "nome_servidor": "João da Silva",
+            "nome_civil": "",
             "rf": "0000000",
-            "vinculo_cargo_sobreposto": 1,
-            "lotacao_cargo_sobreposto": "Escola X",
+            "vinculo": 2,
+
+            "cd_cargo_base": 456,
             "cargo_base": "Cargo Base",
-            "cargo_sobreposto": "Cargo Sobreposto",
-            "funcao_atividade": "Função Teste",
+            "lotacao": "Escola Base",
+
+            "cd_cargo_sobreposto_funcao_atividade": 123,
+            "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
+            "local_de_exercicio": "Escola X",
+
+            "laudo_medico": "Indisponível",
+            "local_de_servico": "Indisponível"
         }
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
