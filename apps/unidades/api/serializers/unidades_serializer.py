@@ -1,15 +1,29 @@
+"""Serializadores de unidades e DREs para a API de unidades.
+
+Este módulo define serializers responsáveis por transformar os dados de DREs
+e unidades escolares, padronizando chaves de entrada e
+saída entre o formato interno e a API.
+"""
+
 from rest_framework import serializers
 
 
 class DRESerializer(serializers.Serializer):
-    """Serializer para DREs com nomes padronizados"""
+    """Serializador para DREs com nomes padronizados.
+
+    Campos de entrada e saída são mapeados para os nomes de campo usados pela API.
+    """
     codigo_dre = serializers.CharField(source='codigoDRE')
     nome_dre = serializers.CharField(source='nomeDRE')
     sigla_dre = serializers.CharField(source='siglaDRE')
 
 
 class UnidadeSerializer(serializers.Serializer):
-    """Serializer para Unidades Escolares com nomes padronizados"""
+    """Serializador para Unidades Escolares com nomes padronizados.
+
+    Mapeia os campos internos da unidade para os nomes esperados pela API,
+    tratando atributos de endereço, capacidade e contatos.
+    """
     codigo_eol = serializers.CharField(source='codigoEol')
     nome_oficial = serializers.CharField(source='nomeOficial')
     nome_nao_oficial = serializers.CharField(source='nomeNaoOficial', required=False, allow_blank=True)
@@ -40,7 +54,16 @@ class UnidadeSerializer(serializers.Serializer):
     tipo_nome_ue = serializers.SerializerMethodField()
 
     def get_tipo_nome_ue(self, obj):
-        """Combina tipo e nome da UE"""
+        """Combina tipo e nome da UE.
+
+        Args:
+            obj (dict): Dados da unidade que contém os campos 'tipoUE' e
+                'nomeOficial'.
+
+        Returns:
+            str|None: O nome completo da unidade no formato
+                "tipoUE nomeOficial" ou None se não houver dados suficientes.
+        """
         tipo_ue = obj.get('tipoUE', '').strip()
         nome = obj.get('nomeOficial', '')
         if tipo_ue and nome:
