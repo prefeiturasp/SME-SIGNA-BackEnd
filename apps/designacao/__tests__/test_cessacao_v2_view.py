@@ -13,7 +13,7 @@ User = get_user_model()
 @pytest.fixture
 def auth_client(db):
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username='test_cessacao_v2', password=password)
+    user = User.objects.create_user(username="test_cessacao_v2", password=password)
     client = APIClient()
     client.force_authenticate(user=user)
     return client
@@ -21,12 +21,12 @@ def auth_client(db):
 
 def _payload(ato_pai_id):
     return {
-        'ato_pai': ato_pai_id,
-        'numero_portaria': '9999',
-        'ano_vigente': '2024',
-        'sei_numero': 'SEI-C1',
-        'a_pedido': True,
-        'data_cessacao': '2024-06-01',
+        "ato_pai": ato_pai_id,
+        "numero_portaria": "9999",
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-C1",
+        "a_pedido": True,
+        "data_cessacao": "2024-06-01",
     }
 
 
@@ -34,20 +34,22 @@ def _payload(ato_pai_id):
 def test_create_cessacao_v2(auth_client):
     designacao = criar_ato_designacao()
 
-    url = reverse('designacao_v2:cessacoes')
-    response = auth_client.post(url, data=_payload(designacao.id), format='json')
+    url = reverse("designacao_v2:cessacoes")
+    response = auth_client.post(url, data=_payload(designacao.id), format="json")
 
     assert response.status_code == 201
-    assert AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.CESSACAO).exists()
+    assert AtoAdministrativo.objects.filter(
+        tipo=AtoAdministrativo.Tipo.CESSACAO
+    ).exists()
 
 
 @pytest.mark.django_db
 def test_create_cessacao_v2_ato_pai_invalido(auth_client):
-    url = reverse('designacao_v2:cessacoes')
-    response = auth_client.post(url, data=_payload(9999), format='json')
+    url = reverse("designacao_v2:cessacoes")
+    response = auth_client.post(url, data=_payload(9999), format="json")
 
     assert response.status_code == 400
-    assert 'ato_pai' in response.data
+    assert "ato_pai" in response.data
 
 
 @pytest.mark.django_db
@@ -55,8 +57,8 @@ def test_create_cessacao_v2_duplicada_rejeita(auth_client):
     designacao = criar_ato_designacao()
     criar_ato_cessacao(designacao)
 
-    url = reverse('designacao_v2:cessacoes')
-    response = auth_client.post(url, data=_payload(designacao.id), format='json')
+    url = reverse("designacao_v2:cessacoes")
+    response = auth_client.post(url, data=_payload(designacao.id), format="json")
 
     assert response.status_code == 400
 
@@ -66,11 +68,11 @@ def test_list_cessacoes_v2(auth_client):
     designacao = criar_ato_designacao()
     criar_ato_cessacao(designacao)
 
-    url = reverse('designacao_v2:cessacoes')
+    url = reverse("designacao_v2:cessacoes")
     response = auth_client.get(url)
 
     assert response.status_code == 200
-    assert response.data['count'] >= 1
+    assert response.data["count"] >= 1
 
 
 @pytest.mark.django_db
@@ -78,11 +80,11 @@ def test_retrieve_cessacao_v2(auth_client):
     designacao = criar_ato_designacao()
     cessacao = criar_ato_cessacao(designacao)
 
-    url = reverse('designacao_v2:cessacao-detail', args=[cessacao.id])
+    url = reverse("designacao_v2:cessacao-detail", args=[cessacao.id])
     response = auth_client.get(url)
 
     assert response.status_code == 200
-    assert response.data['id'] == cessacao.id
+    assert response.data["id"] == cessacao.id
 
 
 @pytest.mark.django_db
@@ -90,7 +92,7 @@ def test_destroy_cessacao_v2(auth_client):
     designacao = criar_ato_designacao()
     cessacao = criar_ato_cessacao(designacao)
 
-    url = reverse('designacao_v2:cessacao-detail', args=[cessacao.id])
+    url = reverse("designacao_v2:cessacao-detail", args=[cessacao.id])
     response = auth_client.delete(url)
 
     assert response.status_code == 204

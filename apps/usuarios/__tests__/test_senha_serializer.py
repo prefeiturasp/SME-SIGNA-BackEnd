@@ -18,8 +18,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_valid_data(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -45,8 +44,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_password_mismatch(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -81,8 +79,7 @@ class TestRedefinirSenhaSerializer:
 
     def test_serializer_invalid_token(self, django_user_model):
         user = django_user_model.objects.create_user(
-            username="usuario",
-            password="Senha@123"
+            username="usuario", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -117,8 +114,7 @@ class TestRedefinirSenhaSerializer:
         UID decodificado não numérico deve retornar uid_invalid
         """
         user = django_user_model.objects.create_user(
-            username="teste",
-            password="Senha@123"
+            username="teste", password="Senha@123"
         )
 
         uid = urlsafe_base64_encode(force_bytes("abc"))

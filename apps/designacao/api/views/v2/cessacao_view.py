@@ -12,7 +12,7 @@ from apps.designacao.services.cessacao_service import CessacaoService
 
 class CessacaoV2Pagination(PageNumberPagination):
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -27,10 +27,9 @@ class CessacaoV2ViewSet(
 
     def get_queryset(self):
         return (
-            AtoAdministrativo.objects
-            .filter(tipo=AtoAdministrativo.Tipo.CESSACAO)
-            .select_related('cessacao_detalhe')
-            .order_by('-criado_em')
+            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.CESSACAO)
+            .select_related("cessacao_detalhe")
+            .order_by("-criado_em")
         )
 
     def create(self, request, *args, **kwargs):

@@ -8,6 +8,7 @@ from django.utils.http import urlsafe_base64_encode
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+
 class SenhaService:
     """
     Serviço para lidar com a lógica de recuperação de senha via username.
@@ -23,7 +24,7 @@ class SenhaService:
         return uid, token
 
     @staticmethod
-    def gerar_token_para_reset(username: str, email:str):
+    def gerar_token_para_reset(username: str, email: str):
         """
         Busca usuário pelo username e retorna dados para reset de senha.
         Lança UserNotFoundError se não encontrar.

@@ -4,14 +4,14 @@ from unittest.mock import patch
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from apps.usuarios.models import User
 from apps.alteracao_email.services.alteracao_email_service import (
-    AlteracaoEmailService, AlteracaoEmail
+    AlteracaoEmailService,
+    AlteracaoEmail,
 )
 from apps.helpers.exceptions import (
     TokenJaUtilizadoException,
     TokenExpiradoException,
-    SmeIntegracaoException
+    SmeIntegracaoException,
 )
 
 
@@ -82,7 +82,9 @@ class TestValidarAlteracaoEmailViewSet:
             patch.object(
                 AlteracaoEmailService, "validar", return_value=(user, email_request)
             ),
-            patch("apps.alteracao_email.api.views.alteracao_email_viewset.SmeIntegracaoService.altera_email") as mock_integracao,
+            patch(
+                "apps.alteracao_email.api.views.alteracao_email_viewset.SmeIntegracaoService.altera_email"
+            ) as mock_integracao,
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")
 

@@ -12,7 +12,6 @@ def test_me_view_authenticated_user_returns_user_data():
     client = APIClient()
     password = secrets.token_urlsafe(16)
 
-
     user = User.objects.create_user(
         username="teste",
         password=password,

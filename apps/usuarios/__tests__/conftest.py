@@ -18,7 +18,7 @@ def mock_sme_success():
             "nome": "João da Silva",
             "email": "joao@email.com",
             "numeroDocumento": "12345678900",
-            "perfis": ["0000"], 
+            "perfis": ["0000"],
         }
         yield mock
 

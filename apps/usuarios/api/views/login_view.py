@@ -15,7 +15,7 @@ from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 from apps.helpers.exceptions import (
     AuthenticationError,
     SmeIntegracaoException,
-    PerfilNaoAutorizadoError
+    PerfilNaoAutorizadoError,
 )
 
 User = get_user_model()
@@ -49,7 +49,6 @@ class LoginView(TokenObtainPairView):
             user = self._criar_ou_atualizar_user(login, senha, dados_sme)
             tokens = self._gerar_tokens(user)
 
-
             return Response(
                 {
                     "token": tokens["access"],
@@ -69,15 +68,21 @@ class LoginView(TokenObtainPairView):
         except SmeIntegracaoException as e:
             logger.warning("Falha na autenticação: %s", str(e))
             return Response(
-                {'detail': 'Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco.'}, 
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "detail": (
+                        "Parece que estamos com uma instabilidade no momento."
+                        " Tente entrar novamente daqui a pouco."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         except PerfilNaoAutorizadoError:
             return Response(
                 {
                     "detail": (
-                        "Desculpe, mas o acesso ao SIGNA é restrito a perfis específicos."
+                        "Desculpe, mas o acesso ao SIGNA"
+                        " é restrito a perfis específicos."
                     )
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -89,7 +94,7 @@ class LoginView(TokenObtainPairView):
                 {"detail": "Erro interno"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        
+
     def _valida_perfil_signa(self, dados_sme: dict):
         perfis = dados_sme.get("perfis")
 
@@ -98,10 +103,9 @@ class LoginView(TokenObtainPairView):
 
         perfis_normalizados = [p.upper() for p in perfis]
         perfil_signa = env("GUIDE_PERFIL_SIGNA")
-        
+
         if perfil_signa not in perfis_normalizados:
             raise PerfilNaoAutorizadoError()
-
 
     def _criar_ou_atualizar_user(self, login, senha, dados_sme):
         """Cria ou atualiza usuário local"""

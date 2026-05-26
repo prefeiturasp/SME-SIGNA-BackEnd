@@ -11,40 +11,40 @@ class PortariaListSerializer(serializers.ModelSerializer):
         DATA DA DESIGNAÇÃO | DATA DA CESSAÇÃO | Nº SEI
     """
 
-    portaria      = serializers.CharField(source='numero_portaria')
-    doc           = serializers.DateField(allow_null=True)
-    tipo_de_ato   = serializers.SerializerMethodField()
-    nome          = serializers.SerializerMethodField()
-    cargo         = serializers.SerializerMethodField()
+    portaria = serializers.CharField(source="numero_portaria")
+    doc = serializers.DateField(allow_null=True)
+    tipo_de_ato = serializers.SerializerMethodField()
+    nome = serializers.SerializerMethodField()
+    cargo = serializers.SerializerMethodField()
     data_designacao = serializers.SerializerMethodField()
-    data_cessacao   = serializers.SerializerMethodField()
-    numero_sei    = serializers.CharField(source='sei_numero')
-    observacoes   = serializers.SerializerMethodField()
+    data_cessacao = serializers.SerializerMethodField()
+    numero_sei = serializers.CharField(source="sei_numero")
+    observacoes = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
         fields = [
-            'id',
-            'portaria',
-            'doc',
-            'tipo_de_ato',
-            'nome',
-            'cargo',
-            'data_designacao',
-            'data_cessacao',
-            'numero_sei',
-            'observacoes',
+            "id",
+            "portaria",
+            "doc",
+            "tipo_de_ato",
+            "nome",
+            "cargo",
+            "data_designacao",
+            "data_cessacao",
+            "numero_sei",
+            "observacoes",
         ]
 
     def _get_designacao_detalhe(self, obj):
         """Retorna o DesignacaoDetalhe do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
-            return getattr(obj, 'designacao_detalhe', None)
+            return getattr(obj, "designacao_detalhe", None)
         # Para os demais: busca no ato_raiz ou ato_pai
         raiz = obj.ato_raiz or obj.ato_pai
         if raiz:
-            return getattr(raiz, 'designacao_detalhe', None)
+            return getattr(raiz, "designacao_detalhe", None)
         return None
 
     def get_tipo_de_ato(self, obj):
@@ -71,12 +71,12 @@ class PortariaListSerializer(serializers.ModelSerializer):
     def get_data_cessacao(self, obj):
         # Cessação direta no ato
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
-            cessacao = getattr(obj, 'cessacao_detalhe', None)
+            cessacao = getattr(obj, "cessacao_detalhe", None)
             if cessacao:
                 return cessacao.data_cessacao
         # Busca cessação ativa nos filhos (para designações)
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
-            detalhe = getattr(obj, 'designacao_detalhe', None)
+            detalhe = getattr(obj, "designacao_detalhe", None)
             if detalhe:
                 return detalhe.data_fim
         return None
@@ -84,9 +84,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
     def get_observacoes(self, obj):
         """Retorna observações específicas por tipo de ato."""
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
-            insubsistencia = getattr(obj, 'insubsistencia_detalhe', None)
-            return getattr(insubsistencia, 'observacoes', None)
+            insubsistencia = getattr(obj, "insubsistencia_detalhe", None)
+            return getattr(insubsistencia, "observacoes", None)
         if obj.tipo == AtoAdministrativo.Tipo.APOSTILA:
-            apostila = getattr(obj, 'apostila_detalhe', None)
-            return getattr(apostila, 'observacao', None)
+            apostila = getattr(obj, "apostila_detalhe", None)
+            return getattr(apostila, "observacao", None)
         return None

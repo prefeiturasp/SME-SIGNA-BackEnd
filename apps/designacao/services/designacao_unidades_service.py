@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Dict, Any
 
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
-from apps.designacao.services.designacao_servidor_service import DesignacaoServidorService
+from apps.designacao.services.designacao_servidor_service import (
+    DesignacaoServidorService,
+)
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.helpers.exceptions import SmeIntegracaoException
 from apps.designacao.modulos import Calculadores
@@ -166,7 +168,7 @@ class TurmaService:
                     "semCiclo": 0,
                     "total": 0,
                 }
-            ]
+            ],
         }
 
         for turma in turmas:
@@ -213,9 +215,9 @@ class TurmaService:
         return {
             "total": sum(t["total"] for t in turnos.values()),
             "turnos": list(turnos.values()),
-            "spi": spi
+            "spi": spi,
         }
-    
+
     @staticmethod
     def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
         for d in disciplinas:
@@ -249,7 +251,7 @@ class ServidorService:
                 "cargo_sobreposto_funcao_atividade": None,
                 "local_de_exercicio": None,
                 "laudo_medico": None,
-                "local_de_servico": None
+                "local_de_servico": None,
             }
 
 
@@ -270,10 +272,14 @@ class DesignacaoUnidadeService:
     @classmethod
     def obter_informacoes_escolares(cls, codigo_ue: str) -> Dict[str, Any]:
         cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
-        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
+        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            codigo_ue
+        )
 
         codigo_dre = info_ue.get("codigoDRE")
-        unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre)
+        unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+            codigo_dre
+        )
 
         unidade = next((u for u in unidades if u.get("codigoUe") == codigo_ue), None)
 

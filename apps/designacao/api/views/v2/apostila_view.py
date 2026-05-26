@@ -12,7 +12,7 @@ from apps.designacao.services.apostila_service import ApostilaService
 
 class ApostilaV2Pagination(PageNumberPagination):
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -27,15 +27,14 @@ class ApostilaV2ViewSet(
 
     def get_queryset(self):
         return (
-            AtoAdministrativo.objects
-            .filter(tipo=AtoAdministrativo.Tipo.APOSTILA)
-            .select_related('apostila_detalhe')
+            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.APOSTILA)
+            .select_related("apostila_detalhe")
             .prefetch_related(
-                'apostila_detalhe__alteracoes',
-                'filhos',
-                'filhos__insubsistencia_detalhe',
+                "apostila_detalhe__alteracoes",
+                "filhos",
+                "filhos__insubsistencia_detalhe",
             )
-            .order_by('-criado_em')
+            .order_by("-criado_em")
         )
 
     def create(self, request, *args, **kwargs):

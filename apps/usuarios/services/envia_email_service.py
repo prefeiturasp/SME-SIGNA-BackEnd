@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class EnviaEmailService:
-    """ Serviço para envio de e-mails HTML usando recursos padrão do Django. """
+    """Serviço para envio de e-mails HTML usando recursos padrão do Django."""
 
     @staticmethod
     def validar(destinatario, assunto):
@@ -23,7 +23,7 @@ class EnviaEmailService:
 
     @classmethod
     def enviar(cls, destinatario, assunto, template_html, contexto):
-        """ Envia e-mail HTML sem necessidade de instanciar a classe. """
+        """Envia e-mail HTML sem necessidade de instanciar a classe."""
 
         try:
             cls.validar(destinatario, assunto)
@@ -35,11 +35,13 @@ class EnviaEmailService:
                 body=corpo_html,
                 to=[destinatario] if isinstance(destinatario, str) else destinatario,
             )
-            email.content_subtype = 'html'
+            email.content_subtype = "html"
             email.send()
 
             logger.info(
-                f"E-mail enviado com sucesso para {destinatario} usando o template '{template_html}'."
+                "E-mail enviado com sucesso para %s usando o template '%s'.",
+                destinatario,
+                template_html,
             )
 
         except (ValidationError, BadHeaderError) as e:

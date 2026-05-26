@@ -12,6 +12,7 @@ class MeView(APIView):
     """
     Retorna os dados do usuário autenticado (requer Bearer access token).
     """
+
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):

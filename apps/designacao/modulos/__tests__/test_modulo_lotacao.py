@@ -35,7 +35,6 @@ class TestModuloLotacaoCalculator:
 
         assert resultado == 1
 
-
     @pytest.mark.parametrize(
         "sigla_tipo",
         ["CEI", "CEMEI", "EMEI", "DESCONHECIDO", None, ""],
@@ -47,7 +46,6 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-
 
     # ================= ASSISTENTE =================
 
@@ -69,9 +67,7 @@ class TestModuloLotacaoCalculator:
             ("EMEBS", 1, 1),
         ],
     )
-    def test_assistente_por_quantidade_classes(
-        self, sigla_tipo, qtd_classes, esperado
-    ):
+    def test_assistente_por_quantidade_classes(self, sigla_tipo, qtd_classes, esperado):
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
             "siglaTipoEscola": f" {sigla_tipo} ",
@@ -82,9 +78,7 @@ class TestModuloLotacaoCalculator:
 
         assert resultado == esperado
 
-    def test_assistente_sem_quantidade_classes_retorna_zero_e_log(
-        self, caplog
-    ):
+    def test_assistente_sem_quantidade_classes_retorna_zero_e_log(self, caplog):
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
@@ -120,4 +114,3 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-

@@ -10,18 +10,17 @@ class ApostilaViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
 ):
 
     serializer_class = ApostilaSerializer
 
     def get_queryset(self):
-        return Apostila.objects.filter(
-            is_deleted=False
-        ).select_related(
-            "designacao",
-            "cessacao"
-        ).order_by("-criado_em")
+        return (
+            Apostila.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -38,12 +37,8 @@ class ApostilaViewSet(
             else:
                 message = str(e.detail)
 
-            return Response(
-                {"detail": message},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            ApostilaSerializer(apostila).data,
-            status=status.HTTP_201_CREATED
+            ApostilaSerializer(apostila).data, status=status.HTTP_201_CREATED
         )
