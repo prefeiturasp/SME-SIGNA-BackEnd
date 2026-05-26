@@ -28,21 +28,25 @@ ENDPOINT_CODIGO_INTEGRACAO = "/DREs/{}/unidades/codigo-integracao"
 # Exceções customizadas
 class EOLIntegrationError(Exception):
     """Erro genérico de integração com o EOL."""
+
     pass
 
 
 class EOLTimeoutError(EOLIntegrationError):
     """Erro de timeout durante comunicação com o EOL."""
+
     pass
 
 
 class EOLCommunicationError(EOLIntegrationError):
     """Erro de comunicação HTTP com o EOL."""
+
     pass
 
 
 class EOLUnexpectedResponseError(EOLIntegrationError):
     """Erro para respostas inesperadas retornadas pelo EOL."""
+
     pass
 
 
