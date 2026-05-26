@@ -1,5 +1,8 @@
-"""Testes para viewset de portaria.
+"""Testes para o viewset de portaria da API.
 
+Este módulo valida o comportamento das rotas de listagem de portarias e da
+atualização em lote da data de publicação, cobrindo designações, cessações,
+insubsistências e apostilas.
 """
 
 import pytest
@@ -28,7 +31,11 @@ URL_ATUALIZAR = '/api/designacao/portarias/atualizar-data-publicacao/'
 
 @pytest.fixture
 def auth_client(db):
-    """Método auth client."""
+    """Cria um cliente autenticado para chamadas de API.
+
+    Returns:
+        APIClient: Cliente autenticado pronto para uso nos testes.
+    """
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='test_portaria', password=password)
     client = APIClient()
@@ -38,7 +45,11 @@ def auth_client(db):
 
 @pytest.fixture
 def designacao(db):
-    """Método designacao."""
+    """Cria um ato de designação válido para testes.
+
+    Returns:
+        AtoAdministrativo: Ato de designação com detalhes associados.
+    """
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='001/2024',
@@ -70,7 +81,11 @@ def designacao(db):
 
 @pytest.fixture
 def designacao_2(db):
-    """Método designacao 2."""
+    """Cria um segundo ato de designação para comparação.
+
+    Returns:
+        AtoAdministrativo: Segundo ato de designação usado em filtros e ordenação.
+    """
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='002/2024',
@@ -102,7 +117,11 @@ def designacao_2(db):
 
 @pytest.fixture
 def cessacao(db, designacao):
-    """Método cessacao."""
+    """Cria um ato de cessação vinculado a uma designação.
+
+    Returns:
+        AtoAdministrativo: Ato de cessação com detalhes de cessação.
+    """
     ato = AtoAdministrativo.objects.create(
         tipo='CESSACAO',
         numero_portaria='003/2024',
@@ -121,7 +140,11 @@ def cessacao(db, designacao):
 
 @pytest.fixture
 def insubsistencia(db, designacao):
-    """Método insubsistencia."""
+    """Cria um ato de insubsistência vinculado a uma designação.
+
+    Returns:
+        AtoAdministrativo: Ato de insubsistência com observações.
+    """
     ato = AtoAdministrativo.objects.create(
         tipo='INSUBSISTENCIA',
         numero_portaria='004/2024',
@@ -140,7 +163,11 @@ def insubsistencia(db, designacao):
 
 @pytest.fixture
 def apostila(db, designacao):
-    """Método apostila."""
+    """Cria um ato de apostila vinculado a uma designação.
+
+    Returns:
+        AtoAdministrativo: Ato de apostila com observação.
+    """
     ato = AtoAdministrativo.objects.create(
         tipo='APOSTILA',
         numero_portaria='005/2024',
@@ -159,7 +186,11 @@ def apostila(db, designacao):
 
 @pytest.fixture
 def inativo(db):
-    """Método inativo."""
+    """Cria um ato inativo para testes de exclusão de resultados.
+
+    Returns:
+        AtoAdministrativo: Ato de designação marcado como inativo.
+    """
     return AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='099/2024',
@@ -174,8 +205,10 @@ def inativo(db):
 
 @pytest.mark.django_db
 class TestPortariaListView:
+    """Testa a rota de listagem de portarias da API.
 
-    """Testes para portaria list view."""
+    Cobre status de resposta, estrutura de dados, filtros, busca e ordenação.
+    """
     def test_retorna_200(self, auth_client, designacao):
         """Verifica retorna 200."""
         response = auth_client.get(URL_LIST)
@@ -340,8 +373,11 @@ class TestPortariaListView:
 
 @pytest.mark.django_db
 class TestAtualizarDataPublicacao:
+    """Testa o endpoint de atualização da data de publicação das portarias.
 
-    """Testes para atualizar data publicacao."""
+    Verifica se o endpoint atualiza corretamente datas, rejeita payloads inválidos
+    e preserva atos inativos ou não incluídos.
+    """
     def test_atualiza_doc_com_sucesso(self, auth_client, designacao, designacao_2):
         """Verifica atualiza doc com sucesso."""
         payload = {
@@ -355,11 +391,13 @@ class TestAtualizarDataPublicacao:
         assert set(response.data['ids']) == {designacao.pk, designacao_2.pk}
 
     def test_doc_atualizado_no_banco(self, auth_client, designacao):
+        """Verifica que a data de publicação é salva no banco."""
         auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '2024-09-09'}, format='json')
         designacao.refresh_from_db()
         assert designacao.doc == date(2024, 9, 9)
 
     def test_nao_atualiza_inativo(self, auth_client, inativo):
+        """Verifica que atos inativos não são atualizados."""
         payload = {'ids': [inativo.pk], 'data_publicacao': '2024-10-23'}
         response = auth_client.post(URL_ATUALIZAR, payload, format='json')
         assert response.status_code == 200
@@ -389,11 +427,13 @@ class TestAtualizarDataPublicacao:
         assert 'data_publicacao' in response.data
 
     def test_erro_ids_inexistentes(self, auth_client):
+        """Verifica erro ao informar IDs inexistentes."""
         response = auth_client.post(URL_ATUALIZAR, {'ids': [99999], 'data_publicacao': '2024-10-23'}, format='json')
         assert response.status_code == 400
         assert 'ids' in response.data
 
     def test_atualiza_apenas_ids_informados(self, auth_client, designacao, designacao_2):
+        """Verifica que apenas os IDs informados são atualizados."""
         auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '2024-01-15'}, format='json')
         designacao.refresh_from_db()
         designacao_2.refresh_from_db()

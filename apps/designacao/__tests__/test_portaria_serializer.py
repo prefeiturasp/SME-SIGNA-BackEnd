@@ -1,5 +1,7 @@
-"""Testes para serializer de portaria.
+"""Testes unitários para o serializer de portaria.
 
+Este módulo valida a serialização de portarias de atos administrativos,
+incluindo designações, cess ações, insubsistências e apostilas.
 """
 
 import pytest
@@ -16,7 +18,14 @@ from apps.designacao.api.serializers.portaria_serializer import PortariaListSeri
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def serialize(ato):
-    """Método serialize."""
+    """Serializa um ato administrativo para dados de portaria.
+
+    Args:
+        ato: Instância de AtoAdministrativo a ser serializada.
+
+    Returns:
+        dict: Dados serializados do ato administrativo.
+    """
     return PortariaListSerializer(ato).data
 
 
@@ -195,10 +204,13 @@ def apostila(db, designacao):
 
 @pytest.mark.django_db
 class TestPortariaListSerializer:
+    """Testa a serialização de listas de portarias.
+
+    Verifica campos básicos, tipos de ato, dados de servidor, datas e observações
+    retornadas pelo serializer de portaria.
+    """
 
     # ── Campos básicos ────────────────────────────────────────────────────────
-
-    """Testes para portaria list serializer."""
     def test_campos_presentes(self, designacao):
         """Verifica campos presentes."""
         data = serialize(designacao)
@@ -213,6 +225,7 @@ class TestPortariaListSerializer:
         assert serialize(designacao)['portaria'] == '001/2024'
 
     def test_doc(self, designacao):
+        """Verifica data DO."""
         assert serialize(designacao)['doc'] == '2024-10-23'
 
     def test_numero_sei(self, designacao):
