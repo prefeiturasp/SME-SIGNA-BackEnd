@@ -384,7 +384,7 @@ class SmeIntegracaoService:
         if not codigo_turma:
             raise SmeIntegracaoException("Código da turma é obrigatório")
 
-        url = f"{env('SME_INTEGRACAO_URL', default='')}" f"/turmas/{codigo_turma}/dados"
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/turmas/{codigo_turma}/dados"
 
         try:
             response = requests.get(
