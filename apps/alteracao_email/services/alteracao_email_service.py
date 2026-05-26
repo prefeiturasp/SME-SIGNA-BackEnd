@@ -1,3 +1,10 @@
+"""Serviço para gerenciar solicitações e validação de alteração de e-mail.
+
+Este módulo provê operações para solicitar uma alteração de e-mail,
+criar o token de confirmação, enviar o e-mail de validação e validar o token
+antes de efetivar a alteração.
+"""
+
 import logging
 import environ
 from django.utils.timezone import now, timedelta
@@ -15,9 +22,23 @@ logger = logging.getLogger(__name__)
 
 
 class AlteracaoEmailService:
+    """Serviços de negócio para alteração de e-mail.
+
+    Esta classe centraliza a lógica de solicitação de alteração de e-mail e a
+    validação do token de confirmação gerado para o processo.
+    """
 
     @staticmethod
     def solicitar(usuario, novo_email):
+        """Solicita a alteração de e-mail e envia o e-mail de confirmação.
+
+        Args:
+            usuario (User): O usuário que solicitou a alteração de e-mail.
+            novo_email (str): O novo endereço de e-mail para o usuário.
+
+        Returns:
+            AlteracaoEmail: A instância criada da solicitação de alteração de e-mail.
+        """
         
         email_request = AlteracaoEmail.objects.create(
             usuario=usuario,
@@ -39,6 +60,20 @@ class AlteracaoEmailService:
 
     @staticmethod
     def validar(token):
+        """Valida o token de alteração de e-mail e retorna a solicitação.
+
+        Args:
+            token (uuid.UUID|str): O token de confirmação associado à solicitação.
+
+        Returns:
+            tuple[User, AlteracaoEmail]: O usuário e a solicitação de alteração
+                de e-mail correspondente ao token.
+
+        Raises:
+            TokenJaUtilizadoException: Se o token já foi utilizado.
+            TokenExpiradoException: Se o token expirou.
+            Http404: Se a solicitação não for encontrada.
+        """
         
         email_request = get_object_or_404(AlteracaoEmail, token=token)
         usuario = email_request.usuario
