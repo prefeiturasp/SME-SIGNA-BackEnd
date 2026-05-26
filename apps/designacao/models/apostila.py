@@ -1,8 +1,15 @@
+"""Modelos de apostila e regras de validação associadas.
+
+Define a estrutura de apostilas vinculadas a designações ou cessações,
+incluindo regras de consistência para tipos e referências.
+"""
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
 
 class Apostila(models.Model):
+    """Representa uma apostila ou anulação de apostila vinculada a um ato."""
 
     class Tipo(models.TextChoices):
         APOSTILA = "APOSTILA", "Apostila"
@@ -55,6 +62,15 @@ class Apostila(models.Model):
         db_table = 'apostila'
 
     def clean(self):
+        """Valida a consistência dos vínculos e referências da apostila.
+
+        Garante que a apostila esteja vinculada exclusivamente a uma
+        designação ou cessação, além de validar regras específicas
+        para apostilas e anulações.
+
+        Raises:
+            ValidationError: Quando as regras de consistência não forem atendidas.
+        """
 
         if sum([
             bool(self.designacao),

@@ -1,3 +1,7 @@
+"""Testes para serializer de cessação.
+
+"""
+
 import pytest
 from apps.designacao.api.serializers.v2.cessacao_serializer import (
     CessacaoV2WriteSerializer,
@@ -13,7 +17,9 @@ from apps.designacao.__tests__.factories import (
 @pytest.mark.django_db
 class TestCessacaoV2WriteSerializer:
 
+    """Testes para cessacao v2 write serializer."""
     def _payload(self, ato_pai_id):
+        """Método auxiliar para payload."""
         return {
             'ato_pai': ato_pai_id,
             'numero_portaria': '12345',
@@ -24,11 +30,13 @@ class TestCessacaoV2WriteSerializer:
         }
 
     def test_serializer_valido(self):
+        """Verifica serializer valido."""
         d = criar_ato_designacao()
         s = CessacaoV2WriteSerializer(data=self._payload(d.id))
         assert s.is_valid(), s.errors
 
     def test_numero_portaria_invalido(self):
+        """Verifica numero portaria invalido."""
         d = criar_ato_designacao()
         payload = self._payload(d.id)
         payload['numero_portaria'] = '12A45'
@@ -37,6 +45,7 @@ class TestCessacaoV2WriteSerializer:
         assert 'numero_portaria' in s.errors
 
     def test_ano_vigente_invalido(self):
+        """Verifica ano vigente invalido."""
         d = criar_ato_designacao()
         payload = self._payload(d.id)
         payload['ano_vigente'] = '20A4'
@@ -45,6 +54,7 @@ class TestCessacaoV2WriteSerializer:
         assert 'ano_vigente' in s.errors
 
     def test_ato_pai_invalido_rejeita(self):
+        """Verifica ato pai invalido rejeita."""
         payload = self._payload(9999)
         s = CessacaoV2WriteSerializer(data=payload)
         assert not s.is_valid()
@@ -54,7 +64,9 @@ class TestCessacaoV2WriteSerializer:
 @pytest.mark.django_db
 class TestCessacaoV2ReadSerializer:
 
+    """Testes para cessacao v2 read serializer."""
     def test_get_insubsistencia_retorna_dados_quando_existe(self):
+        """Verifica get insubsistencia retorna dados quando existe."""
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)
         insub = criar_ato_insubsistencia(c)
@@ -73,6 +85,7 @@ class TestCessacaoV2ReadSerializer:
         assert data['insubsistencia']['id'] == insub.id
 
     def test_get_insubsistencia_retorna_none_quando_nao_existe(self):
+        """Verifica get insubsistencia retorna none quando nao existe."""
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)
 

@@ -1,12 +1,21 @@
+"""Testes para o cálculo de módulo do Coordenador Pedagógico.
+
+Verifica as regras de cálculo aplicadas ao cargo 3379 para diferentes tipos
+de escola e cenários de quantidade de classes.
+"""
+
 import logging
 import pytest
 from apps.designacao.modulos.coordenador_pedagogico import (
     ModuloCoordenadorPedagogicoCalculator,
 )
 
+
 class TestModuloCoordenadorPedagogicoCalculator:
+    """Cobertura de teste para os casos de cálculo do módulo."""
 
     def setup_method(self):
+        """Inicializa a calculadora antes de cada teste."""
         self.calculator = ModuloCoordenadorPedagogicoCalculator()
 
     # ================= REGRAS FIXAS =================
@@ -20,6 +29,12 @@ class TestModuloCoordenadorPedagogicoCalculator:
         ],
     )
     def test_regras_fixas(self, sigla_tipo, esperado):
+        """Verifica regras fixas de cálculo para tipos específicos de escola.
+
+        Args:
+            sigla_tipo: Sigla do tipo de escola.
+            esperado: Quantidade esperada de módulos.
+        """
         informacoes_ue = {
             "siglaTipoEscola": sigla_tipo,
         }
@@ -29,6 +44,13 @@ class TestModuloCoordenadorPedagogicoCalculator:
     # ================= FALTA DE CLASSES =================
 
     def test_retorna_zero_quando_quantidade_classes_ausente(self, caplog):
+        """Verifica retorno zero quando não há quantidade de classes informada.
+
+        Também valida o registro de mensagem de aviso no log.
+
+        Args:
+            caplog: Fixture do pytest para captura de logs.
+        """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
             "codigoUE": "UE_TESTE",
@@ -53,6 +75,12 @@ class TestModuloCoordenadorPedagogicoCalculator:
         ],
     )
     def test_emef_emiei(self, qtd_classes, esperado):
+        """Verifica cálculo de módulos para escolas do tipo EMEI.
+
+        Args:
+            qtd_classes: Quantidade total de classes.
+            esperado: Quantidade esperada de módulos.
+        """
         informacoes_ue = {
             "siglaTipoEscola": "EMEI",
             "turmas": {
@@ -79,6 +107,12 @@ class TestModuloCoordenadorPedagogicoCalculator:
         ],
     )
     def test_emef_sem_noturno(self, qtd_classes, esperado):
+        """Verifica cálculo de módulos para EMEF sem turmas noturnas.
+
+        Args:
+            qtd_classes: Quantidade total de classes.
+            esperado: Quantidade esperada de módulos.
+        """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
             "turmas": {
@@ -93,6 +127,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         assert resultado == esperado
 
     def test_emef_com_noturno_e_5_turmas(self):
+        """Verifica acréscimo de módulo para EMEF com cinco turmas noturnas."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
             "turmas": {
@@ -107,6 +142,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         assert resultado == 3
 
     def test_emebs_mesmas_regras_do_emef(self):
+        """Verifica que EMEBS utiliza as mesmas regras de cálculo do EMEF."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEBS",
             "turmas": {
@@ -121,6 +157,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
     # ================= DEFAULT =================
 
     def test_retorna_zero_para_tipo_desconhecido(self):
+        """Verifica retorno zero para tipos de escola não reconhecidos."""
         informacoes_ue = {
             "siglaTipoEscola": "XPTO",
             "turmas": {

@@ -1,14 +1,17 @@
+"""Serializador para listagem de portarias.
+
+Fornece campos e representações customizadas para exibir portarias na tela de
+publicação do Diário Oficial.
+"""
+
 from rest_framework import serializers
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
 class PortariaListSerializer(serializers.ModelSerializer):
-    """
-    Serializer para a listagem de portarias na tela de publicação D.O.
+    """Serializador de portaria para listagem.
 
-    Colunas:
-        PORTARIA | DOC | TIPO DE ATO | NOME | CARGO | D.O |
-        DATA DA DESIGNAÇÃO | DATA DA CESSAÇÃO | Nº SEI
+    Representa portarias com informações de ato, servidor, cargo, datas e observações.
     """
 
     portaria      = serializers.CharField(source='numero_portaria')
@@ -48,27 +51,67 @@ class PortariaListSerializer(serializers.ModelSerializer):
         return None
 
     def get_tipo_de_ato(self, obj):
+        """Retorna o tipo de ato em formato legível.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Nome legível do tipo de ato.
+        """
         return obj.get_tipo_display()
 
     def get_nome(self, obj):
+        """Retorna o nome do servidor indicado para a portaria.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Nome do servidor indicado ou civil.
+        """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
             return detalhe.indicado_nome_servidor or detalhe.indicado_nome_civil
         return None
 
     def get_cargo(self, obj):
+        """Retorna o cargo associado à portaria.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Cargo sobreposto ou cargo base do indicado.
+        """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
             return detalhe.indicado_cargo_sobreposto or detalhe.indicado_cargo_base
         return None
 
     def get_data_designacao(self, obj):
+        """Retorna a data de início da designação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            date|None: Data de início da designação.
+        """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
             return detalhe.data_inicio
         return None
 
     def get_data_cessacao(self, obj):
+        """Retorna a data de cessação conforme o tipo de ato.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            date|None: Data de cessação para o ato ou None se não houver.
+        """
         # Cessação direta no ato
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
             cessacao = getattr(obj, 'cessacao_detalhe', None)

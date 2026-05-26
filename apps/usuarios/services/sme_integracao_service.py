@@ -1,3 +1,9 @@
+"""Serviço de integração com a SME e CoreSSO.
+
+Fornece autenticação, consulta de dados de usuário, alteração de senha,
+consulta de cargos, turmas e outras informações relacionadas ao SME.
+"""
+
 import logging
 import environ
 import requests
@@ -22,7 +28,11 @@ env = environ.Env()
 logger = logging.getLogger(__name__)
 
 class SmeIntegracaoService:
-    """ Serviço responsável por autenticar usuário no CoreSSO (SME) """
+    """Serviço para autenticação e consulta de dados na SME.
+
+    Expõe métodos de autenticação, consulta de dados do usuário, alteração de
+    senha e busca de informações relacionadas a cargos, turmas e unidades.
+    """
 
     DEFAULT_HEADERS = {
         "accept": "application/json",
@@ -32,6 +42,20 @@ class SmeIntegracaoService:
 
     @classmethod
     def autentica(cls, login: str, senha: str) -> dict:
+        """Autentica usuário no CoreSSO da SME.
+
+        Args:
+            login (str): Registro funcional ou nome de usuário.
+            senha (str): Senha do usuário.
+
+        Returns:
+            dict: Dados retornados pela SME após autenticação.
+
+        Raises:
+            AuthenticationError: Quando as credenciais são inválidas.
+            SmeIntegracaoException: Em caso de falha na autenticação.
+            InternalError: Em caso de erro interno não esperado.
+        """
         payload = {
             "usuario": login,
             "senha": senha,
@@ -74,6 +98,18 @@ class SmeIntegracaoService:
 
     @classmethod
     def informacao_usuario_sgp(cls, username):
+        """Consulta os dados do usuário na SME pelo username.
+
+        Args:
+            username (str): Nome de usuário ou registro funcional.
+
+        Returns:
+            dict: Dados do usuário retornados pela SME.
+
+        Raises:
+            SmeIntegracaoException: Quando os dados não são encontrados.
+            requests.RequestException: Em caso de falha de conexão.
+        """
         logger.info(f"Consultando dados na API externa para: {username}")
         try:
             url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/{username}/dados"  
@@ -211,6 +247,17 @@ class SmeIntegracaoService:
 
     @classmethod
     def _buscar_cargos(cls, registro_funcional: str) -> list:
+        """Consulta cargos de um servidor na SME pelo RF.
+
+        Args:
+            registro_funcional (str): Registro funcional do servidor.
+
+        Returns:
+            list: Lista de cargos retornados pela API.
+
+        Raises:
+            SmeIntegracaoException: Quando a consulta falha.
+        """
         url = f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"
 
         response = requests.get(
@@ -231,6 +278,16 @@ class SmeIntegracaoService:
 
     @classmethod
     def _normalizar_cargo(cls, cargo: dict) -> dict:
+        """Normaliza os campos de cargo retornados pela SME.
+
+        Converte nomes de cargos e monta as informações de unidade escolar.
+
+        Args:
+            cargo (dict): Dados do cargo retornado pela SME.
+
+        Returns:
+            dict: Dados de cargo normalizados.
+        """
         if cargo.get("cargoBase"):
             cargo["cargoBase"] = cls.formatar_cargo(cargo["cargoBase"])
 
@@ -251,6 +308,15 @@ class SmeIntegracaoService:
 
     @classmethod
     def _montar_ue(cls, codigo_ue, nome_ue):
+        """Formata a descrição da unidade escolar para exibição.
+
+        Args:
+            codigo_ue (str|int): Código da unidade escolar.
+            nome_ue (str): Nome da unidade escolar.
+
+        Returns:
+            str: Nome formatado da unidade ou o valor original quando não for possível.
+        """
         if not codigo_ue:
             return nome_ue
 
@@ -266,8 +332,16 @@ class SmeIntegracaoService:
 
     @classmethod
     def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
-        """
-        Busca os servidores de cargos de gestão escolar vinculados a uma UE.
+        """Busca servidores de gestão escolar para uma UE.
+
+        Args:
+            codigo_ue (str): Código da unidade escolar.
+
+        Returns:
+            list: Lista de cargos e servidores vinculados à UE.
+
+        Raises:
+            SmeIntegracaoException: Quando ocorre erro na consulta à SME.
         """
 
         if not codigo_ue:
@@ -357,8 +431,17 @@ class SmeIntegracaoService:
 
     @classmethod
     def buscar_turmas_ue_ano(cls, codigo_ue: str, ano_letivo: int) -> list:
-        """
-        Busca todas as turmas de uma UE em um determinado ano letivo.
+        """Busca todas as turmas de uma UE em um ano letivo.
+
+        Args:
+            codigo_ue (str): Código da unidade escolar.
+            ano_letivo (int): Ano letivo.
+
+        Returns:
+            list: Lista de turmas encontradas.
+
+        Raises:
+            SmeIntegracaoException: Quando houver falha de comunicação ou dados inválidos.
         """
         if not codigo_ue or not ano_letivo:
             raise SmeIntegracaoException(
@@ -389,8 +472,16 @@ class SmeIntegracaoService:
 
     @classmethod
     def buscar_dados_turma(cls, codigo_turma: int) -> dict:
-        """
-        Busca dados detalhados de uma turma.
+        """Busca dados detalhados de uma turma.
+
+        Args:
+            codigo_turma (int): Identificador da turma.
+
+        Returns:
+            dict: Dados detalhados da turma.
+
+        Raises:
+            SmeIntegracaoException: Quando a turma não for encontrada ou a API falhar.
         """
         if not codigo_turma:
             raise SmeIntegracaoException(
@@ -420,8 +511,16 @@ class SmeIntegracaoService:
 
     @classmethod
     def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
-        """
-        Consulta informacoes de unidades escolares pelo código.
+        """Consulta informações de uma unidade escolar na SME.
+
+        Args:
+            codigo_ue (str): Código da unidade escolar.
+
+        Returns:
+            list: Dados detalhados da unidade escolar.
+
+        Raises:
+            SmeIntegracaoException: Quando houver problema de conexão ou retorno inválido.
         """
         if not codigo_ue:
             raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
@@ -458,8 +557,16 @@ class SmeIntegracaoService:
         
     @classmethod
     def buscar_disciplinas_turma(cls, codigo_turma: int) -> list:
-        """
-        Busca disciplinas vinculadas a uma turma.
+        """Busca disciplinas vinculadas a uma turma.
+
+        Args:
+            codigo_turma (int): Identificador da turma.
+
+        Returns:
+            list: Lista de disciplinas vinculadas.
+
+        Raises:
+            SmeIntegracaoException: Quando a API retornar erro ou houver falha de comunicação.
         """
         if not codigo_turma:
             raise SmeIntegracaoException("Código da turma é obrigatório")
@@ -513,6 +620,14 @@ class SmeIntegracaoService:
         
     @staticmethod
     def formatar_cargo(texto: str) -> str:
+        """Formata o nome de um cargo extraindo a parte principal.
+
+        Args:
+            texto (str): Texto do cargo retornado pela SME.
+
+        Returns:
+            str: Cargo formatado ou vazio quando o texto for inválido.
+        """
         if not texto:
             return ""
 

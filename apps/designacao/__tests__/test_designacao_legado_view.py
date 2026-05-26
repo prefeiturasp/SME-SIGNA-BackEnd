@@ -1,3 +1,7 @@
+"""Testes para a view de designação legado.
+
+"""
+
 import secrets
 import pytest
 from django.urls import reverse
@@ -12,6 +16,7 @@ User = get_user_model()
 
 @pytest.fixture
 def auth_client(db):
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='test_legado', password=password)
     client = APIClient()
@@ -21,6 +26,7 @@ def auth_client(db):
 
 @pytest.mark.django_db
 def test_list_designacoes_legado(auth_client):
+    """Verifica list designacoes legado."""
     criar_designacao_legado()
     criar_designacao_legado(sei_numero='SEI-2', indicado_rf='7654321')
 
@@ -33,6 +39,7 @@ def test_list_designacoes_legado(auth_client):
 
 @pytest.mark.django_db
 def test_list_legado_no_pagination(auth_client):
+    """Verifica list legado no pagination."""
     for i in range(3):
         criar_designacao_legado(sei_numero=f'SEI-{i}', indicado_rf=f'000000{i}')
 
@@ -46,6 +53,7 @@ def test_list_legado_no_pagination(auth_client):
 
 @pytest.mark.django_db
 def test_list_legado_nao_retorna_deletados(auth_client):
+    """Verifica list legado nao retorna deletados."""
     d = criar_designacao_legado()
     d.is_deleted = True
     d.save()
@@ -60,6 +68,7 @@ def test_list_legado_nao_retorna_deletados(auth_client):
 
 @pytest.mark.django_db
 def test_destroy_designacao_legado_soft_delete(auth_client):
+    """Verifica destroy designacao legado soft delete."""
     d = criar_designacao_legado()
 
     url = reverse('designacao:designacao-detail', args=[d.id])
@@ -72,6 +81,7 @@ def test_destroy_designacao_legado_soft_delete(auth_client):
 
 @pytest.mark.django_db
 def test_retrieve_designacao_legado(auth_client):
+    """Verifica retrieve designacao legado."""
     d = criar_designacao_legado()
 
     url = reverse('designacao:designacao-detail', args=[d.id])
@@ -83,6 +93,7 @@ def test_retrieve_designacao_legado(auth_client):
 
 @pytest.mark.django_db
 def test_cargos_base_pareados_legado(auth_client):
+    """Verifica cargos base pareados legado."""
     url = reverse('designacao:cargos-base-pareados')
     response = auth_client.get(url)
 
@@ -92,6 +103,7 @@ def test_cargos_base_pareados_legado(auth_client):
 
 @pytest.mark.django_db
 def test_cargos_sobrepostos_pareados_legado(auth_client):
+    """Verifica cargos sobrepostos pareados legado."""
     url = reverse('designacao:cargos-sobrepostos-pareados')
     response = auth_client.get(url)
 

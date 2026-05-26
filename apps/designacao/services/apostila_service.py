@@ -1,3 +1,9 @@
+"""Serviço de apostila.
+
+Contém regras para criação de apostilas nos modelos legado e v2,
+incluindo validações e aplicação de alterações em atos administrativos.
+"""
+
 import datetime
 
 from django.db import transaction
@@ -15,11 +21,23 @@ _CAMPOS_EXCLUIDOS_DETALHE = frozenset({'ato_id', 'ato'})
 
 
 class ApostilaService:
+    """Serviço de negócio para manipular apostilas."""
 
     # ── Legado (modelo Apostila) ───────────────────────────────────────────────
 
     @staticmethod
     def criar_apostila(data: dict) -> Apostila:
+        """Cria uma apostila no modelo legado.
+
+        Args:
+            data: Dicionário com os dados necessários para criar a apostila.
+
+        Returns:
+            Apostila: Instância de apostila criada.
+
+        Raises:
+            ValidationError: Se a designação ou cessação não for válida ou se já existir uma apostila ativa.
+        """
         designacao_id = data.pop("designacao")
         ato_apostilado = data.pop("ato_apostilado")
 
@@ -89,6 +107,17 @@ class ApostilaService:
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
+        """Cria um ato administrativo do tipo apostila (v2).
+
+        Args:
+            data: Dicionário com os dados do ato e alterações associadas.
+
+        Returns:
+            AtoAdministrativo: Ato administrativo de apostila criado.
+
+        Raises:
+            ValidationError: Se o ato pai for inválido ou não puder ser apostilado.
+        """
         ato_pai: AtoAdministrativo = data['ato_pai']
         alteracoes: list = data.get('alteracoes', [])
 
@@ -130,7 +159,19 @@ class ApostilaService:
         ato_pai: AtoAdministrativo,
         detalhe,
     ) -> tuple[str, str]:
-        """Retorna (destino, valor_anterior) onde destino é 'ato_pai' ou 'detalhe'."""
+        """Encontra o campo a ser alterado no ato pai ou no detalhe.
+
+        Args:
+            campo: Nome do campo a ser alterado.
+            ato_pai: Ato administrativo pai sobre o qual a apostila é aplicada.
+            detalhe: Detalhe associado ao ato pai, se existir.
+
+        Returns:
+            tuple[str, str]: Tupla com destino ('ato_pai' ou 'detalhe') e valor anterior.
+
+        Raises:
+            ValidationError: Se o campo não existir no ato pai ou detalhe.
+        """
         if hasattr(ato_pai, campo):
             raw = getattr(ato_pai, campo)
             return 'ato_pai', ('' if raw is None else str(raw))
@@ -147,6 +188,13 @@ class ApostilaService:
         apostila_detalhe: ApostilaDetalhe,
         alteracoes: list,
     ) -> None:
+        """Aplica as alterações de uma apostila ao ato pai e ao detalhe.
+
+        Args:
+            ato_pai: Ato administrativo original que está sendo apostilado.
+            apostila_detalhe: Registro de detalhe da apostila.
+            alteracoes: Lista de alterações a serem aplicadas.
+        """
         detalhe = ApostilaService._get_detalhe(ato_pai)
         buckets: dict[str, dict] = {'ato_pai': {}, 'detalhe': {}}
         registros = []
@@ -180,12 +228,26 @@ class ApostilaService:
 
     @staticmethod
     def _salvar_updates(obj, updates: dict) -> None:
+        """Aplica os updates em um objeto e salva em lote.
+
+        Args:
+            obj: Objeto Django cujos campos serão atualizados.
+            updates: Dicionário campo-valor com as alterações.
+        """
         for campo, valor in updates.items():
             setattr(obj, campo, valor)
         obj.save(update_fields=list(updates.keys()))
 
     @staticmethod
     def _get_detalhe(ato_pai: AtoAdministrativo):
+        """Retorna o detalhe associado a um ato administrativo.
+
+        Args:
+            ato_pai: Ato administrativo cujo detalhe será buscado.
+
+        Returns:
+            object | None: O detalhe associado ou None.
+        """
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato_pai, 'designacao_detalhe', None)
         if ato_pai.tipo == AtoAdministrativo.Tipo.CESSACAO:

@@ -1,3 +1,9 @@
+"""Testes de unidade para o modelo de usuário.
+
+Este módulo valida a criação de usuários, a representação em string
+(@str) e a persistência segura de senhas no modelo de usuário.
+"""
+
 import pytest
 import secrets
 from django.contrib.auth import get_user_model
@@ -7,6 +13,10 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_user_creation():
+    """Verifica a criação de um usuário válido.
+
+    Garante que um usuário é criado com ID, e-mail, nome e senha hash corretamente.
+    """
     password = secrets.token_urlsafe(16)
 
     user = User.objects.create_user(
@@ -24,6 +34,10 @@ def test_user_creation():
 
 @pytest.mark.django_db
 def test_user_str():
+    """Verifica a representação em string do usuário.
+
+    Garante que o método __str__ retorna o nome de usuário esperado.
+    """
     password = secrets.token_urlsafe(16)
 
     user = User.objects.create_user(
@@ -36,6 +50,11 @@ def test_user_str():
 
 @pytest.mark.django_db
 def test_password_is_hashed_on_save():
+    """Verifica que a senha é armazenada de forma hash.
+
+    Garante que a senha bruta não é persistida como texto simples e que
+    o campo de senha usa um algoritmo de hash esperado.
+    """
     raw_password = secrets.token_urlsafe(16)
 
     user = User(username="testeuser", password=raw_password)

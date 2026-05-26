@@ -1,3 +1,8 @@
+"""Views para a listagem de portarias.
+
+Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do D.O.
+"""
+
 from rest_framework import mixins, viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
@@ -13,13 +18,10 @@ class PortariaListViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
 ):
-    """
-    ViewSet para listagem de portarias (Designação, Cessação,
-    Insubsistência, Apostila) conforme tela de publicação no D.O.
+    """ViewSet para listagem de portarias.
 
-    Colunas exibidas:
-        PORTARIA | DOC | TIPO DE ATO | NOME | CARGO | D.O |
-        DATA DA DESIGNAÇÃO | DATA DA CESSAÇÃO | Nº SEI
+    Exibe portarias de Designação, Cessação, Insubsistência e Apostila
+    conforme a tela de publicação do D.O.
     """
 
     serializer_class = PortariaListSerializer
@@ -45,6 +47,11 @@ class PortariaListViewSet(
     ordering = ['numero_portaria']
 
     def get_queryset(self):
+        """Retorna o queryset base de portarias.
+
+        Returns:
+            QuerySet: Atos administrativos com joins necessários para exibição de portarias.
+        """
         return (
             AtoAdministrativo.objects
             .select_related(
@@ -60,14 +67,16 @@ class PortariaListViewSet(
 
     @action(detail=False, methods=['post'], url_path='atualizar-data-publicacao')
     def atualizar_data_publicacao(self, request):
-        """
-        Atualiza o campo doc dos atos selecionados.
+        """Atualiza a data de publicação de portarias selecionadas.
 
-        Payload:
-        {
-            "ids": [1, 2, 3],
-            "data_publicacao": "..."
-        }
+        Args:
+            request: Requisição HTTP contendo os IDs dos atos e a data de publicação.
+
+        Returns:
+            Response: Confirmação da atualização ou detalhes do erro.
+
+        Raises:
+            ValidationError: Se os campos obrigatórios não estiverem presentes ou se nenhum ato for encontrado.
         """
         ids = request.data.get('ids', [])
         data_publicacao = request.data.get('data_publicacao', '')

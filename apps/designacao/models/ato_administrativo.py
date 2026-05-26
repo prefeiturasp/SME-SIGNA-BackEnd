@@ -1,8 +1,15 @@
+"""Modelo base de ato administrativo.
+
+Define os tipos de ato, hierarquia pai/raiz e regras de validação
+para designação, cessação, apostila e insubsistência.
+"""
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
 
 class AtoAdministrativo(models.Model):
+    """Modelo que representa um ato administrativo genérico."""
 
     class Tipo(models.TextChoices):
         DESIGNACAO     = 'DESIGNACAO',     'Designação'
@@ -40,6 +47,14 @@ class AtoAdministrativo(models.Model):
         db_table = 'ato_administrativo'
 
     def clean(self):
+        """Valida as regras de hierarquia e consistência do ato administrativo.
+
+        Garante que cada tipo de ato possua um tipo de ato pai válido
+        e que uma designação não tenha mais de uma cessação ativa associada.
+
+        Raises:
+            ValidationError: Quando as regras de consistência não forem atendidas.
+        """
         if self.ato_pai_id:
             tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
@@ -64,6 +79,15 @@ class AtoAdministrativo(models.Model):
                 )
 
     def save(self, *args, **kwargs):
+        """Salva o ato administrativo aplicando regras automáticas de hierarquia.
+
+        Define automaticamente o ato raiz a partir do ato pai quando necessário
+        e executa validações completas antes da persistência.
+
+        Args:
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+        """
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
             self.ato_raiz_id = pai.ato_raiz_id if pai.ato_raiz_id else pai.pk
@@ -73,6 +97,14 @@ class AtoAdministrativo(models.Model):
 
     @property
     def status(self):
+        """Retorna o status atual do ato administrativo.
+
+        O status considera se o ato está ativo e, no caso de designações,
+        se existe uma cessação ativa associada.
+
+        Returns:
+            str: Status do ato, podendo ser 'ativo', 'cessada' ou 'insubsistente'.
+        """
         if not self.ativo:
             return 'insubsistente'
         if self.tipo == self.Tipo.DESIGNACAO:
@@ -86,4 +118,9 @@ class AtoAdministrativo(models.Model):
 
     @property
     def eh_valido(self):
+        """Indica se o ato administrativo é válido.
+
+        Returns:
+            bool: True quando o ato está ativo.
+        """
         return self.ativo

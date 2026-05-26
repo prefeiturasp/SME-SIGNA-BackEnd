@@ -1,3 +1,7 @@
+"""Testes para serializer de insubsistência.
+
+"""
+
 import pytest
 from django.test import TestCase
 from rest_framework import serializers as drf_serializers
@@ -12,11 +16,14 @@ from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsiste
 
 class InsubsistenciaSerializerTest(TestCase):
 
+    """Testes para insubsistencia serializer test."""
     def _criar_designacao(self):
+        """Método auxiliar para criar designacao."""
         return criar_designacao_legado()
 
     @pytest.mark.django_db
     def test_serializer_valido_na_designacao(self):
+        """Verifica serializer valido na designacao."""
         designacao = self._criar_designacao()
 
         data = {
@@ -36,6 +43,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_serializer_valido_na_cessacao(self):
+        """Verifica serializer valido na cessacao."""
         designacao = self._criar_designacao()
 
         cessacao = Cessacao.objects.create(
@@ -66,6 +74,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_serializer_valido_na_designacao_com_cessacao_sem_insubsistencia(self):
+        """Verifica serializer valido na designacao com cessacao sem insubsistencia."""
         designacao = self._criar_designacao()
 
         Cessacao.objects.create(
@@ -94,6 +103,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_serializer_valido_na_designacao_com_cessacao_com_insubsistencia(self):
+        """Verifica serializer valido na designacao com cessacao com insubsistencia."""
         designacao = self._criar_designacao()
 
         cessacao = Cessacao.objects.create(
@@ -131,6 +141,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_numero_portaria_invalido(self):
+        """Verifica numero portaria invalido."""
         designacao = self._criar_designacao()
 
  
@@ -152,6 +163,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_ano_vigente_invalido(self):
+        """Verifica ano vigente invalido."""
         designacao = self._criar_designacao()
 
         data = {
@@ -172,6 +184,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_tipo_insubsistencia_invalido(self):
+        """Verifica tipo insubsistencia invalido."""
         designacao = self._criar_designacao()
 
         data = {
@@ -194,6 +207,7 @@ class InsubsistenciaSerializerTest(TestCase):
  
     @pytest.mark.django_db
     def test_nao_permite_insubsistencia_duplicada_na_designacao(self):
+        """Verifica nao permite insubsistencia duplicada na designacao."""
         designacao = self._criar_designacao()
 
         # cria primeira insubsistencia
@@ -224,6 +238,7 @@ class InsubsistenciaSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_nao_permite_insubsistencia_duplicada_na_cessacao(self):
+        """Verifica nao permite insubsistencia duplicada na cessacao."""
         designacao = self._criar_designacao()
 
         cessacao = Cessacao.objects.create(           
@@ -270,6 +285,7 @@ class InsubsistenciaSerializerTest(TestCase):
     @pytest.mark.django_db
     def test_nao_permite_insubsistencia_sem_cessacao_e_sem_designacao(self):
  
+        """Verifica nao permite insubsistencia sem cessacao e sem designacao."""
         data = {
             "numero_portaria": "54321",
             "ano_vigente": "2024",

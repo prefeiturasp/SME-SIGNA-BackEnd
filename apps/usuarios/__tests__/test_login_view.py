@@ -1,3 +1,9 @@
+"""Testes da view de login.
+
+Este módulo valida o endpoint de login, cobrindo sucesso, erros de
+autenticação, integração com SME e restrições de perfil.
+"""
+
 import pytest
 import secrets
 from unittest.mock import patch
@@ -13,11 +19,13 @@ User = get_user_model()
 
 @pytest.fixture(autouse=True)
 def set_signa_env(monkeypatch):
+    """Configura a variável de ambiente GUIDE_PERFIL_SIGNA para os testes."""
     monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "0000")
 
 
 @pytest.mark.django_db
 def test_login_success(client, mock_sme_success):
+    """Verifica login bem-sucedido e criação/atualização de usuário."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -44,6 +52,7 @@ def test_login_success(client, mock_sme_success):
 
 @pytest.mark.django_db
 def test_login_unauthorized(client, mock_sme_unauthorized):
+    """Verifica retorno 401 quando as credenciais são inválidas."""
     url = reverse("login")
 
     payload = {
@@ -59,6 +68,7 @@ def test_login_unauthorized(client, mock_sme_unauthorized):
 
 @pytest.mark.django_db
 def test_login_sme_error(client, mock_sme_error):
+    """Verifica retorno 400 quando o SME responde com erro."""
     url = reverse("login")
 
     payload = {
@@ -74,6 +84,7 @@ def test_login_sme_error(client, mock_sme_error):
 
 @pytest.mark.django_db
 def test_login_sme_exception(client, mock_sme_exception):
+    """Verifica retorno 400 quando ocorre exceção durante a integração com SME."""
     url = reverse("login")
 
     payload = {
@@ -89,6 +100,7 @@ def test_login_sme_exception(client, mock_sme_exception):
 
 @pytest.mark.django_db
 def test_login_updates_existing_user(client, mock_sme_success):
+    """Verifica atualização dos dados do usuário existente após login bem-sucedido."""
     old_password = secrets.token_urlsafe(16)
 
     user = User.objects.create_user(
@@ -119,6 +131,7 @@ def test_login_updates_existing_user(client, mock_sme_success):
 
 @pytest.mark.django_db
 def test_login_authentication_error(client, mock_sme_auth_error):
+    """Verifica retorno 401 em caso de erro de autenticação local."""
     wrong_password = secrets.token_urlsafe(16)
     url = reverse("login")
     payload = {"username": "1234567", "password": wrong_password}
@@ -131,6 +144,7 @@ def test_login_authentication_error(client, mock_sme_auth_error):
 
 @pytest.mark.django_db
 def test_login_sme_integracao_exception():
+    """Verifica retorno 400 para exceções específicas de integração com SME."""
     wrong_password = secrets.token_urlsafe(16)
     client = APIClient()
     url = reverse("login")
@@ -147,6 +161,7 @@ def test_login_sme_integracao_exception():
 
 @pytest.mark.django_db
 def test_login_generic_exception():
+    """Verifica retorno 500 para exceções genéricas inesperadas."""
     password = secrets.token_urlsafe(16)
     client = APIClient()
     url = reverse("login")
@@ -162,6 +177,7 @@ def test_login_generic_exception():
 
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
+    """Verifica bloqueio de acesso quando o usuário não possui perfis."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -190,6 +206,7 @@ def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
 
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
+    """Verifica bloqueio de acesso quando perfis não são fornecidos como lista."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -219,6 +236,7 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
 
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypatch):
+    """Verifica bloqueio de acesso quando o código SIGNA esperado não está presente."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 

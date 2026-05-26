@@ -1,3 +1,9 @@
+"""Filtros para pesquisa de designações em AtoAdministrativo.
+
+Contém filtros customizados para busca por RF, nome e código de cargo base, além de
+filtros por período, cargo sobreposto, DRE, unidade, ano e impedimentos de substituição.
+"""
+
 from django.db import models
 import django_filters
 
@@ -6,6 +12,11 @@ from apps.designacao.models.designacao import ImpedimentoSubstituicao
 
 
 class DesignacaoFilter(django_filters.FilterSet):
+    """Filtro de designações baseado no modelo AtoAdministrativo.
+
+    Este filtro permite combinar buscas por RF, nome e cargo base com diversos campos
+    relacionados ao detalhe da designação.
+    """
 
     rf = django_filters.CharFilter(method='filter_rf')
     nome = django_filters.CharFilter(method='filter_nome')
@@ -39,18 +50,48 @@ class DesignacaoFilter(django_filters.FilterSet):
     )
 
     def filter_rf(self, queryset, name, value):
+        """Filtra designações pelo número de RF.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor da RF buscada.
+
+        Returns:
+            Queryset filtrado com correspondências por RF de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(designacao_detalhe__indicado_rf=value)
             | models.Q(designacao_detalhe__titular_rf=value)
         )
 
     def filter_nome(self, queryset, name, value):
+        """Filtra designações pelo nome do servidor.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Parte ou nome completo do servidor.
+
+        Returns:
+            Queryset filtrado com correspondências por nome de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(designacao_detalhe__indicado_nome_servidor__icontains=value)
             | models.Q(designacao_detalhe__titular_nome_servidor__icontains=value)
         )
 
     def filter_cargo_base(self, queryset, name, value):
+        """Filtra designações pelo código de cargo base.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Código do cargo base.
+
+        Returns:
+            Queryset filtrado com correspondências por cargo base de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(designacao_detalhe__indicado_codigo_cargo_base=value)
             | models.Q(designacao_detalhe__titular_codigo_cargo_base=value)

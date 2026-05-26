@@ -1,3 +1,9 @@
+"""Serializadores v2 para apostilas.
+
+Define payloads de escrita e leitura de apostilas, incluindo alterações e
+referência à insubsistência associada.
+"""
+
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -5,11 +11,16 @@ from apps.designacao.api.serializers.utils import NullableDateField
 
 
 class ApostilaV2AlteracaoWriteSerializer(serializers.Serializer):
+    """Serializador de alteração de apostila para entrada de dados."""
     campo_alterado = serializers.CharField(max_length=100)
     valor_novo     = serializers.CharField()
 
 
 class ApostilaV2WriteSerializer(serializers.Serializer):
+    """Serializador de escrita para apostila v2.
+
+    Valida os campos necessários para criar uma apostila vinculada a um ato pai.
+    """
 
     ato_pai = serializers.PrimaryKeyRelatedField(
         queryset=AtoAdministrativo.objects.filter(
@@ -23,12 +34,17 @@ class ApostilaV2WriteSerializer(serializers.Serializer):
 
 
 class ApostilaV2AlteracaoReadSerializer(serializers.Serializer):
+    """Serializador de leitura para alteração de apostila."""
     campo_alterado = serializers.CharField()
     valor_anterior = serializers.CharField()
     valor_novo     = serializers.CharField()
 
 
 class ApostilaV2ReadSerializer(serializers.ModelSerializer):
+    """Serializador de leitura para apostila v2.
+
+    Inclui o status do ato, observação, alterações e eventual insubsistência.
+    """
 
     status     = serializers.SerializerMethodField()
     observacao = serializers.CharField(source='apostila_detalhe.observacao', read_only=True)
@@ -44,9 +60,25 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_status(self, obj):
+        """Retorna o status do ato de apostila.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Status do ato.
+        """
         return obj.status
 
     def get_alteracoes(self, obj):
+        """Retorna as alterações registradas na apostila.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            list: Lista de alterações serializadas.
+        """
         try:
             qs = obj.apostila_detalhe.alteracoes.all()
             return ApostilaV2AlteracaoReadSerializer(qs, many=True).data
@@ -54,6 +86,14 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
             return []
 
     def get_insubsistencia(self, obj):
+        """Retorna a insubsistência ativa associada à apostila.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            dict|None: Dados da insubsistência ou None se não houver.
+        """
         insub = next(
             (f for f in obj.filhos.all()
              if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido),

@@ -1,3 +1,7 @@
+"""Testes para a view de designação por unidade.
+
+"""
+
 import pytest
 import secrets
 from unittest.mock import patch
@@ -10,9 +14,11 @@ from apps.helpers.exceptions import SmeIntegracaoException
 @pytest.mark.django_db
 class TestDesignacaoUnidadeView:
 
+    """Testes para designacao unidade view."""
     password = secrets.token_urlsafe(16)
 
     def setup_method(self):
+        """Método setup method."""
         self.client = APIClient()
         self.url = "/api/designacao/unidade/"
     @patch(
@@ -21,6 +27,7 @@ class TestDesignacaoUnidadeView:
     )
     
     def test_get_sucesso(self, mock_service, django_user_model):
+        """Verifica get sucesso."""
         user = django_user_model.objects.create_user(
             username="user",
             password=self.password
@@ -38,6 +45,7 @@ class TestDesignacaoUnidadeView:
         assert response.json() == {"funcionarios_unidade": {}}
 
     def test_get_sem_codigo_ue(self, django_user_model):
+        """Verifica get sem codigo ue."""
         user = django_user_model.objects.create_user(
             username="user",
             password=self.password
@@ -60,6 +68,7 @@ class TestDesignacaoUnidadeView:
         mock_service,
         django_user_model,
     ):
+        """Verifica get erro integracao sme."""
         user = django_user_model.objects.create_user(
             username="user",
             password=self.password
@@ -89,6 +98,7 @@ class TestDesignacaoUnidadeView:
         mock_service,
         django_user_model,
     ):
+        """Verifica get erro inesperado."""
         user = django_user_model.objects.create_user(
             username="user",
             password=self.password
@@ -105,6 +115,7 @@ class TestDesignacaoUnidadeView:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def test_get_nao_autenticado(self):
+        """Verifica get nao autenticado."""
         response = self.client.get(
             self.url,
             {"codigo_ue": "UE_TESTE"}
@@ -115,15 +126,17 @@ class TestDesignacaoUnidadeView:
 @pytest.mark.django_db
 class TestDesignacaoUnidadeCargosView:
 
+    """Testes para designacao unidade cargos view."""
     password = secrets.token_urlsafe(16)
 
     def setup_method(self):
+        """Método setup method."""
         self.client = APIClient()
         self.url = "/api/designacao/unidade/cargos/"
 
     @patch("apps.designacao.services.designacao_unidades_service.DesignacaoUnidadeService.listar_cargos_vaga")
     def test_get_cargos_sucesso(self, mock_listar_cargos, django_user_model):
-        """Valida se a view retorna a lista de cargos corretamente quando autenticado."""
+        """Verifica get cargos sucesso."""
         user = django_user_model.objects.create_user(
             username="user_cargos",
             password=self.password
@@ -145,14 +158,14 @@ class TestDesignacaoUnidadeCargosView:
         mock_listar_cargos.assert_called_once()
 
     def test_get_cargos_nao_autenticado(self):
-        """Valida que usuários não autenticados são barrados."""
+        """Verifica get cargos nao autenticado."""
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @patch("apps.designacao.services.designacao_unidades_service.DesignacaoUnidadeService.listar_cargos_vaga")
     def test_get_cargos_erro_interno(self, mock_listar_cargos, django_user_model):
-        """Valida o tratamento de erro 500 caso ocorra uma exceção na service."""
+        """Verifica get cargos erro interno."""
         user = django_user_model.objects.create_user(
             username="user_erro",
             password=self.password

@@ -1,3 +1,7 @@
+"""Testes para a view de insubsistência.
+
+"""
+
 import secrets
 from datetime import date
 
@@ -16,6 +20,7 @@ User = get_user_model()
 
 @pytest.fixture
 def auth_client(db):
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='testuser', password=password)
     client = APIClient()
@@ -25,6 +30,7 @@ def auth_client(db):
 
 @pytest.fixture
 def designacao(db):
+    """Método designacao."""
     return Designacao.objects.create(
         dre_nome='DRE TESTE',
         unidade_proponente='Unidade Teste',
@@ -47,6 +53,7 @@ def designacao(db):
 
 @pytest.fixture
 def cessacao(db, designacao):
+    """Método cessacao."""
     return Cessacao.objects.create(
         designacao=designacao,
         numero_portaria='12345',
@@ -59,6 +66,7 @@ def cessacao(db, designacao):
 
 @pytest.fixture
 def insubsistencia(db, designacao):
+    """Método insubsistencia."""
     return Insubsistencia.objects.create(
         designacao=designacao,
         numero_portaria='456',
@@ -70,6 +78,7 @@ def insubsistencia(db, designacao):
 
 
 def _payload(designacao_id, tipo='designacao', **kwargs):
+    """Método auxiliar para payload."""
     base = {
         'designacao': designacao_id,
         'numero_portaria': '12345',
@@ -84,21 +93,25 @@ def _payload(designacao_id, tipo='designacao', **kwargs):
 
 
 class TestInsubsistenciaViewSet:
+    """Testes para insubsistencia view set."""
 
     @pytest.mark.django_db
     def test_create_insubsistencia_designacao(self, auth_client, designacao):
+        """Verifica create insubsistencia designacao."""
         url = reverse('designacao:insubsistencias')
         response = auth_client.post(url, data=_payload(designacao.id), format='json')
         assert response.status_code == status.HTTP_201_CREATED
 
     @pytest.mark.django_db
     def test_create_insubsistencia_de_cessacao_sem_cessacao(self, auth_client, designacao):
+        """Verifica create insubsistencia de cessacao sem cessacao."""
         url = reverse('designacao:insubsistencias')
         response = auth_client.post(url, data=_payload(designacao.id, tipo='cessacao'), format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.django_db
     def test_create_insubsistencia_sem_tipo(self, auth_client, designacao):
+        """Verifica create insubsistencia sem tipo."""
         url = reverse('designacao:insubsistencias')
         payload = _payload(designacao.id)
         payload.pop('tipo_insubsistencia')
@@ -107,12 +120,14 @@ class TestInsubsistenciaViewSet:
 
     @pytest.mark.django_db
     def test_create_insubsistencia_cessacao(self, auth_client, cessacao, designacao):
+        """Verifica create insubsistencia cessacao."""
         url = reverse('designacao:insubsistencias')
         response = auth_client.post(url, data=_payload(designacao.id, tipo='cessacao'), format='json')
         assert response.status_code == status.HTTP_201_CREATED
 
     @pytest.mark.django_db
     def test_list_insubsistencias(self, auth_client, insubsistencia):
+        """Verifica list insubsistencias."""
         url = reverse('designacao:insubsistencias')
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
@@ -120,6 +135,7 @@ class TestInsubsistenciaViewSet:
 
     @pytest.mark.django_db
     def test_retrieve_insubsistencia(self, auth_client, insubsistencia):
+        """Verifica retrieve insubsistencia."""
         url = reverse('designacao:insubsistencia-detail', args=[insubsistencia.id])
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
@@ -127,6 +143,7 @@ class TestInsubsistenciaViewSet:
 
     @pytest.mark.django_db
     def test_nao_lista_insubsistencias_deletadas(self, auth_client, insubsistencia):
+        """Verifica nao lista insubsistencias deletadas."""
         insubsistencia.is_deleted = True
         insubsistencia.save()
 

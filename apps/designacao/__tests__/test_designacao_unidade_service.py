@@ -1,3 +1,7 @@
+"""Testes para serviço de designação por unidade.
+
+"""
+
 import pytest
 from unittest.mock import patch, Mock
 from datetime import datetime
@@ -15,6 +19,7 @@ from apps.designacao.services.designacao_unidades_service import CicloService
 @pytest.mark.django_db
 class TestDesignacaoUnidadeService:
 
+    """Testes para designacao unidade service."""
     CHAVES_CONTRATO_SERVIDOR = {
         "nome_servidor",
         "nome_civil",
@@ -51,6 +56,7 @@ class TestDesignacaoUnidadeService:
         mock_datetime,
         mock_unidades
     ):
+        """Verifica obter informacoes escolares sucesso completo."""
         mock_datetime.now.return_value = datetime(2024, 5, 20)
 
         mock_info_ue.return_value = {"tipoEscola": "EMEF", "codigoDRE": "DRE1"}
@@ -118,6 +124,7 @@ class TestDesignacaoUnidadeService:
         mock_datetime,
         mock_unidades
     ):
+        """Verifica obter informacoes escolares falha integracao servidor."""
         mock_datetime.now.return_value = datetime(2024, 1, 1)
 
         mock_unidades.return_value = []
@@ -145,6 +152,7 @@ class TestDesignacaoUnidadeService:
                 assert servidor[chave] is None
 
     def test_definir_modulo_cargo_com_calculador(self):
+        """Verifica definir modulo cargo com calculador."""
         mock_calc = Mock()
         mock_calc.calcular.return_value = 8
 
@@ -166,6 +174,7 @@ class TestDesignacaoUnidadeService:
     def test_calcular_turmas_turno_desconhecido(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
+        """Verifica calcular turmas turno desconhecido."""
         mock_buscar_turmas.return_value = [{"codigoTurma": "999"}]
         mock_buscar_disciplinas.return_value = []
         mock_dados_turma.return_value = {"tipoTurno": 99}
@@ -175,6 +184,7 @@ class TestDesignacaoUnidadeService:
         assert resultado["total"] == 0
 
     def test_listar_cargos_vaga_sucesso(self):
+        """Verifica listar cargos vaga sucesso."""
         resultado = DesignacaoUnidadeService.listar_cargos_vaga()
 
         assert isinstance(resultado, list)
@@ -200,6 +210,7 @@ class TestDesignacaoUnidadeService:
         mock_dados_turma,
         mock_mapear_ciclo
     ):
+        """Verifica calcular turmas ciclo nao mapeado."""
         mock_mapear_ciclo.return_value = "cicloInexistente"
 
         mock_buscar_turmas.return_value = [
@@ -221,6 +232,7 @@ class TestDesignacaoUnidadeService:
     def test_calcular_turmas_com_spi(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
+        """Verifica calcular turmas com spi."""
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
         ]
@@ -243,6 +255,7 @@ class TestDesignacaoUnidadeService:
     def test_calcular_turmas_sem_spi(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
+        """Verifica calcular turmas sem spi."""
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
         ]
@@ -265,6 +278,7 @@ class TestDesignacaoUnidadeService:
     def test_calcular_turmas_spi_ciclo_nao_inicializado(
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma, mock_mapear_ciclo
     ):
+        """Verifica calcular turmas spi ciclo nao inicializado."""
         mock_buscar_turmas.return_value = [
             {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1 ano"}
         ]
@@ -284,29 +298,37 @@ class TestDesignacaoUnidadeService:
 
 class TestCicloService:
 
+    """Testes para ciclo service."""
     def test_extrair_numero_com_valor(self):
+        """Verifica extrair numero com valor."""
         assert CicloService.extrair_numero("1º ano") == 1
 
     def test_extrair_numero_sem_valor(self):
+        """Verifica extrair numero sem valor."""
         assert CicloService.extrair_numero("sem numero") is None
 
     def test_ciclo_ef_alfabetizacao(self):
+        """Verifica ciclo ef alfabetizacao."""
         turma = {"siglaModalidade": "EF", "nomeTurmaEOL": "2º ano"}
         assert CicloService.definir_ciclo_turma(turma) == "alfabetizacao"
 
     def test_ciclo_ef_interdisciplinar(self):
+        """Verifica ciclo ef interdisciplinar."""
         turma = {"siglaModalidade": "EF", "nomeTurmaEOL": "5º ano"}
         assert CicloService.definir_ciclo_turma(turma) == "interdisciplinar"
 
     def test_ciclo_ef_autoral(self):
+        """Verifica ciclo ef autoral."""
         turma = {"siglaModalidade": "EF", "nomeTurmaEOL": "8º ano"}
         assert CicloService.definir_ciclo_turma(turma) == "autoral"
 
     def test_ciclo_ef_sem_numero(self):
+        """Verifica ciclo ef sem numero."""
         turma = {"siglaModalidade": "EF", "nomeTurmaEOL": "ano desconhecido"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_eja_todos(self):
+        """Verifica ciclo eja todos."""
         mapa = {
             "1º termo": "alfabetizacao",
             "2º termo": "basica",
@@ -318,62 +340,78 @@ class TestCicloService:
             assert CicloService.definir_ciclo_turma(turma) == esperado
 
     def test_ciclo_eja_default(self):
+        """Verifica ciclo eja default."""
         turma = {"siglaModalidade": "EJA", "nomeTurmaEOL": "5º termo"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_em(self):
+        """Verifica ciclo em."""
         turma = {"siglaModalidade": "EM", "nomeTurmaEOL": "2ª série"}
         assert CicloService.definir_ciclo_turma(turma) == "2_serie"
 
     def test_ciclo_em_sem_numero(self):
+        """Verifica ciclo em sem numero."""
         turma = {"siglaModalidade": "EM", "nomeTurmaEOL": "sem serie"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_ei_bercario_i(self):
+        """Verifica ciclo ei bercario i."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Berçário I"}
         assert CicloService.definir_ciclo_turma(turma) == "bercario_i"
 
     def test_ciclo_ei_bercario_ii(self):
+        """Verifica ciclo ei bercario ii."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Berçário II"}
         assert CicloService.definir_ciclo_turma(turma) == "bercario_ii"
 
     def test_ciclo_ei_mini_grupo(self):
+        """Verifica ciclo ei mini grupo."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Mini Grupo I"}
         assert CicloService.definir_ciclo_turma(turma) == "mini_grupo_i"
 
     def test_ciclo_ei_infantil(self):
+        """Verifica ciclo ei infantil."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Infantil II"}
         assert CicloService.definir_ciclo_turma(turma) == "infantil"
 
     def test_ciclo_ei_sem_match(self):
+        """Verifica ciclo ei sem match."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Outro"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_ef_fora_do_intervalo(self):
+        """Verifica ciclo ef fora do intervalo."""
         turma = {"siglaModalidade": "EF", "nomeTurmaEOL": "10º ano"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_ei_sem_match_total(self):
+        """Verifica ciclo ei sem match total."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Qualquer coisa aleatória"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_ei_mini_grupo_ii(self):
+        """Verifica ciclo ei mini grupo ii."""
         turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Mini Grupo II"}
         assert CicloService.definir_ciclo_turma(turma) == "mini_grupo_ii"
 
     def test_modalidade_desconhecida(self):
+        """Verifica modalidade desconhecida."""
         turma = {"siglaModalidade": "XYZ", "nomeTurmaEOL": "Teste"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_mapear_nome_ciclo(self):
+        """Verifica mapear nome ciclo."""
         assert CicloService.mapear_nome_ciclo("alfabetizacao") == "cicloAlfabetizacao"
 
     def test_mapear_nome_ciclo_default(self):
+        """Verifica mapear nome ciclo default."""
         assert CicloService.mapear_nome_ciclo("inexistente") == "semCiclo"
 
 
 class TestFuncaoNormalizar:
 
+    """Testes para funcao normalizar."""
     def test_normalizar_none(self):
+        """Verifica normalizar none."""
         from apps.designacao.services.designacao_unidades_service import normalizar
         assert normalizar(None) == ""

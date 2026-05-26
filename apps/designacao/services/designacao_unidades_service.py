@@ -1,3 +1,9 @@
+"""Serviços de unidade de designação.
+
+Reúne utilitários e serviços para calcular informações escolares,
+modularização e enriquecer dados de servidores e unidades.
+"""
+
 import logging
 from datetime import datetime
 from typing import Dict, Any
@@ -17,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 def normalizar(texto: str) -> str:
+    """Normaliza uma string removendo acentuação e convertendo para minúsculas.
+
+    Args:
+        texto: Texto a ser normalizado.
+
+    Returns:
+        str: Texto normalizado em ASCII sem acentos.
+    """
     if not texto:
         return ""
     texto = texto.lower()
@@ -26,6 +40,7 @@ def normalizar(texto: str) -> str:
 
 
 class CicloService:
+    """Serviço para definição e mapeamento de ciclos escolares."""
     CICLOS_MAPEADOS = {
         "alfabetizacao": "cicloAlfabetizacao",
         "interdisciplinar": "cicloInterdisciplinar",
@@ -43,11 +58,27 @@ class CicloService:
 
     @staticmethod
     def extrair_numero(nome: str) -> int | None:
+        """Extrai o primeiro número encontrado em uma string.
+
+        Args:
+            nome: String para busca.
+
+        Returns:
+            int | None: Número encontrado ou None se não houver.
+        """
         match = re.search(r"\d+", nome or "")
         return int(match.group()) if match else None
 
     @classmethod
     def definir_ciclo_turma(cls, turma: Dict[str, Any]) -> str:
+        """Define o ciclo escolar de uma turma com base em sua modalidade.
+
+        Args:
+            turma: Dicionário com informações da turma.
+
+        Returns:
+            str: Código do ciclo definido.
+        """
         modalidade = turma.get("siglaModalidade")
         nome = turma.get("nomeTurmaEOL", "")
 
@@ -67,6 +98,7 @@ class CicloService:
 
     @classmethod
     def _ciclo_ef(cls, nome: str) -> str:
+        """Define o ciclo para modalidade EF com base no ano da turma."""
         ano = cls.extrair_numero(nome)
         if not ano:
             return "sem_ciclo"
@@ -82,6 +114,7 @@ class CicloService:
 
     @classmethod
     def _ciclo_eja(cls, nome: str) -> str:
+        """Define o ciclo para modalidade EJA a partir do semestre."""
         semestre = cls.extrair_numero(nome)
 
         mapa = {
@@ -95,6 +128,7 @@ class CicloService:
 
     @classmethod
     def _ciclo_em(cls, nome: str) -> str:
+        """Define o ciclo para modalidade EM com base na série."""
         serie = cls.extrair_numero(nome)
         if not serie:
             return "sem_ciclo"
@@ -103,6 +137,7 @@ class CicloService:
 
     @staticmethod
     def _ciclo_ei(nome: str) -> str:
+        """Define o ciclo para modalidade EI a partir do nome da turma."""
         nome_norm = normalizar(nome)
 
         if re.search(r"\bbercario\s*ii\b", nome_norm):
@@ -124,16 +159,28 @@ class CicloService:
 
     @classmethod
     def mapear_nome_ciclo(cls, ciclo: str) -> str:
+        """Mapeia um ciclo interno para a chave de saída utilizada.
+
+        Args:
+            ciclo: Código interno do ciclo.
+
+        Returns:
+            str: Chave de ciclo mapeada.
+        """
         return cls.CICLOS_MAPEADOS.get(ciclo, "semCiclo")
 
     @classmethod
     def listar_ciclos_saida(cls) -> list[str]:
+        """Retorna a lista de ciclos de saída únicos."""
         return list(set(cls.CICLOS_MAPEADOS.values()))
 
 
 class TurmaService:
+    """Serviço para cálculo e organização de turmas por turnos e ciclos."""
+
     @staticmethod
     def estrutura_turnos() -> Dict[str, Dict[str, Any]]:
+        """Cria a estrutura inicial de contagem de turnos e ciclos."""
         ciclos = CicloService.listar_ciclos_saida()
         base = dict.fromkeys(ciclos, 0)
 
@@ -151,6 +198,14 @@ class TurmaService:
 
     @classmethod
     def calcular_turmas(cls, codigo_ue: str) -> Dict[str, Any]:
+        """Calcula dados de turmas e SPI para uma unidade escolar.
+
+        Args:
+            codigo_ue: Código da unidade escolar.
+
+        Returns:
+            Dict[str, Any]: Dados agregados de turmas, turnos e SPI.
+        """
         ano = datetime.now().year
         turmas = SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano)
         turnos = cls.estrutura_turnos()
@@ -218,6 +273,7 @@ class TurmaService:
     
     @staticmethod
     def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
+        """Verifica se a turma tem a disciplina São Paulo Integral."""
         for d in disciplinas:
             nome = d.get("disciplina", "")
             if "SP INTEGRAL" in nome.upper():
@@ -226,8 +282,11 @@ class TurmaService:
 
 
 class ServidorService:
+    """Serviço para enriquecer dados de servidor com informações adicionais."""
+
     @staticmethod
     def enriquecer(servidor: Dict[str, Any]) -> Dict[str, Any]:
+        """Enriquece o registro do servidor com dados de designação complementares."""
         rf = servidor.get("rf")
 
         try:
@@ -254,8 +313,11 @@ class ServidorService:
 
 
 class ModuloService:
+    """Serviço para definição de módulo de cargos escolares."""
+
     @staticmethod
     def definir_modulo(cargo_ue: Dict[str, Any], info_ue: Dict[str, Any]) -> int:
+        """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
         calculator = Calculadores.get(codigo)
 
@@ -267,8 +329,18 @@ class ModuloService:
 
 
 class DesignacaoUnidadeService:
+    """Serviço de agregação de informações escolares para uma unidade."""
+
     @classmethod
     def obter_informacoes_escolares(cls, codigo_ue: str) -> Dict[str, Any]:
+        """Obtém informações escolares completas para uma unidade escolar.
+
+        Args:
+            codigo_ue: Código da unidade escolar.
+
+        Returns:
+            Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
+        """
         cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
         info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
 
@@ -296,4 +368,5 @@ class DesignacaoUnidadeService:
 
     @staticmethod
     def listar_cargos_vaga():
+        """Retorna a lista de cargos de vaga formatados."""
         return DesignacaoDetalhe.get_cargos_formatados()

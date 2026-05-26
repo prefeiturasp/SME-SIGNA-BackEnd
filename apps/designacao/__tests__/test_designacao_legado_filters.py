@@ -1,3 +1,7 @@
+"""Testes para filtros de designação legado.
+
+"""
+
 import datetime
 import pytest
 from django.test import TestCase
@@ -9,7 +13,9 @@ from apps.designacao.__tests__.factories import criar_designacao_legado
 
 class DesignacaoLegadoFilterTest(TestCase):
 
+    """Testes para designacao legado filter test."""
     def setUp(self):
+        """Método setup."""
         self.impedimento1 = ImpedimentoSubstituicao.objects.create(
             codigo='IMP1', descricao='Impedimento 1'
         )
@@ -42,43 +48,52 @@ class DesignacaoLegadoFilterTest(TestCase):
         )
 
     def _qs(self):
+        """Método auxiliar para qs."""
         return Designacao.objects.filter(is_deleted=False)
 
     def test_filter_rf_indicado(self):
+        """Verifica filter rf indicado."""
         f = DesignacaoLegadoFilter({'rf': '1234567'}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_rf_titular(self):
+        """Verifica filter rf titular."""
         f = DesignacaoLegadoFilter({'rf': '9999999'}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_nome(self):
+        """Verifica filter nome."""
         f = DesignacaoLegadoFilter({'nome': 'Ana'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_cargo_base(self):
+        """Verifica filter cargo base."""
         f = DesignacaoLegadoFilter({'cargo_base': 1}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_dre(self):
+        """Verifica filter dre."""
         f = DesignacaoLegadoFilter({'dre': 'Norte'}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_unidade(self):
+        """Verifica filter unidade."""
         f = DesignacaoLegadoFilter({'unidade': 'Teste 2'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_ano(self):
+        """Verifica filter ano."""
         f = DesignacaoLegadoFilter({'ano': '2024'}, queryset=self._qs())
         self.assertEqual(f.qs.count(), 2)
 
     def test_filter_periodo(self):
+        """Verifica filter periodo."""
         f = DesignacaoLegadoFilter(
             {'periodo_after': '2024-01-15', 'periodo_before': '2024-12-31'},
             queryset=self._qs()
@@ -87,6 +102,7 @@ class DesignacaoLegadoFilterTest(TestCase):
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_impedimento_substituicao(self):
+        """Verifica filter impedimento substituicao."""
         f = DesignacaoLegadoFilter(
             {'impedimento_substituicao': self.impedimento1.id},
             queryset=self._qs()
@@ -95,6 +111,7 @@ class DesignacaoLegadoFilterTest(TestCase):
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_impedimento_codigo(self):
+        """Verifica filter impedimento codigo."""
         f = DesignacaoLegadoFilter({'impedimento_codigo': 'IMP2'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)

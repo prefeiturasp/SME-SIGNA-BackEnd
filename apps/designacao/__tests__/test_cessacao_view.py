@@ -1,3 +1,7 @@
+"""Testes para a view de cessação.
+
+"""
+
 import pytest
 from datetime import date
 from django.urls import reverse
@@ -71,7 +75,9 @@ def cessacao(db, designacao):
 
 class TestCessacaoViewSet:
 
+    """Testes para cessacao view set."""
     def _payload(self, designacao_id):
+        """Método auxiliar para payload."""
         return {
             "designacao": designacao_id,
             "numero_portaria": "999",
@@ -82,6 +88,7 @@ class TestCessacaoViewSet:
 
     @pytest.mark.django_db
     def test_create_cessacao(self, auth_client, designacao):
+        """Verifica create cessacao."""
         url = reverse("designacao:cessacoes")
         payload = {
             "designacao": designacao.id,
@@ -96,18 +103,21 @@ class TestCessacaoViewSet:
         assert response.status_code == 201
 
     def test_list_cessacoes(self, auth_client, cessacao):
+        """Verifica list cessacoes."""
         url = reverse("designacao:cessacoes")
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) >= 1
 
     def test_retrieve_cessacao(self, auth_client, cessacao):
+        """Verifica retrieve cessacao."""
         url = reverse("designacao:cessacao-detail", args=[cessacao.id])
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == cessacao.id
 
     def test_delete_soft_delete(self, auth_client, cessacao):
+        """Verifica delete soft delete."""
         url = reverse("designacao:cessacao-detail", args=[cessacao.id])
         response = auth_client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -117,6 +127,7 @@ class TestCessacaoViewSet:
 
     @pytest.mark.django_db
     def test_nao_lista_cessacoes_deletadas(self, auth_client, cessacao):
+        """Verifica nao lista cessacoes deletadas."""
         cessacao.is_deleted = True
         cessacao.save()
 

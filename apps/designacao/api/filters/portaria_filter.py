@@ -1,8 +1,19 @@
+"""Filtros para pesquisa de portarias em AtoAdministrativo.
+
+Inclui filtros por intervalo de portaria, ano vigente, tipo de ato, número SEI,
+informações de designação de servidor e data de cessação.
+"""
+
 import django_filters
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
 class PortariaFilter(django_filters.FilterSet):
+    """Filtro de portarias baseado no modelo AtoAdministrativo.
+
+    Este filtro oferece critérios para localizar portarias por número, tipo, ano,
+    servidor, unidade e data de cessação.
+    """
 
     portaria_inicial = django_filters.CharFilter(
         field_name='numero_portaria',
@@ -63,6 +74,16 @@ class PortariaFilter(django_filters.FilterSet):
     )
 
     def filter_tipo(self, queryset, name, value):
+        """Filtra portarias pelo tipo de ato.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor do tipo de ato buscado.
+
+        Returns:
+            Queryset filtrado com o tipo de ato selecionado.
+        """
         if value == 'DESIGNACAO_CESSACAO':
             return queryset.filter(tipo__in=['DESIGNACAO', 'CESSACAO'])
         return queryset.filter(tipo=value)

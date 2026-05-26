@@ -1,3 +1,7 @@
+"""Testes para serializers de apostila.
+
+"""
+
 import pytest
 from django.utils import timezone
 
@@ -9,9 +13,11 @@ from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializ
 
 @pytest.mark.django_db
 class TestApostilaSerializer:
+    """Testes para apostila serializer."""
 
     @pytest.fixture
     def designacao(self):
+        """Método designacao."""
         return Designacao.objects.create(
             dre_nome="DRE TESTE",
             unidade_proponente="EMEF",
@@ -32,6 +38,7 @@ class TestApostilaSerializer:
 
     @pytest.fixture
     def apostila(self, designacao):
+        """Método apostila."""
         return Apostila.objects.create(
             tipo=Apostila.Tipo.APOSTILA,
             designacao=designacao,
@@ -41,6 +48,7 @@ class TestApostilaSerializer:
         )
 
     def test_serialization_campos_reais(self, apostila):
+        """Verifica serialization campos reais."""
         serializer = ApostilaSerializer(instance=apostila)
         data = serializer.data
         assert data['id'] == apostila.id
@@ -48,6 +56,7 @@ class TestApostilaSerializer:
         assert 'tipo' in data
 
     def test_deserialization_e_validacao(self, designacao):
+        """Verifica deserialization e validacao."""
         input_data = {
             "designacao": designacao.id,
             "ato_apostilado": "designacao",
@@ -60,6 +69,7 @@ class TestApostilaSerializer:
         assert serializer.validated_data['designacao'] == designacao.id
 
     def test_to_representation_com_cessacao(self, designacao):
+        """Verifica to representation com cessacao."""
         cessacao = Cessacao.objects.create(
             designacao=designacao,
             numero_portaria="456",
@@ -76,11 +86,13 @@ class TestApostilaSerializer:
         assert serializer.data['sei_numero'] == '777'
 
     def test_validacao_erro_vazio(self):
+        """Verifica validacao erro vazio."""
         serializer = ApostilaSerializer(data={})
         assert not serializer.is_valid()
         assert len(serializer.errors) > 0
 
     def test_apostila_anulacao(self, designacao, apostila):
+        """Verifica apostila anulacao."""
         apostila_anulacao = Apostila.objects.create(
             tipo=Apostila.Tipo.ANULACAO,
             designacao=designacao,

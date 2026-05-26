@@ -1,3 +1,7 @@
+"""Testes para a view de designação de servidor.
+
+"""
+
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -12,11 +16,13 @@ User = get_user_model()
 
 @pytest.fixture
 def client():
+    """Método client."""
     return APIClient()
 
 
 @pytest.fixture
 def user(db):
+    """Método user."""
     return User.objects.create_user(
         username="usuario",
         password="senha123"
@@ -25,12 +31,14 @@ def user(db):
 
 @pytest.fixture
 def auth_client(client, user):
+    """Método auth client."""
     client.force_authenticate(user=user)
     return client
 
 
 @pytest.fixture
 def url():
+    """Método url."""
     return "/api/designacao/servidor"
 
 
@@ -43,6 +51,7 @@ def test_post_serializer_invalido(
     auth_client,
     url
 ):
+    """Verifica post serializer invalido."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.side_effect = ValidationError("erro")
     mock_serializer.return_value = serializer_instance
@@ -70,6 +79,7 @@ def test_post_sucesso(
     auth_client,
     url
 ):
+    """Verifica post sucesso."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.return_value = True
     serializer_instance.validated_data = {"rf": "0000000"}
@@ -106,6 +116,7 @@ def test_post_sme_integracao_exception(
     auth_client,
     url
 ):
+    """Verifica post sme integracao exception."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.return_value = True
     serializer_instance.validated_data = {"rf": "0000000"}
@@ -138,6 +149,7 @@ def test_post_exception_generica(
     auth_client,
     url
 ):
+    """Verifica post exception generica."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.return_value = True
     serializer_instance.validated_data = {"rf": "0000000"}
@@ -157,6 +169,7 @@ def test_post_exception_generica(
     assert response.data["detail"] == "Erro interno"
 
 def test_post_sem_autenticacao(client, url):
+    """Verifica post sem autenticacao."""
     response = client.post(
         url,
         {"rf": "0000000"},

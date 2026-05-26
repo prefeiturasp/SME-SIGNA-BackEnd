@@ -1,3 +1,7 @@
+"""Testes para serviço de designação.
+
+"""
+
 import pytest
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.designacao_service import DesignacaoService
@@ -8,7 +12,9 @@ from apps.designacao.__tests__.factories import criar_ato_designacao
 @pytest.mark.django_db
 class TestDesignacaoService:
 
+    """Testes para designacao service."""
     def test_get_cargos_pareados_sucesso(self):
+        """Verifica get cargos pareados sucesso."""
         criar_ato_designacao(
             indicado_codigo_cargo_base=1,
             indicado_cargo_base='Professor',
@@ -37,6 +43,7 @@ class TestDesignacaoService:
         ]
 
     def test_get_cargos_pareados_remove_invalidos(self):
+        """Verifica get cargos pareados remove invalidos."""
         criar_ato_designacao(
             indicado_codigo_cargo_base=None,
             indicado_cargo_base='',
@@ -57,6 +64,7 @@ class TestDesignacaoService:
         assert resultado == []
 
     def test_get_cargos_pareados_remove_duplicados(self):
+        """Verifica get cargos pareados remove duplicados."""
         criar_ato_designacao(
             indicado_codigo_cargo_base=1,
             indicado_cargo_base='Professor',

@@ -1,3 +1,8 @@
+"""View para obter designação de servidor por RF.
+
+Valida a RF enviada pelo cliente e consulta o serviço de designação do servidor.
+"""
+
 import logging
 
 from rest_framework.views import APIView
@@ -17,9 +22,18 @@ logger = logging.getLogger(__name__)
 
 
 class DesignacaoServidorView(APIView):
+    """View que retorna designação de servidor a partir da RF."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """Processa requisição para buscar designação do servidor.
+
+        Args:
+            request: Requisição HTTP contendo o campo rf.
+
+        Returns:
+            Response: Dados da designação ou mensagem de erro.
+        """
         serializer = DesignacaoServidorRequestSerializer(
             data=request.data
         )
