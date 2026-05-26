@@ -31,7 +31,7 @@ class AtoAdministrativo(models.Model):
     numero_portaria = models.CharField(max_length=20, blank=True, default='')
     ano_vigente     = models.CharField(max_length=6,  blank=True, default='')
     sei_numero      = models.CharField(max_length=30)
-    doc             = models.CharField(max_length=100, blank=True, default='')
+    doc             = models.DateField(null=True, blank=True)
 
     ativo     = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)

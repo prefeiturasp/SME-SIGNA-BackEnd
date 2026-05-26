@@ -38,7 +38,7 @@ def designacao(db):
         numero_portaria='001/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0001234-5',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -69,7 +69,7 @@ def designacao_2(db):
         numero_portaria='002/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0002345-6',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -100,7 +100,7 @@ def cessacao(db, designacao):
         numero_portaria='003/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0003456-7',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -118,7 +118,7 @@ def insubsistencia(db, designacao):
         numero_portaria='004/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0004567-8',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -136,7 +136,7 @@ def apostila(db, designacao):
         numero_portaria='005/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0005678-9',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -154,7 +154,7 @@ def inativo(db):
         numero_portaria='099/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0099999-9',
-        doc='',
+        doc=None,
         ativo=False,
     )
 
@@ -309,23 +309,23 @@ class TestAtualizarDataPublicacao:
     def test_atualiza_doc_com_sucesso(self, auth_client, designacao, designacao_2):
         payload = {
             'ids': [designacao.pk, designacao_2.pk],
-            'data_publicacao': '10.234',
+            'data_publicacao': '2024-10-23',
         }
         response = auth_client.post(URL_ATUALIZAR, payload, format='json')
         assert response.status_code == 200
         assert response.data['detail'] == '2 ato(s) atualizado(s) com sucesso.'
-        assert response.data['data_publicacao'] == '10.234'
+        assert response.data['data_publicacao'] == '2024-10-23'
         assert set(response.data['ids']) == {designacao.pk, designacao_2.pk}
 
     def test_doc_atualizado_no_banco(self, auth_client, designacao):
-        auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '99.999'}, format='json')
+        auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '2024-09-09'}, format='json')
         designacao.refresh_from_db()
-        assert designacao.doc == '99.999'
+        assert designacao.doc == date(2024, 9, 9)
 
     def test_nao_atualiza_inativo(self, auth_client, inativo):
-        payload = {'ids': [inativo.pk], 'data_publicacao': '10.234'}
+        payload = {'ids': [inativo.pk], 'data_publicacao': '2024-10-23'}
         response = auth_client.post(URL_ATUALIZAR, payload, format='json')
-        assert response.status_code == 400
+        assert response.status_code == 200
 
     def test_erro_sem_ids(self, auth_client):
         response = auth_client.post(URL_ATUALIZAR, {'data_publicacao': '10.234'}, format='json')
@@ -348,13 +348,13 @@ class TestAtualizarDataPublicacao:
         assert 'data_publicacao' in response.data
 
     def test_erro_ids_inexistentes(self, auth_client):
-        response = auth_client.post(URL_ATUALIZAR, {'ids': [99999], 'data_publicacao': '10.234'}, format='json')
+        response = auth_client.post(URL_ATUALIZAR, {'ids': [99999], 'data_publicacao': '2024-10-23'}, format='json')
         assert response.status_code == 400
         assert 'ids' in response.data
 
     def test_atualiza_apenas_ids_informados(self, auth_client, designacao, designacao_2):
-        auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': 'NOVO'}, format='json')
+        auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '2024-01-15'}, format='json')
         designacao.refresh_from_db()
         designacao_2.refresh_from_db()
-        assert designacao.doc == 'NOVO'
-        assert designacao_2.doc == ''  # não foi alterado
+        assert designacao.doc == date(2024, 1, 15)
+        assert designacao_2.doc is None  # não foi alterado

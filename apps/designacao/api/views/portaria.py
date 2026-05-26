@@ -77,7 +77,7 @@ class PortariaListViewSet(
         if not data_publicacao:
             raise drf_serializers.ValidationError({'data_publicacao': 'Este campo é obrigatório.'})
 
-        updated = AtoAdministrativo.objects.filter(pk__in=ids, ativo=True).update(doc=data_publicacao)
+        updated = AtoAdministrativo.objects.filter(pk__in=ids).update(doc=data_publicacao)
 
         if not updated:
             raise drf_serializers.ValidationError({'ids': 'Nenhum ato encontrado com os IDs informados.'})

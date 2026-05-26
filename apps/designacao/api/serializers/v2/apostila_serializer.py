@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.api.serializers.utils import NullableDateField
 
 
 class ApostilaV2AlteracaoWriteSerializer(serializers.Serializer):
@@ -16,7 +17,7 @@ class ApostilaV2WriteSerializer(serializers.Serializer):
         )
     )
     sei_numero = serializers.CharField(max_length=30)
-    doc        = serializers.CharField(max_length=100, required=False, default='')
+    doc        = NullableDateField(required=False, default=None, allow_null=True)
     observacao = serializers.CharField()
     alteracoes = ApostilaV2AlteracaoWriteSerializer(many=True, required=False, default=list)
 
