@@ -1,3 +1,9 @@
+"""Serializador de insubsistências para API.
+
+Contém validações de campos numéricos e regras de negócio para evitar
+insubsistências duplicadas para o mesmo ato.
+"""
+
 from rest_framework import serializers
 
 from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
@@ -7,6 +13,11 @@ from apps.designacao.api.serializers.utils import validar_somente_numeros
 # ── Legado ────────────────────────────────────────────────────────────────────
 
 class InsubsistenciaSerializer(serializers.ModelSerializer):
+    """Serializador de Insubsistência.
+
+    Valida campos de portaria e ano, e garante unicidade conforme o tipo
+    de insubsistência informada.
+    """
     tipo_insubsistencia = serializers.ChoiceField(
         choices=TipoInsubsistencia.choices,
         write_only=True,
@@ -18,16 +29,55 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate_numero_portaria(self, value):
+        """Valida o número da portaria como apenas dígitos.
+
+        Args:
+            value: Valor do número da portaria.
+
+        Returns:
+            str: Valor contendo apenas números.
+        """
         return validar_somente_numeros(value)
 
     def validate_ano_vigente(self, value):
+        """Valida o ano vigente como apenas dígitos.
+
+        Args:
+            value: Valor do ano vigente.
+
+        Returns:
+            str: Valor contendo apenas números.
+        """
         return validar_somente_numeros(value)
 
     def create(self, validated_data):
+        """Cria a insubsistência removendo dados auxiliares de tipo.
+
+        Args:
+            validated_data: Dados já validados para criação.
+
+        Returns:
+            Insubsistencia: Instância criada do modelo.
+        """
         validated_data.pop('tipo_insubsistencia', None)
         return super().create(validated_data)
 
     def validate(self, data):
+        """Valida regras de negócio para insubsistência.
+
+        Verifica se a designação está informada e garante que não haja insubsistências
+        duplicadas para o mesmo tipo de ato.
+
+        Args:
+            data: Dicionário com os dados validados.
+
+        Raises:
+            serializers.ValidationError: Se a designação não estiver informada ou se já
+                existir uma insubsistência para o mesmo ato.
+
+        Returns:
+            dict: Dados validados.
+        """
         from apps.designacao.models.designacao import Designacao
         designacao = data.get('designacao')
         tipo_insubsistencia = data.get('tipo_insubsistencia')

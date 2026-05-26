@@ -1,3 +1,7 @@
+"""Testes para serviço de insubsistência.
+
+"""
+
 import pytest
 from rest_framework.exceptions import ValidationError
 
@@ -15,6 +19,7 @@ from apps.designacao.__tests__.factories import (
 
 
 def _data(ato_pai, **kwargs):
+    """Método auxiliar para data."""
     base = {
         'ato_pai': ato_pai,
         'numero_portaria': '111',
@@ -29,19 +34,23 @@ def _data(ato_pai, **kwargs):
 @pytest.mark.django_db
 class TestInsubsistenciaService:
 
+    """Testes para insubsistencia service."""
     def test_criar_insubsistencia_de_designacao(self):
+        """Verifica criar insubsistencia de designacao."""
         d = criar_ato_designacao()
         ato = InsubsistenciaService.criar(_data(d))
         assert ato.pk is not None
         assert ato.ato_pai_id == d.pk
 
     def test_criar_insubsistencia_de_cessacao(self):
+        """Verifica criar insubsistencia de cessacao."""
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)
         ato = InsubsistenciaService.criar(_data(c))
         assert ato.pk is not None
 
     def test_erro_ato_ja_insubsistente(self):
+        """Verifica erro ato ja insubsistente."""
         d = criar_ato_designacao()
         InsubsistenciaService.criar(_data(d))
         d.refresh_from_db()
@@ -49,12 +58,14 @@ class TestInsubsistenciaService:
             InsubsistenciaService.criar(_data(d))
 
     def test_erro_insubsistencia_duplicada(self):
+        """Verifica erro insubsistencia duplicada."""
         d = criar_ato_designacao()
         criar_ato_insubsistencia(d)
         with pytest.raises(ValidationError):
             InsubsistenciaService.criar(_data(d))
 
     def test_tornar_sem_efeito_insubsistencia(self):
+        """Verifica tornar sem efeito insubsistencia."""
         d = criar_ato_designacao()
         insub = InsubsistenciaService.criar(_data(d))
         d.refresh_from_db()
@@ -65,6 +76,7 @@ class TestInsubsistenciaService:
         assert d.eh_valido
 
     def test_insubsistencia_de_apostila_reverte_campos(self):
+        """Verifica insubsistencia de apostila reverte campos."""
         d = criar_ato_designacao(numero_portaria='001')
         from apps.designacao.services.apostila_service import ApostilaService
         ApostilaService.criar({
@@ -83,6 +95,7 @@ class TestInsubsistenciaService:
         assert d.numero_portaria == '001'
 
     def test_insubsistencia_de_designacao_reverte_apostilas_filhas(self):
+        """Verifica insubsistencia de designacao reverte apostilas filhas."""
         d = criar_ato_designacao(numero_portaria='001')
         from apps.designacao.services.apostila_service import ApostilaService
         ApostilaService.criar({
@@ -100,6 +113,7 @@ class TestInsubsistenciaService:
         assert d.numero_portaria == '001'
 
     def test_insubsistencia_de_designacao_anula_apostilas_ativas(self):
+        """Verifica insubsistencia de designacao anula apostilas ativas."""
         from apps.designacao.services.apostila_service import ApostilaService
         from apps.designacao.models.ato_administrativo import AtoAdministrativo
         d = criar_ato_designacao()
@@ -115,6 +129,7 @@ class TestInsubsistenciaService:
         assert not apostila.ativo
 
     def test_insubsistencia_de_cessacao_anula_apostilas_da_cessacao(self):
+        """Verifica insubsistencia de cessacao anula apostilas da cessacao."""
         from apps.designacao.services.apostila_service import ApostilaService
         from apps.designacao.models.ato_administrativo import AtoAdministrativo
         d = criar_ato_designacao()
@@ -131,6 +146,7 @@ class TestInsubsistenciaService:
         assert not apostila.ativo
 
     def test_insubsistencia_reverte_booleano_de_designacao_detalhe(self):
+        """Verifica insubsistencia reverte booleano de designacao detalhe."""
         from apps.designacao.services.apostila_service import ApostilaService
         d = criar_ato_designacao()
         assert not d.designacao_detalhe.carater_excepcional
@@ -150,6 +166,7 @@ class TestInsubsistenciaService:
         assert not d.designacao_detalhe.carater_excepcional
 
     def test_insubsistencia_reverte_booleano_de_cessacao_detalhe(self):
+        """Verifica insubsistencia reverte booleano de cessacao detalhe."""
         from apps.designacao.services.apostila_service import ApostilaService
         d = criar_ato_designacao()
         c = criar_ato_cessacao(d)

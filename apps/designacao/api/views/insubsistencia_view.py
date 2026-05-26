@@ -1,3 +1,8 @@
+"""Views para insubsistências.
+
+Fornece endpoints para criação, listagem e recuperação de insubsistências.
+"""
+
 from environ import logger
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
@@ -15,14 +20,34 @@ class InsubsistenciaViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet
 ):
+    """ViewSet de insubsistência.
+
+    Expõe create, list e retrieve para insubsistências com validações
+e montagem de dados apropriadas conforme o tipo.
+    """
     serializer_class = InsubsistenciaSerializer
     
     def get_queryset(self):
+        """Retorna o queryset base de insubsistências ativas.
+
+        Returns:
+            QuerySet: Insubsistências não deletadas ordenadas por criação.
+        """
         return Insubsistencia.objects.filter(
             is_deleted=False
         ).select_related('designacao', 'cessacao').order_by('-criado_em')
 
     def create(self, request, *args, **kwargs):
+        """Cria uma nova insubsistência.
+
+        Args:
+            request: Requisição HTTP contendo os dados da insubsistência.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados da insubsistência criada ou erro.
+        """
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)

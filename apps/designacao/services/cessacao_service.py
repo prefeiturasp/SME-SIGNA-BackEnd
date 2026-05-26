@@ -1,3 +1,9 @@
+"""Serviço de cessação.
+
+Contém a lógica para criar atos administrativos de cessação e seus detalhes
+associados, garantindo validações de estados de designação.
+"""
+
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -9,9 +15,21 @@ _CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
 
 class CessacaoService:
+    """Serviço de negócio para criar cessações."""
 
     @classmethod
     def criar(cls, data: dict) -> AtoAdministrativo:
+        """Cria um ato administrativo de cessação.
+
+        Args:
+            data: Dicionário com os dados do ato e detalhe de cessação.
+
+        Returns:
+            AtoAdministrativo: Ato administrativo de cessação criado.
+
+        Raises:
+            ValidationError: Se o ato pai não for válido ou já tiver cessação ativa.
+        """
         ato_pai: AtoAdministrativo = data['ato_pai']
 
         if not ato_pai.eh_valido:

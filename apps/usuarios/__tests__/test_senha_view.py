@@ -1,3 +1,9 @@
+"""Testes das views e serializers de senha.
+
+Este módulo contém testes para os endpoints e funcionalidades de recuperação,
+redefinição e atualização de senha no pacote de usuários.
+"""
+
 import pytest
 import os
 import secrets
@@ -22,11 +28,13 @@ User = get_user_model()
 
 @pytest.fixture
 def view():
+    """Retorna a instância da view de atualização de senha para testes."""
     return AtualizarSenhaViewSet()
 
 
 @pytest.fixture
 def mock_request():
+    """Cria um request mockado com usuário autenticado falso."""
     request = MagicMock()
     request.user = MagicMock()
     request.user.username = "testuser"
@@ -34,13 +42,21 @@ def mock_request():
     request.user.id = 1
     return request
 
+
 class TestEsqueciMinhaSenhaViewSet(TestCase):
+    """Testa o fluxo de recuperação de senha via EsqueciMinhaSenhaViewSet.
+
+    Cobre os casos de envio de e-mail de redefinição, tratamento de erros
+    e criação/atualização de usuário local a partir de dados SME.
+    """
     @classmethod
     def setUpClass(cls):
+        """Configura variáveis globais necessárias para os testes."""
         super().setUpClass()
         os.environ["AMBIENTE_URL"] = "http://testserver"
 
     def setUp(self):
+        """Inicializa cliente, usuário e dados padrão para os testes."""
         self.client = APIClient()
         self.url = "/api/usuario/esqueci-senha"
         
@@ -55,6 +71,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.valid_data = {"username": "1234567"}
     
     def tearDown(self):
+        """Remove dados criados durante os testes."""
         User.objects.all().delete()
     
     @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp")
@@ -230,7 +247,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         mock_enviar.assert_called_once()
     
     def test_post_username_length_boundaries(self):
-        """Testa username com 7 e 8 caracteres (limites do serializer)"""
+        """Verifica o comportamento do endpoint com usernames nos limites válidos."""
         user_7 = User.objects.create_user(
             username="7654321",
             email="teste7@teste.com",
@@ -537,11 +554,16 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
 
 class TestRedefinirSenhaViewSet:
+    """Testa o fluxo de redefinição de senha.
+
+    Verifica o endpoint de redefinição de senha, incluindo sucesso,
+    erro SME e validação de dados inválidos.
+    """
     
     @patch("apps.usuarios.api.views.senha_view.RedefinirSenhaSerializer")
     @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
     def test_post_success(self, mock_sme, mock_serializer):
-        """Testa sucesso total."""
+        """Verifica que redefinição de senha bem-sucedida retorna status 200."""
 
         factory = APIRequestFactory()
         mock_sme.return_value = None
@@ -609,6 +631,7 @@ class TestRedefinirSenhaViewSet:
 
     @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
     def test_post_sme_integracao_exception_returns_400(self, mock_redefine, django_user_model):
+        """Verifica que exceções de integração SME retornam erro 400."""
         password = secrets.token_urlsafe(16)
 
         user = django_user_model.objects.create_user(
@@ -640,6 +663,7 @@ class TestRedefinirSenhaViewSet:
     def test_post_password_updated_in_sme_but_local_save_fails(
         self, mock_save, mock_redefine, django_user_model
     ):
+        """Deve retornar erro quando salvamento local falhar após redefinição no SME."""
         password = secrets.token_urlsafe(16)
     
         user = django_user_model.objects.create_user(
@@ -677,6 +701,7 @@ class TestRedefinirSenhaViewSet:
         client,
         django_user_model,
     ):
+        """Deve redefinir senha com sucesso e atualizar usuário local."""
         password = secrets.token_urlsafe(16)
 
         user = django_user_model.objects.create_user(
@@ -715,10 +740,12 @@ class TestRedefinirSenhaViewSet:
 
 @pytest.mark.django_db
 class TestAtualizarSenhaViewSet:
+    """Testa a view de atualização de senha do usuário autenticado."""
     password = secrets.token_urlsafe(16)
     old_password = secrets.token_urlsafe(16)
 
     def test_sucesso(self, view, mock_request):
+        """Verifica atualização de senha com request válido."""
 
         mock_request.data = {
             "username": "testuser",
@@ -743,6 +770,7 @@ class TestAtualizarSenhaViewSet:
         assert response.data["detail"] == "Senha alterada com sucesso."
 
     def test_validation_error_confirmacao_senha_nao_corresponde(self, view, mock_request):
+        """Verifica erro quando a confirmação de senha não coincide."""
         mock_request.data = {
             "username": "testuser",
             "senha_atual": self.old_password,
@@ -762,6 +790,7 @@ class TestAtualizarSenhaViewSet:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_validation_error_senha_atual_incorreta_pela_view(self, view, mock_request):
+        """Verifica erro quando a senha atual informada está incorreta."""
         mock_request.data = {
             "username": "testuser",
             "senha_atual": "senha_errada",
@@ -778,6 +807,7 @@ class TestAtualizarSenhaViewSet:
         assert response.data["field"] == "senha_atual"
 
     def test_serializer_raise_exception_true_line(self, mock_request):
+        """Verifica validação de serializer com raise_exception=True."""
         data = {
             "username": "",
             "senha_atual": "",
@@ -798,6 +828,7 @@ class TestAtualizarSenhaViewSet:
         assert "field" in detail
 
     def test_erro_sme(self, view, mock_request):
+        """Verifica retorno 400 quando SME lança erro durante atualização de senha."""
         mock_request.data = {
             "username": "testuser",
             "senha_atual": self.old_password,
@@ -820,6 +851,7 @@ class TestAtualizarSenhaViewSet:
         assert "Erro SME" in response.data["detail"]
 
     def test_erro_inesperado(self, view, mock_request):
+        """Verifica retorno 500 em caso de exceção genérica inesperada."""
         mock_request.data = {
             "username": "testuser",
             "senha_atual": self.old_password,

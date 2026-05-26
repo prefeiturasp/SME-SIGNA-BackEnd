@@ -1,3 +1,7 @@
+"""Testes para filtros de designação.
+
+"""
+
 import datetime
 import pytest
 from django.test import TestCase
@@ -10,7 +14,9 @@ from apps.designacao.__tests__.factories import criar_ato_designacao
 
 class DesignacaoFilterTest(TestCase):
 
+    """Testes para designacao filter test."""
     def setUp(self):
+        """Método setup."""
         self.impedimento1 = ImpedimentoSubstituicao.objects.create(
             codigo='IMP1', descricao='Impedimento 1'
         )
@@ -47,43 +53,52 @@ class DesignacaoFilterTest(TestCase):
         )
 
     def _qs(self):
+        """Método auxiliar para qs."""
         return AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
 
     def test_filter_rf(self):
+        """Verifica filter rf."""
         f = DesignacaoFilter({'rf': '1234567'}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_nome(self):
+        """Verifica filter nome."""
         f = DesignacaoFilter({'nome': 'Ana'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_cargo_base(self):
+        """Verifica filter cargo base."""
         f = DesignacaoFilter({'cargo_base': 1}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_cargo_sobreposto(self):
+        """Verifica filter cargo sobreposto."""
         f = DesignacaoFilter({'cargo_sobreposto': 2}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_dre(self):
+        """Verifica filter dre."""
         f = DesignacaoFilter({'dre': 'Norte'}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_unidade(self):
+        """Verifica filter unidade."""
         f = DesignacaoFilter({'unidade': 'Teste 2'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_ano(self):
+        """Verifica filter ano."""
         f = DesignacaoFilter({'ano': '2024'}, queryset=self._qs())
         self.assertEqual(f.qs.count(), 2)
 
     def test_filter_periodo(self):
+        """Verifica filter periodo."""
         f = DesignacaoFilter(
             {'periodo_after': '2024-01-15', 'periodo_before': '2024-12-31'},
             queryset=self._qs()
@@ -92,6 +107,7 @@ class DesignacaoFilterTest(TestCase):
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_impedimento_substituicao(self):
+        """Verifica filter impedimento substituicao."""
         f = DesignacaoFilter(
             {'impedimento_substituicao': self.impedimento1.id},
             queryset=self._qs()
@@ -100,6 +116,7 @@ class DesignacaoFilterTest(TestCase):
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_impedimento_codigo(self):
+        """Verifica filter impedimento codigo."""
         f = DesignacaoFilter({'impedimento_codigo': 'IMP2'}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)

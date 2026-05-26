@@ -1,3 +1,9 @@
+"""Serviço de insubsistência de atos administrativos.
+
+Fornece lógica para criar insubsistências, reverter apostilas e manter a
+consistência dos atos administrativos relacionados.
+"""
+
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -10,15 +16,36 @@ _CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
 
 def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]:
+    """Retorna IDs de filhos ativos de um ato administrativo.
+
+    Args:
+        ato_pai: Ato administrativo pai.
+        tipo_filho: Tipo de ato filho desejado.
+
+    Returns:
+        list[int]: Lista de IDs dos atos filhos ativos.
+    """
     return list(
         ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list('pk', flat=True)
     )
 
 
 class InsubsistenciaService:
+    """Serviço para a criação e reversão de insubsistências."""
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
+        """Cria um ato de insubsistência para um ato administrativo existente.
+
+        Args:
+            data: Dicionário com os dados necessários para a insubsistência, incluindo 'ato_pai'.
+
+        Returns:
+            AtoAdministrativo: O novo ato de insubsistência criado.
+
+        Raises:
+            ValidationError: Se o ato pai já estiver insubsistente ou já possuir uma insubsistência ativa.
+        """
         ato_pai: AtoAdministrativo = data['ato_pai']
 
         if not ato_pai.eh_valido:
@@ -69,6 +96,12 @@ class InsubsistenciaService:
 
     @staticmethod
     def _reverter_apostila(apostila_ato: AtoAdministrativo, alvo: AtoAdministrativo) -> None:
+        """Reverte as alterações de uma apostila sobre o ato alvo.
+
+        Args:
+            apostila_ato: Ato administrativo do tipo apostila que será revertido.
+            alvo: Ato administrativo que receberá a reversão dos valores.
+        """
         try:
             alteracoes = list(apostila_ato.apostila_detalhe.alteracoes.all())
         except Exception:
@@ -103,6 +136,7 @@ class InsubsistenciaService:
 
     @staticmethod
     def _get_detalhe(ato: AtoAdministrativo):
+        """Retorna o detalhe associado a um ato administrativo, se houver."""
         if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato, 'designacao_detalhe', None)
         if ato.tipo == AtoAdministrativo.Tipo.CESSACAO:
@@ -111,6 +145,17 @@ class InsubsistenciaService:
 
     @staticmethod
     def _coerce_valor(ato, detalhe, campo, valor_str):
+        """Converte o valor de string para o tipo de campo apropriado.
+
+        Args:
+            ato: Instância do ato administrativo alvo.
+            detalhe: Instância do detalhe associado ao ato, se existir.
+            campo: Nome do campo a ser convertido.
+            valor_str: Valor original em string.
+
+        Returns:
+            Valor convertido para o tipo do campo, ou valor original se a conversão falhar.
+        """
         from django.db.models import BooleanField, IntegerField, FloatField, DateField, DateTimeField
         try:
             if hasattr(ato, campo):
@@ -140,10 +185,12 @@ class InsubsistenciaService:
 
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer):
+        """Método legado que retorna o serializer de designação sem alteração."""
         return serializer
 
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer):
+        """Método legado que ajusta o serializer para insubsistência de cessação."""
         designacao_obj = serializer.validated_data.get('designacao')
 
         designacao_completa = Designacao.objects.select_related('cessacao').get(

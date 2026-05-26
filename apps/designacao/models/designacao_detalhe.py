@@ -1,9 +1,16 @@
+"""Modelo de detalhes de designação.
+
+Define os campos de unidade, indicado, titular, período e sinalizadores
+para o detalhe de uma designação.
+"""
+
 from django.db import models
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 
 
 class DesignacaoDetalhe(models.Model):
+    """Representa os detalhes complementares de uma designação."""
 
     class TipoVaga(models.TextChoices):
         VAGO       = 'VAGO',       'Cargo Vago'
@@ -81,4 +88,12 @@ class DesignacaoDetalhe(models.Model):
 
     @classmethod
     def get_cargos_formatados(cls):
+        """Retorna os cargos de vaga formatados para consumo da API.
+
+        Converte os valores definidos em `CargoVaga` para uma lista
+        de dicionários contendo código e nome do cargo.
+
+        Returns:
+            list[dict]: Lista de cargos formatados com código e descrição.
+        """
         return [{"codigoCargo": c.value, "nomeCargo": c.label} for c in cls.CargoVaga]

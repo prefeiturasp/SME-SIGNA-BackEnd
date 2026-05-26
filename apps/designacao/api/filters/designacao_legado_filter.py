@@ -1,3 +1,9 @@
+"""Filtros para pesquisa de designações legadas.
+
+Os filtros são aplicados ao modelo Designacao e suportam buscas por RF, nome,
+cargo base e demais campos legados de designação.
+"""
+
 from django.db import models
 import django_filters
 
@@ -5,6 +11,11 @@ from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituica
 
 
 class DesignacaoLegadoFilter(django_filters.FilterSet):
+    """Filtro de designações legadas baseadas no modelo Designacao.
+
+    Esse filtro preserva a busca por campos utilizados no sistema legados,
+    permitindo consultas por RF, nome, cargo base, período e outros atributos.
+    """
 
     rf               = django_filters.CharFilter(method='filter_rf')
     nome             = django_filters.CharFilter(method='filter_nome')
@@ -24,17 +35,47 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
     )
 
     def filter_rf(self, queryset, name, value):
+        """Filtra designações legadas pelo número de RF.
+
+        Args:
+            queryset: Queryset de Designacao a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor da RF buscada.
+
+        Returns:
+            Queryset filtrado com correspondências por RF de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(indicado_rf=value) | models.Q(titular_rf=value)
         )
 
     def filter_nome(self, queryset, name, value):
+        """Filtra designações legadas pelo nome do servidor.
+
+        Args:
+            queryset: Queryset de Designacao a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Parte ou nome completo do servidor.
+
+        Returns:
+            Queryset filtrado com correspondências por nome de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(indicado_nome_servidor__icontains=value)
             | models.Q(titular_nome_servidor__icontains=value)
         )
 
     def filter_cargo_base(self, queryset, name, value):
+        """Filtra designações legadas pelo código de cargo base.
+
+        Args:
+            queryset: Queryset de Designacao a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Código do cargo base.
+
+        Returns:
+            Queryset filtrado com correspondências por cargo base de indicado ou titular.
+        """
         return queryset.filter(
             models.Q(indicado_codigo_cargo_base=value)
             | models.Q(titular_codigo_cargo_base=value)

@@ -1,3 +1,10 @@
+"""Fixtures de teste para o módulo de usuários.
+
+Este arquivo define fixtures reutilizáveis para testes do pacote
+apps.usuarios, incluindo mocks de integração com o CoreSSO e erros de
+autenticação.
+"""
+
 import pytest
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
@@ -48,7 +55,9 @@ def mock_sme_exception():
 
 @pytest.fixture
 def mock_sme_auth_error(monkeypatch):
+    """Mocka erro de autenticação"""
     def fake_autentica(login, senha):
-        raise AuthenticationError()
+        """Lança erro de autenticação"""
+        raise AuthenticationError()  
 
     monkeypatch.setattr(SmeIntegracaoService, "autentica", fake_autentica)

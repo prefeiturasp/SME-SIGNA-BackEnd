@@ -1,3 +1,9 @@
+"""Views de designação.
+
+Fornece endpoints para listagem, recuperação, criação e atualização de
+designações, com suporte a filtros, pesquisa, ordenação e paginação.
+"""
+
 from rest_framework import mixins, viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -14,11 +20,25 @@ from apps.designacao.services.designacao_service import DesignacaoService
 
 
 class DesignacaoPagination(PageNumberPagination):
+    """Paginação customizada para designações.
+
+    Permite desabilitar a paginação quando o parâmetro no_pagination=true estiver presente.
+    """
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
 
     def paginate_queryset(self, queryset, request, view=None):
+        """Decide se a paginação deve ser aplicada.
+
+        Args:
+            queryset: Queryset a ser paginado.
+            request: Requisição HTTP.
+            view: View atual.
+
+        Returns:
+            list|None: Lista paginada ou None quando a paginação está desabilitada.
+        """
         if request.query_params.get('no_pagination', '').lower() == 'true':
             return None
         return super().paginate_queryset(queryset, request, view)
@@ -30,6 +50,11 @@ class DesignacaoViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
+    """ViewSet para designações.
+
+    Expõe list, retrieve, destroy, create e partial_update com filtros,
+    pesquisa e ordenação próprios de designações.
+    """
     serializer_class = DesignacaoReadSerializer
     pagination_class = DesignacaoPagination
 
@@ -55,6 +80,15 @@ class DesignacaoViewSet(
     ]
 
     def get_queryset(self):
+        """Retorna o queryset base de designações.
+
+        Realiza filtros por tipo de ato administrativo, aplica otimizações
+        com `select_related` e `prefetch_related` para reduzir consultas
+        ao banco de dados e ordena os resultados por data de criação decrescente.
+
+        Returns:
+            QuerySet: Queryset otimizado de atos administrativos do tipo designação.
+        """
         return (
             AtoAdministrativo.objects
             .filter(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
@@ -76,18 +110,43 @@ class DesignacaoViewSet(
     # ── Helpers de paginação ──────────────────────────────────────────────────
 
     def _is_no_pagination(self):
+        """Verifica se a paginação deve ser desabilitada.
+
+        Returns:
+            bool: True quando no_pagination=true estiver presente.
+        """
         return self.request.query_params.get('no_pagination', '').lower() == 'true'
 
     def _has_filters(self):
+        """Verifica se a requisição contém filtros além da paginação.
+
+        Returns:
+            bool: True quando houver parâmetros além dos de paginação.
+        """
         PAGINATION_PARAMS = {'page', 'page_size', 'format', 'no_pagination'}
         return bool(set(self.request.query_params.keys()) - PAGINATION_PARAMS)
 
     def _should_limit_queryset(self):
+        """Determina se o queryset deve ser limitado para evitar retornos muito grandes.
+
+        Returns:
+            bool: True quando não houver filtros nem desabilitação de paginação.
+        """
         return not self._has_filters() and not self._is_no_pagination()
 
     # ── List ──────────────────────────────────────────────────────────────────
 
     def list(self, request, *args, **kwargs):
+        """Lista designações conforme filtros e paginação.
+
+        Args:
+            request: Requisição HTTP.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com a lista de designações.
+        """
         queryset = self.filter_queryset(self.get_queryset())
 
         if self._is_no_pagination():
@@ -107,6 +166,16 @@ class DesignacaoViewSet(
     # ── Create ────────────────────────────────────────────────────────────────
 
     def create(self, request, *args, **kwargs):
+        """Cria uma nova designação.
+
+        Args:
+            request: Requisição HTTP contendo os dados da designação.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados da designação criada.
+        """
         serializer = DesignacaoWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -125,6 +194,16 @@ class DesignacaoViewSet(
     # ── Partial update ────────────────────────────────────────────────────────
 
     def partial_update(self, request, *args, **kwargs):
+        """Atualiza parcialmente uma designação existente.
+
+        Args:
+            request: Requisição HTTP contendo os campos a atualizar.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados atualizados da designação.
+        """
         ato = self.get_object()
         serializer = DesignacaoWriteSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -138,6 +217,14 @@ class DesignacaoViewSet(
 
     @action(detail=False, methods=['get'], url_path='cargos-base-pareados')
     def cargos_base_pareados(self, request):
+        """Retorna cargos base pareados entre indicado e titular.
+
+        Args:
+            request: Requisição HTTP.
+
+        Returns:
+            Response: Lista de cargos base pareados.
+        """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
             queryset,
@@ -150,6 +237,14 @@ class DesignacaoViewSet(
 
     @action(detail=False, methods=['get'], url_path='cargos-sobrepostos-pareados')
     def cargos_sobrepostos_pareados(self, request):
+        """Retorna cargos sobrepostos pareados entre indicado e titular.
+
+        Args:
+            request: Requisição HTTP.
+
+        Returns:
+            Response: Lista de cargos sobrepostos pareados.
+        """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
             queryset,

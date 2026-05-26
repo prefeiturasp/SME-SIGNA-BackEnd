@@ -1,3 +1,9 @@
+"""Serializers de senha do usuário.
+
+Fornece validação para fluxo de "esqueci minha senha", redefinição de senha
+e alteração de senha para usuários autenticados.
+"""
+
 import logging
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
@@ -9,18 +15,23 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
+
 class EsqueciMinhaSenhaSerializer(serializers.Serializer):
+    """Serializer para solicitar recuperação de senha.
+
+    Recebe apenas o nome de usuário necessário para iniciar o fluxo de recuperação.
+    """
     username = serializers.CharField(required=True)
 
+
 class RedefinirSenhaSerializer(serializers.Serializer):
-    """
-    Serializer para redefinição de senha usando UID com validações robustas.
-    
-    Campos:
-    - uid: ID do usuário codificado em base64 (obrigatório)
-    - token: Token de redefinição (obrigatório) 
-    - password: Nova senha (obrigatório, mín. 8 caracteres)
-    - password2: Confirmação da senha (obrigatório)
+    """Serializer para redefinição de senha usando UID e token.
+
+    Args:
+        uid (str): ID do usuário codificado em base64.
+        token (str): Token de redefinição gerado pelo Django.
+        new_pass (str): Nova senha do usuário.
+        new_pass_confirm (str): Confirmação da nova senha.
     """
 
     uid = serializers.CharField()
@@ -36,6 +47,17 @@ class RedefinirSenhaSerializer(serializers.Serializer):
     }
 
     def validate(self, attrs):
+        """Valida os dados de redefinição e carrega o usuário.
+
+        Args:
+            attrs (dict): Dados enviados para redefinição de senha.
+
+        Returns:
+            dict: Dados atualizados contendo o usuário validado.
+
+        Raises:
+            serializers.ValidationError: Quando qualquer dado estiver inválido.
+        """
         uid = attrs.get("uid")
         token = attrs.get("token")
         new_pass = attrs.get("new_pass")
@@ -80,11 +102,23 @@ class RedefinirSenhaSerializer(serializers.Serializer):
         return attrs
     
 class AtualizarSenhaSerializer(serializers.Serializer):
+    """Serializer para alteração de senha do usuário autenticado.
+
+    Valida a senha atual e confirma a nova senha antes de atualizar o cadastro.
+    """
     senha_atual = serializers.CharField(write_only=True)
     nova_senha = serializers.CharField(write_only=True)
     confirmacao_nova_senha = serializers.CharField(write_only=True)
 
     def is_valid(self, raise_exception=False):
+        """Formata os erros de validação para resposta simplificada.
+
+        Args:
+            raise_exception (bool): Se True, lança exceção quando inválido.
+
+        Returns:
+            bool: True se os dados estiverem válidos.
+        """
         valid = super().is_valid(raise_exception=False)
         if not valid:
             first_field, first_error = next(iter(self.errors.items()))
@@ -101,6 +135,17 @@ class AtualizarSenhaSerializer(serializers.Serializer):
         return valid
 
     def validate(self, data):
+        """Valida a senha atual e a confirmação da nova senha.
+
+        Args:
+            data (dict): Dados de alteração de senha.
+
+        Returns:
+            dict: Dados validados.
+
+        Raises:
+            serializers.ValidationError: Quando a senha atual está incorreta ou as senhas não coincidem.
+        """
         user = self.context["request"].user
 
         if not user.check_password(data["senha_atual"]):

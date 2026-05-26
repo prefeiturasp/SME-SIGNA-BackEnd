@@ -1,3 +1,7 @@
+"""Testes para serviço de designação de servidor.
+
+"""
+
 import pytest
 from unittest.mock import patch
 
@@ -9,6 +13,7 @@ from apps.helpers.exceptions import SmeIntegracaoException
 
 @pytest.mark.django_db
 class TestDesignacaoServidorService:
+    """Testes para designacao servidor service."""
 
     @patch(
         "apps.designacao.services.designacao_servidor_service."
@@ -29,6 +34,7 @@ class TestDesignacaoServidorService:
         mock_consulta_unidade,
 
     ):
+        """Verifica obter designacao sucesso."""
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
             "codigoRf": "0000000",
@@ -79,6 +85,7 @@ class TestDesignacaoServidorService:
         }
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
+        """Verifica obter designacao sem registro funcional raises."""
         with pytest.raises(
             SmeIntegracaoException,
             match="Registro funcional é obrigatório",
@@ -98,6 +105,7 @@ class TestDesignacaoServidorService:
         mock_consulta_cargos,
         mock_info_usuario,
     ):
+        """Verifica obter designacao sem cargos raises."""
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
             "codigoRf": "0000000",

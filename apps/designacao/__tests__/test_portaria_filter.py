@@ -1,3 +1,7 @@
+"""Testes para filtro de portaria.
+
+"""
+
 import pytest
 from datetime import date
 
@@ -10,6 +14,7 @@ from apps.designacao.api.filters.portaria_filter import PortariaFilter
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
 def apply_filter(params):
+    """Método apply filter."""
     qs = AtoAdministrativo.objects.all()
     f = PortariaFilter(data=params, queryset=qs)
     return f.qs
@@ -19,6 +24,7 @@ def apply_filter(params):
 
 @pytest.fixture
 def designacao_1(db):
+    """Método designacao 1."""
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='001/2024',
@@ -50,6 +56,7 @@ def designacao_1(db):
 
 @pytest.fixture
 def designacao_2(db):
+    """Método designacao 2."""
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='002/2024',
@@ -82,6 +89,7 @@ def designacao_2(db):
 @pytest.fixture
 def cessacao(db, designacao_1):
     # CESSACAO obrigatoriamente precisa de ato_pai do tipo DESIGNACAO
+    """Método cessacao."""
     ato = AtoAdministrativo.objects.create(
         tipo='CESSACAO',
         numero_portaria='003/2024',
@@ -101,6 +109,7 @@ def cessacao(db, designacao_1):
 @pytest.fixture
 def insubsistencia(db, designacao_1):
     # INSUBSISTENCIA também precisa de ato_pai
+    """Método insubsistencia."""
     return AtoAdministrativo.objects.create(
         tipo='INSUBSISTENCIA',
         numero_portaria='004/2024',
@@ -118,17 +127,21 @@ def insubsistencia(db, designacao_1):
 class TestPortariaFilter:
 
     # tipo
+    """Testes para portaria filter."""
     def test_filtro_tipo_designacao(self, designacao_1, designacao_2, cessacao):
+        """Verifica filtro tipo designacao."""
         qs = apply_filter({'tipo': 'DESIGNACAO'})
         assert all(a.tipo == 'DESIGNACAO' for a in qs)
         assert qs.count() == 2
 
     def test_filtro_tipo_cessacao(self, designacao_1, cessacao):
+        """Verifica filtro tipo cessacao."""
         qs = apply_filter({'tipo': 'CESSACAO'})
         assert qs.count() == 1
         assert qs.first() == cessacao
 
     def test_filtro_tipo_insubsistencia(self, designacao_1, cessacao, insubsistencia):
+        """Verifica filtro tipo insubsistencia."""
         qs = apply_filter({'tipo': 'INSUBSISTENCIA'})
         assert qs.count() == 1
         assert qs.first() == insubsistencia
@@ -137,6 +150,7 @@ class TestPortariaFilter:
     def test_filtro_tipo_designacao_cessacao_retorna_ambos(
         self, designacao_1, designacao_2, cessacao, insubsistencia
     ):
+        """Verifica filtro tipo designacao cessacao retorna ambos."""
         qs = apply_filter({'tipo': 'DESIGNACAO_CESSACAO'})
         tipos = set(qs.values_list('tipo', flat=True))
         assert tipos == {'DESIGNACAO', 'CESSACAO'}
@@ -144,12 +158,14 @@ class TestPortariaFilter:
     def test_filtro_tipo_designacao_cessacao_nao_retorna_insubsistencia(
         self, designacao_1, cessacao, insubsistencia
     ):
+        """Verifica filtro tipo designacao cessacao nao retorna insubsistencia."""
         qs = apply_filter({'tipo': 'DESIGNACAO_CESSACAO'})
         assert not qs.filter(tipo='INSUBSISTENCIA').exists()
 
     def test_filtro_tipo_designacao_cessacao_quantidade(
         self, designacao_1, designacao_2, cessacao, insubsistencia
     ):
+        """Verifica filtro tipo designacao cessacao quantidade."""
         qs = apply_filter({'tipo': 'DESIGNACAO_CESSACAO'})
         # 2 designações + 1 cessação = 3
         assert qs.count() == 3
@@ -157,12 +173,14 @@ class TestPortariaFilter:
     def test_filtro_tipo_designacao_cessacao_sem_cessacoes(
         self, designacao_1, designacao_2
     ):
+        """Verifica filtro tipo designacao cessacao sem cessacoes."""
         qs = apply_filter({'tipo': 'DESIGNACAO_CESSACAO'})
         assert qs.count() == 2
         assert all(a.tipo == 'DESIGNACAO' for a in qs)
 
     def test_filtro_tipo_designacao_cessacao_sem_designacoes(self, designacao_1, cessacao):
         # Filtra apenas cessação no queryset
+        """Verifica filtro tipo designacao cessacao sem designacoes."""
         qs = AtoAdministrativo.objects.filter(tipo='CESSACAO')
         f = PortariaFilter(data={'tipo': 'DESIGNACAO_CESSACAO'}, queryset=qs)
         assert f.qs.count() == 1

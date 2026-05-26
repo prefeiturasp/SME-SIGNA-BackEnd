@@ -1,3 +1,7 @@
+"""Testes para a view v2 de insubsistência.
+
+"""
+
 import secrets
 import pytest
 from django.urls import reverse
@@ -16,6 +20,7 @@ User = get_user_model()
 
 @pytest.fixture
 def auth_client(db):
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='test_insub_v2', password=password)
     client = APIClient()
@@ -24,6 +29,7 @@ def auth_client(db):
 
 
 def _payload(ato_pai_id, **kwargs):
+    """Método auxiliar para payload."""
     base = {
         'ato_pai': ato_pai_id,
         'numero_portaria': '12345',
@@ -37,6 +43,7 @@ def _payload(ato_pai_id, **kwargs):
 
 @pytest.mark.django_db
 def test_create_insubsistencia_v2_de_designacao(auth_client):
+    """Verifica create insubsistencia v2 de designacao."""
     d = criar_ato_designacao()
     url = reverse('designacao_v2:insubsistencias')
     response = auth_client.post(url, data=_payload(d.id), format='json')
@@ -48,6 +55,7 @@ def test_create_insubsistencia_v2_de_designacao(auth_client):
 
 @pytest.mark.django_db
 def test_create_insubsistencia_v2_de_cessacao(auth_client):
+    """Verifica create insubsistencia v2 de cessacao."""
     d = criar_ato_designacao()
     c = criar_ato_cessacao(d)
     url = reverse('designacao_v2:insubsistencias')
@@ -60,6 +68,7 @@ def test_create_insubsistencia_v2_de_cessacao(auth_client):
 
 @pytest.mark.django_db
 def test_create_insubsistencia_v2_ato_pai_invalido(auth_client):
+    """Verifica create insubsistencia v2 ato pai invalido."""
     url = reverse('designacao_v2:insubsistencias')
     response = auth_client.post(url, data=_payload(9999), format='json')
     assert response.status_code == 400
@@ -68,6 +77,7 @@ def test_create_insubsistencia_v2_ato_pai_invalido(auth_client):
 
 @pytest.mark.django_db
 def test_create_insubsistencia_v2_duplicada_rejeita(auth_client):
+    """Verifica create insubsistencia v2 duplicada rejeita."""
     d = criar_ato_designacao()
     criar_ato_insubsistencia(d)
     d.ativo = False
@@ -79,6 +89,7 @@ def test_create_insubsistencia_v2_duplicada_rejeita(auth_client):
 
 @pytest.mark.django_db
 def test_create_insubsistencia_v2_marca_pai_como_inativo(auth_client):
+    """Verifica create insubsistencia v2 marca pai como inativo."""
     d = criar_ato_designacao()
     url = reverse('designacao_v2:insubsistencias')
     auth_client.post(url, data=_payload(d.id), format='json')
@@ -88,6 +99,7 @@ def test_create_insubsistencia_v2_marca_pai_como_inativo(auth_client):
 
 @pytest.mark.django_db
 def test_list_insubsistencias_v2(auth_client):
+    """Verifica list insubsistencias v2."""
     d = criar_ato_designacao()
     criar_ato_insubsistencia(d)
     url = reverse('designacao_v2:insubsistencias')
@@ -98,6 +110,7 @@ def test_list_insubsistencias_v2(auth_client):
 
 @pytest.mark.django_db
 def test_retrieve_insubsistencia_v2(auth_client):
+    """Verifica retrieve insubsistencia v2."""
     d = criar_ato_designacao()
     insub = criar_ato_insubsistencia(d)
     url = reverse('designacao_v2:insubsistencia-detail', args=[insub.id])
@@ -108,6 +121,7 @@ def test_retrieve_insubsistencia_v2(auth_client):
 
 @pytest.mark.django_db
 def test_retrieve_insubsistencia_v2_nao_encontrada(auth_client):
+    """Verifica retrieve insubsistencia v2 nao encontrada."""
     url = reverse('designacao_v2:insubsistencia-detail', args=[9999])
     response = auth_client.get(url)
     assert response.status_code == 404
@@ -115,6 +129,7 @@ def test_retrieve_insubsistencia_v2_nao_encontrada(auth_client):
 
 @pytest.mark.django_db
 def test_destroy_insubsistencia_v2_restaura_pai(auth_client):
+    """Verifica destroy insubsistencia v2 restaura pai."""
     d = criar_ato_designacao()
     insub = criar_ato_insubsistencia(d)
     d.ativo = False

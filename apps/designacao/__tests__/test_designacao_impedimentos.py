@@ -1,3 +1,7 @@
+"""Testes para impedimentos de designação.
+
+"""
+
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory, force_authenticate
 from unittest.mock import MagicMock
@@ -6,7 +10,9 @@ from apps.designacao.models.designacao import ImpedimentoSubstituicao
 
 class TestImpedimentoSubstituicaoView(TestCase):
 
+    """Testes para impedimento substituicao view."""
     def test_get_impedimento_substituicao_choices_success(self):
+        """Verifica get impedimento substituicao choices success."""
         ImpedimentoSubstituicao.objects.get_or_create(
             codigo='LIC_MEDICA',
             defaults={"descricao": "Por licença médica"}

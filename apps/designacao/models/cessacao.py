@@ -1,8 +1,15 @@
+"""Modelo de cessação de designação.
+
+Registra os dados de cessação de uma designação, incluindo tipo,
+portaria e data da decisão.
+"""
+
 from django.db import models
 from django.utils import timezone
 
 
 class Cessacao(models.Model):
+    """Representa a cessação de uma designação."""
 
     designacao = models.OneToOneField(
         'Designacao',
@@ -32,6 +39,15 @@ class Cessacao(models.Model):
         db_table = 'cessacao'
 
     def delete(self, *args, **kwargs):
+        """Realiza exclusão lógica da cessação.
+
+        Marca o registro como removido sem excluí-lo fisicamente do banco,
+        registrando a data e hora da exclusão.
+
+        Args:
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+        """
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.save()

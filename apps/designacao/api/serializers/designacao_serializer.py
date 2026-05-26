@@ -1,3 +1,9 @@
+"""Serializadores de designação para API.
+
+Conteúdos de leitura e escrita de designações, incluindo campos legados
+relacionados a impedimento de substituição, portaria, servidor e período.
+"""
+
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -6,6 +12,10 @@ from apps.designacao.models.designacao import ImpedimentoSubstituicao
 
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
+    """Serializador para impedimento de substituição.
+
+    Representa o código e a descrição do impedimento em contexto de designação.
+    """
     class Meta:
         model = ImpedimentoSubstituicao
         fields = ['id', 'codigo', 'descricao']
@@ -14,6 +24,11 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 # ── Escrita ───────────────────────────────────────────────────────────────────
 
 class DesignacaoWriteSerializer(serializers.Serializer):
+    """Serializador de escrita para criação/atualização de designações.
+
+    Define os campos necessários para persistir um ato administrativo de designação,
+    incluindo informações de unidade, servidor indicado, titular, período e vaga.
+    """
 
     # AtoAdministrativo
     numero_portaria = serializers.CharField(max_length=20)
@@ -87,6 +102,11 @@ class DesignacaoWriteSerializer(serializers.Serializer):
 # ── Leitura ───────────────────────────────────────────────────────────────────
 
 class DesignacaoReadSerializer(serializers.ModelSerializer):
+    """Serializador de leitura para designações.
+
+    Exibe dados de designação com campos relacionados ao detalhe de designação,
+    incluindo campos derivados de filhos como cessação, apostilas e insubsistência.
+    """
 
     status = serializers.SerializerMethodField()
 
@@ -190,9 +210,25 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_status(self, obj):
+        """Retorna o status do ato administrativo.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Status do ato.
+        """
         return obj.status
 
     def get_impedimento_display(self, obj):
+        """Retorna a descrição do impedimento de substituição.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Descrição do impedimento ou None se não houver.
+        """
         try:
             imp = obj.designacao_detalhe.impedimento_substituicao
             return imp.descricao if imp else None
@@ -200,18 +236,42 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             return None
 
     def get_tipo_vaga_display(self, obj):
+        """Retorna o texto descritivo do tipo de vaga.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Descrição do tipo de vaga ou None em caso de erro.
+        """
         try:
             return obj.designacao_detalhe.get_tipo_vaga_display()
         except Exception:
             return None
 
     def get_cargo_vaga_display(self, obj):
+        """Retorna o texto descritivo do cargo da vaga.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Descrição do cargo da vaga ou None em caso de erro.
+        """
         try:
             return obj.designacao_detalhe.get_cargo_vaga_display()
         except Exception:
             return None
 
     def get_cessacao(self, obj):
+        """Retorna dados da cessação associada à designação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            dict|None: Dados simplificados da cessação ou None se não existir.
+        """
         # Usa filhos prefetchados (.all() aproveita o cache do prefetch_related)
         cessacao_ato = next(
             (f for f in obj.filhos.all() if f.tipo == AtoAdministrativo.Tipo.CESSACAO),
@@ -240,6 +300,14 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             return None
 
     def _serializar_insubsistencia(self, ato):
+        """Serializa a insubsistência válida de um ato.
+
+        Args:
+            ato: Instância de AtoAdministrativo representando o ato pai.
+
+        Returns:
+            dict|None: Dados de insubsistência ou None se não houver ato válido.
+        """
         insub = next(
             (f for f in ato.filhos.all()
              if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido),
@@ -257,6 +325,14 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             return None
 
     def _serializar_apostilas(self, ato):
+        """Serializa apostilas relacionadas a um ato.
+
+        Args:
+            ato: Instância de AtoAdministrativo.
+
+        Returns:
+            list: Lista de apostilas serializadas.
+        """
         resultado = []
         for f in ato.filhos.all():
             if f.tipo != AtoAdministrativo.Tipo.APOSTILA:
@@ -276,9 +352,25 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         return resultado
 
     def get_apostilas(self, obj):
+        """Retorna as apostilas associadas ao ato.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            list: Lista de apostilas serializadas.
+        """
         return self._serializar_apostilas(obj)
 
     def get_insubsistencia(self, obj):
+        """Retorna a insubsistência ativa da designação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            dict|None: Dados da insubsistência ou None se não existir.
+        """
         # Retorna a insubsistência que ainda está ativa (não foi tornada sem efeito)
         insub = next(
             (f for f in obj.filhos.all()

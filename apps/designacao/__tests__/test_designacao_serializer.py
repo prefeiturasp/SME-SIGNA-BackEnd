@@ -1,3 +1,7 @@
+"""Testes para serializer de designação.
+
+"""
+
 import pytest
 from django.test import TestCase
 from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
@@ -6,7 +10,9 @@ from apps.designacao.api.serializers.designacao_legado_serializer import Designa
 from apps.designacao.__tests__.factories import criar_designacao, criar_designacao_legado
 
 class DesignacaoSerializerTest(TestCase):
+    """Testes para designacao serializer test."""
     def test_get_field_names_inclui_campos_extras(self):
+        """Verifica get field names inclui campos extras."""
         serializer = DesignacaoSerializer()
         fields = serializer.fields
 
@@ -17,6 +23,7 @@ class DesignacaoSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_get_impedimento_display_com_valor(self):
+        """Verifica get impedimento display com valor."""
         impedimento = ImpedimentoSubstituicao.objects.get(codigo='LIC_MEDICA')
 
         designacao = Designacao.objects.create(
@@ -44,6 +51,7 @@ class DesignacaoSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_get_impedimento_display_sem_valor(self):
+        """Verifica get impedimento display sem valor."""
         designacao = Designacao.objects.create(
             dre_nome="DRE",
             unidade_proponente="Unidade",
@@ -69,6 +77,7 @@ class DesignacaoSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_update_nao_permite_alterar_campos_protegidos(self):
+        """Verifica update nao permite alterar campos protegidos."""
         designacao = Designacao.objects.create(
             dre_nome="DRE",
             unidade_proponente="Unidade",
@@ -120,6 +129,7 @@ class DesignacaoSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_update_com_impedimento(self):
+        """Verifica update com impedimento."""
         impedimento = ImpedimentoSubstituicao.objects.get(codigo='FERIAS')
 
         designacao = Designacao.objects.create(

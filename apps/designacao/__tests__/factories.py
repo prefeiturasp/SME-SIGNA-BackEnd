@@ -1,3 +1,7 @@
+"""Fábrica de objetos de teste para o app designacao.
+
+"""
+
 import datetime
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -11,6 +15,7 @@ _ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
 
 
 def criar_ato_designacao(**kwargs):
+    """Método criar ato designacao."""
     ato_kwargs = {k: v for k, v in kwargs.items() if k in _ATO}
     detalhe_kwargs = {k: v for k, v in kwargs.items() if k not in _ATO}
 
@@ -43,10 +48,12 @@ def criar_ato_designacao(**kwargs):
 
 # Alias mantido para compatibilidade com testes que usam criar_designacao()
 def criar_designacao(**kwargs):
+    """Método criar designacao."""
     return criar_ato_designacao(**kwargs)
 
 
 def criar_designacao_legado(**kwargs):
+    """Método criar designacao legado."""
     base = dict(
         dre_nome='DRE Teste',
         unidade_proponente='Escola Teste',
@@ -71,6 +78,7 @@ def criar_designacao_legado(**kwargs):
 
 
 def criar_ato_cessacao(ato_pai, **kwargs):
+    """Método criar ato cessacao."""
     ato_kwargs = {k: v for k, v in kwargs.items() if k in _ATO}
     detalhe_kwargs = {k: v for k, v in kwargs.items() if k not in _ATO}
 
@@ -95,6 +103,7 @@ def criar_ato_cessacao(ato_pai, **kwargs):
 
 
 def criar_ato_apostila(ato_pai, observacao='Obs', **kwargs):
+    """Método criar ato apostila."""
     ato_kwargs = {k: v for k, v in kwargs.items() if k in _ATO}
 
     ato = AtoAdministrativo.objects.create(
@@ -108,6 +117,7 @@ def criar_ato_apostila(ato_pai, observacao='Obs', **kwargs):
 
 
 def criar_ato_insubsistencia(ato_pai, **kwargs):
+    """Método criar ato insubsistencia."""
     ato_kwargs = {k: v for k, v in kwargs.items() if k in _ATO}
 
     ato = AtoAdministrativo.objects.create(

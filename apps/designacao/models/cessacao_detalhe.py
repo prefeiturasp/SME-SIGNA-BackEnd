@@ -1,8 +1,14 @@
+"""Modelo de detalhes específicos de cessação.
+
+Armazena informações complementares associadas a um ato de cessação.
+"""
+
 from django.db import models
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
 class CessacaoDetalhe(models.Model):
+    """Detalhes de uma cessação vinculada a um ato administrativo."""
 
     ato = models.OneToOneField(
         AtoAdministrativo, on_delete=models.CASCADE,

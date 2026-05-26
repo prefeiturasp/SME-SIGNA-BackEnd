@@ -1,3 +1,9 @@
+"""Testes da view de informações do usuário autenticado.
+
+Este módulo valida o endpoint /me para garantir que usuários
+autenticados recebam os dados corretos de perfil.
+"""
+
 import pytest
 import secrets
 from django.urls import reverse
@@ -9,6 +15,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_me_view_authenticated_user_returns_user_data():
+    """Verifica que usuário autenticado recebe seus dados de perfil."""
     client = APIClient()
     password = secrets.token_urlsafe(16)
 

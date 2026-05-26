@@ -1,7 +1,14 @@
+"""Modelos de designação e impedimentos de substituição.
+
+Define a designação e os impedimentos de substituição usados no fluxo
+administrativo de nomeação e remoção de servidores.
+"""
+
 from django.db import models
 from django.utils import timezone
 
 class ImpedimentoSubstituicao(models.Model):
+    """Representa um impedimento que pode afetar a substituição de atividade."""
     codigo = models.CharField(max_length=50, unique=True)
     descricao = models.CharField(max_length=255)
 
@@ -9,9 +16,15 @@ class ImpedimentoSubstituicao(models.Model):
         db_table = 'impedimento_substituicao'
 
     def __str__(self):
+        """Retorna a representação textual do impedimento de substituição.
+
+        Returns:
+            str: Descrição do impedimento.
+        """
         return self.descricao
     
 class Designacao(models.Model):
+    """Representa uma designação de servidor com dados de vaga, portaria e período."""
 
     class TipoVaga(models.TextChoices):
         VAGO = 'VAGO', 'Cargo Vago'
@@ -105,6 +118,15 @@ class Designacao(models.Model):
     
 
     def delete(self, *args, **kwargs):
+        """Realiza exclusão lógica da designação.
+
+        Marca o registro como removido sem excluí-lo fisicamente do banco,
+        registrando a data e hora da exclusão.
+
+        Args:
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+        """
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.save()

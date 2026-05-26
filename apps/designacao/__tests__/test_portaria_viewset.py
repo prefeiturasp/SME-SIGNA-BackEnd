@@ -1,3 +1,7 @@
+"""Testes para viewset de portaria.
+
+"""
+
 import pytest
 import secrets
 from datetime import date
@@ -24,6 +28,7 @@ URL_ATUALIZAR = '/api/designacao/portarias/atualizar-data-publicacao/'
 
 @pytest.fixture
 def auth_client(db):
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='test_portaria', password=password)
     client = APIClient()
@@ -33,6 +38,7 @@ def auth_client(db):
 
 @pytest.fixture
 def designacao(db):
+    """Método designacao."""
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='001/2024',
@@ -64,6 +70,7 @@ def designacao(db):
 
 @pytest.fixture
 def designacao_2(db):
+    """Método designacao 2."""
     ato = AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='002/2024',
@@ -95,6 +102,7 @@ def designacao_2(db):
 
 @pytest.fixture
 def cessacao(db, designacao):
+    """Método cessacao."""
     ato = AtoAdministrativo.objects.create(
         tipo='CESSACAO',
         numero_portaria='003/2024',
@@ -113,6 +121,7 @@ def cessacao(db, designacao):
 
 @pytest.fixture
 def insubsistencia(db, designacao):
+    """Método insubsistencia."""
     ato = AtoAdministrativo.objects.create(
         tipo='INSUBSISTENCIA',
         numero_portaria='004/2024',
@@ -131,6 +140,7 @@ def insubsistencia(db, designacao):
 
 @pytest.fixture
 def apostila(db, designacao):
+    """Método apostila."""
     ato = AtoAdministrativo.objects.create(
         tipo='APOSTILA',
         numero_portaria='005/2024',
@@ -149,6 +159,7 @@ def apostila(db, designacao):
 
 @pytest.fixture
 def inativo(db):
+    """Método inativo."""
     return AtoAdministrativo.objects.create(
         tipo='DESIGNACAO',
         numero_portaria='099/2024',
@@ -164,16 +175,20 @@ def inativo(db):
 @pytest.mark.django_db
 class TestPortariaListView:
 
+    """Testes para portaria list view."""
     def test_retorna_200(self, auth_client, designacao):
+        """Verifica retorna 200."""
         response = auth_client.get(URL_LIST)
         assert response.status_code == 200
 
     def test_retorna_lista(self, auth_client, designacao, designacao_2):
+        """Verifica retorna lista."""
         response = auth_client.get(URL_LIST)
         assert isinstance(response.data, list)
         assert len(response.data) == 2
 
     def test_campos_retornados(self, auth_client, designacao):
+        """Verifica campos retornados."""
         response = auth_client.get(URL_LIST)
         item = response.data[0]
         assert set(item.keys()) == {
@@ -183,11 +198,13 @@ class TestPortariaListView:
         }
 
     def test_ordenacao_padrao_por_numero_portaria(self, auth_client, designacao, designacao_2):
+        """Verifica ordenacao padrao por numero portaria."""
         response = auth_client.get(URL_LIST)
         portarias = [item['portaria'] for item in response.data]
         assert portarias == sorted(portarias)
 
     def test_sem_paginacao(self, auth_client, designacao, designacao_2):
+        """Verifica sem paginacao."""
         response = auth_client.get(URL_LIST)
         # Sem paginação: retorna lista direta, não dict com 'results'
         assert isinstance(response.data, list)
@@ -195,16 +212,19 @@ class TestPortariaListView:
     # ── Filtros ───────────────────────────────────────────────────────────────
 
     def test_filtro_tipo_designacao(self, auth_client, designacao, cessacao):
+        """Verifica filtro tipo designacao."""
         response = auth_client.get(URL_LIST, {'tipo': 'DESIGNACAO'})
         assert response.status_code == 200
         assert all(item['tipo_de_ato'] == 'Designação' for item in response.data)
 
     def test_filtro_tipo_cessacao(self, auth_client, designacao, cessacao):
+        """Verifica filtro tipo cessacao."""
         response = auth_client.get(URL_LIST, {'tipo': 'CESSACAO'})
         assert response.status_code == 200
         assert all(item['tipo_de_ato'] == 'Cessação' for item in response.data)
 
     def test_filtro_tipo_designacao_cessacao(self, auth_client, designacao, cessacao, insubsistencia):
+        """Verifica filtro tipo designacao cessacao."""
         response = auth_client.get(URL_LIST, {'tipo': 'DESIGNACAO_CESSACAO'})
         assert response.status_code == 200
         tipos = {item['tipo_de_ato'] for item in response.data}
@@ -212,50 +232,59 @@ class TestPortariaListView:
         assert 'Insubsistência' not in tipos
 
     def test_filtro_ano(self, auth_client, designacao, designacao_2):
+        """Verifica filtro ano."""
         response = auth_client.get(URL_LIST, {'ano': '2024'})
         assert response.status_code == 200
         assert len(response.data) == 2
 
     def test_filtro_ano_sem_resultado(self, auth_client, designacao):
+        """Verifica filtro ano sem resultado."""
         response = auth_client.get(URL_LIST, {'ano': '1900'})
         assert response.status_code == 200
         assert len(response.data) == 0
 
     def test_filtro_numero_sei(self, auth_client, designacao, designacao_2):
+        """Verifica filtro numero sei."""
         response = auth_client.get(URL_LIST, {'numero_sei': '0001234'})
         assert response.status_code == 200
         assert len(response.data) == 1
         assert response.data[0]['numero_sei'] == '6018.2024/0001234-5'
 
     def test_filtro_portaria_inicial(self, auth_client, designacao, designacao_2):
+        """Verifica filtro portaria inicial."""
         response = auth_client.get(URL_LIST, {'portaria_inicial': '002/2024'})
         assert response.status_code == 200
         portarias = [item['portaria'] for item in response.data]
         assert all(p >= '002/2024' for p in portarias)
 
     def test_filtro_portaria_final(self, auth_client, designacao, designacao_2):
+        """Verifica filtro portaria final."""
         response = auth_client.get(URL_LIST, {'portaria_final': '001/2024'})
         assert response.status_code == 200
         portarias = [item['portaria'] for item in response.data]
         assert all(p <= '001/2024' for p in portarias)
 
     def test_filtro_nome(self, auth_client, designacao, designacao_2):
+        """Verifica filtro nome."""
         response = auth_client.get(URL_LIST, {'nome': 'MARIA'})
         assert response.status_code == 200
         assert len(response.data) == 1
         assert response.data[0]['nome'] == 'MARIA SILVA'
 
     def test_filtro_rf(self, auth_client, designacao, designacao_2):
+        """Verifica filtro rf."""
         response = auth_client.get(URL_LIST, {'rf': '12345678'})
         assert response.status_code == 200
         assert len(response.data) == 1
 
     def test_filtro_dre(self, auth_client, designacao, designacao_2):
+        """Verifica filtro dre."""
         response = auth_client.get(URL_LIST, {'dre': 'BUTANTA'})
         assert response.status_code == 200
         assert len(response.data) == 1
 
     def test_filtro_data_cessacao(self, auth_client, designacao, cessacao):
+        """Verifica filtro data cessacao."""
         response = auth_client.get(URL_LIST, {'data_cessacao': '2024-06-30'})
         assert response.status_code == 200
         assert len(response.data) == 1
@@ -264,17 +293,20 @@ class TestPortariaListView:
     # ── Search ────────────────────────────────────────────────────────────────
 
     def test_search_por_numero_portaria(self, auth_client, designacao, designacao_2):
+        """Verifica search por numero portaria."""
         response = auth_client.get(URL_LIST, {'search': '001/2024'})
         assert response.status_code == 200
         assert len(response.data) == 1
         assert response.data[0]['portaria'] == '001/2024'
 
     def test_search_por_sei(self, auth_client, designacao, designacao_2):
+        """Verifica search por sei."""
         response = auth_client.get(URL_LIST, {'search': '0002345'})
         assert response.status_code == 200
         assert len(response.data) == 1
 
     def test_search_por_nome_servidor(self, auth_client, designacao, designacao_2):
+        """Verifica search por nome servidor."""
         response = auth_client.get(URL_LIST, {'search': 'JOAO'})
         assert response.status_code == 200
         assert len(response.data) == 1
@@ -283,11 +315,13 @@ class TestPortariaListView:
     # ── Ordering ──────────────────────────────────────────────────────────────
 
     def test_ordering_por_numero_portaria_asc(self, auth_client, designacao, designacao_2):
+        """Verifica ordering por numero portaria asc."""
         response = auth_client.get(URL_LIST, {'ordering': 'numero_portaria'})
         portarias = [item['portaria'] for item in response.data]
         assert portarias == sorted(portarias)
 
     def test_ordering_por_numero_portaria_desc(self, auth_client, designacao, designacao_2):
+        """Verifica ordering por numero portaria desc."""
         response = auth_client.get(URL_LIST, {'ordering': '-numero_portaria'})
         portarias = [item['portaria'] for item in response.data]
         assert portarias == sorted(portarias, reverse=True)
@@ -295,6 +329,7 @@ class TestPortariaListView:
     # ── Todos os tipos retornados ─────────────────────────────────────────────
 
     def test_retorna_todos_os_tipos(self, auth_client, designacao, cessacao, insubsistencia, apostila):
+        """Verifica retorna todos os tipos."""
         response = auth_client.get(URL_LIST)
         assert response.status_code == 200
         tipos = {item['tipo_de_ato'] for item in response.data}
@@ -306,7 +341,9 @@ class TestPortariaListView:
 @pytest.mark.django_db
 class TestAtualizarDataPublicacao:
 
+    """Testes para atualizar data publicacao."""
     def test_atualiza_doc_com_sucesso(self, auth_client, designacao, designacao_2):
+        """Verifica atualiza doc com sucesso."""
         payload = {
             'ids': [designacao.pk, designacao_2.pk],
             'data_publicacao': '10.234',
@@ -318,41 +355,49 @@ class TestAtualizarDataPublicacao:
         assert set(response.data['ids']) == {designacao.pk, designacao_2.pk}
 
     def test_doc_atualizado_no_banco(self, auth_client, designacao):
+        """Verifica doc atualizado no banco."""
         auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': '99.999'}, format='json')
         designacao.refresh_from_db()
         assert designacao.doc == '99.999'
 
     def test_nao_atualiza_inativo(self, auth_client, inativo):
+        """Verifica nao atualiza inativo."""
         payload = {'ids': [inativo.pk], 'data_publicacao': '10.234'}
         response = auth_client.post(URL_ATUALIZAR, payload, format='json')
         assert response.status_code == 400
 
     def test_erro_sem_ids(self, auth_client):
+        """Verifica erro sem ids."""
         response = auth_client.post(URL_ATUALIZAR, {'data_publicacao': '10.234'}, format='json')
         assert response.status_code == 400
         assert 'ids' in response.data
 
     def test_erro_ids_vazio(self, auth_client):
+        """Verifica erro ids vazio."""
         response = auth_client.post(URL_ATUALIZAR, {'ids': [], 'data_publicacao': '10.234'}, format='json')
         assert response.status_code == 400
         assert 'ids' in response.data
 
     def test_erro_sem_data_publicacao(self, auth_client, designacao):
+        """Verifica erro sem data publicacao."""
         response = auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk]}, format='json')
         assert response.status_code == 400
         assert 'data_publicacao' in response.data
 
     def test_erro_data_publicacao_vazia(self, auth_client, designacao):
+        """Verifica erro data publicacao vazia."""
         response = auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': ''}, format='json')
         assert response.status_code == 400
         assert 'data_publicacao' in response.data
 
     def test_erro_ids_inexistentes(self, auth_client):
+        """Verifica erro ids inexistentes."""
         response = auth_client.post(URL_ATUALIZAR, {'ids': [99999], 'data_publicacao': '10.234'}, format='json')
         assert response.status_code == 400
         assert 'ids' in response.data
 
     def test_atualiza_apenas_ids_informados(self, auth_client, designacao, designacao_2):
+        """Verifica atualiza apenas ids informados."""
         auth_client.post(URL_ATUALIZAR, {'ids': [designacao.pk], 'data_publicacao': 'NOVO'}, format='json')
         designacao.refresh_from_db()
         designacao_2.refresh_from_db()

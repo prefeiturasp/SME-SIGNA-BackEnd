@@ -1,3 +1,8 @@
+"""Views para a API de apostilas.
+
+Fornece endpoints para criar, listar e recuperar apostilas.
+"""
+
 from rest_framework import mixins, viewsets, status
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -12,10 +17,20 @@ class ApostilaViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet
 ):
+    """ViewSet de apostila.
+
+    Permite criar novas apostilas, listar apostilas existentes e recuperar
+    detalhes de uma apostila específica.
+    """
 
     serializer_class = ApostilaSerializer
 
     def get_queryset(self):
+        """Retorna o queryset de apostilas ativas.
+
+        Returns:
+            QuerySet: Apostilas não deletadas ordenadas por data de criação.
+        """
         return Apostila.objects.filter(
             is_deleted=False
         ).select_related(
@@ -24,6 +39,16 @@ class ApostilaViewSet(
         ).order_by("-criado_em")
 
     def create(self, request, *args, **kwargs):
+        """Cria uma nova apostila a partir dos dados da requisição.
+
+        Args:
+            request: Requisição HTTP contendo os dados da apostila.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados da apostila criada ou erro de validação.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

@@ -1,3 +1,9 @@
+"""Views de recuperação e alteração de senha.
+
+Inclui endpoints para iniciar o fluxo de "esqueci minha senha",
+redefinir senha via UID/token e alterar senha de usuário autenticado.
+"""
+
 import environ
 import logging
 
@@ -23,6 +29,10 @@ env = environ.Env()
 
 
 class EsqueciMinhaSenhaViewSet(APIView):
+    """View para iniciar o fluxo de recuperação de senha.
+
+    Recebe o nome de usuário e envia um e-mail com o link de redefinição.
+    """
     permission_classes = [AllowAny]
 
     MENSAGEM_EMAIL_NAO_CADASTRADO = (
@@ -33,6 +43,10 @@ class EsqueciMinhaSenhaViewSet(APIView):
     MENSAGEM_ERRO_INTERNO = "Erro interno no servidor."
 
     def post(self, request):
+        """Inicia o fluxo de recuperação de senha.
+
+        Valida o usuário e envia um e-mail contendo o link de redefinição.
+        """
         serializer = EsqueciMinhaSenhaSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -115,6 +129,12 @@ class EsqueciMinhaSenhaViewSet(APIView):
         return email
 
     def _processar_envio_email(self, username, email):
+        """Gera token de recuperação e envia o e-mail para o usuário.
+
+        Args:
+            username (str): RF ou nome de usuário do usuário.
+            email (str): Endereço de e-mail para envio.
+        """
         logger.info("Gerando token: %s", username)
 
         token_data = SenhaService.gerar_token_para_reset(username, email)
@@ -204,6 +224,10 @@ class RedefinirSenhaViewSet(APIView):
     STATUS_SUCCESS = "success"
 
     def post(self, request, *args, **kwargs):
+        """Processa a redefinição de senha usando UID e token.
+
+        Valida os dados do formulário e redefine a senha na SME e localmente.
+        """
         serializer = RedefinirSenhaSerializer(data=request.data)
 
         try:
@@ -275,12 +299,21 @@ class RedefinirSenhaViewSet(APIView):
 
 
 class AtualizarSenhaViewSet(APIView):
+    """View para alteração de senha de usuário autenticado.
+
+    Recebe nova senha e atualiza tanto a SME quanto o banco local, quando
+    possível.
+    """
     permission_classes = [IsAuthenticated]
 
     MENSAGEM_SUCESSO = "Senha alterada com sucesso."
     MENSAGEM_ERRO_INTERNO = "Erro interno do servidor."
 
     def post(self, request):
+        """Processa a alteração de senha do usuário autenticado.
+
+        Valida a senha atual e atualiza a senha na SME e no banco local.
+        """
         serializer = AtualizarSenhaSerializer(data=request.data, context={"request": request})
 
         if not serializer.is_valid():

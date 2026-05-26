@@ -1,3 +1,7 @@
+"""Testes para a view de designação.
+
+"""
+
 import pytest
 import secrets
 from rest_framework.test import APIClient, APIRequestFactory
@@ -15,6 +19,7 @@ User = get_user_model()
 
 @pytest.fixture
 def auth_client(db):
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username='test', password=password)
     client = APIClient()
@@ -23,6 +28,7 @@ def auth_client(db):
 
 
 def _bulk_criar_designacoes(n):
+    """Método auxiliar para bulk criar designacoes."""
     atos = AtoAdministrativo.objects.bulk_create([
         AtoAdministrativo(
             tipo=AtoAdministrativo.Tipo.DESIGNACAO,
@@ -55,6 +61,7 @@ def _bulk_criar_designacoes(n):
 
 @pytest.mark.django_db
 def test_list_without_pagination_effective(auth_client, monkeypatch):
+    """Verifica list without pagination effective."""
     for _ in range(3):
         criar_ato_designacao()
 
@@ -71,6 +78,7 @@ def test_list_without_pagination_effective(auth_client, monkeypatch):
 
 @pytest.mark.django_db
 def test_list_designacoes_sem_filtro_limita_1000(auth_client):
+    """Verifica list designacoes sem filtro limita 1000."""
     _bulk_criar_designacoes(1100)
 
     url = reverse('designacao_v2:designacoes')
@@ -82,6 +90,7 @@ def test_list_designacoes_sem_filtro_limita_1000(auth_client):
 
 @pytest.mark.django_db
 def test_list_designacoes_no_pagination_remove_limite(auth_client):
+    """Verifica list designacoes no pagination remove limite."""
     _bulk_criar_designacoes(1100)
 
     url = reverse('designacao_v2:designacoes')
@@ -94,6 +103,7 @@ def test_list_designacoes_no_pagination_remove_limite(auth_client):
 
 @pytest.mark.django_db
 def test_paginate_queryset_retorna_none_quando_no_pagination_true():
+    """Verifica paginate queryset retorna none quando no pagination true."""
     paginator = DesignacaoPagination()
     url = reverse('designacao_v2:designacoes')
     request = Request(APIRequestFactory().get(url, {'no_pagination': 'true'}))
@@ -105,6 +115,7 @@ def test_paginate_queryset_retorna_none_quando_no_pagination_true():
 
 @pytest.mark.django_db
 def test_destroy_designacao(auth_client):
+    """Verifica destroy designacao."""
     ato = criar_ato_designacao()
 
     url = reverse('designacao_v2:designacao-detail', args=[ato.id])
@@ -116,6 +127,7 @@ def test_destroy_designacao(auth_client):
 
 @pytest.mark.django_db
 def test_cargos_base_pareados_endpoint(auth_client):
+    """Verifica cargos base pareados endpoint."""
     url = reverse('designacao_v2:cargos-base-pareados')
     response = auth_client.get(url)
 
@@ -125,6 +137,7 @@ def test_cargos_base_pareados_endpoint(auth_client):
 
 @pytest.mark.django_db
 def test_cargos_sobrepostos_pareados_endpoint(auth_client):
+    """Verifica cargos sobrepostos pareados endpoint."""
     url = reverse('designacao_v2:cargos-sobrepostos-pareados')
     response = auth_client.get(url)
 

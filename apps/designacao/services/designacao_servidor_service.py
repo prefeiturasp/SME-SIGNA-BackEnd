@@ -1,3 +1,9 @@
+"""Serviço de designação de servidor.
+
+Fornece métodos para obter e montar dados de designação do servidor a partir
+integrações com o SGP.
+"""
+
 import logging
 
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
@@ -7,13 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 class DesignacaoServidorService:
-    """
-    Serviço responsável por montar a designação do servidor
-    (dados pessoais + cargos)
-    """
+    """Serviço responsável por montar a designação do servidor."""
 
     @classmethod
     def obter_designacao(cls, registro_funcional: str) -> dict:
+        """Obtém e monta a designação do servidor.
+
+        Args:
+            registro_funcional: Registro funcional do servidor.
+
+        Returns:
+            dict: Dados padronizados da designação do servidor.
+
+        Raises:
+            SmeIntegracaoException: Se o registro funcional não for informado ou o servidor não tiver cargos.
+        """
 
         if not registro_funcional:
             raise SmeIntegracaoException("Registro funcional é obrigatório")
@@ -35,8 +49,14 @@ class DesignacaoServidorService:
     
     @classmethod
     def montar_dados_servidor(cls, usuario: dict, cargo: dict) -> dict:
-        """
-        Monta o dicionário padronizado de designação do servidor.
+        """Monta o dicionário padronizado com dados do servidor e do cargo.
+
+        Args:
+            usuario: Dados do usuário retornados pela integração SGP.
+            cargo: Dados do cargo retornados pela integração SGP.
+
+        Returns:
+            dict: Dados padronizados da designação do servidor.
         """
 
         possui_cargo_sobreposto = bool(cargo.get("cargoSobreposto"))
