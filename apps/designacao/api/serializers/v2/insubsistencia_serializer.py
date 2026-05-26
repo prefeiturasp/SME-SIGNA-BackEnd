@@ -6,7 +6,7 @@ Inclui definição de payloads para escrita e leitura de insubsistência em atos
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.api.serializers.utils import validar_somente_numeros
+from apps.designacao.api.serializers.utils import validar_somente_numeros, NullableDateField
 
 
 class InsubsistenciaV2WriteSerializer(serializers.Serializer):
@@ -19,7 +19,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     numero_portaria = serializers.CharField(max_length=20)
     ano_vigente     = serializers.CharField(max_length=6)
     sei_numero      = serializers.CharField(max_length=30)
-    doc             = serializers.CharField(max_length=100, required=False, default='')
+    doc             = NullableDateField(required=False, default=None, allow_null=True)
     observacoes     = serializers.CharField(required=False, default='')
 
     def validate_numero_portaria(self, value):

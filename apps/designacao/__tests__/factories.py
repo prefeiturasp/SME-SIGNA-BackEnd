@@ -24,7 +24,7 @@ def criar_ato_designacao(**kwargs):
         numero_portaria=ato_kwargs.get('numero_portaria', '123'),
         ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
         sei_numero=ato_kwargs.get('sei_numero', 'SEI-1'),
-        doc=ato_kwargs.get('doc', ''),
+        doc=ato_kwargs.get('doc', None),
     )
 
     detalhe_base = dict(
@@ -88,7 +88,7 @@ def criar_ato_cessacao(ato_pai, **kwargs):
         numero_portaria=ato_kwargs.get('numero_portaria', '456'),
         ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
         sei_numero=ato_kwargs.get('sei_numero', 'SEI-2'),
-        doc=ato_kwargs.get('doc', ''),
+        doc=ato_kwargs.get('doc', None),
     )
 
     detalhe_base = dict(
@@ -110,7 +110,7 @@ def criar_ato_apostila(ato_pai, observacao='Obs', **kwargs):
         tipo=AtoAdministrativo.Tipo.APOSTILA,
         ato_pai=ato_pai,
         sei_numero=ato_kwargs.get('sei_numero', 'SEI-A'),
-        doc=ato_kwargs.get('doc', ''),
+        doc=ato_kwargs.get('doc', None),
     )
     ApostilaDetalhe.objects.create(ato=ato, observacao=observacao)
     return ato
@@ -126,7 +126,7 @@ def criar_ato_insubsistencia(ato_pai, **kwargs):
         numero_portaria=ato_kwargs.get('numero_portaria', '789'),
         ano_vigente=ato_kwargs.get('ano_vigente', '2024'),
         sei_numero=ato_kwargs.get('sei_numero', 'SEI-I'),
-        doc=ato_kwargs.get('doc', ''),
+        doc=ato_kwargs.get('doc', None),
     )
     InsubsistenciaDetalhe.objects.create(
         ato=ato, observacoes=kwargs.get('observacoes', '')

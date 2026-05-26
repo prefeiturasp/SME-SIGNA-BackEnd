@@ -30,7 +30,7 @@ def designacao_1(db):
         numero_portaria='001/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0001234-5',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -62,7 +62,7 @@ def designacao_2(db):
         numero_portaria='002/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0002345-6',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -95,7 +95,7 @@ def cessacao(db, designacao_1):
         numero_portaria='003/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0003456-7',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao_1,
     )
@@ -115,7 +115,7 @@ def insubsistencia(db, designacao_1):
         numero_portaria='004/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0004567-8',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao_1,
     )

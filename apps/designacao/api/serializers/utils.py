@@ -8,6 +8,15 @@ usadas pelos serializadores da API.
 from rest_framework import serializers
 
 
+class NullableDateField(serializers.DateField):
+    """DateField que converte string vazia para None."""
+
+    def to_internal_value(self, value):
+        if value == '':
+            return None
+        return super().to_internal_value(value)
+
+
 def validar_somente_numeros(value):
     """Valida se uma string contém apenas dígitos.
 

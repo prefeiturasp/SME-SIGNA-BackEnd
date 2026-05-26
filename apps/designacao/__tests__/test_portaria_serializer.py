@@ -30,7 +30,7 @@ def designacao(db):
         numero_portaria='001/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0001234-5',
-        doc='10.234',
+        doc='2024-10-23',
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -63,7 +63,7 @@ def designacao_com_data_fim(db):
         numero_portaria='005/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0005678-9',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -95,7 +95,7 @@ def designacao_sem_cargo_sobreposto(db):
         numero_portaria='006/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0006789-0',
-        doc='',
+        doc=None,
         ativo=True,
     )
     DesignacaoDetalhe.objects.create(
@@ -126,7 +126,7 @@ def cessacao(db, designacao):
         numero_portaria='002/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0002345-6',
-        doc='10.235',
+        doc='2024-10-24',
         ativo=True,
         ato_pai=designacao,
     )
@@ -145,7 +145,7 @@ def insubsistencia(db, designacao):
         numero_portaria='003/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0003456-7',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -164,7 +164,7 @@ def insubsistencia_sem_observacoes(db, designacao):
         numero_portaria='007/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0007890-1',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -180,7 +180,7 @@ def apostila(db, designacao):
         numero_portaria='004/2024',
         ano_vigente='2024',
         sei_numero='6018.2024/0004567-8',
-        doc='',
+        doc=None,
         ativo=True,
         ato_pai=designacao,
     )
@@ -213,8 +213,7 @@ class TestPortariaListSerializer:
         assert serialize(designacao)['portaria'] == '001/2024'
 
     def test_doc(self, designacao):
-        """Verifica doc."""
-        assert serialize(designacao)['doc'] == '10.234'
+        assert serialize(designacao)['doc'] == '2024-10-23'
 
     def test_numero_sei(self, designacao):
         """Verifica numero sei."""
