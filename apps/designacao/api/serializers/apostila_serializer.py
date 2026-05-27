@@ -5,8 +5,8 @@ ou cessação, além de validar a presença obrigatória da designação.
 """
 
 from rest_framework import serializers
+
 from apps.designacao.models.apostila import Apostila
-from apps.designacao.api.serializers.utils import validar_somente_numeros
 
 
 class ApostilaSerializer(serializers.ModelSerializer):
@@ -18,8 +18,7 @@ class ApostilaSerializer(serializers.ModelSerializer):
     designacao = serializers.IntegerField(write_only=True)
 
     ato_apostilado = serializers.ChoiceField(
-        choices=["designacao", "cessacao"],
-        write_only=True
+        choices=["designacao", "cessacao"], write_only=True
     )
 
     class Meta:
@@ -34,7 +33,6 @@ class ApostilaSerializer(serializers.ModelSerializer):
             "d_o",
         ]
 
-
     def validate(self, data):
         """Valida o payload completo de apostila.
 
@@ -48,8 +46,6 @@ class ApostilaSerializer(serializers.ModelSerializer):
             dict: Dados validados.
         """
         if not data.get("designacao"):
-            raise serializers.ValidationError(
-                "Designação é obrigatória."
-            )
+            raise serializers.ValidationError("Designação é obrigatória.")
 
         return data

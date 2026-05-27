@@ -3,15 +3,15 @@
 Fornece endpoints para listagem, recuperação, criação e exclusão de insubsistências.
 """
 
-from rest_framework import mixins, viewsets, status
+from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.api.serializers.v2.insubsistencia_serializer import (
     InsubsistenciaV2ReadSerializer,
     InsubsistenciaV2WriteSerializer,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.insubsistencia_service import InsubsistenciaService
 
 
@@ -22,8 +22,9 @@ class InsubsistenciaV2Pagination(PageNumberPagination):
     de 10 registros por página, permitindo customização via parâmetro
     `page_size` limitado ao máximo de 100 itens.
     """
+
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -37,6 +38,7 @@ class InsubsistenciaV2ViewSet(
 
     Expõe operações de listagem, recuperação, criação e exclusão de insubsistências.
     """
+
     serializer_class = InsubsistenciaV2ReadSerializer
     pagination_class = InsubsistenciaV2Pagination
 
@@ -47,10 +49,9 @@ class InsubsistenciaV2ViewSet(
             QuerySet: Insubsistências ordenadas por data de criação decrescente.
         """
         return (
-            AtoAdministrativo.objects
-            .filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA)
-            .select_related('insubsistencia_detalhe')
-            .order_by('-criado_em')
+            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA)
+            .select_related("insubsistencia_detalhe")
+            .order_by("-criado_em")
         )
 
     def create(self, request, *args, **kwargs):
@@ -90,6 +91,6 @@ class InsubsistenciaV2ViewSet(
         ato_pai = instancia.ato_pai
         if ato_pai:
             ato_pai.ativo = True
-            ato_pai.save(update_fields=['ativo'])
+            ato_pai.save(update_fields=["ativo"])
         instancia.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

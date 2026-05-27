@@ -5,8 +5,11 @@ Inclui definição de payloads para escrita e leitura de insubsistência em atos
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.utils import (
+    NullableDateField,
+    validar_somente_numeros,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.api.serializers.utils import validar_somente_numeros, NullableDateField
 
 
 class InsubsistenciaV2WriteSerializer(serializers.Serializer):
@@ -15,12 +18,14 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     Valida os campos obrigatórios para criação de uma insubsistência.
     """
 
-    ato_pai         = serializers.PrimaryKeyRelatedField(queryset=AtoAdministrativo.objects.all())
+    ato_pai = serializers.PrimaryKeyRelatedField(
+        queryset=AtoAdministrativo.objects.all()
+    )
     numero_portaria = serializers.CharField(max_length=20)
-    ano_vigente     = serializers.CharField(max_length=6)
-    sei_numero      = serializers.CharField(max_length=30)
-    doc             = NullableDateField(required=False, default=None, allow_null=True)
-    observacoes     = serializers.CharField(required=False, default='')
+    ano_vigente = serializers.CharField(max_length=6)
+    sei_numero = serializers.CharField(max_length=30)
+    doc = NullableDateField(required=False, default=None, allow_null=True)
+    observacoes = serializers.CharField(required=False, default="")
 
     def validate_numero_portaria(self, value):
         """Valida que o número da portaria contenha apenas dígitos.
@@ -51,17 +56,24 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
     Expõe status e observações da insubsistência.
     """
 
-    status      = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     observacoes = serializers.CharField(
-        source='insubsistencia_detalhe.observacoes', read_only=True
+        source="insubsistencia_detalhe.observacoes", read_only=True
     )
 
     class Meta:
         model = AtoAdministrativo
         fields = [
-            'id', 'tipo', 'status', 'ato_pai_id',
-            'numero_portaria', 'ano_vigente', 'sei_numero', 'doc', 'criado_em',
-            'observacoes',
+            "id",
+            "tipo",
+            "status",
+            "ato_pai_id",
+            "numero_portaria",
+            "ano_vigente",
+            "sei_numero",
+            "doc",
+            "criado_em",
+            "observacoes",
         ]
 
     def get_status(self, obj):

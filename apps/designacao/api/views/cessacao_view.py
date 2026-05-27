@@ -3,12 +3,12 @@
 Fornece endpoints para criar, listar, recuperar e excluir cessões.
 """
 
-from rest_framework.response import Response
-from rest_framework import mixins, viewsets, status
+from rest_framework import mixins, viewsets
 from rest_framework.pagination import PageNumberPagination
 
-from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
+from apps.designacao.models.cessacao import Cessacao
+
 
 class CessacaoPagination(PageNumberPagination):
     """Paginação padrão da API de cessações.
@@ -17,9 +17,11 @@ class CessacaoPagination(PageNumberPagination):
     de 10 registros por página, permitindo customização via parâmetro
     `page_size` limitado ao máximo de 100 itens.
     """
+
     page_size = 10
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
+
 
 class CessacaoViewSet(
     mixins.CreateModelMixin,
@@ -42,8 +44,8 @@ class CessacaoViewSet(
         Returns:
             QuerySet: Cessões não deletadas ordenadas por data de criação.
         """
-        return Cessacao.objects.filter(
-            is_deleted=False
-        ).select_related(
-            'designacao'
-        ).order_by('-criado_em')
+        return (
+            Cessacao.objects.filter(is_deleted=False)
+            .select_related("designacao")
+            .order_by("-criado_em")
+        )

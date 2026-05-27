@@ -3,12 +3,13 @@
 """
 
 import pytest
+
 from django.utils import timezone
 
-from apps.designacao.models.apostila import Apostila
-from apps.designacao.models.designacao import Designacao
-from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
+from apps.designacao.models.apostila import Apostila
+from apps.designacao.models.cessacao import Cessacao
+from apps.designacao.models.designacao import Designacao
 
 
 @pytest.mark.django_db
@@ -51,9 +52,9 @@ class TestApostilaSerializer:
         """Verifica serialization campos reais."""
         serializer = ApostilaSerializer(instance=apostila)
         data = serializer.data
-        assert data['id'] == apostila.id
-        assert data['sei_numero'] == "555"
-        assert 'tipo' in data
+        assert data["id"] == apostila.id
+        assert data["sei_numero"] == "555"
+        assert "tipo" in data
 
     def test_deserialization_e_validacao(self, designacao):
         """Verifica deserialization e validacao."""
@@ -66,7 +67,7 @@ class TestApostilaSerializer:
         }
         serializer = ApostilaSerializer(data=input_data)
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data['designacao'] == designacao.id
+        assert serializer.validated_data["designacao"] == designacao.id
 
     def test_to_representation_com_cessacao(self, designacao):
         """Verifica to representation com cessacao."""
@@ -83,7 +84,7 @@ class TestApostilaSerializer:
             sei_numero="777",
         )
         serializer = ApostilaSerializer(instance=apostila_cessacao)
-        assert serializer.data['sei_numero'] == '777'
+        assert serializer.data["sei_numero"] == "777"
 
     def test_validacao_erro_vazio(self):
         """Verifica validacao erro vazio."""
@@ -100,4 +101,4 @@ class TestApostilaSerializer:
             sei_numero="888",
         )
         serializer = ApostilaSerializer(instance=apostila_anulacao)
-        assert 'tipo' in serializer.data
+        assert "tipo" in serializer.data

@@ -7,13 +7,15 @@ administrativo de nomeação e remoção de servidores.
 from django.db import models
 from django.utils import timezone
 
+
 class ImpedimentoSubstituicao(models.Model):
     """Representa um impedimento que pode afetar a substituição de atividade."""
+
     codigo = models.CharField(max_length=50, unique=True)
     descricao = models.CharField(max_length=255)
 
     class Meta:
-        db_table = 'impedimento_substituicao'
+        db_table = "impedimento_substituicao"
 
     def __str__(self):
         """Retorna a representação textual do impedimento de substituição.
@@ -22,13 +24,14 @@ class ImpedimentoSubstituicao(models.Model):
             str: Descrição do impedimento.
         """
         return self.descricao
-    
+
+
 class Designacao(models.Model):
     """Representa uma designação de servidor com dados de vaga, portaria e período."""
 
     class TipoVaga(models.TextChoices):
-        VAGO = 'VAGO', 'Cargo Vago'
-        DISPONIVEL = 'DISPONIVEL', 'Cargo Disponível'
+        VAGO = "VAGO", "Cargo Vago"
+        DISPONIVEL = "DISPONIVEL", "Cargo Disponível"
 
     class CargoVaga(models.IntegerChoices):
         ASSISTENTE_DIRETOR = 3085, "ASSISTENTE DE DIRETOR DE ESCOLA"
@@ -75,7 +78,7 @@ class Designacao(models.Model):
     numero_portaria = models.CharField(max_length=20)
     ano_vigente = models.CharField(max_length=6)
     sei_numero = models.CharField(max_length=30)
-    doc = models.CharField(max_length=100, blank=True, default="")#Campo D.O
+    doc = models.CharField(max_length=100, blank=True, default="")  # Campo D.O
     data_inicio = models.DateField()
     data_fim = models.DateField(null=True, blank=True)
     carater_excepcional = models.BooleanField(default=False)
@@ -84,14 +87,14 @@ class Designacao(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='designacoes'
+        related_name="designacoes",
     )
     com_afastamento = models.BooleanField(default=False)
     possui_pendencia = models.BooleanField(default=False)
     pendencias = models.TextField(blank=True, default="")
     motivo_afastamento = models.TextField(blank=True, default="")
 
-    # --- Informações Adicionais --- 
+    # --- Informações Adicionais ---
     informacoes_adicionais = models.TextField(blank=True, default="")
     detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
 
@@ -105,8 +108,7 @@ class Designacao(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = 'designacao'
-
+        db_table = "designacao"
 
     @classmethod
     def get_cargos_formatados(cls):
@@ -115,7 +117,6 @@ class Designacao(models.Model):
             {"codigoCargo": choice.value, "nomeCargo": choice.label}
             for choice in cls.CargoVaga
         ]
-    
 
     def delete(self, *args, **kwargs):
         """Realiza exclusão lógica da designação.

@@ -2,16 +2,17 @@
 
 """
 
-import pytest
+import secrets
 from datetime import date
+
+import pytest
+
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
 
 from apps.designacao.models import Cessacao, Designacao
-
-import secrets
 
 User = get_user_model()
 
@@ -37,7 +38,6 @@ def designacao(db):
         dre_nome="DRE TESTE",
         unidade_proponente="Unidade Teste",
         codigo_hierarquico="123",
-
         indicado_nome_civil="João da Silva",
         indicado_nome_servidor="João da Silva",
         indicado_rf="1234567",
@@ -45,13 +45,10 @@ def designacao(db):
         indicado_cargo_base="Professor",
         indicado_lotacao="Escola A",
         indicado_local_exercicio="Escola A",
-
         numero_portaria="123",
         ano_vigente="2024",
         sei_numero="123456789",
-
         data_inicio=date(2024, 1, 1),
-
         tipo_vaga=Designacao.TipoVaga.VAGO,
         cargo_vaga=Designacao.CargoVaga.DIRETOR,
     )
@@ -68,14 +65,13 @@ def cessacao(db, designacao):
         ano_vigente="2024",
         sei_numero="88888",
         a_pedido=True,
-        data_designacao="2024-02-01"
+        data_designacao="2024-02-01",
     )
 
 
-
 class TestCessacaoViewSet:
-
     """Testes para cessacao view set."""
+
     def _payload(self, designacao_id):
         """Método auxiliar para payload."""
         return {
@@ -84,7 +80,6 @@ class TestCessacaoViewSet:
             "ano_vigente": "2024",
             "sei_numero": "123456",
         }
-
 
     @pytest.mark.django_db
     def test_create_cessacao(self, auth_client, designacao):
@@ -96,7 +91,7 @@ class TestCessacaoViewSet:
             "ano_vigente": "2024",
             "sei_numero": "999999",
             "a_pedido": True,
-            "data_designacao": "2024-03-10"
+            "data_designacao": "2024-03-10",
         }
         response = auth_client.post(url, data=payload, format="json")
         print(response.data)

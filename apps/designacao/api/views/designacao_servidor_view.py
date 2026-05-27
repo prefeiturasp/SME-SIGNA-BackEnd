@@ -5,16 +5,16 @@ Valida a RF enviada pelo cliente e consulta o serviço de designação do servid
 
 import logging
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.designacao.api.serializers.designacao_servidor_request_serializer import (
-    DesignacaoServidorRequestSerializer
+    DesignacaoServidorRequestSerializer,
 )
 from apps.designacao.services.designacao_servidor_service import (
-    DesignacaoServidorService
+    DesignacaoServidorService,
 )
 from apps.helpers.exceptions import SmeIntegracaoException
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class DesignacaoServidorView(APIView):
     """View que retorna designação de servidor a partir da RF."""
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -34,9 +35,7 @@ class DesignacaoServidorView(APIView):
         Returns:
             Response: Dados da designação ou mensagem de erro.
         """
-        serializer = DesignacaoServidorRequestSerializer(
-            data=request.data
-        )
+        serializer = DesignacaoServidorRequestSerializer(data=request.data)
 
         try:
             serializer.is_valid(raise_exception=True)
@@ -51,27 +50,14 @@ class DesignacaoServidorView(APIView):
         try:
             dados = DesignacaoServidorService.obter_designacao(rf)
 
-            return Response(
-                dados,
-                status=status.HTTP_200_OK
-            )
+            return Response(dados, status=status.HTTP_200_OK)
 
         except SmeIntegracaoException as e:
-            logger.warning(
-                "Erro ao obter designação do servidor: %s",
-                str(e)
-            )
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            logger.warning("Erro ao obter designação do servidor: %s", str(e))
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            logger.error(
-                "Erro interno designação servidor: %s",
-                e
-            )
+            logger.error("Erro interno designação servidor: %s", e)
             return Response(
-                {"detail": "Erro interno"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"detail": "Erro interno"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

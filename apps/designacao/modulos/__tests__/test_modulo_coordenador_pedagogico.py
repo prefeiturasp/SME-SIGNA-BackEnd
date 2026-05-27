@@ -5,7 +5,9 @@ de escola e cenários de quantidade de classes.
 """
 
 import logging
+
 import pytest
+
 from apps.designacao.modulos.coordenador_pedagogico import (
     ModuloCoordenadorPedagogicoCalculator,
 )
@@ -24,7 +26,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         "sigla_tipo, esperado",
         [
             ("CEI", 1),
-            ("cei", 1),    
+            ("cei", 1),
             (" CEMEI ", 2),
         ],
     )
@@ -54,7 +56,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
             "codigoUE": "UE_TESTE",
-            "turmas": None, # Forçando o erro de ausência
+            "turmas": None,  # Forçando o erro de ausência
         }
 
         with caplog.at_level(logging.WARNING):
@@ -83,10 +85,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEI",
-            "turmas": {
-                "total": qtd_classes,
-                "por_turno": {}
-            }
+            "turmas": {"total": qtd_classes, "por_turno": {}},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -115,12 +114,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
-            "turmas": {
-                "total": qtd_classes,
-                "por_turno": {
-                    "noite": 0
-                }
-            }
+            "turmas": {"total": qtd_classes, "por_turno": {"noite": 0}},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -130,12 +124,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """Verifica acréscimo de módulo para EMEF com cinco turmas noturnas."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
-            "turmas": {
-                "total": 20,
-                "por_turno": {
-                    "noite": 5
-                }
-            }
+            "turmas": {"total": 20, "por_turno": {"noite": 5}},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -145,10 +134,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """Verifica que EMEBS utiliza as mesmas regras de cálculo do EMEF."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEBS",
-            "turmas": {
-                "total": 40,
-                "por_turno": {}
-            }
+            "turmas": {"total": 40, "por_turno": {}},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -158,12 +144,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
 
     def test_retorna_zero_para_tipo_desconhecido(self):
         """Verifica retorno zero para tipos de escola não reconhecidos."""
-        informacoes_ue = {
-            "siglaTipoEscola": "XPTO",
-            "turmas": {
-                "total": 10
-            }
-        }
+        informacoes_ue = {"siglaTipoEscola": "XPTO", "turmas": {"total": 10}}
 
         resultado = self.calculator.calcular({}, informacoes_ue)
         assert resultado == 0

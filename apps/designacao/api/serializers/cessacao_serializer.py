@@ -4,9 +4,12 @@ Inclui informações de insubsistência e validações específicas de portaria 
 """
 
 from rest_framework import serializers
+
+from apps.designacao.api.serializers.insubsistencia_serializer import (
+    InsubsistenciaSerializer,
+)
 from apps.designacao.api.serializers.utils import validar_somente_numeros
 from apps.designacao.models.cessacao import Cessacao
-from apps.designacao.api.serializers.insubsistencia_serializer import InsubsistenciaSerializer
 
 
 class CessacaoSerializer(serializers.ModelSerializer):
@@ -14,13 +17,13 @@ class CessacaoSerializer(serializers.ModelSerializer):
 
     Recupera dados relacionados à insubsistência e valida campos numéricos.
     """
-    insubsistencia = serializers.SerializerMethodField()
 
+    insubsistencia = serializers.SerializerMethodField()
 
     class Meta:
         model = Cessacao
-        fields = '__all__'
- 
+        fields = "__all__"
+
     def get_insubsistencia(self, obj):
         """Retorna a insubsistência mais recente associada à cessação.
 
@@ -30,12 +33,14 @@ class CessacaoSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados serializados da insubsistência, ou None se não existir.
         """
-        insubsistencia = obj.insubsistencia.filter(is_deleted=False).order_by('-criado_em').first()
+        insubsistencia = (
+            obj.insubsistencia.filter(is_deleted=False).order_by("-criado_em").first()
+        )
         if insubsistencia and not insubsistencia.is_deleted:
             return InsubsistenciaSerializer(insubsistencia).data
- 
+
         return None
-    
+
     def validate_numero_portaria(self, value):
         """Valida o número da portaria apenas com dígitos.
 
@@ -70,9 +75,9 @@ class CessacaoSerializer(serializers.ModelSerializer):
         Returns:
             dict: Dados validados.
         """
-        designacao = data.get('designacao')
+        designacao = data.get("designacao")
 
-        if designacao and hasattr(designacao, 'cessacao'):
+        if designacao and hasattr(designacao, "cessacao"):
             raise serializers.ValidationError(
                 "Esta designação já possui uma cessação cadastrada."
             )

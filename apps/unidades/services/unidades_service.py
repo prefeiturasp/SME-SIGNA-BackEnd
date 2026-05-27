@@ -6,10 +6,10 @@ tratamento de erros e validações de resposta.
 """
 
 import logging
-import requests
+
 import environ
-from typing import Dict, List, Optional
-from django.conf import settings
+import requests
+
 from apps.unidades.constants.utils import SUPERVISAO_ESCOLAR_DRES_MAP
 
 env = environ.Env()
@@ -30,21 +30,25 @@ ENDPOINT_CODIGO_INTEGRACAO = "/DREs/{}/unidades/codigo-integracao"
 # Exceções customizadas
 class EOLIntegrationError(Exception):
     """Erro genérico de integração com o EOL."""
+
     pass
 
 
 class EOLTimeoutError(EOLIntegrationError):
     """Erro de timeout durante comunicação com o EOL."""
+
     pass
 
 
 class EOLCommunicationError(EOLIntegrationError):
     """Erro de comunicação HTTP com o EOL."""
+
     pass
 
 
 class EOLUnexpectedResponseError(EOLIntegrationError):
     """Erro para respostas inesperadas retornadas pelo EOL."""
+
     pass
 
 
@@ -289,12 +293,9 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         if not codigo_escola_eol:
             logger.warning(
-                "codigo_escola_eol não encontrado para a DRE '%s'",
-                dre_codigo_str
+                "codigo_escola_eol não encontrado para a DRE '%s'", dre_codigo_str
             )
-            raise ValueError(
-                "DRE não possui unidade de supervisão configurada."
-            )
+            raise ValueError("DRE não possui unidade de supervisão configurada.")
 
         base_url = env(ENV_URL, default="")
         url = f"{base_url}/escolas/dados/{codigo_escola_eol}"
@@ -306,13 +307,9 @@ class UnidadeIntegracaoService(BaseEOLService):
                 "Resposta inesperada da API (esperado um objeto)."
             )
 
-        logger.info(
-            "Unidade de supervisão encontrada para DRE '%s'",
-            dre_codigo_str
-        )
+        logger.info("Unidade de supervisão encontrada para DRE '%s'", dre_codigo_str)
 
         return cls._formatar_unidade_supervisao(data)
-
 
     @staticmethod
     def _formatar_unidade_supervisao(data: dict) -> dict:

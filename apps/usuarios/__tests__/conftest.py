@@ -5,11 +5,14 @@ apps.usuarios, incluindo mocks de integração com o CoreSSO e erros de
 autenticação.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from django.contrib.auth import get_user_model
-from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
+
 from apps.helpers.exceptions import AuthenticationError
+from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 User = get_user_model()
 
@@ -25,7 +28,7 @@ def mock_sme_success():
             "nome": "João da Silva",
             "email": "joao@email.com",
             "numeroDocumento": "12345678900",
-            "perfis": ["0000"], 
+            "perfis": ["0000"],
         }
         yield mock
 
@@ -56,8 +59,9 @@ def mock_sme_exception():
 @pytest.fixture
 def mock_sme_auth_error(monkeypatch):
     """Mocka erro de autenticação"""
+
     def fake_autentica(login, senha):
         """Lança erro de autenticação"""
-        raise AuthenticationError()  
+        raise AuthenticationError()
 
     monkeypatch.setattr(SmeIntegracaoService, "autentica", fake_autentica)

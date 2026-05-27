@@ -4,8 +4,9 @@ Contém validações específicas para o login de usuários do sistema,
 incluindo normalização do RF antes da autenticação.
 """
 
-from rest_framework import serializers
 import re
+
+from rest_framework import serializers
 
 
 class LoginSerializer(serializers.Serializer):
@@ -13,6 +14,7 @@ class LoginSerializer(serializers.Serializer):
 
     Valida o formato do nome de usuário e garante que a senha seja fornecida.
     """
+
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
 
@@ -34,9 +36,9 @@ class LoginSerializer(serializers.Serializer):
 
         # valida RF (7 ou 8 dígitos)
         if len(digits) not in (7, 8):
-            raise serializers.ValidationError({
-                "username": "Login inválido. Informe RF (7 ou 8 dígitos)."
-            })
+            raise serializers.ValidationError(
+                {"username": "Login inválido. Informe RF (7 ou 8 dígitos)."}
+            )
 
         attrs["username"] = digits
         return attrs

@@ -1,10 +1,8 @@
-from apps.designacao.modulos.lotacao import ModuloLotacaoCalculator
 from apps.designacao.modulos.coordenador_pedagogico import (
     ModuloCoordenadorPedagogicoCalculator,
 )
-from apps.designacao.modulos.supervisor_escolar import (
-    ModuloSupervisorEscolarCalculator,
-)
+from apps.designacao.modulos.lotacao import ModuloLotacaoCalculator
+from apps.designacao.modulos.supervisor_escolar import ModuloSupervisorEscolarCalculator
 
 Calculadores = {
     "3360": ModuloLotacaoCalculator(),  # Diretor

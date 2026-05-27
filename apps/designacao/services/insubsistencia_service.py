@@ -8,11 +8,10 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
-
-_CAMPOS_ATO = frozenset({'numero_portaria', 'ano_vigente', 'sei_numero', 'doc'})
+_CAMPOS_ATO = frozenset({"numero_portaria", "ano_vigente", "sei_numero", "doc"})
 
 
 def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]:
@@ -26,7 +25,7 @@ def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]
         list[int]: Lista de IDs dos atos filhos ativos.
     """
     return list(
-        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list('pk', flat=True)
+        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list("pk", flat=True)
     )
 
 
@@ -38,24 +37,30 @@ class InsubsistenciaService:
         """Cria um ato de insubsistência para um ato administrativo existente.
 
         Args:
-            data: Dicionário com os dados necessários para a insubsistência, incluindo 'ato_pai'.
+            data: Dicionário com os dados necessários para a
+            insubsistência, incluindo 'ato_pai'.
 
         Returns:
             AtoAdministrativo: O novo ato de insubsistência criado.
 
         Raises:
-            ValidationError: Se o ato pai já estiver insubsistente ou já possuir uma insubsistência ativa.
+            ValidationError: Se o ato pai já estiver insubsistente ou
+            já possuir uma insubsistência ativa.
         """
-        ato_pai: AtoAdministrativo = data['ato_pai']
+        ato_pai: AtoAdministrativo = data["ato_pai"]
 
         if not ato_pai.eh_valido:
-            raise ValidationError({'ato_pai': 'Este ato já está insubsistente.'})
+            raise ValidationError({"ato_pai": "Este ato já está insubsistente."})
 
-        if ato_pai.filhos.filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ativo=True).exists():
-            raise ValidationError({'ato_pai': 'Este ato já possui uma insubsistência ativa.'})
+        if ato_pai.filhos.filter(
+            tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ativo=True
+        ).exists():
+            raise ValidationError(
+                {"ato_pai": "Este ato já possui uma insubsistência ativa."}
+            )
 
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
-        observacoes = data.get('observacoes', '')
+        observacoes = data.get("observacoes", "")
 
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
@@ -66,7 +71,7 @@ class InsubsistenciaService:
             InsubsistenciaDetalhe.objects.create(ato=ato, observacoes=observacoes)
 
             ato_pai.ativo = False
-            ato_pai.save(update_fields=['ativo'])
+            ato_pai.save(update_fields=["ativo"])
 
             tipo_pai = ato_pai.tipo
 
@@ -74,28 +79,35 @@ class InsubsistenciaService:
                 # TSE: insubsistindo uma Insubsistência — restaura o ato original
                 avo = ato_pai.ato_pai
                 avo.ativo = True
-                avo.save(update_fields=['ativo'])
+                avo.save(update_fields=["ativo"])
 
             elif tipo_pai == AtoAdministrativo.Tipo.APOSTILA:
                 avo = ato_pai.ato_pai
                 if avo:
                     InsubsistenciaService._reverter_apostila(ato_pai, avo)
 
-            elif tipo_pai in (AtoAdministrativo.Tipo.DESIGNACAO, AtoAdministrativo.Tipo.CESSACAO):
-                ids_ativos = _filhos_ativos_ids(ato_pai, AtoAdministrativo.Tipo.APOSTILA)
+            elif tipo_pai in (
+                AtoAdministrativo.Tipo.DESIGNACAO,
+                AtoAdministrativo.Tipo.CESSACAO,
+            ):
+                ids_ativos = _filhos_ativos_ids(
+                    ato_pai, AtoAdministrativo.Tipo.APOSTILA
+                )
                 apostilas_validas = AtoAdministrativo.objects.filter(
                     pk__in=ids_ativos
-                ).prefetch_related('apostila_detalhe__alteracoes')
+                ).prefetch_related("apostila_detalhe__alteracoes")
 
                 for apostila in apostilas_validas:
                     InsubsistenciaService._reverter_apostila(apostila, ato_pai)
                     apostila.ativo = False
-                    apostila.save(update_fields=['ativo'])
+                    apostila.save(update_fields=["ativo"])
 
         return ato
 
     @staticmethod
-    def _reverter_apostila(apostila_ato: AtoAdministrativo, alvo: AtoAdministrativo) -> None:
+    def _reverter_apostila(
+        apostila_ato: AtoAdministrativo, alvo: AtoAdministrativo
+    ) -> None:
         """Reverte as alterações de uma apostila sobre o ato alvo.
 
         Args:
@@ -117,11 +129,17 @@ class InsubsistenciaService:
 
         for alt in alteracoes:
             campo = alt.campo_alterado
-            valor = InsubsistenciaService._coerce_valor(alvo, detalhe_alvo, campo, alt.valor_anterior)
+            valor = InsubsistenciaService._coerce_valor(
+                alvo, detalhe_alvo, campo, alt.valor_anterior
+            )
 
             if hasattr(alvo, campo):
                 ato_updates[campo] = valor
-            elif detalhe_alvo and hasattr(detalhe_alvo, campo) and campo not in ('ato_id', 'ato'):
+            elif (
+                detalhe_alvo
+                and hasattr(detalhe_alvo, campo)
+                and campo not in ("ato_id", "ato")
+            ):
                 detalhe_updates[campo] = valor
 
         if ato_updates:
@@ -138,9 +156,9 @@ class InsubsistenciaService:
     def _get_detalhe(ato: AtoAdministrativo):
         """Retorna o detalhe associado a um ato administrativo, se houver."""
         if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
-            return getattr(ato, 'designacao_detalhe', None)
+            return getattr(ato, "designacao_detalhe", None)
         if ato.tipo == AtoAdministrativo.Tipo.CESSACAO:
-            return getattr(ato, 'cessacao_detalhe', None)
+            return getattr(ato, "cessacao_detalhe", None)
         return None
 
     @staticmethod
@@ -154,9 +172,15 @@ class InsubsistenciaService:
             valor_str: Valor original em string.
 
         Returns:
-            Valor convertido para o tipo do campo, ou valor original se a conversão falhar.
+            Valor convertido para o tipo do campo, ou valor original se
+            a conversão falhar.
         """
-        from django.db.models import BooleanField, IntegerField, FloatField, DateField, DateTimeField
+        from django.db.models import (
+            BooleanField,
+            FloatField,
+            IntegerField,
+        )
+
         try:
             if hasattr(ato, campo):
                 field = ato._meta.get_field(campo)
@@ -165,17 +189,17 @@ class InsubsistenciaService:
             else:
                 return valor_str
 
-            if valor_str == '' and field.null:
+            if valor_str == "" and field.null:
                 return None
 
             if isinstance(field, BooleanField):
-                return valor_str in (True, 'True', 'true', '1', 1)
+                return valor_str in (True, "True", "true", "1", 1)
 
             if isinstance(field, IntegerField):
-                return int(valor_str) if valor_str not in ('', None) else None
+                return int(valor_str) if valor_str not in ("", None) else None
 
             if isinstance(field, FloatField):
-                return float(valor_str) if valor_str not in ('', None) else None
+                return float(valor_str) if valor_str not in ("", None) else None
 
         except Exception:
             pass
@@ -191,17 +215,17 @@ class InsubsistenciaService:
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer):
         """Método legado que ajusta o serializer para insubsistência de cessação."""
-        designacao_obj = serializer.validated_data.get('designacao')
+        designacao_obj = serializer.validated_data.get("designacao")
 
-        designacao_completa = Designacao.objects.select_related('cessacao').get(
+        designacao_completa = Designacao.objects.select_related("cessacao").get(
             id=designacao_obj.id, is_deleted=False
         )
-        cessacao_obj = getattr(designacao_completa, 'cessacao', None)
+        cessacao_obj = getattr(designacao_completa, "cessacao", None)
 
         if not cessacao_obj:
             raise ValidationError("Cessação não encontrada para esta designação.")
 
-        serializer.validated_data['cessacao'] = cessacao_obj
-        serializer.validated_data['designacao'] = None
+        serializer.validated_data["cessacao"] = cessacao_obj
+        serializer.validated_data["designacao"] = None
 
         return serializer

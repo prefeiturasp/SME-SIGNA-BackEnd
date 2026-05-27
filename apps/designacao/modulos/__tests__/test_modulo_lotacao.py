@@ -8,9 +8,7 @@ import logging
 
 import pytest
 
-from apps.designacao.modulos.lotacao import (
-    ModuloLotacaoCalculator,
-)
+from apps.designacao.modulos.lotacao import ModuloLotacaoCalculator
 
 
 class TestModuloLotacaoCalculator:
@@ -45,7 +43,6 @@ class TestModuloLotacaoCalculator:
 
         assert resultado == 1
 
-
     @pytest.mark.parametrize(
         "sigla_tipo",
         ["CEI", "CEMEI", "EMEI", "DESCONHECIDO", None, ""],
@@ -58,7 +55,6 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-
 
     # ================= ASSISTENTE =================
 
@@ -81,9 +77,7 @@ class TestModuloLotacaoCalculator:
             ("EMEBS", 1, 1),
         ],
     )
-    def test_assistente_por_quantidade_classes(
-        self, sigla_tipo, qtd_classes, esperado
-    ):
+    def test_assistente_por_quantidade_classes(self, sigla_tipo, qtd_classes, esperado):
         """Verifica cálculo de módulo do assistente usando quantidade de classes."""
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
@@ -95,9 +89,7 @@ class TestModuloLotacaoCalculator:
 
         assert resultado == esperado
 
-    def test_assistente_sem_quantidade_classes_retorna_zero_e_log(
-        self, caplog
-    ):
+    def test_assistente_sem_quantidade_classes_retorna_zero_e_log(self, caplog):
         """Verifica comportamento de log e retorno quando faltam classes."""
         cargo = {"codigo_cargo": "3085"}
         informacoes_ue = {
@@ -136,4 +128,3 @@ class TestModuloLotacaoCalculator:
         resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-

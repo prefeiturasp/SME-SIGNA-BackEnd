@@ -5,20 +5,22 @@ Inclui endpoints para obter dados escolares de unidade e listar cargos disponív
 
 import logging
 
-from rest_framework.views import APIView
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.views import APIView
 
 from apps.designacao.services.designacao_unidades_service import (
-    DesignacaoUnidadeService
+    DesignacaoUnidadeService,
 )
 from apps.helpers.exceptions import SmeIntegracaoException
 
 logger = logging.getLogger(__name__)
 
+
 class DesignacaoUnidadeView(APIView):
     """View que retorna informações escolares de uma unidade."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -35,31 +37,27 @@ class DesignacaoUnidadeView(APIView):
         if not codigo_ue:
             return Response(
                 {"detail": "codigo_ue é obrigatório"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            result = DesignacaoUnidadeService.obter_informacoes_escolares(
-                codigo_ue
-            )
+            result = DesignacaoUnidadeService.obter_informacoes_escolares(codigo_ue)
             return Response(result, status=status.HTTP_200_OK)
 
         except SmeIntegracaoException as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        except Exception as e:
+        except Exception:
             logger.exception("Erro inesperado ao buscar designação da unidade")
             return Response(
                 {"detail": "Erro interno do servidor"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
 class DesignacaoUnidadeCargosView(APIView):
     """View que retorna cargos disponíveis de unidades."""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -78,5 +76,5 @@ class DesignacaoUnidadeCargosView(APIView):
             logger.exception("Erro ao buscar lista de cargos")
             return Response(
                 {"detail": "Erro interno ao buscar cargos"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

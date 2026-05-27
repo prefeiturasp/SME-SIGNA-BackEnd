@@ -9,5 +9,5 @@ from django.apps import AppConfig
 class DesignacaoConfig(AppConfig):
     """Configuração da aplicação de designações."""
 
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.designacao'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.designacao"

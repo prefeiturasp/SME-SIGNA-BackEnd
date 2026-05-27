@@ -5,8 +5,10 @@ seu token único de confirmação, a data de criação e se o token já foi usad
 """
 
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
+
 
 class AlteracaoEmail(models.Model):
     """Representa uma solicitação de alteração de e-mail.
@@ -15,6 +17,7 @@ class AlteracaoEmail(models.Model):
     o token único para validação, o timestamp de criação e se a solicitação
     já foi aplicada.
     """
+
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     novo_email = models.EmailField()
     token = models.UUIDField(default=uuid.uuid4, unique=True)

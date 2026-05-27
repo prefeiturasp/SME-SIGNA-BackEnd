@@ -3,11 +3,12 @@
 Fornece endpoints para criar, listar e recuperar apostilas.
 """
 
-from rest_framework import mixins, viewsets, status
-from rest_framework.response import Response
+from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
-from apps.designacao.models.apostila import Apostila
+from rest_framework.response import Response
+
 from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
+from apps.designacao.models.apostila import Apostila
 from apps.designacao.services.apostila_service import ApostilaService
 
 
@@ -15,7 +16,7 @@ class ApostilaViewSet(
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
 ):
     """ViewSet de apostila.
 
@@ -31,12 +32,11 @@ class ApostilaViewSet(
         Returns:
             QuerySet: Apostilas não deletadas ordenadas por data de criação.
         """
-        return Apostila.objects.filter(
-            is_deleted=False
-        ).select_related(
-            "designacao",
-            "cessacao"
-        ).order_by("-criado_em")
+        return (
+            Apostila.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
 
     def create(self, request, *args, **kwargs):
         """Cria uma nova apostila a partir dos dados da requisição.
@@ -47,7 +47,8 @@ class ApostilaViewSet(
             **kwargs: Argumentos nomeados adicionais.
 
         Returns:
-            Response: Resposta HTTP com os dados da apostila criada ou erro de validação.
+            Response: Resposta HTTP com os dados da apostila criada ou
+            erro de validação.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -63,12 +64,8 @@ class ApostilaViewSet(
             else:
                 message = str(e.detail)
 
-            return Response(
-                {"detail": message},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            ApostilaSerializer(apostila).data,
-            status=status.HTTP_201_CREATED
+            ApostilaSerializer(apostila).data, status=status.HTTP_201_CREATED
         )

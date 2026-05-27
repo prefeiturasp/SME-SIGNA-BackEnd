@@ -1,4 +1,3 @@
-
 """Utilitários de serialização para o aplicativo de designação.
 
 Contém funções auxiliares para validação e formatação de mensagens de erro
@@ -24,7 +23,7 @@ class NullableDateField(serializers.DateField):
         Returns:
             datetime.date | None: Data validada ou None quando a string estiver vazia.
         """
-        if value == '':
+        if value == "":
             return None
         return super().to_internal_value(value)
 
@@ -58,8 +57,8 @@ def extrair_mensagem_erro(detail):
     if isinstance(detail, dict):
         item = next(iter(detail.values()))
         return extrair_mensagem_erro(item)
-    
+
     if isinstance(detail, list) and detail:
         return extrair_mensagem_erro(detail[0])
-    
+
     return str(detail)

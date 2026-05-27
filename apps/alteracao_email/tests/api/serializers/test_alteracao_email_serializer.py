@@ -1,12 +1,14 @@
 import secrets
-import pytest
-from rest_framework.test import APIRequestFactory
-from rest_framework.exceptions import ValidationError
 
-from apps.usuarios.models import User
+import pytest
+
+from rest_framework.exceptions import ValidationError
+from rest_framework.test import APIRequestFactory
+
 from apps.alteracao_email.api.serializers.alteracao_email_serializer import (
     AlteracaoEmailSerializer,
 )
+from apps.usuarios.models import User
 
 
 @pytest.fixture

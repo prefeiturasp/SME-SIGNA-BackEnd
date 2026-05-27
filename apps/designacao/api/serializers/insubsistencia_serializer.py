@@ -6,11 +6,11 @@ insubsistências duplicadas para o mesmo ato.
 
 from rest_framework import serializers
 
-from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
 from apps.designacao.api.serializers.utils import validar_somente_numeros
-
+from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
 
 # ── Legado ────────────────────────────────────────────────────────────────────
+
 
 class InsubsistenciaSerializer(serializers.ModelSerializer):
     """Serializador de Insubsistência.
@@ -18,6 +18,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
     Valida campos de portaria e ano, e garante unicidade conforme o tipo
     de insubsistência informada.
     """
+
     tipo_insubsistencia = serializers.ChoiceField(
         choices=TipoInsubsistencia.choices,
         write_only=True,
@@ -26,7 +27,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Insubsistencia
-        fields = '__all__'
+        fields = "__all__"
 
     def validate_numero_portaria(self, value):
         """Valida o número da portaria como apenas dígitos.
@@ -59,7 +60,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         Returns:
             Insubsistencia: Instância criada do modelo.
         """
-        validated_data.pop('tipo_insubsistencia', None)
+        validated_data.pop("tipo_insubsistencia", None)
         return super().create(validated_data)
 
     def validate(self, data):
@@ -79,8 +80,9 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
             dict: Dados validados.
         """
         from apps.designacao.models.designacao import Designacao
-        designacao = data.get('designacao')
-        tipo_insubsistencia = data.get('tipo_insubsistencia')
+
+        designacao = data.get("designacao")
+        tipo_insubsistencia = data.get("tipo_insubsistencia")
 
         if not designacao:
             raise serializers.ValidationError(
@@ -98,15 +100,23 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
                 )
 
         if tipo_insubsistencia == TipoInsubsistencia.CESSACAO and designacao:
-            designacao_obj = Designacao.objects.select_related('cessacao').filter(
-                id=designacao.id,
-                is_deleted=False,
-            ).first()
-            cessacao_relacionada = getattr(designacao_obj, 'cessacao', None)
-            queryset = Insubsistencia.objects.filter(
-                cessacao_id=cessacao_relacionada.id,
-                is_deleted=False,
-            ) if cessacao_relacionada else Insubsistencia.objects.none()
+            designacao_obj = (
+                Designacao.objects.select_related("cessacao")
+                .filter(
+                    id=designacao.id,
+                    is_deleted=False,
+                )
+                .first()
+            )
+            cessacao_relacionada = getattr(designacao_obj, "cessacao", None)
+            queryset = (
+                Insubsistencia.objects.filter(
+                    cessacao_id=cessacao_relacionada.id,
+                    is_deleted=False,
+                )
+                if cessacao_relacionada
+                else Insubsistencia.objects.none()
+            )
             if queryset.exists():
                 raise serializers.ValidationError(
                     "Esta cessação já possui uma insubsistência cadastrada."
