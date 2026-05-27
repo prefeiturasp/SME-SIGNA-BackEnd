@@ -44,7 +44,9 @@ class UnidadeViewSet(ViewSet):
         codigo_dre = request.query_params.get("dre")
 
         logger.info(
-            "Listagem de unidades solicitada com tipo='%s', dre='%s'", tipo, codigo_dre
+            "Listagem de unidades solicitada com tipo='%s', dre='%s'",
+            tipo,
+            codigo_dre,
         )
 
         if tipo == "DRE":
@@ -63,7 +65,8 @@ class UnidadeViewSet(ViewSet):
 
         logger.warning("Parâmetro 'tipo' inválido recebido: %s", tipo)
         return self._resposta_erro(
-            "Parâmetro 'tipo' inválido. Use 'DRE' ou 'UE'.", status.HTTP_400_BAD_REQUEST
+            "Parâmetro 'tipo' inválido. Use 'DRE' ou 'UE'.",
+            status.HTTP_400_BAD_REQUEST,
         )
 
     def _listar_dres(self):
@@ -108,10 +111,14 @@ class UnidadeViewSet(ViewSet):
 
         unidade_supervisao = None
         try:
-            unidade_supervisao = UnidadeIntegracaoService.get_unidade_supervisao_by_dre(
-                codigo_dre
+            unidade_supervisao = (
+                UnidadeIntegracaoService.get_unidade_supervisao_by_dre(
+                    codigo_dre
+                )
             )
-            logger.info("Unidades de supervisão encontradas para DRE '%s'", codigo_dre)
+            logger.info(
+                "Unidades de supervisão encontradas para DRE '%s'", codigo_dre
+            )
         except Exception as e:
             logger.error(
                 "Erro ao buscar Unidade de supervisão da DRE '%s': %s",
@@ -121,11 +128,15 @@ class UnidadeViewSet(ViewSet):
 
         try:
 
-            unidades = UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(
-                codigo_dre
+            unidades = (
+                UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade(
+                    codigo_dre
+                )
             )
 
-            logger.info("UEs encontradas para DRE '%s': %d", codigo_dre, len(unidades))
+            logger.info(
+                "UEs encontradas para DRE '%s': %d", codigo_dre, len(unidades)
+            )
 
             if unidade_supervisao:
                 unidades.append(unidade_supervisao)
@@ -145,7 +156,9 @@ class UnidadeViewSet(ViewSet):
             return self._resposta_erro(str(e), status.HTTP_401_UNAUTHORIZED)
 
         except Exception as e:
-            logger.error("Erro ao buscar UEs da DRE '%s': %s", codigo_dre, str(e))
+            logger.error(
+                "Erro ao buscar UEs da DRE '%s': %s", codigo_dre, str(e)
+            )
             return self._resposta_erro(
                 "Erro ao consultar unidades no sistema externo.",
                 status.HTTP_500_INTERNAL_SERVER_ERROR,

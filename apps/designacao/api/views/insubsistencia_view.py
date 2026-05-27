@@ -13,8 +13,13 @@ from apps.designacao.api.serializers.insubsistencia_serializer import (
     InsubsistenciaSerializer,
 )
 from apps.designacao.api.serializers.utils import extrair_mensagem_erro
-from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
-from apps.designacao.services.insubsistencia_service import InsubsistenciaService
+from apps.designacao.models.insubsistencia import (
+    Insubsistencia,
+    TipoInsubsistencia,
+)
+from apps.designacao.services.insubsistencia_service import (
+    InsubsistenciaService,
+)
 
 
 class InsubsistenciaViewSet(
@@ -52,7 +57,8 @@ class InsubsistenciaViewSet(
             **kwargs: Argumentos nomeados adicionais.
 
         Returns:
-            Response: Resposta HTTP com os dados da insubsistência criada ou erro.
+            Response: Resposta HTTP com os dados da insubsistência criada ou
+            erro.
         """
         try:
             serializer = self.get_serializer(data=request.data)
@@ -61,9 +67,13 @@ class InsubsistenciaViewSet(
             tipo = serializer.validated_data.get("tipo_insubsistencia")
 
             if tipo == TipoInsubsistencia.DESIGNACAO:
-                InsubsistenciaService.montar_dados_insubsistencia_designacao(serializer)
+                InsubsistenciaService.montar_dados_insubsistencia_designacao(
+                    serializer
+                )
             else:
-                InsubsistenciaService.montar_dados_insubsistencia_cessacao(serializer)
+                InsubsistenciaService.montar_dados_insubsistencia_cessacao(
+                    serializer
+                )
 
             serializer.validated_data.pop("tipo_insubsistencia", None)
 
@@ -71,7 +81,9 @@ class InsubsistenciaViewSet(
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except ValidationError as e:
-            return Response({"detail": extrair_mensagem_erro(e.detail)}, status=400)
+            return Response(
+                {"detail": extrair_mensagem_erro(e.detail)}, status=400
+            )
         except Exception as e:
             logger.error(f"Erro ao criar insubsistência: {e}")
             return Response({"detail": "Erro interno ao salvar."}, status=500)

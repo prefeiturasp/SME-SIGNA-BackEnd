@@ -24,7 +24,9 @@ User = get_user_model()
 def auth_client(db):
     """Método auth client."""
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username="test_apostila_v2", password=password)
+    user = User.objects.create_user(
+        username="test_apostila_v2", password=password
+    )
     client = APIClient()
     client.force_authenticate(user=user)
     return client
@@ -47,7 +49,9 @@ def test_create_apostila_v2_em_designacao(auth_client):
     designacao = criar_ato_designacao()
 
     url = reverse("designacao_v2:apostilas")
-    response = auth_client.post(url, data=_payload(designacao.id), format="json")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
     assert response.status_code == 201
     assert AtoAdministrativo.objects.filter(
@@ -107,7 +111,9 @@ def test_create_apostila_v2_segunda_apostila_permitida(auth_client):
     criar_ato_apostila(designacao)
 
     url = reverse("designacao_v2:apostilas")
-    response = auth_client.post(url, data=_payload(designacao.id), format="json")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
     assert response.status_code == 201
 
@@ -119,7 +125,9 @@ def test_create_apostila_v2_rejeita_designacao_cessada(auth_client):
     criar_ato_cessacao(designacao)
 
     url = reverse("designacao_v2:apostilas")
-    response = auth_client.post(url, data=_payload(designacao.id), format="json")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
     assert response.status_code == 400
     assert "ato_pai" in response.data

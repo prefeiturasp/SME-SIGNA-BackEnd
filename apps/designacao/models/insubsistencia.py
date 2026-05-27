@@ -1,6 +1,7 @@
 """Modelo de insubsistências e seus tipos.
 
-Define as insubsistências de designação ou cessação e regras de exclusão lógica.
+Define as insubsistências de designação ou cessação e regras de exclusão
+lógica.
 """
 
 from django.db import models

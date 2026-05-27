@@ -1,12 +1,19 @@
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
     # Endpoints JWT (Simple JWT)
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"
+    ),
+    path(
+        "api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"
+    ),
     # APIs da sua app (apps.usuarios)
     path("api/usuario/", include("apps.usuarios.urls")),
     # APIs da sua app (apps.alteracao_email)
@@ -15,7 +22,10 @@ urlpatterns = [
         include("apps.alteracao_email.urls", namespace="alteracao_email"),
     ),
     # APIs da sua app (apps.designacao)
-    path("api/designacao/", include("apps.designacao.urls", namespace="designacao")),
+    path(
+        "api/designacao/",
+        include("apps.designacao.urls", namespace="designacao"),
+    ),
     path(
         "api/designacao/v2/",
         include("apps.designacao.urls_v2", namespace="designacao_v2"),

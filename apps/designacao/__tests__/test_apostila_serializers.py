@@ -6,7 +6,9 @@ import pytest
 
 from django.utils import timezone
 
-from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
+from apps.designacao.api.serializers.apostila_serializer import (
+    ApostilaSerializer,
+)
 from apps.designacao.models.apostila import Apostila
 from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.designacao import Designacao

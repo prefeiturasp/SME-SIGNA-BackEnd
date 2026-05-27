@@ -23,14 +23,16 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
         fields = ["id", "codigo", "descricao"]
 
 
-# ── Escrita ───────────────────────────────────────────────────────────────────
+# ── Escrita ──────────────────────────────────────────────────────────────────
 
 
 class DesignacaoWriteSerializer(serializers.Serializer):
     """Serializador de escrita para criação/atualização de designações.
 
-    Define os campos necessários para persistir um ato administrativo de designação,
-    incluindo informações de unidade, servidor indicado, titular, período e vaga.
+    Define os campos necessários para persistir um ato administrativo de
+    designação,
+    incluindo informações de unidade, servidor indicado, titular, período e
+    vaga.
     """
 
     # AtoAdministrativo
@@ -54,7 +56,9 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     )
 
     # Indicado
-    indicado_nome_civil = serializers.CharField(max_length=255, allow_blank=True)
+    indicado_nome_civil = serializers.CharField(
+        max_length=255, allow_blank=True
+    )
     indicado_nome_servidor = serializers.CharField(max_length=255)
     indicado_rf = serializers.CharField(max_length=8)
     indicado_vinculo = serializers.IntegerField()
@@ -112,10 +116,14 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     data_fim = serializers.DateField(required=False, allow_null=True)
 
     # Flags
-    carater_excepcional = serializers.BooleanField(required=False, default=False)
+    carater_excepcional = serializers.BooleanField(
+        required=False, default=False
+    )
     com_afastamento = serializers.BooleanField(required=False, default=False)
     possui_pendencia = serializers.BooleanField(required=False, default=False)
-    pendencias = serializers.CharField(required=False, default="", allow_blank=True)
+    pendencias = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
     motivo_afastamento = serializers.CharField(
         required=False, default="", allow_blank=True
     )
@@ -134,7 +142,9 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     )
 
     # Vaga
-    tipo_vaga = serializers.ChoiceField(choices=DesignacaoDetalhe.TipoVaga.choices)
+    tipo_vaga = serializers.ChoiceField(
+        choices=DesignacaoDetalhe.TipoVaga.choices
+    )
     cargo_vaga = serializers.ChoiceField(
         choices=DesignacaoDetalhe.CargoVaga.choices,
         required=False,
@@ -142,14 +152,15 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     )
 
 
-# ── Leitura ───────────────────────────────────────────────────────────────────
+# ── Leitura ──────────────────────────────────────────────────────────────────
 
 
 class DesignacaoReadSerializer(serializers.ModelSerializer):
     """Serializador de leitura para designações.
 
     Exibe dados de designação com campos relacionados ao detalhe de designação,
-    incluindo campos derivados de filhos como cessação, apostilas e insubsistência.
+    incluindo campos derivados de filhos como cessação, apostilas e
+    insubsistência.
     """
 
     status = serializers.SerializerMethodField()
@@ -164,7 +175,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     codigo_hierarquico = serializers.CharField(
         source="designacao_detalhe.codigo_hierarquico", read_only=True
     )
-    dre = serializers.CharField(source="designacao_detalhe.dre", read_only=True)
+    dre = serializers.CharField(
+        source="designacao_detalhe.dre", read_only=True
+    )
     ue = serializers.CharField(source="designacao_detalhe.ue", read_only=True)
     funcionarios_da_unidade = serializers.CharField(
         source="designacao_detalhe.funcionarios_da_unidade", read_only=True
@@ -220,7 +233,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         source="designacao_detalhe.titular_rf", read_only=True
     )
     titular_vinculo = serializers.IntegerField(
-        source="designacao_detalhe.titular_vinculo", read_only=True, allow_null=True
+        source="designacao_detalhe.titular_vinculo",
+        read_only=True,
+        allow_null=True,
     )
     titular_cargo_base = serializers.CharField(
         source="designacao_detalhe.titular_cargo_base", read_only=True
@@ -437,9 +452,13 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados simplificados da cessação ou None se não existir.
         """
-        # Usa filhos prefetchados (.all() aproveita o cache do prefetch_related)
+        # Usa filhos prefetchados (.all() aproveita o cache do prefetch_related)  # noqa: E501
         cessacao_ato = next(
-            (f for f in obj.filhos.all() if f.tipo == AtoAdministrativo.Tipo.CESSACAO),
+            (
+                f
+                for f in obj.filhos.all()
+                if f.tipo == AtoAdministrativo.Tipo.CESSACAO
+            ),
             None,
         )
         if not cessacao_ato:
@@ -459,7 +478,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
                 "data_cessacao": d.data_cessacao,
                 "criado_em": cessacao_ato.criado_em,
                 "apostilas": self._serializar_apostilas(cessacao_ato),
-                "insubsistencia": self._serializar_insubsistencia(cessacao_ato),
+                "insubsistencia": self._serializar_insubsistencia(
+                    cessacao_ato
+                ),
             }
         except Exception:
             return None
@@ -471,13 +492,15 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             ato: Instância de AtoAdministrativo representando o ato pai.
 
         Returns:
-            dict|None: Dados de insubsistência ou None se não houver ato válido.
+            dict|None: Dados de insubsistência ou None se não houver ato
+            válido.
         """
         insub = next(
             (
                 f
                 for f in ato.filhos.all()
-                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido
+                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and f.eh_valido
             ),
             None,
         )
@@ -541,12 +564,13 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados da insubsistência ou None se não existir.
         """
-        # Retorna a insubsistência que ainda está ativa (não foi tornada sem efeito)
+        # Retorna a insubsistência que ainda está ativa (não foi tornada sem efeito)  # noqa: E501
         insub = next(
             (
                 f
                 for f in obj.filhos.all()
-                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido
+                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and f.eh_valido
             ),
             None,
         )

@@ -69,7 +69,9 @@ class TestDesignacaoUnidadeView:
         )
         self.client.force_authenticate(user=user)
 
-        mock_service.side_effect = SmeIntegracaoException("Erro integração SME")
+        mock_service.side_effect = SmeIntegracaoException(
+            "Erro integração SME"
+        )
 
         response = self.client.get(self.url, {"codigo_ue": "UE_TESTE"})
 
@@ -148,7 +150,9 @@ class TestDesignacaoUnidadeCargosView:
     @patch(
         "apps.designacao.services.designacao_unidades_service.DesignacaoUnidadeService.listar_cargos_vaga"
     )
-    def test_get_cargos_erro_interno(self, mock_listar_cargos, django_user_model):
+    def test_get_cargos_erro_interno(
+        self, mock_listar_cargos, django_user_model
+    ):
         """Verifica get cargos erro interno."""
         user = django_user_model.objects.create_user(
             username="user_erro", password=self.password

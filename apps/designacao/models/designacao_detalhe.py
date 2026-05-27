@@ -37,33 +37,57 @@ class DesignacaoDetalhe(models.Model):
     codigo_hierarquico = models.CharField(max_length=50)
     ue = models.CharField(max_length=50, blank=True, default="")
     dre = models.CharField(max_length=50, blank=True, default="")
-    funcionarios_da_unidade = models.CharField(max_length=50, blank=True, default="")
+    funcionarios_da_unidade = models.CharField(
+        max_length=50, blank=True, default=""
+    )
 
     # Indicado
-    indicado_nome_civil = models.CharField(max_length=255, blank=True, default="")
+    indicado_nome_civil = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     indicado_nome_servidor = models.CharField(max_length=255)
     indicado_rf = models.CharField(max_length=8)
     indicado_vinculo = models.IntegerField()
     indicado_cargo_base = models.CharField(max_length=255)
     indicado_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     indicado_lotacao = models.CharField(max_length=255)
-    indicado_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
-    indicado_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
+    indicado_cargo_sobreposto = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    indicado_codigo_cargo_sobreposto = models.IntegerField(
+        null=True, blank=True
+    )
     indicado_local_exercicio = models.CharField(max_length=255)
-    indicado_local_servico = models.CharField(max_length=255, blank=True, default="")
+    indicado_local_servico = models.CharField(
+        max_length=255, blank=True, default=""
+    )
 
     # Titular
-    titular_nome_civil = models.CharField(max_length=255, blank=True, default="")
-    titular_nome_servidor = models.CharField(max_length=255, blank=True, default="")
+    titular_nome_civil = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_nome_servidor = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     titular_rf = models.CharField(max_length=8, blank=True, default="")
     titular_vinculo = models.IntegerField(null=True, blank=True)
-    titular_cargo_base = models.CharField(max_length=255, blank=True, default="")
+    titular_cargo_base = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     titular_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     titular_lotacao = models.CharField(max_length=255, blank=True, default="")
-    titular_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
-    titular_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
-    titular_local_exercicio = models.CharField(max_length=255, blank=True, default="")
-    titular_local_servico = models.CharField(max_length=255, blank=True, default="")
+    titular_cargo_sobreposto = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_codigo_cargo_sobreposto = models.IntegerField(
+        null=True, blank=True
+    )
+    titular_local_exercicio = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_local_servico = models.CharField(
+        max_length=255, blank=True, default=""
+    )
 
     # Período
     data_inicio = models.DateField()
@@ -76,7 +100,9 @@ class DesignacaoDetalhe(models.Model):
     pendencias = models.TextField(blank=True, default="")
     motivo_afastamento = models.TextField(blank=True, default="")
     informacoes_adicionais = models.TextField(blank=True, default="")
-    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
+    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(
+        default=True
+    )
 
     impedimento_substituicao = models.ForeignKey(
         ImpedimentoSubstituicao,
@@ -87,7 +113,9 @@ class DesignacaoDetalhe(models.Model):
     )
 
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)
-    cargo_vaga = models.IntegerField(choices=CargoVaga.choices, null=True, blank=True)
+    cargo_vaga = models.IntegerField(
+        choices=CargoVaga.choices, null=True, blank=True
+    )
 
     class Meta:
         db_table = "designacao_detalhe"
@@ -102,4 +130,7 @@ class DesignacaoDetalhe(models.Model):
         Returns:
             list[dict]: Lista de cargos formatados com código e descrição.
         """
-        return [{"codigoCargo": c.value, "nomeCargo": c.label} for c in cls.CargoVaga]
+        return [
+            {"codigoCargo": c.value, "nomeCargo": c.label}
+            for c in cls.CargoVaga
+        ]

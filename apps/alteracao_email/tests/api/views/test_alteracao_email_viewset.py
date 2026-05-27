@@ -45,11 +45,16 @@ class TestSolicitarAlteracaoEmailViewSet:
         api_client.force_authenticate(user=user)
         payload = {"new_email": "novo@sme.prefeitura.sp.gov.br"}
 
-        with patch.object(AlteracaoEmailService, "solicitar", return_value=None):
+        with patch.object(
+            AlteracaoEmailService, "solicitar", return_value=None
+        ):
             response = api_client.post(self.endpoint, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["message"] == "E-mail de confirmação enviado com sucesso."
+        assert (
+            response.data["message"]
+            == "E-mail de confirmação enviado com sucesso."
+        )
 
     def test_create_erro_inesperado(self, api_client, user):
         api_client.force_authenticate(user=user)
@@ -82,7 +87,9 @@ class TestValidarAlteracaoEmailViewSet:
 
         with (
             patch.object(
-                AlteracaoEmailService, "validar", return_value=(user, email_request)
+                AlteracaoEmailService,
+                "validar",
+                return_value=(user, email_request),
             ),
             patch(
                 "apps.alteracao_email.api.views.alteracao_email_viewset.SmeIntegracaoService.altera_email"
@@ -90,7 +97,9 @@ class TestValidarAlteracaoEmailViewSet:
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")
 
-        mock_integracao.assert_called_once_with(user.username, email_request.novo_email)
+        mock_integracao.assert_called_once_with(
+            user.username, email_request.novo_email
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["message"] == "E-mail alterado com sucesso."
@@ -154,7 +163,9 @@ class TestValidarAlteracaoEmailViewSet:
 
         with (
             patch.object(
-                AlteracaoEmailService, "validar", return_value=(user, email_request)
+                AlteracaoEmailService,
+                "validar",
+                return_value=(user, email_request),
             ),
             patch(
                 "apps.alteracao_email.api.views.alteracao_email_viewset.SmeIntegracaoService.altera_email",
@@ -163,12 +174,15 @@ class TestValidarAlteracaoEmailViewSet:
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")
 
-        mock_integracao.assert_called_once_with(user.username, email_request.novo_email)
+        mock_integracao.assert_called_once_with(
+            user.username, email_request.novo_email
+        )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["detail"] == "Falha na SME"
 
         assert any(
-            "Erro na integração SME para alteração de email do usuário ID" in msg
+            "Erro na integração SME para alteração de email do usuário ID"
+            in msg
             for msg in caplog.text.splitlines()
         )

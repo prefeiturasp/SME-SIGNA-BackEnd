@@ -1,6 +1,7 @@
 """Serviço de designação.
 
-Gerencia a criação, atualização e consulta de cargos pareados para atos de designação.
+Gerencia a criação, atualização e consulta de cargos pareados para atos de
+designação.
 """
 
 from django.db import transaction
@@ -9,7 +10,9 @@ from django.db.models import F
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
-_CAMPOS_ATO = frozenset({"numero_portaria", "ano_vigente", "sei_numero", "doc"})
+_CAMPOS_ATO = frozenset(
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+)
 
 
 class DesignacaoService:

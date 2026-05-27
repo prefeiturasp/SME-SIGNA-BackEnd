@@ -1,6 +1,7 @@
 """Views para a listagem de portarias.
 
-Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do D.O.
+Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do
+D.O.
 """
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,7 +13,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.portaria_filter import PortariaFilter
-from apps.designacao.api.serializers.portaria_serializer import PortariaListSerializer
+from apps.designacao.api.serializers.portaria_serializer import (
+    PortariaListSerializer,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
@@ -65,12 +68,15 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "ato_raiz__designacao_detalhe",
         ).order_by("numero_portaria")
 
-    @action(detail=False, methods=["post"], url_path="atualizar-data-publicacao")
+    @action(
+        detail=False, methods=["post"], url_path="atualizar-data-publicacao"
+    )
     def atualizar_data_publicacao(self, request):
         """Atualiza a data de publicação de portarias selecionadas.
 
         Args:
-            request: Requisição HTTP contendo os IDs dos atos e a data de publicação.
+            request: Requisição HTTP contendo os IDs dos atos e a data de
+            publicação.
 
         Returns:
             Response: Confirmação da atualização ou detalhes do erro.
@@ -83,7 +89,9 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         data_publicacao = request.data.get("data_publicacao", "")
 
         if not ids:
-            raise drf_serializers.ValidationError({"ids": "Este campo é obrigatório."})
+            raise drf_serializers.ValidationError(
+                {"ids": "Este campo é obrigatório."}
+            )
         if not data_publicacao:
             raise drf_serializers.ValidationError(
                 {"data_publicacao": "Este campo é obrigatório."}

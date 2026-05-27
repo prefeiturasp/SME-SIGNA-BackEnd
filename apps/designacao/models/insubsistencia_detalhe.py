@@ -1,6 +1,7 @@
 """Modelo de detalhes de insubsistência.
 
-Armazena observações e informações complementares associadas a um ato de insubsistência.
+Armazena observações e informações complementares associadas a um ato de
+insubsistência.
 """
 
 from django.db import models

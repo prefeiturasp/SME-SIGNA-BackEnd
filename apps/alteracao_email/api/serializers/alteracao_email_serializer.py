@@ -34,7 +34,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         chave "detail" com a primeira mensagem de erro encontrada.
 
         Args:
-            raise_exception (bool): Se True, lança ValidationError quando houver
+            raise_exception (bool): Se True, lança ValidationError quando
+            houver
                 erros de validação.
 
         Returns:
@@ -46,7 +47,9 @@ class AlteracaoEmailSerializer(serializers.Serializer):
 
             first_error = next(iter(self.errors.values()))
             message = (
-                first_error[0] if isinstance(first_error, list) else str(first_error)
+                first_error[0]
+                if isinstance(first_error, list)
+                else str(first_error)
             )
 
             self._errors = {"detail": message}
@@ -60,7 +63,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         """Valida o novo e-mail recebido pelo serializer.
 
         Verifica se o novo e-mail não é igual ao atual, se pertence ao domínio
-        institucional, se já não está cadastrado e se está em um formato válido.
+        institucional, se já não está cadastrado e se está em um formato
+        válido.
 
         Args:
             value (str): O novo endereço de e-mail informado pelo usuário.
@@ -81,10 +85,14 @@ class AlteracaoEmailSerializer(serializers.Serializer):
             )
 
         if not value.endswith("@sme.prefeitura.sp.gov.br"):
-            raise serializers.ValidationError("Utilize seu e-mail institucional.")
+            raise serializers.ValidationError(
+                "Utilize seu e-mail institucional."
+            )
 
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este e-mail já está cadastrado.")
+            raise serializers.ValidationError(
+                "Este e-mail já está cadastrado."
+            )
 
         try:
             validate_email(value)

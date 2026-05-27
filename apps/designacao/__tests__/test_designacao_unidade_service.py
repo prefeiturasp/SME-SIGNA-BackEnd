@@ -100,13 +100,19 @@ class TestDesignacaoUnidadeService:
         ]
 
         mock_buscar_turmas.return_value = [
-            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
         ]
 
         mock_buscar_disciplinas.return_value = []  # sem SPI
         mock_dados_turma.return_value = {"tipoTurno": 1}
 
-        resultado = DesignacaoUnidadeService.obter_informacoes_escolares("UE123")
+        resultado = DesignacaoUnidadeService.obter_informacoes_escolares(
+            "UE123"
+        )
 
         servidor = resultado["funcionarios_unidade"][1001]["servidores"][0]
 
@@ -173,7 +179,9 @@ class TestDesignacaoUnidadeService:
         mock_dados_turma.return_value = {"tipoTurno": 1}
         mock_calculadores.get.return_value = None
 
-        resultado = DesignacaoUnidadeService.obter_informacoes_escolares("UE123")
+        resultado = DesignacaoUnidadeService.obter_informacoes_escolares(
+            "UE123"
+        )
 
         servidor = resultado["funcionarios_unidade"][1001]["servidores"][0]
 
@@ -259,7 +267,11 @@ class TestDesignacaoUnidadeService:
         mock_mapear_ciclo.return_value = "cicloInexistente"
 
         mock_buscar_turmas.return_value = [
-            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
         ]
 
         mock_buscar_disciplinas.return_value = []  # sem SPI
@@ -285,7 +297,11 @@ class TestDesignacaoUnidadeService:
     ):
         """Verifica calcular turmas com spi."""
         mock_buscar_turmas.return_value = [
-            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
         ]
         mock_buscar_disciplinas.return_value = [
             {"disciplina": "SP INTEGRAL - Atividade"}
@@ -314,7 +330,11 @@ class TestDesignacaoUnidadeService:
     ):
         """Verifica calcular turmas sem spi."""
         mock_buscar_turmas.return_value = [
-            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1º ano"}
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
         ]
         mock_buscar_disciplinas.return_value = [{"disciplina": "Matemática"}]
         mock_dados_turma.return_value = {"tipoTurno": 1}
@@ -347,7 +367,11 @@ class TestDesignacaoUnidadeService:
     ):
         """Verifica calcular turmas spi ciclo nao inicializado."""
         mock_buscar_turmas.return_value = [
-            {"codigoTurma": "T1", "siglaModalidade": "EF", "nomeTurmaEOL": "1 ano"}
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1 ano",
+            }
         ]
         mock_buscar_disciplinas.return_value = [
             {"disciplina": "SP INTEGRAL - Atividade"}
@@ -454,7 +478,10 @@ class TestCicloService:
 
     def test_ciclo_ei_sem_match_total(self):
         """Verifica ciclo ei sem match total."""
-        turma = {"siglaModalidade": "EI", "nomeTurmaEOL": "Qualquer coisa aleatória"}
+        turma = {
+            "siglaModalidade": "EI",
+            "nomeTurmaEOL": "Qualquer coisa aleatória",
+        }
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
     def test_ciclo_ei_mini_grupo_ii(self):
@@ -469,7 +496,10 @@ class TestCicloService:
 
     def test_mapear_nome_ciclo(self):
         """Verifica mapear nome ciclo."""
-        assert CicloService.mapear_nome_ciclo("alfabetizacao") == "cicloAlfabetizacao"
+        assert (
+            CicloService.mapear_nome_ciclo("alfabetizacao")
+            == "cicloAlfabetizacao"
+        )
 
     def test_mapear_nome_ciclo_default(self):
         """Verifica mapear nome ciclo default."""
@@ -481,6 +511,8 @@ class TestFuncaoNormalizar:
 
     def test_normalizar_none(self):
         """Verifica normalizar none."""
-        from apps.designacao.services.designacao_unidades_service import normalizar
+        from apps.designacao.services.designacao_unidades_service import (
+            normalizar,
+        )
 
         assert normalizar(None) == ""

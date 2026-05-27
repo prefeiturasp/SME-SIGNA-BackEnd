@@ -1,6 +1,7 @@
 """Serializador para cessação de designações.
 
-Inclui informações de insubsistência e validações específicas de portaria e ano.
+Inclui informações de insubsistência e validações específicas de portaria e
+ano.
 """
 
 from rest_framework import serializers
@@ -31,10 +32,13 @@ class CessacaoSerializer(serializers.ModelSerializer):
             obj: Instância de Cessacao.
 
         Returns:
-            dict|None: Dados serializados da insubsistência, ou None se não existir.
+            dict|None: Dados serializados da insubsistência, ou None se não
+            existir.
         """
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False).order_by("-criado_em").first()
+            obj.insubsistencia.filter(is_deleted=False)
+            .order_by("-criado_em")
+            .first()
         )
         if insubsistencia and not insubsistencia.is_deleted:
             return InsubsistenciaSerializer(insubsistencia).data
@@ -70,7 +74,8 @@ class CessacaoSerializer(serializers.ModelSerializer):
             data: Dicionário com os dados de cessação.
 
         Raises:
-            serializers.ValidationError: Se a designação já possuir cessação associada.
+            serializers.ValidationError: Se a designação já possuir cessação
+            associada.
 
         Returns:
             dict: Dados validados.

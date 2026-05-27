@@ -49,7 +49,9 @@ class CessacaoV2ViewSet(
             QuerySet: Cessões ordenadas por data de criação decrescente.
         """
         return (
-            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.CESSACAO)
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.CESSACAO
+            )
             .select_related("cessacao_detalhe")
             .order_by("-criado_em")
         )

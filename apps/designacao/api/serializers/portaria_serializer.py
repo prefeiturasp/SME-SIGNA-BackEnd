@@ -12,7 +12,8 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 class PortariaListSerializer(serializers.ModelSerializer):
     """Serializador de portaria para listagem.
 
-    Representa portarias com informações de ato, servidor, cargo, datas e observações.
+    Representa portarias com informações de ato, servidor, cargo, datas e
+    observações.
     """
 
     portaria = serializers.CharField(source="numero_portaria")
@@ -73,7 +74,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
         """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
-            return detalhe.indicado_nome_servidor or detalhe.indicado_nome_civil
+            return (
+                detalhe.indicado_nome_servidor or detalhe.indicado_nome_civil
+            )
         return None
 
     def get_cargo(self, obj):
@@ -87,7 +90,10 @@ class PortariaListSerializer(serializers.ModelSerializer):
         """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
-            return detalhe.indicado_cargo_sobreposto or detalhe.indicado_cargo_base
+            return (
+                detalhe.indicado_cargo_sobreposto
+                or detalhe.indicado_cargo_base
+            )
         return None
 
     def get_data_designacao(self, obj):

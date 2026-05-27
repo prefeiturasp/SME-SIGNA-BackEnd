@@ -11,7 +11,9 @@ from apps.designacao.__tests__.factories import (
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
-from apps.designacao.services.insubsistencia_service import InsubsistenciaService
+from apps.designacao.services.insubsistencia_service import (
+    InsubsistenciaService,
+)
 
 
 def _data(ato_pai, **kwargs):
@@ -132,7 +134,9 @@ class TestInsubsistenciaService:
                 "alteracoes": [],
             }
         )
-        apostila = d.filhos.filter(tipo=AtoAdministrativo.Tipo.APOSTILA).first()
+        apostila = d.filhos.filter(
+            tipo=AtoAdministrativo.Tipo.APOSTILA
+        ).first()
         assert apostila.ativo
 
         InsubsistenciaService.criar(_data(d))
@@ -155,7 +159,9 @@ class TestInsubsistenciaService:
                 "alteracoes": [],
             }
         )
-        apostila = c.filhos.filter(tipo=AtoAdministrativo.Tipo.APOSTILA).first()
+        apostila = c.filhos.filter(
+            tipo=AtoAdministrativo.Tipo.APOSTILA
+        ).first()
         assert apostila.ativo
 
         InsubsistenciaService.criar(_data(c))
@@ -176,7 +182,10 @@ class TestInsubsistenciaService:
                 "sei_numero": "SEI-B",
                 "observacao": "X",
                 "alteracoes": [
-                    {"campo_alterado": "carater_excepcional", "valor_novo": "True"}
+                    {
+                        "campo_alterado": "carater_excepcional",
+                        "valor_novo": "True",
+                    }
                 ],
             }
         )
@@ -201,7 +210,9 @@ class TestInsubsistenciaService:
                 "ato_pai": c,
                 "sei_numero": "SEI-C",
                 "observacao": "X",
-                "alteracoes": [{"campo_alterado": "a_pedido", "valor_novo": "True"}],
+                "alteracoes": [
+                    {"campo_alterado": "a_pedido", "valor_novo": "True"}
+                ],
             }
         )
         c.cessacao_detalhe.refresh_from_db()

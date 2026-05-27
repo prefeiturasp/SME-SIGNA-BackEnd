@@ -10,7 +10,10 @@ from apps.designacao.__tests__.factories import criar_designacao_legado
 from apps.designacao.api.serializers.designacao_legado_serializer import (
     DesignacaoLegadoSerializer as DesignacaoSerializer,
 )
-from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.models.designacao import (
+    Designacao,
+    ImpedimentoSubstituicao,
+)
 from apps.designacao.models.insubsistencia import Insubsistencia
 
 
@@ -117,7 +120,9 @@ class DesignacaoSerializerTest(TestCase):
         assert updated.deleted_at is None
 
     @pytest.mark.django_db
-    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(self):
+    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(
+        self,
+    ):
         """
         Deve retornar os dados da insubsistência ativa vinculada à designação.
         """

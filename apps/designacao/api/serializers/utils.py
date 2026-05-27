@@ -21,7 +21,8 @@ class NullableDateField(serializers.DateField):
             value: Valor de entrada que pode ser uma string vazia ou data.
 
         Returns:
-            datetime.date | None: Data validada ou None quando a string estiver vazia.
+            datetime.date | None: Data validada ou None quando a string estiver
+            vazia.
         """
         if value == "":
             return None
@@ -35,7 +36,8 @@ def validar_somente_numeros(value):
         value: Texto a ser validado.
 
     Raises:
-        serializers.ValidationError: Se o valor contiver caracteres não numéricos.
+        serializers.ValidationError: Se o valor contiver caracteres não
+        numéricos.
 
     Returns:
         str: Valor original se for composto apenas por dígitos.
@@ -49,7 +51,8 @@ def extrair_mensagem_erro(detail):
     """Extrai mensagem de erro de uma estrutura de detalhe do DRF.
 
     Args:
-        detail: Estrutura de erro retornada pelo DRF, que pode ser dict, list ou outro.
+        detail: Estrutura de erro retornada pelo DRF, que pode ser dict, list
+        ou outro.
 
     Returns:
         str: Mensagem de erro unificada.

@@ -11,13 +11,19 @@ from apps.usuarios.api.views.senha_view import (
 urlpatterns = [
     path("login", LoginView.as_view(), name="login"),
     path(
-        "esqueci-senha", view=EsqueciMinhaSenhaViewSet.as_view(), name="esqueci-senha"
+        "esqueci-senha",
+        view=EsqueciMinhaSenhaViewSet.as_view(),
+        name="esqueci-senha",
     ),
     path(
-        "redefinir-senha", view=RedefinirSenhaViewSet.as_view(), name="redefinir-senha"
+        "redefinir-senha",
+        view=RedefinirSenhaViewSet.as_view(),
+        name="redefinir-senha",
     ),
     path(
-        "atualizar-senha", view=AtualizarSenhaViewSet.as_view(), name="atualizar-senha"
+        "atualizar-senha",
+        view=AtualizarSenhaViewSet.as_view(),
+        name="atualizar-senha",
     ),
     path("me", MeView.as_view(), name="me"),
 ]

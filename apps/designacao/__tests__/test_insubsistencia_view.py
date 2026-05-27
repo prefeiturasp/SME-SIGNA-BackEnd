@@ -100,7 +100,9 @@ class TestInsubsistenciaViewSet:
     def test_create_insubsistencia_designacao(self, auth_client, designacao):
         """Verifica create insubsistencia designacao."""
         url = reverse("designacao:insubsistencias")
-        response = auth_client.post(url, data=_payload(designacao.id), format="json")
+        response = auth_client.post(
+            url, data=_payload(designacao.id), format="json"
+        )
         assert response.status_code == status.HTTP_201_CREATED
 
     @pytest.mark.django_db
@@ -124,7 +126,9 @@ class TestInsubsistenciaViewSet:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.django_db
-    def test_create_insubsistencia_cessacao(self, auth_client, cessacao, designacao):
+    def test_create_insubsistencia_cessacao(
+        self, auth_client, cessacao, designacao
+    ):
         """Verifica create insubsistencia cessacao."""
         url = reverse("designacao:insubsistencias")
         response = auth_client.post(
@@ -143,13 +147,17 @@ class TestInsubsistenciaViewSet:
     @pytest.mark.django_db
     def test_retrieve_insubsistencia(self, auth_client, insubsistencia):
         """Verifica retrieve insubsistencia."""
-        url = reverse("designacao:insubsistencia-detail", args=[insubsistencia.id])
+        url = reverse(
+            "designacao:insubsistencia-detail", args=[insubsistencia.id]
+        )
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == insubsistencia.id
 
     @pytest.mark.django_db
-    def test_nao_lista_insubsistencias_deletadas(self, auth_client, insubsistencia):
+    def test_nao_lista_insubsistencias_deletadas(
+        self, auth_client, insubsistencia
+    ):
         """Verifica nao lista insubsistencias deletadas."""
         insubsistencia.is_deleted = True
         insubsistencia.save()

@@ -11,7 +11,8 @@ from rest_framework import serializers
 class DRESerializer(serializers.Serializer):
     """Serializador para DREs com nomes padronizados.
 
-    Campos de entrada e saída são mapeados para os nomes de campo usados pela API.
+    Campos de entrada e saída são mapeados para os nomes de campo usados pela
+    API.
     """
 
     codigo_dre = serializers.CharField(source="codigoDRE")

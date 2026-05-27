@@ -155,7 +155,10 @@ class TestApostilaService:
             self._data(
                 d,
                 alteracoes=[
-                    {"campo_alterado": "tipo_vaga", "valor_novo": "DISPONIVEL"},
+                    {
+                        "campo_alterado": "tipo_vaga",
+                        "valor_novo": "DISPONIVEL",
+                    },
                 ],
             )
         )

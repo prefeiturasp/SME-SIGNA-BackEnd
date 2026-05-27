@@ -6,7 +6,9 @@ Fornece endpoints para criar, listar, recuperar e excluir cessões.
 from rest_framework import mixins, viewsets
 from rest_framework.pagination import PageNumberPagination
 
-from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
+from apps.designacao.api.serializers.cessacao_serializer import (
+    CessacaoSerializer,
+)
 from apps.designacao.models.cessacao import Cessacao
 
 

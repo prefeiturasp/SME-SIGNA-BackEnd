@@ -69,7 +69,9 @@ class InsubsistenciaSerializerTest(TestCase):
         assert serializer.is_valid(), serializer.errors
 
     @pytest.mark.django_db
-    def test_serializer_valido_na_designacao_com_cessacao_sem_insubsistencia(self):
+    def test_serializer_valido_na_designacao_com_cessacao_sem_insubsistencia(
+        self,
+    ):
         """Verifica serializer valido na designacao com cessacao sem insubsistencia."""
         designacao = self._criar_designacao()
 
@@ -97,7 +99,9 @@ class InsubsistenciaSerializerTest(TestCase):
         assert serializer.is_valid(), serializer.errors
 
     @pytest.mark.django_db
-    def test_serializer_valido_na_designacao_com_cessacao_com_insubsistencia(self):
+    def test_serializer_valido_na_designacao_com_cessacao_com_insubsistencia(
+        self,
+    ):
         """Verifica serializer valido na designacao com cessacao com insubsistencia."""
         designacao = self._criar_designacao()
 

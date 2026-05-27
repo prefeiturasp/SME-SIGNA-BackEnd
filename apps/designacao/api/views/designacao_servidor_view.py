@@ -1,6 +1,7 @@
 """View para obter designação de servidor por RF.
 
-Valida a RF enviada pelo cliente e consulta o serviço de designação do servidor.
+Valida a RF enviada pelo cliente e consulta o serviço de designação do
+servidor.
 """
 
 import logging
@@ -10,7 +11,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.designacao.api.serializers.designacao_servidor_request_serializer import (
+from apps.designacao.api.serializers.designacao_servidor_request_serializer import (  # noqa: E501
     DesignacaoServidorRequestSerializer,
 )
 from apps.designacao.services.designacao_servidor_service import (
@@ -54,10 +55,13 @@ class DesignacaoServidorView(APIView):
 
         except SmeIntegracaoException as e:
             logger.warning("Erro ao obter designação do servidor: %s", str(e))
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         except Exception as e:
             logger.error("Erro interno designação servidor: %s", e)
             return Response(
-                {"detail": "Erro interno"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"detail": "Erro interno"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

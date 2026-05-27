@@ -7,7 +7,9 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
+from apps.designacao.api.serializers.apostila_serializer import (
+    ApostilaSerializer,
+)
 from apps.designacao.models.apostila import Apostila
 from apps.designacao.services.apostila_service import ApostilaService
 
@@ -54,7 +56,9 @@ class ApostilaViewSet(
         serializer.is_valid(raise_exception=True)
 
         try:
-            apostila = ApostilaService.criar_apostila(serializer.validated_data)
+            apostila = ApostilaService.criar_apostila(
+                serializer.validated_data
+            )
 
         except ValidationError as e:
             if isinstance(e.detail, list):
@@ -64,7 +68,9 @@ class ApostilaViewSet(
             else:
                 message = str(e.detail)
 
-            return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": message}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         return Response(
             ApostilaSerializer(apostila).data, status=status.HTTP_201_CREATED

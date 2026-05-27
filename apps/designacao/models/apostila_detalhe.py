@@ -38,6 +38,7 @@ class ApostilaAlteracao(models.Model):
         db_table = "apostila_alteracao"
         constraints = [
             models.UniqueConstraint(
-                fields=["apostila", "campo_alterado"], name="unique_campo_por_apostila"
+                fields=["apostila", "campo_alterado"],
+                name="unique_campo_por_apostila",
             )
         ]

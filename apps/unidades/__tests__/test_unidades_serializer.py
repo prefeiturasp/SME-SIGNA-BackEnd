@@ -28,7 +28,11 @@ class TestDRESerializer:
 
     def test_output_com_source_mapping(self):
         """Testa se o output usa os nomes padronizados"""
-        instance = {"codigoDRE": "001", "nomeDRE": "DRE Centro", "siglaDRE": "DRE-CT"}
+        instance = {
+            "codigoDRE": "001",
+            "nomeDRE": "DRE Centro",
+            "siglaDRE": "DRE-CT",
+        }
 
         serializer = DRESerializer(instance)
         assert "codigo_dre" in serializer.data
@@ -68,7 +72,12 @@ class TestUnidadeSerializer:
 
     @pytest.mark.parametrize(
         "email_invalido",
-        ["email_invalido", "sem@dominio", "@semlocal.com", "espacos no meio@email.com"],
+        [
+            "email_invalido",
+            "sem@dominio",
+            "@semlocal.com",
+            "espacos no meio@email.com",
+        ],
     )
     def test_email_invalido(self, dados_unidade_minimos, email_invalido):
         """Testa validação de emails inválidos"""
@@ -86,13 +95,19 @@ class TestUnidadeSerializer:
     def test_campos_numericos_null(self, dados_unidade_minimos):
         """Testa que campos numéricos opcionais aceitam null"""
         dados_unidade_minimos.update(
-            {"cep": None, "ano_construcao": None, "capacidade_vagas_total": None}
+            {
+                "cep": None,
+                "ano_construcao": None,
+                "capacidade_vagas_total": None,
+            }
         )
 
         serializer = UnidadeSerializer(data=dados_unidade_minimos)
         assert serializer.is_valid(), serializer.errors
 
-    def test_output_com_source_mapping(self, dados_unidade_completos_camelcase):
+    def test_output_com_source_mapping(
+        self, dados_unidade_completos_camelcase
+    ):
         """Testa se o output usa os nomes padronizados"""
         serializer = UnidadeSerializer(dados_unidade_completos_camelcase)
         data = serializer.data
@@ -110,7 +125,9 @@ class TestUnidadeSerializer:
         for campo in campos_esperados:
             assert campo in data
 
-    def test_tipo_nome_ue_com_dados_completos(self, dados_unidade_completos_camelcase):
+    def test_tipo_nome_ue_com_dados_completos(
+        self, dados_unidade_completos_camelcase
+    ):
         """Testa o campo customizado tipo_nome_ue"""
         serializer = UnidadeSerializer(dados_unidade_completos_camelcase)
         assert "tipo_nome_ue" in serializer.data
@@ -138,7 +155,12 @@ class TestUnidadeSerializer:
     def test_campos_string_vazios_permitidos(self, dados_unidade_minimos):
         """Testa que campos string opcionais aceitam valores vazios"""
         dados_unidade_minimos.update(
-            {"nome_nao_oficial": "", "logradouro": "", "bairro": "", "telefone1": ""}
+            {
+                "nome_nao_oficial": "",
+                "logradouro": "",
+                "bairro": "",
+                "telefone1": "",
+            }
         )
 
         serializer = UnidadeSerializer(data=dados_unidade_minimos)

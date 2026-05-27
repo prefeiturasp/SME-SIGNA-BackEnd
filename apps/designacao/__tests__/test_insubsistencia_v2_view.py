@@ -24,7 +24,9 @@ User = get_user_model()
 def auth_client(db):
     """Método auth client."""
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username="test_insub_v2", password=password)
+    user = User.objects.create_user(
+        username="test_insub_v2", password=password
+    )
     client = APIClient()
     client.force_authenticate(user=user)
     return client

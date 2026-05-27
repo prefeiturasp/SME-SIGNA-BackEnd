@@ -11,7 +11,9 @@ from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from apps.designacao.api.filters.designacao_legado_filter import DesignacaoLegadoFilter
+from apps.designacao.api.filters.designacao_legado_filter import (
+    DesignacaoLegadoFilter,
+)
 from apps.designacao.api.serializers.designacao_legado_serializer import (
     DesignacaoLegadoSerializer,
 )
@@ -39,7 +41,8 @@ class DesignacaoLegadoPagination(PageNumberPagination):
             view: View atual.
 
         Returns:
-            list|None: Lista paginada ou None quando a paginação está desabilitada.
+            list|None: Lista paginada ou None quando a paginação está
+            desabilitada.
         """
         if request.query_params.get("no_pagination", "").lower() == "true":
             return None
@@ -87,7 +90,8 @@ class DesignacaoLegadoViewSet(
         """Retorna o queryset base para designações legadas.
 
         Returns:
-            QuerySet: Designações não deletadas com carregamento de relacionamentos.
+            QuerySet: Designações não deletadas com carregamento de
+            relacionamentos.
         """
         return (
             Designacao.objects.filter(is_deleted=False)
@@ -101,7 +105,10 @@ class DesignacaoLegadoViewSet(
         Returns:
             bool: True quando no_pagination=true estiver presente.
         """
-        return self.request.query_params.get("no_pagination", "").lower() == "true"
+        return (
+            self.request.query_params.get("no_pagination", "").lower()
+            == "true"
+        )
 
     def _has_filters(self):
         """Verifica se a requisição contém filtros além da paginação.
@@ -113,10 +120,12 @@ class DesignacaoLegadoViewSet(
         return bool(set(self.request.query_params.keys()) - PAGINATION_PARAMS)
 
     def _should_limit_queryset(self):
-        """Determina se o queryset deve ser limitado para evitar retornos muito grandes.
+        """Determina se o queryset deve ser limitado para evitar
+        retornos muito grandes.
 
         Returns:
-            bool: True quando não houver filtros nem desabilitação de paginação.
+            bool: True quando não houver filtros nem desabilitação de
+            paginação.
         """
         return not self._has_filters() and not self._is_no_pagination()
 
@@ -134,7 +143,9 @@ class DesignacaoLegadoViewSet(
         queryset = self.filter_queryset(self.get_queryset())
 
         if self._is_no_pagination():
-            return Response(DesignacaoLegadoSerializer(queryset, many=True).data)
+            return Response(
+                DesignacaoLegadoSerializer(queryset, many=True).data
+            )
 
         if self._should_limit_queryset():
             queryset = queryset[:1000]
@@ -167,7 +178,9 @@ class DesignacaoLegadoViewSet(
         )
         return Response(resultado)
 
-    @action(detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados")
+    @action(
+        detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados"
+    )
     def cargos_sobrepostos_pareados(self, request):
         """Retorna cargos sobrepostos pareados entre indicado e titular.
 

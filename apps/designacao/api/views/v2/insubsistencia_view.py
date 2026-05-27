@@ -1,6 +1,7 @@
 """Views v2 para a API de insubsistência.
 
-Fornece endpoints para listagem, recuperação, criação e exclusão de insubsistências.
+Fornece endpoints para listagem, recuperação, criação e exclusão de
+insubsistências.
 """
 
 from rest_framework import mixins, status, viewsets
@@ -12,7 +13,9 @@ from apps.designacao.api.serializers.v2.insubsistencia_serializer import (
     InsubsistenciaV2WriteSerializer,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.services.insubsistencia_service import InsubsistenciaService
+from apps.designacao.services.insubsistencia_service import (
+    InsubsistenciaService,
+)
 
 
 class InsubsistenciaV2Pagination(PageNumberPagination):
@@ -36,7 +39,8 @@ class InsubsistenciaV2ViewSet(
 ):
     """ViewSet de insubsistência v2.
 
-    Expõe operações de listagem, recuperação, criação e exclusão de insubsistências.
+    Expõe operações de listagem, recuperação, criação e exclusão de
+    insubsistências.
     """
 
     serializer_class = InsubsistenciaV2ReadSerializer
@@ -46,10 +50,13 @@ class InsubsistenciaV2ViewSet(
         """Retorna o queryset de insubsistências para a view.
 
         Returns:
-            QuerySet: Insubsistências ordenadas por data de criação decrescente.
+            QuerySet: Insubsistências ordenadas por data de criação
+            decrescente.
         """
         return (
-            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA)
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
+            )
             .select_related("insubsistencia_detalhe")
             .order_by("-criado_em")
         )

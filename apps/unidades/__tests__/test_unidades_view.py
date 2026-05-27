@@ -56,7 +56,9 @@ class TestUnidadeViewSet:
             },
         ]
 
-    def _create_request(self, factory, method="get", path="/api/unidades/", data=None):
+    def _create_request(
+        self, factory, method="get", path="/api/unidades/", data=None
+    ):
         """Helper para criar uma Request DRF válida"""
         if method == "get":
             wsgi_request = factory.get(path, data or {})
@@ -66,8 +68,12 @@ class TestUnidadeViewSet:
 
     # ==================== TESTES DE LISTAGEM DE DREs ====================
 
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
-    def test_listar_dres_sucesso(self, mock_get_dres, factory, viewset, mock_dres):
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
+    def test_listar_dres_sucesso(
+        self, mock_get_dres, factory, viewset, mock_dres
+    ):
         """Testa listagem de DREs com sucesso"""
         mock_get_dres.return_value = mock_dres
 
@@ -79,7 +85,9 @@ class TestUnidadeViewSet:
         assert response.data == mock_dres
         mock_get_dres.assert_called_once()
 
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
     def test_listar_dres_vazio(self, mock_get_dres, factory, viewset):
         """Testa listagem de DREs quando não há resultados"""
         mock_get_dres.return_value = []
@@ -90,10 +98,14 @@ class TestUnidadeViewSet:
         assert response.status_code == status.HTTP_200_OK
         assert response.data == []
 
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
     def test_listar_dres_erro_permissao(self, mock_get_dres, factory, viewset):
         """Testa erro de permissão ao listar DREs"""
-        mock_get_dres.side_effect = PermissionError("Token inválido ou expirado")
+        mock_get_dres.side_effect = PermissionError(
+            "Token inválido ou expirado"
+        )
 
         request = self._create_request(factory, data={"tipo": "DRE"})
         response = viewset.list(request)
@@ -102,7 +114,9 @@ class TestUnidadeViewSet:
         assert "detail" in response.data
         assert "Token inválido" in response.data["detail"]
 
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
     def test_listar_dres_erro_generico(self, mock_get_dres, factory, viewset):
         """Testa erro genérico ao listar DREs"""
         mock_get_dres.side_effect = Exception("Erro de conexão")
@@ -141,7 +155,9 @@ class TestUnidadeViewSet:
         expected_response = [*mock_ues, unidade_supervisao]
         mock_get_supervisao.return_value = unidade_supervisao
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "108200"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "108200"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_200_OK
@@ -197,10 +213,14 @@ class TestUnidadeViewSet:
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
         """Testa listagem de UEs com código da DRE inválido"""
-        mock_get_ues.side_effect = ValueError("Código da DRE deve ser numérico")
+        mock_get_ues.side_effect = ValueError(
+            "Código da DRE deve ser numérico"
+        )
         mock_get_supervisao.return_value = None
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "ABC"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "ABC"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -221,7 +241,9 @@ class TestUnidadeViewSet:
         mock_get_ues.side_effect = LookupError("DRE não encontrada")
         mock_get_supervisao.return_value = None
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "999999"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "999999"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -242,7 +264,9 @@ class TestUnidadeViewSet:
         mock_get_ues.side_effect = PermissionError("Token inválido")
         mock_get_supervisao.return_value = None
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "108200"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "108200"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -262,7 +286,9 @@ class TestUnidadeViewSet:
         mock_get_ues.side_effect = Exception("Erro de conexão")
         mock_get_supervisao.return_value = None
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "108200"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "108200"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -294,7 +320,9 @@ class TestUnidadeViewSet:
         mock_get_ues.return_value = []
         mock_get_supervisao.return_value = unidade_supervisao
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "108200"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "108200"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_200_OK
@@ -314,7 +342,9 @@ class TestUnidadeViewSet:
         mock_get_ues.return_value = mock_ues
         mock_get_supervisao.side_effect = Exception("Erro supervisão")
 
-        request = self._create_request(factory, data={"tipo": "UE", "dre": "108200"})
+        request = self._create_request(
+            factory, data={"tipo": "UE", "dre": "108200"}
+        )
         response = viewset.list(request)
 
         assert response.status_code == status.HTTP_200_OK
@@ -363,7 +393,9 @@ class TestUnidadeViewSet:
     # ==================== TESTES DE LOGGING ====================
 
     @patch("apps.unidades.api.views.unidades_viewset.logger")
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
     def test_logging_sucesso_dres(
         self, mock_get_dres, mock_logger, factory, viewset, mock_dres
     ):
@@ -377,8 +409,12 @@ class TestUnidadeViewSet:
         assert mock_logger.info.call_count >= 1
 
     @patch("apps.unidades.api.views.unidades_viewset.logger")
-    @patch("apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres")
-    def test_logging_erro_dres(self, mock_get_dres, mock_logger, factory, viewset):
+    @patch(
+        "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
+    )
+    def test_logging_erro_dres(
+        self, mock_get_dres, mock_logger, factory, viewset
+    ):
         """Testa logging em caso de erro ao listar DREs"""
         mock_get_dres.side_effect = Exception("Erro de teste")
 

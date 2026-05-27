@@ -66,11 +66,15 @@ class TestEnviaEmailService:
         with pytest.raises(ValidationError):
             EnviaEmailService.enviar(**email_data)
 
-    def test_send_email_unexpected_exception_raises_runtimeerror(self, email_data):
+    def test_send_email_unexpected_exception_raises_runtimeerror(
+        self, email_data
+    ):
         """Verifica que exceções inesperadas são convertidas em RuntimeError."""
         with patch(
             "django.core.mail.EmailMessage.send",
             side_effect=Exception("Erro inesperado"),
         ):
-            with pytest.raises(RuntimeError, match="Erro inesperado ao enviar e-mail."):
+            with pytest.raises(
+                RuntimeError, match="Erro inesperado ao enviar e-mail."
+            ):
                 EnviaEmailService.enviar(**email_data)

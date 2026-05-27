@@ -62,7 +62,8 @@ class Apostila(models.Model):
         para apostilas e anulações.
 
         Raises:
-            ValidationError: Quando as regras de consistência não forem atendidas.
+            ValidationError: Quando as regras de consistência não forem
+            atendidas.
         """
 
         if sum([bool(self.designacao), bool(self.cessacao)]) != 1:

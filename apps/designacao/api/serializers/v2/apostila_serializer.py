@@ -20,7 +20,8 @@ class ApostilaV2AlteracaoWriteSerializer(serializers.Serializer):
 class ApostilaV2WriteSerializer(serializers.Serializer):
     """Serializador de escrita para apostila v2.
 
-    Valida os campos necessários para criar uma apostila vinculada a um ato pai.
+    Valida os campos necessários para criar uma apostila vinculada a um ato
+    pai.
     """
 
     ato_pai = serializers.PrimaryKeyRelatedField(
@@ -114,7 +115,8 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
             (
                 f
                 for f in obj.filhos.all()
-                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA and f.eh_valido
+                if f.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and f.eh_valido
             ),
             None,
         )

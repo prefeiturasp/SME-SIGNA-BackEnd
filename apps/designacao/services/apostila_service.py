@@ -10,13 +10,24 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila import Apostila
-from apps.designacao.models.apostila_detalhe import ApostilaAlteracao, ApostilaDetalhe
+from apps.designacao.models.apostila_detalhe import (
+    ApostilaAlteracao,
+    ApostilaDetalhe,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 
 _CAMPOS_ATO = frozenset({"sei_numero", "doc"})
 _CAMPOS_PROTEGIDOS = frozenset(
-    {"id", "tipo", "ato_pai", "ato_pai_id", "ato_raiz", "ato_raiz_id", "criado_em"}
+    {
+        "id",
+        "tipo",
+        "ato_pai",
+        "ato_pai_id",
+        "ato_raiz",
+        "ato_raiz_id",
+        "criado_em",
+    }
 )
 _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 
@@ -24,7 +35,7 @@ _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 class ApostilaService:
     """Serviço de negócio para manipular apostilas."""
 
-    # ── Legado (modelo Apostila) ───────────────────────────────────────────────
+    # ── Legado (modelo Apostila) ──────────────────────────────────────────────  # noqa: E501
 
     @staticmethod
     def criar_apostila(data: dict) -> Apostila:
@@ -92,7 +103,9 @@ class ApostilaService:
         )
 
         if apostilas_ativas.exists():
-            raise ValidationError("Já existe uma apostila válida para este ato.")
+            raise ValidationError(
+                "Já existe uma apostila válida para este ato."
+            )
 
         return Apostila.objects.create(
             tipo=data.get("tipo"),
@@ -103,7 +116,7 @@ class ApostilaService:
             d_o=data.get("d_o", ""),
         )
 
-    # ── V2 (modelo AtoAdministrativo) ─────────────────────────────────────────
+    # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
@@ -116,7 +129,8 @@ class ApostilaService:
             AtoAdministrativo: Ato administrativo de apostila criado.
 
         Raises:
-            ValidationError: Se o ato pai for inválido ou não puder ser apostilado.
+            ValidationError: Se o ato pai for inválido ou não puder ser
+            apostilado.
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
         alteracoes: list = data.get("alteracoes", [])
@@ -130,7 +144,9 @@ class ApostilaService:
             ).exists()
             if tem_cessacao_ativa:
                 raise ValidationError(
-                    {"ato_pai": "Não é possível apostilar uma designação cessada."}
+                    {
+                        "ato_pai": "Não é possível apostilar uma designação cessada."  # noqa: E501
+                    }
                 )
 
             detalhe = getattr(ato_pai, "designacao_detalhe", None)

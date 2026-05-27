@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 COMMAND_NAME = "gerar_relatorio_pep"
-EXCLUDE_DIRS = {"tests", "migrations", "__pycache__"}
+EXCLUDE_DIRS = {"tests", "__tests__", "migrations", "__pycache__"}
 EXCLUDE_COMMAND_FILES = {"gerar_relatorio_pep.py"}
 EXCLUDE_APPS = {"__pycache__"}
 TOP_MISSING_DOCSTRINGS = 25
@@ -56,7 +56,9 @@ class FileMetrics:
 
     @property
     def functions_and_methods(self) -> List[SymbolMetrics]:
-        return [s for s in self.symbols if s.kind in ("function", "async_function")]
+        return [
+            s for s in self.symbols if s.kind in ("function", "async_function")
+        ]
 
     @property
     def classes(self) -> List[SymbolMetrics]:
@@ -182,7 +184,9 @@ def _walk_symbols(tree: ast.AST) -> List[SymbolMetrics]:
     return symbols
 
 
-def analyze_file(path: Path, app_dir: Path, max_line_length: int) -> FileMetrics:
+def analyze_file(
+    path: Path, app_dir: Path, max_line_length: int
+) -> FileMetrics:
     rel = str(path.relative_to(app_dir))
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
@@ -193,7 +197,7 @@ def analyze_file(path: Path, app_dir: Path, max_line_length: int) -> FileMetrics
         if not stripped or stripped.startswith("#"):
             continue
         metrics.lines_length_eligible += 1
-        if len(line) > max_line_length:
+        if len(line) > max_line_length and "# noqa" not in line:
             metrics.lines_over_max += 1
 
     try:
@@ -407,11 +411,15 @@ def aggregate(file_metrics: List[FileMetrics]) -> Dict[str, Any]:
         "files_count": len(file_metrics),
         "loc_total": loc_total,
         "lines_over_79": lines_over,
-        "lines_length_eligible": sum(fm.lines_length_eligible for fm in file_metrics),
+        "lines_length_eligible": sum(
+            fm.lines_length_eligible for fm in file_metrics
+        ),
         "modules_with_docstring": modules_with_doc,
         "modules_without_docstring": modules_without_doc,
         "functions_methods_total": len(funcs),
-        "functions_methods_with_docstring": sum(1 for s in funcs if s.has_docstring),
+        "functions_methods_with_docstring": sum(
+            1 for s in funcs if s.has_docstring
+        ),
         "functions_methods_without_docstring": len(funcs)
         - sum(1 for s in funcs if s.has_docstring),
         "classes_total": len(classes),
@@ -425,9 +433,9 @@ def aggregate(file_metrics: List[FileMetrics]) -> Dict[str, Any]:
         "hints_sem": hints.get("sem", 0),
         "missing_docstrings_top": [
             {"path": p, "lineno": s.lineno, "name": s.name, "kind": s.kind}
-            for p, s in sorted(missing_docstrings, key=lambda x: (x[0], x[1].lineno))[
-                :TOP_MISSING_DOCSTRINGS
-            ]
+            for p, s in sorted(
+                missing_docstrings, key=lambda x: (x[0], x[1].lineno)
+            )[:TOP_MISSING_DOCSTRINGS]
         ],
     }
 
@@ -447,7 +455,9 @@ def render_simplified_markdown(
     pep257 = _pct_float(agg["symbols_with_docstring"], sym_total)
     ft = agg["functions_methods_total"]
     pep484_full = _pct_float(agg["hints_completo"], ft)
-    pep484_partial = _pct_float(agg["hints_completo"] + agg["hints_parcial"], ft)
+    pep484_partial = _pct_float(
+        agg["hints_completo"] + agg["hints_parcial"], ft
+    )
     dep_lines = pep440.get("total_dependency_lines") or 0
     inv_n = len(pep440.get("invalid_lines") or [])
     pep440_pct = _pct_float(dep_lines - inv_n, dep_lines)
@@ -482,7 +492,9 @@ def render_simplified_txt(
     pep257 = _pct_float(agg["symbols_with_docstring"], sym_total)
     ft = agg["functions_methods_total"]
     pep484_full = _pct_float(agg["hints_completo"], ft)
-    pep484_partial = _pct_float(agg["hints_completo"] + agg["hints_parcial"], ft)
+    pep484_partial = _pct_float(
+        agg["hints_completo"] + agg["hints_parcial"], ft
+    )
     dep_lines = pep440.get("total_dependency_lines") or 0
     inv_n = len(pep440.get("invalid_lines") or [])
     pep440_pct = _pct_float(dep_lines - inv_n, dep_lines)
@@ -602,9 +614,13 @@ def render_markdown(
     for fm in sorted(file_metrics, key=lambda x: x.path):
         funcs = fm.functions_and_methods
         n = len(funcs)
-        doc_pct = _pct(sum(1 for s in funcs if s.has_docstring), n) if n else "—"
+        doc_pct = (
+            _pct(sum(1 for s in funcs if s.has_docstring), n) if n else "—"
+        )
         hint_pct = (
-            _pct(sum(1 for s in funcs if s.hint_level == "completo"), n) if n else "—"
+            _pct(sum(1 for s in funcs if s.hint_level == "completo"), n)
+            if n
+            else "—"
         )
         lines.append(
             f"| `{fm.path}` | {fm.loc} | {fm.lines_over_max} | "
@@ -634,7 +650,9 @@ def build_simple_summary(summary, flake8_total, pep440, max_line_length):
         "pep257_docstring_compliance_pct": round(
             _pct_float(agg["symbols_with_docstring"], sym_total), 2
         ),
-        "pep484_full_hints_pct": round(_pct_float(agg["hints_completo"], ft), 2),
+        "pep484_full_hints_pct": round(
+            _pct_float(agg["hints_completo"], ft), 2
+        ),
         "pep484_full_or_partial_pct": round(
             _pct_float(agg["hints_completo"] + agg["hints_parcial"], ft), 2
         ),
@@ -664,9 +682,15 @@ def build_json_payload(
                 "lines_over_max": fm.lines_over_max,
                 "module_has_docstring": fm.module_has_docstring,
                 "functions_count": len(funcs),
-                "functions_with_docstring": sum(1 for s in funcs if s.has_docstring),
-                "hints_completo": sum(1 for s in funcs if s.hint_level == "completo"),
-                "hints_parcial": sum(1 for s in funcs if s.hint_level == "parcial"),
+                "functions_with_docstring": sum(
+                    1 for s in funcs if s.has_docstring
+                ),
+                "hints_completo": sum(
+                    1 for s in funcs if s.hint_level == "completo"
+                ),
+                "hints_parcial": sum(
+                    1 for s in funcs if s.hint_level == "parcial"
+                ),
                 "hints_sem": sum(1 for s in funcs if s.hint_level == "sem"),
             }
         )
@@ -691,7 +715,9 @@ def build_json_payload(
 # =========================================================================
 def _build_meta(repo_root: Path, app_name: str) -> Dict[str, Any]:
     return {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "generated_at": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S UTC"
+        ),
         "command": f"python manage.py {COMMAND_NAME} --app {app_name}",
         "git_commit": _get_git_commit(repo_root),
     }
@@ -709,7 +735,9 @@ def _write_app_outputs(
     txt_simple_path = output_dir / "RELATORIO_PEP_RESUMIDO.txt"
     json_path = output_dir / "relatorio_pep.json"
 
-    md_path.write_text(render_markdown(**payload_args["render_md"]), encoding="utf-8")
+    md_path.write_text(
+        render_markdown(**payload_args["render_md"]), encoding="utf-8"
+    )
     md_simple_path.write_text(
         render_simplified_markdown(**payload_args["render_md_simple"]),
         encoding="utf-8",
@@ -804,7 +832,9 @@ def run_for_app(
         out_dir = repo_root / out_dir
 
     py_files = discover_app_python_files(app_dir)
-    file_metrics = [analyze_file(p, app_dir, max_line_length) for p in py_files]
+    file_metrics = [
+        analyze_file(p, app_dir, max_line_length) for p in py_files
+    ]
     summary = aggregate(file_metrics)
     flake8_codes, flake8_lines = run_flake8(app_name, repo_root)
     pep440 = analyze_pep440(repo_root / "requirements")
@@ -866,7 +896,9 @@ def _sum_totals(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
         totals["classes"] += s["classes_total"]
         totals["classes_doc"] += s["classes_with_docstring"]
         totals["symbols_doc"] += s["symbols_with_docstring"]
-        totals["symbols_total"] += s["functions_methods_total"] + s["classes_total"]
+        totals["symbols_total"] += (
+            s["functions_methods_total"] + s["classes_total"]
+        )
         totals["hints_completo"] += s["hints_completo"]
         totals["hints_parcial"] += s["hints_parcial"]
         totals["hints_sem"] += s["hints_sem"]
@@ -1000,7 +1032,9 @@ def consolidate(
     compliance = _compute_compliance(totals, pep440)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    md = _render_consolidated_md(per_app, totals, compliance, agg_codes, max_len, now)
+    md = _render_consolidated_md(
+        per_app, totals, compliance, agg_codes, max_len, now
+    )
 
     md_path = out_dir / "RELATORIO_PEP_GERAL.md"
     json_path = out_dir / "relatorio_pep_geral.json"
@@ -1011,8 +1045,12 @@ def consolidate(
                 "generated_at": now,
                 "apps": [d["app"] for d in per_app],
                 "totals": totals,
-                "pep_compliance": {k: round(v, 2) for k, v in compliance.items()},
-                "flake8_top": dict(sorted(agg_codes.items(), key=lambda x: -x[1])),
+                "pep_compliance": {
+                    k: round(v, 2) for k, v in compliance.items()
+                },
+                "flake8_top": dict(
+                    sorted(agg_codes.items(), key=lambda x: -x[1])
+                ),
                 "per_app": [d["payload"] for d in per_app],
             },
             indent=2,
@@ -1070,7 +1108,9 @@ class Command(BaseCommand):
         return [options["app"]], False
 
     def _run_single(self, app_name: str, options, repo_root: Path) -> None:
-        output_dir = Path(options["output_dir"]) if options["output_dir"] else None
+        output_dir = (
+            Path(options["output_dir"]) if options["output_dir"] else None
+        )
         result = run_for_app(
             app_name,
             repo_root=repo_root,
@@ -1081,8 +1121,12 @@ class Command(BaseCommand):
         paths = result["paths"]
         s = result["summary"]
         self.stdout.write(self.style.SUCCESS(f"MD:   {paths['md']}"))
-        self.stdout.write(self.style.SUCCESS(f"MD resumido: {paths['md_simple']}"))
-        self.stdout.write(self.style.SUCCESS(f"TXT resumido: {paths['txt_simple']}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"MD resumido: {paths['md_simple']}")
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f"TXT resumido: {paths['txt_simple']}")
+        )
         self.stdout.write(self.style.SUCCESS(f"JSON: {paths['json']}"))
         self.stdout.write(
             f"Arquivos: {s['files_count']} | "
@@ -1094,10 +1138,14 @@ class Command(BaseCommand):
 
     def _run_many(self, apps: List[str], options, repo_root: Path) -> None:
         if not apps:
-            self.stdout.write(self.style.WARNING("Nenhum app encontrado em apps/"))
+            self.stdout.write(
+                self.style.WARNING("Nenhum app encontrado em apps/")
+            )
             return
 
-        self.stdout.write(self.style.NOTICE(f"Apps a analisar: {', '.join(apps)}"))
+        self.stdout.write(
+            self.style.NOTICE(f"Apps a analisar: {', '.join(apps)}")
+        )
 
         per_app: List[Dict[str, Any]] = []
         for app in apps:
@@ -1124,8 +1172,12 @@ class Command(BaseCommand):
             out_dir = repo_root / out_dir
 
         paths = consolidate(per_app, out_dir, options["max_line_length"])
-        self.stdout.write(self.style.SUCCESS(f"\nMD consolidado:   {paths['md']}"))
-        self.stdout.write(self.style.SUCCESS(f"JSON consolidado: {paths['json']}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"\nMD consolidado:   {paths['md']}")
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f"JSON consolidado: {paths['json']}")
+        )
 
     def handle(self, *args, **options):
         repo_root = _repo_root()

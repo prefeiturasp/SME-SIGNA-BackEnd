@@ -45,7 +45,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
     MENSAGEM_EMAIL_NAO_CADASTRADO = (
         "E-mail não encontrado! <br/>"
-        "Para resolver este problema, entre em contato com o administrador do sistema."
+        "Para resolver este problema, entre em contato com o administrador do sistema."  # noqa: E501
     )
     MENSAGEM_USUARIO_NAO_ENCONTRADO = "Usuário não encontrado"
     MENSAGEM_ERRO_INTERNO = "Erro interno no servidor."
@@ -77,7 +77,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
             # 5. Sincroniza usuário local se necessário
             if dados_sme and dados_sme.get("nome"):
-                user_local = self._criar_ou_atualizar_usuario_local(username, dados_sme)
+                user_local = self._criar_ou_atualizar_usuario_local(
+                    username, dados_sme
+                )
 
             # 6. Gera token e envia email
             return self._processar_envio_email(username, email)
@@ -105,7 +107,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
                 raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
             return None
         except Exception:
-            logger.exception("Erro inesperado ao consultar SME para %s", username)
+            logger.exception(
+                "Erro inesperado ao consultar SME para %s", username
+            )
             if not user_local:
                 raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
             return None
@@ -182,7 +186,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.warning(
                 "Dados SME sem nome para %s, pulando sincronização", username
             )
-            return User.objects.get(username=username)  # Retorna usuário existente
+            return User.objects.get(
+                username=username
+            )  # Retorna usuário existente
 
         try:
             with transaction.atomic():
@@ -200,7 +206,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
             return user
 
         except IntegrityError as e:
-            logger.error("Falha ao sincronizar usuário %s: %s", username, str(e))
+            logger.error(
+                "Falha ao sincronizar usuário %s: %s", username, str(e)
+            )
             raise EmailNaoCadastrado(
                 "Já existe um usuário com este e-mail. <br/>"
                 "Entre em contato com o administrador do sistema."
@@ -255,7 +263,9 @@ class RedefinirSenhaViewSet(APIView):
         user = serializer.validated_data["user"]
         new_password = serializer.validated_data["new_pass"]
 
-        logger.info("Iniciando redefinição de senha para usuário ID=%s", user.id)
+        logger.info(
+            "Iniciando redefinição de senha para usuário ID=%s", user.id
+        )
 
         try:
             SmeIntegracaoService.redefine_senha(
@@ -324,7 +334,9 @@ class AtualizarSenhaViewSet(APIView):
 
         if not serializer.is_valid():
             logger.warning(f"Erro de validação: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
         user = request.user
         nova_senha = serializer.validated_data["nova_senha"]
@@ -336,7 +348,9 @@ class AtualizarSenhaViewSet(APIView):
                 user.set_password(nova_senha)
                 user.save(update_fields=["password"])
 
-                logger.info("Usuário ID %s alterou a senha com sucesso.", user.id)
+                logger.info(
+                    "Usuário ID %s alterou a senha com sucesso.", user.id
+                )
 
                 return Response(
                     {"detail": self.MENSAGEM_SUCESSO},
@@ -345,7 +359,7 @@ class AtualizarSenhaViewSet(APIView):
 
         except SmeIntegracaoException as e:
             logger.error(
-                "Erro na integração SME para alteração de senha do usuário ID %s: %s",
+                "Erro na integração SME para alteração de senha do usuário ID %s: %s",  # noqa: E501
                 user.id,
                 str(e),
             )
@@ -356,7 +370,8 @@ class AtualizarSenhaViewSet(APIView):
 
         except Exception:
             logger.exception(
-                "Erro inesperado na alteração de senha do usuário ID: %s", user.id
+                "Erro inesperado na alteração de senha do usuário ID: %s",
+                user.id,
             )
             return Response(
                 {"detail": self.MENSAGEM_ERRO_INTERNO},

@@ -13,7 +13,9 @@ import requests
 
 from rest_framework import status
 
-from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLAR
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR,
+)
 from apps.helpers.exceptions import (
     AuthenticationError,
     InternalError,
@@ -274,7 +276,9 @@ class TestAlteraEmail:
     def test_parametros_invalidos(self, mock_post):
         """Verifica que parâmetros inválidos para alteração de e-mail geram exceção."""
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.altera_email("", "teste@sme.prefeitura.sp.gov.br")
+            SmeIntegracaoService.altera_email(
+                "", "teste@sme.prefeitura.sp.gov.br"
+            )
         assert "Registro funcional e email são obrigatórios" in str(exc.value)
 
         with pytest.raises(SmeIntegracaoException):
@@ -364,7 +368,8 @@ class TestConsultaCargos:
         # Primeira chamada → lista de cargos; segunda → info da UE base
         mock_get.side_effect = [
             MagicMock(
-                status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
             ),
             MagicMock(
                 status_code=status.HTTP_200_OK,
@@ -393,7 +398,8 @@ class TestConsultaCargos:
 
         mock_get.side_effect = [
             MagicMock(
-                status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
             ),
             MagicMock(
                 status_code=status.HTTP_200_OK,
@@ -422,7 +428,8 @@ class TestConsultaCargos:
 
         mock_get.side_effect = [
             MagicMock(
-                status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
             ),
             MagicMock(
                 status_code=status.HTTP_200_OK,
@@ -524,7 +531,9 @@ class TestBuscarFuncionariosEscolares:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_204_sem_conteudo(self, mock_get):
         """Verifica que resposta 204 retorna lista de servidores vazia."""
-        mock_get.return_value = MagicMock(status_code=status.HTTP_204_NO_CONTENT)
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_204_NO_CONTENT
+        )
 
         result = SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
@@ -557,7 +566,9 @@ class TestBuscarFuncionariosEscolares:
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
-        assert "Erro ao buscar funcionários da gestão escolar" in str(exc.value)
+        assert "Erro ao buscar funcionários da gestão escolar" in str(
+            exc.value
+        )
 
     @patch(
         "apps.usuarios.services.sme_integracao_service.requests.get",
@@ -599,7 +610,9 @@ class TestConsultaInformacoesUnidadesEscolares:
         mock_response.json.return_value = dados_mock
         mock_get.return_value = mock_response
 
-        result = SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+        result = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            "090450"
+        )
 
         assert result == dados_mock
         mock_get.assert_called_once()
@@ -613,9 +626,13 @@ class TestConsultaInformacoesUnidadesEscolares:
         mock_get.return_value = mock_response
 
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+                "090450"
+            )
 
-        assert "Erro ao consultar informações da unidade escolar" in str(exc.value)
+        assert "Erro ao consultar informações da unidade escolar" in str(
+            exc.value
+        )
         mock_get.assert_called_once()
 
     @patch(
@@ -625,7 +642,9 @@ class TestConsultaInformacoesUnidadesEscolares:
     def test_request_exception(self, mock_get):
         """Verifica que exceção de requisição gera erro de comunicação com SME."""
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+                "090450"
+            )
 
         assert "Erro de comunicação com SME" in str(exc.value)
 
@@ -649,7 +668,9 @@ class TestBuscarTurmasUeAno:
         """Verifica que busca de turmas por ano retorna dados esperados."""
         mock_response = MagicMock()
         mock_response.status_code = status.HTTP_200_OK
-        mock_response.json.return_value = [{"codigoTurma": 1, "nome": "Turma Teste"}]
+        mock_response.json.return_value = [
+            {"codigoTurma": 1, "nome": "Turma Teste"}
+        ]
         mock_get.return_value = mock_response
 
         resultado = SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
@@ -685,7 +706,9 @@ class TestBuscarTurmasUeAno:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_request_exception(self, mock_get, mock_logger):
         """Verifica logger e exceção quando há falha de conexão no SME."""
-        mock_get.side_effect = requests.exceptions.RequestException("Falha de Conexão")
+        mock_get.side_effect = requests.exceptions.RequestException(
+            "Falha de Conexão"
+        )
 
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
@@ -740,7 +763,9 @@ class TestBuscarDadosTurma:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_request_exception_com_logger(self, mock_get, mock_logger):
         """Verifica logger em caso de exceção de conexão ao buscar dados da turma."""
-        mock_get.side_effect = requests.exceptions.RequestException("Falha na rede")
+        mock_get.side_effect = requests.exceptions.RequestException(
+            "Falha na rede"
+        )
 
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_dados_turma(12345)
@@ -787,7 +812,9 @@ class TestBuscarDisciplinasTurma:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_204_retorna_lista_vazia(self, mock_get):
         """Verifica retorno de lista vazia quando API responde 204."""
-        mock_get.return_value = MagicMock(status_code=status.HTTP_204_NO_CONTENT)
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_204_NO_CONTENT
+        )
 
         resultado = SmeIntegracaoService.buscar_disciplinas_turma(10)
 
@@ -853,7 +880,10 @@ class TestFormatarCargo:
 
     def test_texto_com_hifen_retorna_parte_antes(self):
         """Verifica que texto com hífen retorna apenas a parte antes do hífen."""
-        assert SmeIntegracaoService.formatar_cargo("DIRETOR - ESCOLA") == "DIRETOR"
+        assert (
+            SmeIntegracaoService.formatar_cargo("DIRETOR - ESCOLA")
+            == "DIRETOR"
+        )
 
     def test_texto_sem_hifen_retorna_inteiro(self):
         """Verifica que texto sem hífen é retornado integralmente."""

@@ -80,7 +80,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_success_local_user_with_email(
@@ -103,13 +105,17 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("Enviamos um link", response.data["detail"])
 
-        mock_gerar_token.assert_called_once_with("1234567", "usuario@teste.com")
+        mock_gerar_token.assert_called_once_with(
+            "1234567", "usuario@teste.com"
+        )
         mock_enviar.assert_called_once()
 
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_success_local_user_with_short_email(
@@ -135,7 +141,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_success_api_email(
@@ -154,7 +162,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             "name": "Usuário",
         }
 
-        response = self.client.post(self.url, {"username": "7654321"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "7654321"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -168,7 +178,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         mock_sme.return_value = None
 
-        response = self.client.post(self.url, {"username": "9999999"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "9999999"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
@@ -184,7 +196,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         mock_informacao_usuario.return_value = {}
 
-        response = self.client.post(self.url, {"username": "1111111"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "1111111"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("E-mail não encontrado!", response.data["detail"])
@@ -216,10 +230,14 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         response = self.client.post(self.url, self.valid_data, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertEqual(
+            response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
         self.assertEqual(response.data["detail"], "Erro interno no servidor.")
 
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     @patch("apps.usuarios.api.views.senha_view.anonimizar_email")
@@ -242,7 +260,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("u***@teste.com", response.data["detail"])
 
-        mock_gerar_token.assert_called_once_with("1234567", "usuario@teste.com")
+        mock_gerar_token.assert_called_once_with(
+            "1234567", "usuario@teste.com"
+        )
         mock_enviar.assert_called_once()
 
     def test_post_username_length_boundaries(self):
@@ -251,14 +271,18 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             username="7654321", email="teste7@teste.com", name="Teste 7"
         )
 
-        response = self.client.post(self.url, {"username": "7654321"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "7654321"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         user_8 = User.objects.create_user(
             username="12345678", email="teste8@teste.com", name="Teste 8"
         )
 
-        response = self.client.post(self.url, {"username": "12345678"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "12345678"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_error_message_content(self):
@@ -278,7 +302,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             username="0000000", email="teste@teste.com", name="Teste Zero"
         )
 
-        response = self.client.post(self.url, {"username": "0000000"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "0000000"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_post_username_exact_max_length(self):
@@ -287,13 +313,17 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             username="99999999", email="teste@teste.com", name="Teste Nove"
         )
 
-        response = self.client.post(self.url, {"username": "99999999"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "99999999"}, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    def test_post_sme_exception_when_user_not_local(self, mock_informacao_usuario):
+    def test_post_sme_exception_when_user_not_local(
+        self, mock_informacao_usuario
+    ):
         """Testa Exception na consulta SME quando usuário não existe localmente (linha 50-52)"""
         # Remove user from local DB
         User.objects.filter(username="8888888").delete()
@@ -301,7 +331,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         # SME raises exception
         mock_informacao_usuario.side_effect = Exception("SME Connection Error")
 
-        response = self.client.post(self.url, {"username": "8888888"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "8888888"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "Usuário não encontrado")
@@ -309,7 +341,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_email_from_second_api_call(
@@ -322,7 +356,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         mock_env.return_value = "http://localhost:8000"
 
-        mock_informacao_usuario.return_value = {"email": "email_da_api@teste.com"}
+        mock_informacao_usuario.return_value = {
+            "email": "email_da_api@teste.com"
+        }
 
         mock_gerar_token.return_value = {
             "uid": "test-uid",
@@ -330,17 +366,23 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             "name": "Usuário",
         }
 
-        response = self.client.post(self.url, {"username": "5555555"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "5555555"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("Enviamos um link", response.data["detail"])
 
-        mock_gerar_token.assert_called_once_with("5555555", "email_da_api@teste.com")
+        mock_gerar_token.assert_called_once_with(
+            "5555555", "email_da_api@teste.com"
+        )
 
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
     @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_creates_local_user_from_sme_data(
@@ -368,7 +410,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         # Verifica que usuário não existe antes
         self.assertFalse(User.objects.filter(username="7777777").exists())
 
-        response = self.client.post(self.url, {"username": "7777777"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "7777777"}, format="json"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("Enviamos um link", response.data["detail"])
@@ -384,7 +428,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         # Verifica que o email foi enviado
         mock_enviar.assert_called_once()
-        mock_gerar_token.assert_called_once_with("7777777", "novo_usuario@teste.com")
+        mock_gerar_token.assert_called_once_with(
+            "7777777", "novo_usuario@teste.com"
+        )
 
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
@@ -418,7 +464,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # Verifica se a mensagem de erro personalizada foi retornada
-        self.assertIn("Já existe um usuário com este e-mail", response.data["detail"])
+        self.assertIn(
+            "Já existe um usuário com este e-mail", response.data["detail"]
+        )
 
     def test_criar_ou_atualizar_usuario_local_sem_nome(self):
         """
@@ -486,7 +534,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         User.objects.filter(username=username).delete()
 
         # Executa o método que contém o bloco transaction.atomic
-        user_criado = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        user_criado = view._criar_ou_atualizar_usuario_local(
+            username, dados_sme
+        )
 
         # Verificações
         self.assertIsNotNone(user_criado)
@@ -514,7 +564,9 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             "Erro de conexão com SME"
         )
 
-        response = self.client.post(self.url, {"username": "8888888"}, format="json")
+        response = self.client.post(
+            self.url, {"username": "8888888"}, format="json"
+        )
 
         # 3. Verifica se retornou (UserNotFoundError)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -529,7 +581,9 @@ class TestRedefinirSenhaViewSet:
     """
 
     @patch("apps.usuarios.api.views.senha_view.RedefinirSenhaSerializer")
-    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
     def test_post_success(self, mock_sme, mock_serializer):
         """Verifica que redefinição de senha bem-sucedida retorna status 200."""
 
@@ -561,13 +615,20 @@ class TestRedefinirSenhaViewSet:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["status"] == "success"
 
-    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
     def test_post_sme_error(self, mock_sme):
         """Testa erro na SME."""
         factory = APIRequestFactory()
         mock_sme.side_effect = SmeIntegracaoException("Erro SME")
 
-        data = {"uid": "x", "token": "x", "new_pass": "x", "new_pass_confirm": "x"}
+        data = {
+            "uid": "x",
+            "token": "x",
+            "new_pass": "x",
+            "new_pass_confirm": "x",
+        }
 
         with patch(
             "apps.usuarios.api.serializers.senha_serializer.RedefinirSenhaSerializer"
@@ -604,7 +665,9 @@ class TestRedefinirSenhaViewSet:
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
     def test_post_sme_integracao_exception_returns_400(
         self, mock_redefine, django_user_model
     ):
@@ -634,7 +697,9 @@ class TestRedefinirSenhaViewSet:
         assert response.data["status"] == "error"
         assert "Erro SME" in response.data["detail"]
 
-    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
     @patch("django.contrib.auth.models.AbstractBaseUser.save")
     def test_post_password_updated_in_sme_but_local_save_fails(
         self, mock_save, mock_redefine, django_user_model
@@ -666,7 +731,9 @@ class TestRedefinirSenhaViewSet:
         assert response.data["status"] == "error"
 
     @pytest.mark.django_db
-    @patch("apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
+    )
     def test_redefine_senha_view_success(
         self,
         mock_redefine_senha,
@@ -693,7 +760,9 @@ class TestRedefinirSenhaViewSet:
         mock_redefine_senha.return_value = "OK"
 
         response = client.post(
-            "/api/usuario/redefinir-senha", payload, content_type="application/json"
+            "/api/usuario/redefinir-senha",
+            payload,
+            content_type="application/json",
         )
 
         assert response.status_code == 200
@@ -766,7 +835,9 @@ class TestAtualizarSenhaViewSet:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_validation_error_senha_atual_incorreta_pela_view(self, view, mock_request):
+    def test_validation_error_senha_atual_incorreta_pela_view(
+        self, view, mock_request
+    ):
         """Verifica erro quando a senha atual informada está incorreta."""
         mock_request.data = {
             "username": "testuser",
@@ -852,7 +923,9 @@ class TestAtualizarSenhaViewSet:
                 "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
                 side_effect=Exception("Erro inesperado"),
             ):
-                with patch("apps.usuarios.api.views.senha_view.logger.exception"):
+                with patch(
+                    "apps.usuarios.api.views.senha_view.logger.exception"
+                ):
                     response = view.post(mock_request)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR

@@ -53,7 +53,9 @@ class TestAlteracaoEmailSerializer:
         )
 
     def test_valid_email(self, user):
-        serializer = self.get_serializer(user, "novo_email@sme.prefeitura.sp.gov.br")
+        serializer = self.get_serializer(
+            user, "novo_email@sme.prefeitura.sp.gov.br"
+        )
 
         assert serializer.is_valid(), serializer.errors
         assert (
@@ -65,13 +67,17 @@ class TestAlteracaoEmailSerializer:
         serializer = self.get_serializer(user, user.email)
 
         assert not serializer.is_valid()
-        assert "O novo e-mail não pode ser igual ao atual." in str(serializer.errors)
+        assert "O novo e-mail não pode ser igual ao atual." in str(
+            serializer.errors
+        )
 
     def test_email_com_dominio_invalido(self, user):
         serializer = self.get_serializer(user, "novo@gmail.com")
 
         assert not serializer.is_valid()
-        assert serializer.errors["detail"] == "Utilize seu e-mail institucional."
+        assert (
+            serializer.errors["detail"] == "Utilize seu e-mail institucional."
+        )
 
     def test_email_ja_em_uso(self, user, user_factory):
         user_factory(
@@ -80,7 +86,9 @@ class TestAlteracaoEmailSerializer:
             cpf="98765432100",
         )
 
-        serializer = self.get_serializer(user, "existente@sme.prefeitura.sp.gov.br")
+        serializer = self.get_serializer(
+            user, "existente@sme.prefeitura.sp.gov.br"
+        )
 
         assert not serializer.is_valid()
         assert serializer.errors["detail"] == "Este e-mail já está cadastrado."
@@ -90,7 +98,9 @@ class TestAlteracaoEmailSerializer:
         serializer = self.get_serializer(user, email_invalido)
 
         assert not serializer.is_valid()
-        assert serializer.errors["detail"] == "Utilize seu e-mail institucional."
+        assert (
+            serializer.errors["detail"] == "Utilize seu e-mail institucional."
+        )
 
     def test_campo_obrigatorio(self, request_factory, user):
         request = request_factory.get("/")

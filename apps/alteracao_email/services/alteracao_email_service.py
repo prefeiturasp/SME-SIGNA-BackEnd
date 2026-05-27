@@ -13,7 +13,10 @@ from django.shortcuts import get_object_or_404
 from django.utils.timezone import now, timedelta
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
-from apps.helpers.exceptions import TokenExpiradoException, TokenJaUtilizadoException
+from apps.helpers.exceptions import (
+    TokenExpiradoException,
+    TokenJaUtilizadoException,
+)
 from apps.usuarios.services.envia_email_service import EnviaEmailService
 
 env = environ.Env()
@@ -36,14 +39,17 @@ class AlteracaoEmailService:
             novo_email (str): O novo endereço de e-mail para o usuário.
 
         Returns:
-            AlteracaoEmail: A instância criada da solicitação de alteração de e-mail.
+            AlteracaoEmail: A instância criada da solicitação de alteração de
+            e-mail.
         """
 
         email_request = AlteracaoEmail.objects.create(
             usuario=usuario, novo_email=novo_email
         )
 
-        validation_link = f"{env('AMBIENTE_URL')}/confirmar-email/{email_request.token}"
+        validation_link = (
+            f"{env('AMBIENTE_URL')}/confirmar-email/{email_request.token}"
+        )
         logger.info(f"Link de validação gerado: {validation_link}")
 
         EnviaEmailService.enviar(
@@ -60,7 +66,8 @@ class AlteracaoEmailService:
         """Valida o token de alteração de e-mail e retorna a solicitação.
 
         Args:
-            token (uuid.UUID|str): O token de confirmação associado à solicitação.
+            token (uuid.UUID|str): O token de confirmação associado à
+            solicitação.
 
         Returns:
             tuple[User, AlteracaoEmail]: O usuário e a solicitação de alteração

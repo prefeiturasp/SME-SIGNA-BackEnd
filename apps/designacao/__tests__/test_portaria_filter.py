@@ -132,7 +132,9 @@ class TestPortariaFilter:
     # tipo
     """Testes para portaria filter."""
 
-    def test_filtro_tipo_designacao(self, designacao_1, designacao_2, cessacao):
+    def test_filtro_tipo_designacao(
+        self, designacao_1, designacao_2, cessacao
+    ):
         """Verifica filtro tipo designacao."""
         qs = apply_filter({"tipo": "DESIGNACAO"})
         assert all(a.tipo == "DESIGNACAO" for a in qs)
@@ -144,7 +146,9 @@ class TestPortariaFilter:
         assert qs.count() == 1
         assert qs.first() == cessacao
 
-    def test_filtro_tipo_insubsistencia(self, designacao_1, cessacao, insubsistencia):
+    def test_filtro_tipo_insubsistencia(
+        self, designacao_1, cessacao, insubsistencia
+    ):
         """Verifica filtro tipo insubsistencia."""
         qs = apply_filter({"tipo": "INSUBSISTENCIA"})
         assert qs.count() == 1

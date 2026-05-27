@@ -239,8 +239,10 @@ class TestUnidadeIntegracaoService:
         mock_env.side_effect = mock_env_config()
         mock_get.return_value = mock_unidades_response
 
-        result = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
-            codigo_dre_valido,
+        result = (
+            UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+                codigo_dre_valido,
+            )
         )
 
         assert result == mock_unidades_response
@@ -256,7 +258,10 @@ class TestUnidadeSupervisao:
     exceções específicas de integração.
     """
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     @patch.object(BaseEOLService, "_get")
     @patch("apps.unidades.services.unidades_service.env")
     def test_sucesso(
@@ -298,7 +303,10 @@ class TestUnidadeSupervisao:
         with pytest.raises(ValueError):
             UnidadeIntegracaoService.get_unidade_supervisao_by_dre("")
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     def test_sem_mapeamento(self, mock_map):
         """Deve lançar erro quando não houver mapeamento."""
         mock_map.get.return_value = None
@@ -308,7 +316,10 @@ class TestUnidadeSupervisao:
                 "10",
             )
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     @patch.object(BaseEOLService, "_get")
     @patch("apps.unidades.services.unidades_service.env")
     def test_resposta_invalida(
@@ -329,7 +340,10 @@ class TestUnidadeSupervisao:
                 "10",
             )
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     @patch.object(BaseEOLService, "_get")
     @patch("apps.unidades.services.unidades_service.env")
     def test_propagacao_erro_integracao(
@@ -350,7 +364,10 @@ class TestUnidadeSupervisao:
                 "10",
             )
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     @patch.object(BaseEOLService, "_get")
     @patch("apps.unidades.services.unidades_service.env")
     def test_propagacao_timeout(
@@ -371,7 +388,10 @@ class TestUnidadeSupervisao:
                 "10",
             )
 
-    @patch("apps.unidades.services.unidades_service." "SUPERVISAO_ESCOLAR_DRES_MAP")
+    @patch(
+        "apps.unidades.services.unidades_service."
+        "SUPERVISAO_ESCOLAR_DRES_MAP"
+    )
     @patch.object(BaseEOLService, "_get")
     @patch("apps.unidades.services.unidades_service.env")
     def test_propagacao_erro_comunicacao(
@@ -431,7 +451,11 @@ class TestCoberturaExtra:
     def test_get_codigo_integracao_codigo_invalido(self):
         """Deve lançar erro para código inválido de integração."""
         with pytest.raises(ValueError):
-            (UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(""))
+            (
+                UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+                    ""
+                )
+            )
 
     @patch("apps.unidades.services.unidades_service.env")
     @patch.object(BaseEOLService, "_get")

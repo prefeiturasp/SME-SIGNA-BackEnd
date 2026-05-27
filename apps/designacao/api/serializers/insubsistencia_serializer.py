@@ -7,9 +7,12 @@ insubsistências duplicadas para o mesmo ato.
 from rest_framework import serializers
 
 from apps.designacao.api.serializers.utils import validar_somente_numeros
-from apps.designacao.models.insubsistencia import Insubsistencia, TipoInsubsistencia
+from apps.designacao.models.insubsistencia import (
+    Insubsistencia,
+    TipoInsubsistencia,
+)
 
-# ── Legado ────────────────────────────────────────────────────────────────────
+# ── Legado ───────────────────────────────────────────────────────────────────
 
 
 class InsubsistenciaSerializer(serializers.ModelSerializer):
@@ -66,14 +69,16 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """Valida regras de negócio para insubsistência.
 
-        Verifica se a designação está informada e garante que não haja insubsistências
+        Verifica se a designação está informada e garante que não haja
+        insubsistências
         duplicadas para o mesmo tipo de ato.
 
         Args:
             data: Dicionário com os dados validados.
 
         Raises:
-            serializers.ValidationError: Se a designação não estiver informada ou se já
+            serializers.ValidationError: Se a designação não estiver informada
+            ou se já
                 existir uma insubsistência para o mesmo ato.
 
         Returns:
@@ -86,7 +91,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
         if not designacao:
             raise serializers.ValidationError(
-                "Informe uma designação ou cessação para cadastrar a insubsistência."
+                "Informe uma designação ou cessação para cadastrar a insubsistência."  # noqa: E501
             )
 
         if tipo_insubsistencia == TipoInsubsistencia.DESIGNACAO and designacao:

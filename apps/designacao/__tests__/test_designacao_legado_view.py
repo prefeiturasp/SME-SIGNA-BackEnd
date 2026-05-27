@@ -42,7 +42,9 @@ def test_list_designacoes_legado(auth_client):
 def test_list_legado_no_pagination(auth_client):
     """Verifica list legado no pagination."""
     for i in range(3):
-        criar_designacao_legado(sei_numero=f"SEI-{i}", indicado_rf=f"000000{i}")
+        criar_designacao_legado(
+            sei_numero=f"SEI-{i}", indicado_rf=f"000000{i}"
+        )
 
     url = reverse("designacao:designacoes")
     response = auth_client.get(url, {"no_pagination": "true"})

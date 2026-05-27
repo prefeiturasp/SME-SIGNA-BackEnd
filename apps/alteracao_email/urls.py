@@ -10,10 +10,14 @@ app_name = "alteracao_email"
 
 router = DefaultRouter()
 router.register(
-    r"solicitar", SolicitarAlteracaoEmailViewSet, basename="solicitar_alteracao_email"
+    r"solicitar",
+    SolicitarAlteracaoEmailViewSet,
+    basename="solicitar_alteracao_email",
 )
 router.register(
-    r"validar", ValidarAlteracaoEmailViewSet, basename="validar_alteracao_email"
+    r"validar",
+    ValidarAlteracaoEmailViewSet,
+    basename="validar_alteracao_email",
 )
 
 urlpatterns = [

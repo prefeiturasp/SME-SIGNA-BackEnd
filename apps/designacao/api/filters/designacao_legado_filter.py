@@ -8,7 +8,10 @@ import django_filters
 
 from django.db import models
 
-from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.models.designacao import (
+    Designacao,
+    ImpedimentoSubstituicao,
+)
 
 
 class DesignacaoLegadoFilter(django_filters.FilterSet):
@@ -23,11 +26,15 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
     cargo_base = django_filters.NumberFilter(method="filter_cargo_base")
     periodo = django_filters.DateFromToRangeFilter(field_name="data_inicio")
     cargo_sobreposto = django_filters.NumberFilter(field_name="cargo_vaga")
-    dre = django_filters.CharFilter(field_name="dre_nome", lookup_expr="icontains")
+    dre = django_filters.CharFilter(
+        field_name="dre_nome", lookup_expr="icontains"
+    )
     unidade = django_filters.CharFilter(
         field_name="unidade_proponente", lookup_expr="icontains"
     )
-    ano = django_filters.CharFilter(field_name="ano_vigente", lookup_expr="exact")
+    ano = django_filters.CharFilter(
+        field_name="ano_vigente", lookup_expr="exact"
+    )
 
     impedimento_substituicao = django_filters.ModelChoiceFilter(
         queryset=ImpedimentoSubstituicao.objects.all()
@@ -46,9 +53,12 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
             value: Valor da RF buscada.
 
         Returns:
-            Queryset filtrado com correspondências por RF de indicado ou titular.
+            Queryset filtrado com correspondências por RF de indicado ou
+            titular.
         """
-        return queryset.filter(models.Q(indicado_rf=value) | models.Q(titular_rf=value))
+        return queryset.filter(
+            models.Q(indicado_rf=value) | models.Q(titular_rf=value)
+        )
 
     def filter_nome(self, queryset, name, value):
         """Filtra designações legadas pelo nome do servidor.
@@ -59,7 +69,8 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
             value: Parte ou nome completo do servidor.
 
         Returns:
-            Queryset filtrado com correspondências por nome de indicado ou titular.
+            Queryset filtrado com correspondências por nome de indicado ou
+            titular.
         """
         return queryset.filter(
             models.Q(indicado_nome_servidor__icontains=value)

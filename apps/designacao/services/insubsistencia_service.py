@@ -11,10 +11,14 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
-_CAMPOS_ATO = frozenset({"numero_portaria", "ano_vigente", "sei_numero", "doc"})
+_CAMPOS_ATO = frozenset(
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+)
 
 
-def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]:
+def _filhos_ativos_ids(
+    ato_pai: AtoAdministrativo, tipo_filho: str
+) -> list[int]:
     """Retorna IDs de filhos ativos de um ato administrativo.
 
     Args:
@@ -25,7 +29,9 @@ def _filhos_ativos_ids(ato_pai: AtoAdministrativo, tipo_filho: str) -> list[int]
         list[int]: Lista de IDs dos atos filhos ativos.
     """
     return list(
-        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list("pk", flat=True)
+        ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list(
+            "pk", flat=True
+        )
     )
 
 
@@ -50,7 +56,9 @@ class InsubsistenciaService:
         ato_pai: AtoAdministrativo = data["ato_pai"]
 
         if not ato_pai.eh_valido:
-            raise ValidationError({"ato_pai": "Este ato já está insubsistente."})
+            raise ValidationError(
+                {"ato_pai": "Este ato já está insubsistente."}
+            )
 
         if ato_pai.filhos.filter(
             tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ativo=True
@@ -68,15 +76,20 @@ class InsubsistenciaService:
                 ato_pai=ato_pai,
                 **data_ato,
             )
-            InsubsistenciaDetalhe.objects.create(ato=ato, observacoes=observacoes)
+            InsubsistenciaDetalhe.objects.create(
+                ato=ato, observacoes=observacoes
+            )
 
             ato_pai.ativo = False
             ato_pai.save(update_fields=["ativo"])
 
             tipo_pai = ato_pai.tipo
 
-            if tipo_pai == AtoAdministrativo.Tipo.INSUBSISTENCIA and ato_pai.ato_pai_id:
-                # TSE: insubsistindo uma Insubsistência — restaura o ato original
+            if (
+                tipo_pai == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and ato_pai.ato_pai_id
+            ):
+                # TSE: insubsistindo uma Insubsistência — restaura o ato original  # noqa: E501
                 avo = ato_pai.ato_pai
                 avo.ativo = True
                 avo.save(update_fields=["ativo"])
@@ -111,7 +124,8 @@ class InsubsistenciaService:
         """Reverte as alterações de uma apostila sobre o ato alvo.
 
         Args:
-            apostila_ato: Ato administrativo do tipo apostila que será revertido.
+            apostila_ato: Ato administrativo do tipo apostila que será
+            revertido.
             alvo: Ato administrativo que receberá a reversão dos valores.
         """
         try:
@@ -175,11 +189,7 @@ class InsubsistenciaService:
             Valor convertido para o tipo do campo, ou valor original se
             a conversão falhar.
         """
-        from django.db.models import (
-            BooleanField,
-            FloatField,
-            IntegerField,
-        )
+        from django.db.models import BooleanField, FloatField, IntegerField
 
         try:
             if hasattr(ato, campo):
@@ -199,31 +209,37 @@ class InsubsistenciaService:
                 return int(valor_str) if valor_str not in ("", None) else None
 
             if isinstance(field, FloatField):
-                return float(valor_str) if valor_str not in ("", None) else None
+                return (
+                    float(valor_str) if valor_str not in ("", None) else None
+                )
 
         except Exception:
             pass
         return valor_str
 
-    # ── Métodos legado ────────────────────────────────────────────────────────
+    # ── Métodos legado ───────────────────────────────────────────────────────
 
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer):
-        """Método legado que retorna o serializer de designação sem alteração."""
+        """Método legado que retorna o serializer de designação sem
+        alteração."""
         return serializer
 
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer):
-        """Método legado que ajusta o serializer para insubsistência de cessação."""
+        """Método legado que ajusta o serializer para insubsistência de
+        cessação."""
         designacao_obj = serializer.validated_data.get("designacao")
 
-        designacao_completa = Designacao.objects.select_related("cessacao").get(
-            id=designacao_obj.id, is_deleted=False
-        )
+        designacao_completa = Designacao.objects.select_related(
+            "cessacao"
+        ).get(id=designacao_obj.id, is_deleted=False)
         cessacao_obj = getattr(designacao_completa, "cessacao", None)
 
         if not cessacao_obj:
-            raise ValidationError("Cessação não encontrada para esta designação.")
+            raise ValidationError(
+                "Cessação não encontrada para esta designação."
+            )
 
         serializer.validated_data["cessacao"] = cessacao_obj
         serializer.validated_data["designacao"] = None

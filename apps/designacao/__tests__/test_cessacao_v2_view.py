@@ -10,7 +10,10 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.designacao.__tests__.factories import criar_ato_cessacao, criar_ato_designacao
+from apps.designacao.__tests__.factories import (
+    criar_ato_cessacao,
+    criar_ato_designacao,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 User = get_user_model()
@@ -20,7 +23,9 @@ User = get_user_model()
 def auth_client(db):
     """Método auth client."""
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username="test_cessacao_v2", password=password)
+    user = User.objects.create_user(
+        username="test_cessacao_v2", password=password
+    )
     client = APIClient()
     client.force_authenticate(user=user)
     return client
@@ -44,7 +49,9 @@ def test_create_cessacao_v2(auth_client):
     designacao = criar_ato_designacao()
 
     url = reverse("designacao_v2:cessacoes")
-    response = auth_client.post(url, data=_payload(designacao.id), format="json")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
     assert response.status_code == 201
     assert AtoAdministrativo.objects.filter(
@@ -69,7 +76,9 @@ def test_create_cessacao_v2_duplicada_rejeita(auth_client):
     criar_ato_cessacao(designacao)
 
     url = reverse("designacao_v2:cessacoes")
-    response = auth_client.post(url, data=_payload(designacao.id), format="json")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
     assert response.status_code == 400
 

@@ -39,7 +39,9 @@ def auth_client(db):
         APIClient: Cliente autenticado pronto para uso nos testes.
     """
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username="test_portaria", password=password)
+    user = User.objects.create_user(
+        username="test_portaria", password=password
+    )
     client = APIClient()
     client.force_authenticate(user=user)
     return client
@@ -261,7 +263,9 @@ class TestPortariaListView:
         """Verifica filtro tipo designacao."""
         response = auth_client.get(URL_LIST, {"tipo": "DESIGNACAO"})
         assert response.status_code == 200
-        assert all(item["tipo_de_ato"] == "Designação" for item in response.data)
+        assert all(
+            item["tipo_de_ato"] == "Designação" for item in response.data
+        )
 
     def test_filtro_tipo_cessacao(self, auth_client, designacao, cessacao):
         """Verifica filtro tipo cessacao."""
@@ -298,14 +302,18 @@ class TestPortariaListView:
         assert len(response.data) == 1
         assert response.data[0]["numero_sei"] == "6018.2024/0001234-5"
 
-    def test_filtro_portaria_inicial(self, auth_client, designacao, designacao_2):
+    def test_filtro_portaria_inicial(
+        self, auth_client, designacao, designacao_2
+    ):
         """Verifica filtro portaria inicial."""
         response = auth_client.get(URL_LIST, {"portaria_inicial": "002/2024"})
         assert response.status_code == 200
         portarias = [item["portaria"] for item in response.data]
         assert all(p >= "002/2024" for p in portarias)
 
-    def test_filtro_portaria_final(self, auth_client, designacao, designacao_2):
+    def test_filtro_portaria_final(
+        self, auth_client, designacao, designacao_2
+    ):
         """Verifica filtro portaria final."""
         response = auth_client.get(URL_LIST, {"portaria_final": "001/2024"})
         assert response.status_code == 200
@@ -340,7 +348,9 @@ class TestPortariaListView:
 
     # ── Search ────────────────────────────────────────────────────────────────
 
-    def test_search_por_numero_portaria(self, auth_client, designacao, designacao_2):
+    def test_search_por_numero_portaria(
+        self, auth_client, designacao, designacao_2
+    ):
         """Verifica search por numero portaria."""
         response = auth_client.get(URL_LIST, {"search": "001/2024"})
         assert response.status_code == 200
@@ -353,7 +363,9 @@ class TestPortariaListView:
         assert response.status_code == 200
         assert len(response.data) == 1
 
-    def test_search_por_nome_servidor(self, auth_client, designacao, designacao_2):
+    def test_search_por_nome_servidor(
+        self, auth_client, designacao, designacao_2
+    ):
         """Verifica search por nome servidor."""
         response = auth_client.get(URL_LIST, {"search": "JOAO"})
         assert response.status_code == 200
@@ -387,7 +399,12 @@ class TestPortariaListView:
         response = auth_client.get(URL_LIST)
         assert response.status_code == 200
         tipos = {item["tipo_de_ato"] for item in response.data}
-        assert tipos == {"Designação", "Cessação", "Insubsistência", "Apostila"}
+        assert tipos == {
+            "Designação",
+            "Cessação",
+            "Insubsistência",
+            "Apostila",
+        }
 
 
 # ─── Testes: POST /portarias/atualizar-data-publicacao/ ───────────────────────
@@ -401,7 +418,9 @@ class TestAtualizarDataPublicacao:
     e preserva atos inativos ou não incluídos.
     """
 
-    def test_atualiza_doc_com_sucesso(self, auth_client, designacao, designacao_2):
+    def test_atualiza_doc_com_sucesso(
+        self, auth_client, designacao, designacao_2
+    ):
         """Verifica atualiza doc com sucesso."""
         payload = {
             "ids": [designacao.pk, designacao_2.pk],
@@ -440,7 +459,9 @@ class TestAtualizarDataPublicacao:
     def test_erro_ids_vazio(self, auth_client):
         """Verifica erro ids vazio."""
         response = auth_client.post(
-            URL_ATUALIZAR, {"ids": [], "data_publicacao": "10.234"}, format="json"
+            URL_ATUALIZAR,
+            {"ids": [], "data_publicacao": "10.234"},
+            format="json",
         )
         assert response.status_code == 400
         assert "ids" in response.data

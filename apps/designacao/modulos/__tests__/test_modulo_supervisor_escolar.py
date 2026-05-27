@@ -6,7 +6,9 @@ para o cargo 3352.
 
 import logging
 
-from apps.designacao.modulos.supervisor_escolar import ModuloSupervisorEscolarCalculator
+from apps.designacao.modulos.supervisor_escolar import (
+    ModuloSupervisorEscolarCalculator,
+)
 
 
 class TestModuloSupervisorEscolarCalculator:
@@ -67,4 +69,6 @@ class TestModuloSupervisorEscolarCalculator:
             resultado = self.calculator.calcular(cargo, informacoes_ue)
 
         assert resultado == 0
-        assert "não possui módulo definido para Supervisor Escolar" in caplog.text
+        assert (
+            "não possui módulo definido para Supervisor Escolar" in caplog.text
+        )

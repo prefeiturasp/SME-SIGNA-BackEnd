@@ -117,7 +117,9 @@ def test_paginate_queryset_retorna_none_quando_no_pagination_true():
     url = reverse("designacao_v2:designacoes")
     request = Request(APIRequestFactory().get(url, {"no_pagination": "true"}))
 
-    page = paginator.paginate_queryset(AtoAdministrativo.objects.none(), request)
+    page = paginator.paginate_queryset(
+        AtoAdministrativo.objects.none(), request
+    )
 
     assert page is None
 

@@ -104,7 +104,10 @@ def test_login_updates_existing_user(client, mock_sme_success):
     old_password = secrets.token_urlsafe(16)
 
     user = User.objects.create_user(
-        username="1234567", password=old_password, name="Antigo", email="old@mail.com"
+        username="1234567",
+        password=old_password,
+        name="Antigo",
+        email="old@mail.com",
     )
 
     new_password = secrets.token_urlsafe(16)
@@ -152,7 +155,9 @@ def test_login_sme_integracao_exception():
         mocked_login.side_effect = SmeIntegracaoException("Falha SME")
 
         response = client.post(
-            url, {"username": "12345678", "password": wrong_password}, format="json"
+            url,
+            {"username": "12345678", "password": wrong_password},
+            format="json",
         )
 
     assert response.status_code == 400
@@ -241,7 +246,9 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypatch):
+def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(
+    client, monkeypatch
+):
     """Verifica bloqueio de acesso quando o código SIGNA esperado não está presente."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)

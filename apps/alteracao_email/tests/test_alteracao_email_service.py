@@ -8,8 +8,13 @@ from django.http import Http404
 from django.utils.timezone import now, timedelta
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
-from apps.alteracao_email.services.alteracao_email_service import AlteracaoEmailService
-from apps.helpers.exceptions import TokenExpiradoException, TokenJaUtilizadoException
+from apps.alteracao_email.services.alteracao_email_service import (
+    AlteracaoEmailService,
+)
+from apps.helpers.exceptions import (
+    TokenExpiradoException,
+    TokenJaUtilizadoException,
+)
 from apps.usuarios.models import User
 
 

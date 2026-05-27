@@ -127,7 +127,9 @@ class TestCessacaoViewSet:
         cessacao.save()
 
         url = reverse("designacao:cessacoes")
-        response = auth_client.get(url)  # aqui auth_client é o fixture, funciona
+        response = auth_client.get(
+            url
+        )  # aqui auth_client é o fixture, funciona
         assert response.status_code == status.HTTP_200_OK
 
         data_list = response.data

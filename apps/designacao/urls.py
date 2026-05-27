@@ -6,7 +6,9 @@ from apps.designacao.api.views.designacao_impedimentos_view import (
     ImpedimentoSubstituicaoView,
 )
 from apps.designacao.api.views.designacao_legado import DesignacaoLegadoViewSet
-from apps.designacao.api.views.designacao_servidor_view import DesignacaoServidorView
+from apps.designacao.api.views.designacao_servidor_view import (
+    DesignacaoServidorView,
+)
 from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
     DesignacaoUnidadeView,
@@ -53,7 +55,9 @@ urlpatterns = [
     ),
     path(
         "designacoes/cargos-sobrepostos-pareados/",
-        DesignacaoLegadoViewSet.as_view({"get": "cargos_sobrepostos_pareados"}),
+        DesignacaoLegadoViewSet.as_view(
+            {"get": "cargos_sobrepostos_pareados"}
+        ),
         name="cargos-sobrepostos-pareados",
     ),
     # Cessações (legado — modelo Cessacao)

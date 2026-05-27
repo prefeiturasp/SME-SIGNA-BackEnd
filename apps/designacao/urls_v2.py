@@ -4,14 +4,18 @@ from apps.designacao.api.views.designacao import DesignacaoViewSet
 from apps.designacao.api.views.designacao_impedimentos_view import (
     ImpedimentoSubstituicaoView,
 )
-from apps.designacao.api.views.designacao_servidor_view import DesignacaoServidorView
+from apps.designacao.api.views.designacao_servidor_view import (
+    DesignacaoServidorView,
+)
 from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
     DesignacaoUnidadeView,
 )
 from apps.designacao.api.views.v2.apostila_view import ApostilaV2ViewSet
 from apps.designacao.api.views.v2.cessacao_view import CessacaoV2ViewSet
-from apps.designacao.api.views.v2.insubsistencia_view import InsubsistenciaV2ViewSet
+from apps.designacao.api.views.v2.insubsistencia_view import (
+    InsubsistenciaV2ViewSet,
+)
 
 app_name = "designacao_v2"
 
@@ -20,7 +24,9 @@ urlpatterns = [
     path("servidor", DesignacaoServidorView.as_view(), name="servidor"),
     path("unidade/", DesignacaoUnidadeView.as_view(), name="unidade"),
     path(
-        "unidade/cargos/", DesignacaoUnidadeCargosView.as_view(), name="unidade-cargos"
+        "unidade/cargos/",
+        DesignacaoUnidadeCargosView.as_view(),
+        name="unidade-cargos",
     ),
     # Designações (nova modelagem — AtoAdministrativo + DesignacaoDetalhe)
     path(
@@ -86,7 +92,7 @@ urlpatterns = [
         ),
         name="apostila-detail",
     ),
-    # Insubsistências (nova modelagem — AtoAdministrativo + InsubsistenciaDetalhe)
+    # Insubsistências (nova modelagem — AtoAdministrativo + InsubsistenciaDetalhe)  # noqa: E501
     path(
         "insubsistencias/",
         InsubsistenciaV2ViewSet.as_view({"get": "list", "post": "create"}),

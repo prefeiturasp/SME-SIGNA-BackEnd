@@ -69,7 +69,11 @@ class EnviaEmailService:
             email = EmailMessage(
                 subject=assunto,
                 body=corpo_html,
-                to=[destinatario] if isinstance(destinatario, str) else destinatario,
+                to=(
+                    [destinatario]
+                    if isinstance(destinatario, str)
+                    else destinatario
+                ),
             )
             email.content_subtype = "html"
             email.send()

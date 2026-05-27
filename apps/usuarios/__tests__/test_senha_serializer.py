@@ -12,7 +12,9 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
-from apps.usuarios.api.serializers.senha_serializer import RedefinirSenhaSerializer
+from apps.usuarios.api.serializers.senha_serializer import (
+    RedefinirSenhaSerializer,
+)
 
 User = get_user_model()
 
@@ -71,7 +73,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "As senhas não conferem."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "As senhas não conferem."
+        )
 
     def test_serializer_user_not_found(self):
         """Verifica que UID inexistente resulta em erro de usuário não encontrado."""
@@ -87,7 +92,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "Usuário não encontrado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "Usuário não encontrado."
+        )
 
     def test_serializer_invalid_token(self, django_user_model):
         """Verifica que token inválido ou expirado é rejeitado."""
@@ -107,7 +115,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "Token inválido ou expirado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "Token inválido ou expirado."
+        )
 
     def test_serializer_invalid_uid(self):
         """Verifica que UID malformado gera erro de validação."""
@@ -121,7 +132,10 @@ class TestRedefinirSenhaSerializer:
         serializer = RedefinirSenhaSerializer(data=data)
 
         assert not serializer.is_valid()
-        assert serializer.errors["non_field_errors"][0] == "UID inválido ou malformado."
+        assert (
+            serializer.errors["non_field_errors"][0]
+            == "UID inválido ou malformado."
+        )
 
     def test_serializer_uid_not_numeric(self, django_user_model):
         """

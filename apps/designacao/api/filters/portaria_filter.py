@@ -12,7 +12,8 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 class PortariaFilter(django_filters.FilterSet):
     """Filtro de portarias baseado no modelo AtoAdministrativo.
 
-    Este filtro oferece critérios para localizar portarias por número, tipo, ano,
+    Este filtro oferece critérios para localizar portarias por número, tipo,
+    ano,
     servidor, unidade e data de cessação.
     """
 

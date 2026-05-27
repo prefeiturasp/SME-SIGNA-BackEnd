@@ -20,13 +20,22 @@ class AtoAdministrativo(models.Model):
     _TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
-        "INSUBSISTENCIA": {"DESIGNACAO", "CESSACAO", "APOSTILA", "INSUBSISTENCIA"},
+        "INSUBSISTENCIA": {
+            "DESIGNACAO",
+            "CESSACAO",
+            "APOSTILA",
+            "INSUBSISTENCIA",
+        },
     }
 
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
 
     ato_pai = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="filhos"
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="filhos",
     )
     ato_raiz = models.ForeignKey(
         "self",
@@ -55,13 +64,14 @@ class AtoAdministrativo(models.Model):
         e que uma designação não tenha mais de uma cessação ativa associada.
 
         Raises:
-            ValidationError: Quando as regras de consistência não forem atendidas.
+            ValidationError: Quando as regras de consistência não forem
+            atendidas.
         """
         if self.ato_pai_id:
             tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
-                    f"{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai."
+                    f"{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai."  # noqa: E501
                 )
         elif self.tipo != self.Tipo.DESIGNACAO:
             raise ValidationError(f"{self.tipo} precisa de um ato pai.")
@@ -77,11 +87,14 @@ class AtoAdministrativo(models.Model):
                 qs = qs.exclude(pk=self.pk)
             if qs.exists():
                 raise ValidationError(
-                    {"ato_pai": "Esta designação já possui uma cessação ativa."}
+                    {
+                        "ato_pai": "Esta designação já possui uma cessação ativa."  # noqa: E501
+                    }
                 )
 
     def save(self, *args, **kwargs):
-        """Salva o ato administrativo aplicando regras automáticas de hierarquia.
+        """Salva o ato administrativo aplicando regras automáticas
+        de hierarquia.
 
         Define automaticamente o ato raiz a partir do ato pai quando necessário
         e executa validações completas antes da persistência.
@@ -105,13 +118,15 @@ class AtoAdministrativo(models.Model):
         se existe uma cessação ativa associada.
 
         Returns:
-            str: Status do ato, podendo ser 'ativo', 'cessada' ou 'insubsistente'.
+            str: Status do ato, podendo ser 'ativo', 'cessada' ou
+            'insubsistente'.
         """
         if not self.ativo:
             return "insubsistente"
         if self.tipo == self.Tipo.DESIGNACAO:
             tem_cessacao_ativa = any(
-                f.tipo == self.Tipo.CESSACAO and f.ativo for f in self.filhos.all()
+                f.tipo == self.Tipo.CESSACAO and f.ativo
+                for f in self.filhos.all()
             )
             if tem_cessacao_ativa:
                 return "cessada"

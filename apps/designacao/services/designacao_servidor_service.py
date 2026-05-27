@@ -33,9 +33,13 @@ class DesignacaoServidorService:
         if not registro_funcional:
             raise SmeIntegracaoException("Registro funcional é obrigatório")
 
-        usuario = SmeIntegracaoService.informacao_usuario_sgp(registro_funcional)
+        usuario = SmeIntegracaoService.informacao_usuario_sgp(
+            registro_funcional
+        )
 
-        cargos = SmeIntegracaoService.consulta_cargos_funcionario(registro_funcional)
+        cargos = SmeIntegracaoService.consulta_cargos_funcionario(
+            registro_funcional
+        )
 
         if not cargos:
             raise SmeIntegracaoException("Servidor não possui cargos")
@@ -78,14 +82,14 @@ class DesignacaoServidorService:
 
         return {
             "nome_servidor": usuario.get("nome"),
-            "nome_civil": "",  # to-do: ajustar quando tiver api eol que traga valor
+            "nome_civil": "",  # to-do: ajustar quando tiver api eol que traga valor  # noqa: E501
             "rf": usuario.get("codigoRf"),
             "vinculo": cargo.get("tipoVinculoCargoBase"),
             "cd_cargo_base": cargo.get("cdCargoBase"),
             "cargo_base": cargo.get("cargoBase"),
             "lotacao": cargo.get("ueCargoBase"),
             "cd_cargo_sobreposto_funcao_atividade": cd_cargo_sobreposto_funcao_atividade,  # noqa: E501
-            "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,
+            "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,  # noqa: E501
             "local_de_exercicio": local_exercicio,
             "laudo_medico": "Indisponível",
             "local_de_servico": "Indisponível",

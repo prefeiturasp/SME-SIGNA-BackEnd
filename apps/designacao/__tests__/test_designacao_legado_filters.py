@@ -7,8 +7,13 @@ import datetime
 from django.test import TestCase
 
 from apps.designacao.__tests__.factories import criar_designacao_legado
-from apps.designacao.api.filters.designacao_legado_filter import DesignacaoLegadoFilter
-from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.api.filters.designacao_legado_filter import (
+    DesignacaoLegadoFilter,
+)
+from apps.designacao.models.designacao import (
+    Designacao,
+    ImpedimentoSubstituicao,
+)
 
 
 class DesignacaoLegadoFilterTest(TestCase):
@@ -104,13 +109,16 @@ class DesignacaoLegadoFilterTest(TestCase):
     def test_filter_impedimento_substituicao(self):
         """Verifica filter impedimento substituicao."""
         f = DesignacaoLegadoFilter(
-            {"impedimento_substituicao": self.impedimento1.id}, queryset=self._qs()
+            {"impedimento_substituicao": self.impedimento1.id},
+            queryset=self._qs(),
         )
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_impedimento_codigo(self):
         """Verifica filter impedimento codigo."""
-        f = DesignacaoLegadoFilter({"impedimento_codigo": "IMP2"}, queryset=self._qs())
+        f = DesignacaoLegadoFilter(
+            {"impedimento_codigo": "IMP2"}, queryset=self._qs()
+        )
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)

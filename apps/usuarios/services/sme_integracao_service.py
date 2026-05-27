@@ -11,7 +11,9 @@ import requests
 
 from rest_framework import status
 
-from apps.designacao.constants.cargos_gestao_escolar import CARGOS_GESTAO_ESCOLAR
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR,
+)
 from apps.helpers.exceptions import (
     AuthenticationError,
     InternalError,
@@ -62,7 +64,9 @@ class SmeIntegracaoService:
             "codigoSistema": env("CODIGO_SISTEMA_SIGNA", default=""),
         }
 
-        url = f"{env('SME_INTEGRACAO_URL', default='')}/v1/autenticacao/externa"
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}/v1/autenticacao/externa"
+        )
 
         logger.info("Autenticando no CoreSSO: %s", login)
 
@@ -112,7 +116,9 @@ class SmeIntegracaoService:
         logger.info(f"Consultando dados na API externa para: {username}")
         try:
             url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/{username}/dados"  # noqa: E501
-            response = requests.get(url, headers=cls.DEFAULT_HEADERS, timeout=10)
+            response = requests.get(
+                url, headers=cls.DEFAULT_HEADERS, timeout=10
+            )
 
             if response.status_code == status.HTTP_200_OK:
                 return response.json()
@@ -123,7 +129,9 @@ class SmeIntegracaoService:
 
         except requests.RequestException:
             logger.exception("Erro de conexão com a API externa")
-            raise requests.RequestException("Erro ao conectar-se à API externa.")
+            raise requests.RequestException(
+                "Erro ao conectar-se à API externa."
+            )
 
     @classmethod
     def redefine_senha(cls, registro_funcional, senha):
@@ -146,7 +154,9 @@ class SmeIntegracaoService:
         """
 
         if not registro_funcional or not senha:
-            raise SmeIntegracaoException("Registro funcional e senha são obrigatórios")
+            raise SmeIntegracaoException(
+                "Registro funcional e senha são obrigatórios"
+            )
 
         logger.info(
             "Iniciando redefinição de senha no CoreSSO para usuário: %s",
@@ -157,11 +167,11 @@ class SmeIntegracaoService:
 
         try:
 
-            url = (
-                f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/AlterarSenha"
-            )
+            url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/AlterarSenha"  # noqa: E501
 
-            response = requests.post(url, data=data, headers=cls.DEFAULT_HEADERS)
+            response = requests.post(
+                url, data=data, headers=cls.DEFAULT_HEADERS
+            )
 
             if response.status_code == status.HTTP_200_OK:
                 result = "OK"
@@ -191,7 +201,9 @@ class SmeIntegracaoService:
         """
 
         if not registro_funcional or not email:
-            raise SmeIntegracaoException("Registro funcional e email são obrigatórios")
+            raise SmeIntegracaoException(
+                "Registro funcional e email são obrigatórios"
+            )
 
         logger.info(
             "Iniciando alteração de email no CoreSSO para usuário: %s",
@@ -202,11 +214,11 @@ class SmeIntegracaoService:
 
         try:
 
-            url = (
-                f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/AlterarEmail"
-            )
+            url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/AlterarEmail"  # noqa: E501
 
-            response = requests.post(url, data=data, headers=cls.DEFAULT_HEADERS)
+            response = requests.post(
+                url, data=data, headers=cls.DEFAULT_HEADERS
+            )
 
             if response.status_code == status.HTTP_200_OK:
                 result = "OK"
@@ -227,7 +239,9 @@ class SmeIntegracaoService:
         if not registro_funcional:
             raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
 
-        logger.info("Consultando cargos do servidor no SME. RF: %s", registro_funcional)
+        logger.info(
+            "Consultando cargos do servidor no SME. RF: %s", registro_funcional
+        )
 
         try:
             cargos = cls._buscar_cargos(registro_funcional)
@@ -284,7 +298,9 @@ class SmeIntegracaoService:
             cargo["cargoBase"] = cls.formatar_cargo(cargo["cargoBase"])
 
         if cargo.get("cargoSobreposto"):
-            cargo["cargoSobreposto"] = cls.formatar_cargo(cargo["cargoSobreposto"])
+            cargo["cargoSobreposto"] = cls.formatar_cargo(
+                cargo["cargoSobreposto"]
+            )
 
         cargo["ueCargoBase"] = cls._montar_ue(
             cargo.get("cdUeCargoBase"), cargo.get("ueCargoBase")
@@ -305,7 +321,8 @@ class SmeIntegracaoService:
             nome_ue (str): Nome da unidade escolar.
 
         Returns:
-            str: Nome formatado da unidade ou o valor original quando não for possível.
+            str: Nome formatado da unidade ou o valor original quando não for
+            possível.
         """
         if not codigo_ue:
             return nome_ue
@@ -364,7 +381,7 @@ class SmeIntegracaoService:
                     status.HTTP_204_NO_CONTENT,
                 ):
                     logger.error(
-                        "Erro ao buscar cargo %s da UE %s | Status: %s | Body: %s",
+                        "Erro ao buscar cargo %s da UE %s | Status: %s | Body: %s",  # noqa: E501
                         codigo_cargo,
                         codigo_ue,
                         response.status_code,
@@ -382,7 +399,7 @@ class SmeIntegracaoService:
                         servidores_api = response.json()
                     except ValueError:
                         logger.error(
-                            "Resposta inválida da SME | UE %s | Cargo %s | Body: %s",
+                            "Resposta inválida da SME | UE %s | Cargo %s | Body: %s",  # noqa: E501
                             codigo_ue,
                             codigo_cargo,
                             response.text,
@@ -432,7 +449,9 @@ class SmeIntegracaoService:
             ou dados inválidos.
         """
         if not codigo_ue or not ano_letivo:
-            raise SmeIntegracaoException("Código da UE e ano letivo são obrigatórios")
+            raise SmeIntegracaoException(
+                "Código da UE e ano letivo são obrigatórios"
+            )
 
         url = (
             f"{env('SME_INTEGRACAO_URL', default='')}"
@@ -452,7 +471,9 @@ class SmeIntegracaoService:
             raise SmeIntegracaoException(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
-            logger.exception("Erro de comunicação com API de turmas de um ano letivo")
+            logger.exception(
+                "Erro de comunicação com API de turmas de um ano letivo"
+            )
             raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
@@ -466,12 +487,16 @@ class SmeIntegracaoService:
             dict: Dados detalhados da turma.
 
         Raises:
-            SmeIntegracaoException: Quando a turma não for encontrada ou a API falhar.
+            SmeIntegracaoException: Quando a turma não for encontrada ou a API
+            falhar.
         """
         if not codigo_turma:
             raise SmeIntegracaoException("Código da turma é obrigatório")
 
-        url = f"{env('SME_INTEGRACAO_URL', default='')}" f"/turmas/{codigo_turma}/dados"
+        url = (
+            f"{env('SME_INTEGRACAO_URL', default='')}"
+            f"/turmas/{codigo_turma}/dados"
+        )
 
         try:
             response = requests.get(
@@ -507,11 +532,12 @@ class SmeIntegracaoService:
             raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
 
         logger.info(
-            "Consultando informações da unidade escolar em SME. código: %s", codigo_ue
+            "Consultando informações da unidade escolar em SME. código: %s",
+            codigo_ue,
         )
 
         try:
-            url = f"{env('SME_INTEGRACAO_URL', default='')}/escolas/dados/{codigo_ue}"
+            url = f"{env('SME_INTEGRACAO_URL', default='')}/escolas/dados/{codigo_ue}"  # noqa: E501
 
             response = requests.get(
                 url,
@@ -559,7 +585,9 @@ class SmeIntegracaoService:
             f"/funcionarios/turmas/{codigo_turma}/disciplinas"
         )
 
-        logger.info("Consultando disciplinas da turma no SME. Turma: %s", codigo_turma)
+        logger.info(
+            "Consultando disciplinas da turma no SME. Turma: %s", codigo_turma
+        )
 
         try:
             response = requests.get(
@@ -583,7 +611,7 @@ class SmeIntegracaoService:
                 return []
 
             logger.error(
-                "Erro ao consultar disciplinas da turma %s | Status: %s | Body: %s",
+                "Erro ao consultar disciplinas da turma %s | Status: %s | Body: %s",  # noqa: E501
                 codigo_turma,
                 response.status_code,
                 response.text,

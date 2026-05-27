@@ -1,6 +1,7 @@
 """Serializadores v2 para cessação.
 
-Inclui payloads de criação e leitura de cessação, com validações de número e ano.
+Inclui payloads de criação e leitura de cessação, com validações de número e
+ano.
 """
 
 from rest_framework import serializers
@@ -15,7 +16,8 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 class CessacaoV2WriteSerializer(serializers.Serializer):
     """Serializador de escrita para cessação v2.
 
-    Valida os dados necessários para criar uma cessação vinculada a uma designação.
+    Valida os dados necessários para criar uma cessação vinculada a uma
+    designação.
     """
 
     # AtoAdministrativo pai (designação à qual esta cessação pertence)

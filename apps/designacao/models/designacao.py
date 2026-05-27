@@ -9,7 +9,8 @@ from django.utils import timezone
 
 
 class ImpedimentoSubstituicao(models.Model):
-    """Representa um impedimento que pode afetar a substituição de atividade."""
+    """Representa um impedimento que pode afetar a substituição de
+    atividade."""
 
     codigo = models.CharField(max_length=50, unique=True)
     descricao = models.CharField(max_length=255)
@@ -27,7 +28,8 @@ class ImpedimentoSubstituicao(models.Model):
 
 
 class Designacao(models.Model):
-    """Representa uma designação de servidor com dados de vaga, portaria e período."""
+    """Representa uma designação de servidor com dados de vaga, portaria e
+    período."""
 
     class TipoVaga(models.TextChoices):
         VAGO = "VAGO", "Cargo Vago"
@@ -49,30 +51,52 @@ class Designacao(models.Model):
     funcionarios_da_unidade = models.CharField(max_length=50)
 
     # --- Indicado ---
-    indicado_nome_civil = models.CharField(max_length=255, blank=True, default="")
+    indicado_nome_civil = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     indicado_nome_servidor = models.CharField(max_length=255)
     indicado_rf = models.CharField(max_length=8)
     indicado_vinculo = models.IntegerField()
     indicado_cargo_base = models.CharField(max_length=255)
     indicado_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     indicado_lotacao = models.CharField(max_length=255)
-    indicado_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
-    indicado_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
+    indicado_cargo_sobreposto = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    indicado_codigo_cargo_sobreposto = models.IntegerField(
+        null=True, blank=True
+    )
     indicado_local_exercicio = models.CharField(max_length=255)
-    indicado_local_servico = models.CharField(max_length=255, blank=True, default="")
+    indicado_local_servico = models.CharField(
+        max_length=255, blank=True, default=""
+    )
 
     # --- Titular ---
-    titular_nome_civil = models.CharField(max_length=255, blank=True, default="")
-    titular_nome_servidor = models.CharField(max_length=255, blank=True, default="")
+    titular_nome_civil = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_nome_servidor = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     titular_rf = models.CharField(max_length=8, blank=True, default="")
     titular_vinculo = models.IntegerField(null=True, blank=True)
-    titular_cargo_base = models.CharField(max_length=255, blank=True, default="")
+    titular_cargo_base = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     titular_codigo_cargo_base = models.IntegerField(null=True, blank=True)
     titular_lotacao = models.CharField(max_length=255, blank=True, default="")
-    titular_cargo_sobreposto = models.CharField(max_length=255, blank=True, default="")
-    titular_codigo_cargo_sobreposto = models.IntegerField(null=True, blank=True)
-    titular_local_exercicio = models.CharField(max_length=255, blank=True, default="")
-    titular_local_servico = models.CharField(max_length=255, blank=True, default="")
+    titular_cargo_sobreposto = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_codigo_cargo_sobreposto = models.IntegerField(
+        null=True, blank=True
+    )
+    titular_local_exercicio = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    titular_local_servico = models.CharField(
+        max_length=255, blank=True, default=""
+    )
 
     # --- Portaria ---
     numero_portaria = models.CharField(max_length=20)
@@ -96,11 +120,15 @@ class Designacao(models.Model):
 
     # --- Informações Adicionais ---
     informacoes_adicionais = models.TextField(blank=True, default="")
-    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(default=True)
+    detalhe_para_quadro_de_historico_por_ano = models.BooleanField(
+        default=True
+    )
 
     # --- Vaga ---
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)
-    cargo_vaga = models.IntegerField(choices=CargoVaga.choices, null=True, blank=True)
+    cargo_vaga = models.IntegerField(
+        choices=CargoVaga.choices, null=True, blank=True
+    )
 
     # --- Controle ---
     criado_em = models.DateTimeField(auto_now_add=True)

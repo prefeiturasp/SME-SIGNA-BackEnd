@@ -49,7 +49,9 @@ class ApostilaV2ViewSet(
             QuerySet: Apostilas ordenadas por data de criação decrescente.
         """
         return (
-            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.APOSTILA)
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.APOSTILA
+            )
             .select_related("apostila_detalhe")
             .prefetch_related(
                 "apostila_detalhe__alteracoes",

@@ -1,17 +1,25 @@
 """Serializadores legados para designação e impedimentos.
 
-Fornece serialização de designações legadas com detalhes de cessação, insubsistência
+Fornece serialização de designações legadas com detalhes de cessação,
+insubsistência
 apositilas e impedimentos de substituição.
 """
 
 from rest_framework import serializers
 
-from apps.designacao.api.serializers.apostila_serializer import ApostilaSerializer
-from apps.designacao.api.serializers.cessacao_serializer import CessacaoSerializer
+from apps.designacao.api.serializers.apostila_serializer import (
+    ApostilaSerializer,
+)
+from apps.designacao.api.serializers.cessacao_serializer import (
+    CessacaoSerializer,
+)
 from apps.designacao.api.serializers.insubsistencia_serializer import (
     InsubsistenciaSerializer,
 )
-from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+from apps.designacao.models.designacao import (
+    Designacao,
+    ImpedimentoSubstituicao,
+)
 
 
 class ImpedimentoSubstituicaoLegadoSerializer(serializers.ModelSerializer):
@@ -30,7 +38,8 @@ class ImpedimentoSubstituicaoLegadoSerializer(serializers.ModelSerializer):
 class DesignacaoLegadoSerializer(serializers.ModelSerializer):
     """Serializador para designações legadas.
 
-    Une dados de designação com cessação, insubsistência, apostilas e informações
+    Une dados de designação com cessação, insubsistência, apostilas e
+    informações
     de impedimento de substituição para a API legada.
     """
 
@@ -38,7 +47,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
     insubsistencia = serializers.SerializerMethodField()
     apostilas = serializers.SerializerMethodField()
 
-    # Campos opcionais que o model não declara blank=True mas o frontend não envia
+    # Campos opcionais que o model não declara blank=True mas o frontend não envia  # noqa: E501
     ue = serializers.CharField(
         max_length=50, required=False, default="", allow_blank=True
     )
@@ -98,10 +107,13 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
             obj: Instância de Designacao.
 
         Returns:
-            dict|None: Dados serializados da insubsistência ou None se não existir.
+            dict|None: Dados serializados da insubsistência ou None se não
+            existir.
         """
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False).order_by("-criado_em").first()
+            obj.insubsistencia.filter(is_deleted=False)
+            .order_by("-criado_em")
+            .first()
         )
         if insubsistencia:
             return InsubsistenciaSerializer(insubsistencia).data
@@ -116,7 +128,9 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
         Returns:
             list: Lista de apostilas serializadas.
         """
-        apostilas = obj.apostilas.filter(is_deleted=False).order_by("-criado_em")
+        apostilas = obj.apostilas.filter(is_deleted=False).order_by(
+            "-criado_em"
+        )
         return ApostilaSerializer(apostilas, many=True).data
 
     def get_impedimento_display(self, obj):

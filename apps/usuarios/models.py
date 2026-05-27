@@ -18,7 +18,9 @@ class User(AbstractUser):
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField("Nome completo", max_length=150, blank=True)
-    cpf = models.CharField("CPF", max_length=11, unique=True, null=True, blank=True)
+    cpf = models.CharField(
+        "CPF", max_length=11, unique=True, null=True, blank=True
+    )
     email = models.EmailField("E-mail", unique=True, null=True, blank=True)
 
     class Meta:

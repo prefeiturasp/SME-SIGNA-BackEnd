@@ -91,7 +91,9 @@ def test_post_sucesso(mock_serializer, mock_service, auth_client, url):
     "apps.designacao.api.views.designacao_servidor_view."
     "DesignacaoServidorRequestSerializer"
 )
-def test_post_sme_integracao_exception(mock_serializer, mock_service, auth_client, url):
+def test_post_sme_integracao_exception(
+    mock_serializer, mock_service, auth_client, url
+):
     """Verifica post sme integracao exception."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.return_value = True
@@ -114,7 +116,9 @@ def test_post_sme_integracao_exception(mock_serializer, mock_service, auth_clien
     "apps.designacao.api.views.designacao_servidor_view."
     "DesignacaoServidorRequestSerializer"
 )
-def test_post_exception_generica(mock_serializer, mock_service, auth_client, url):
+def test_post_exception_generica(
+    mock_serializer, mock_service, auth_client, url
+):
     """Verifica post exception generica."""
     serializer_instance = MagicMock()
     serializer_instance.is_valid.return_value = True

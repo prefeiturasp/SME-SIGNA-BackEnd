@@ -1,6 +1,7 @@
 """Serializador para criação e validação de apostilas.
 
-O serializador expõe os campos necessários para vincular uma apostila a uma designação
+O serializador expõe os campos necessários para vincular uma apostila a uma
+designação
 ou cessação, além de validar a presença obrigatória da designação.
 """
 
@@ -12,7 +13,8 @@ from apps.designacao.models.apostila import Apostila
 class ApostilaSerializer(serializers.ModelSerializer):
     """Serializador de Apostila.
 
-    Valida os dados de apostila e garante que a designação associada esteja presente.
+    Valida os dados de apostila e garante que a designação associada esteja
+    presente.
     """
 
     designacao = serializers.IntegerField(write_only=True)
@@ -40,7 +42,8 @@ class ApostilaSerializer(serializers.ModelSerializer):
             data: Dicionário com os dados da apostila.
 
         Raises:
-            serializers.ValidationError: Se o campo de designação estiver ausente.
+            serializers.ValidationError: Se o campo de designação estiver
+            ausente.
 
         Returns:
             dict: Dados validados.

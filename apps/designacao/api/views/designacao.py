@@ -40,7 +40,8 @@ class DesignacaoPagination(PageNumberPagination):
             view: View atual.
 
         Returns:
-            list|None: Lista paginada ou None quando a paginação está desabilitada.
+            list|None: Lista paginada ou None quando a paginação está
+            desabilitada.
         """
         if request.query_params.get("no_pagination", "").lower() == "true":
             return None
@@ -92,13 +93,17 @@ class DesignacaoViewSet(
 
         Realiza filtros por tipo de ato administrativo, aplica otimizações
         com `select_related` e `prefetch_related` para reduzir consultas
-        ao banco de dados e ordena os resultados por data de criação decrescente.
+        ao banco de dados e ordena os resultados por data de criação
+        decrescente.
 
         Returns:
-            QuerySet: Queryset otimizado de atos administrativos do tipo designação.
+            QuerySet: Queryset otimizado de atos administrativos do tipo
+            designação.
         """
         return (
-            AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.DESIGNACAO
+            )
             .select_related(
                 "designacao_detalhe",
                 "designacao_detalhe__impedimento_substituicao",
@@ -114,7 +119,7 @@ class DesignacaoViewSet(
             .order_by("-criado_em")
         )
 
-    # ── Helpers de paginação ──────────────────────────────────────────────────
+    # ── Helpers de paginação ─────────────────────────────────────────────────
 
     def _is_no_pagination(self):
         """Verifica se a paginação deve ser desabilitada.
@@ -122,7 +127,10 @@ class DesignacaoViewSet(
         Returns:
             bool: True quando no_pagination=true estiver presente.
         """
-        return self.request.query_params.get("no_pagination", "").lower() == "true"
+        return (
+            self.request.query_params.get("no_pagination", "").lower()
+            == "true"
+        )
 
     def _has_filters(self):
         """Verifica se a requisição contém filtros além da paginação.
@@ -134,14 +142,16 @@ class DesignacaoViewSet(
         return bool(set(self.request.query_params.keys()) - PAGINATION_PARAMS)
 
     def _should_limit_queryset(self):
-        """Determina se o queryset deve ser limitado para evitar retornos muito grandes.
+        """Determina se o queryset deve ser limitado para evitar
+        retornos muito grandes.
 
         Returns:
-            bool: True quando não houver filtros nem desabilitação de paginação.
+            bool: True quando não houver filtros nem desabilitação de
+            paginação.
         """
         return not self._has_filters() and not self._is_no_pagination()
 
-    # ── List ──────────────────────────────────────────────────────────────────
+    # ── List ─────────────────────────────────────────────────────────────────
 
     def list(self, request, *args, **kwargs):
         """Lista designações conforme filtros e paginação.
@@ -170,7 +180,7 @@ class DesignacaoViewSet(
 
         return Response(DesignacaoReadSerializer(queryset, many=True).data)
 
-    # ── Create ────────────────────────────────────────────────────────────────
+    # ── Create ───────────────────────────────────────────────────────────────
 
     def create(self, request, *args, **kwargs):
         """Cria uma nova designação.
@@ -194,7 +204,7 @@ class DesignacaoViewSet(
             status=status.HTTP_201_CREATED,
         )
 
-    # ── Partial update ────────────────────────────────────────────────────────
+    # ── Partial update ───────────────────────────────────────────────────────
 
     def partial_update(self, request, *args, **kwargs):
         """Atualiza parcialmente uma designação existente.
@@ -216,7 +226,7 @@ class DesignacaoViewSet(
         ato_atualizado = self.get_queryset().filter(pk=ato.pk).first()
         return Response(DesignacaoReadSerializer(ato_atualizado).data)
 
-    # ── Actions de cargos ─────────────────────────────────────────────────────
+    # ── Actions de cargos ────────────────────────────────────────────────────
 
     @action(detail=False, methods=["get"], url_path="cargos-base-pareados")
     def cargos_base_pareados(self, request):
@@ -238,7 +248,9 @@ class DesignacaoViewSet(
         )
         return Response(resultado)
 
-    @action(detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados")
+    @action(
+        detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados"
+    )
     def cargos_sobrepostos_pareados(self, request):
         """Retorna cargos sobrepostos pareados entre indicado e titular.
 

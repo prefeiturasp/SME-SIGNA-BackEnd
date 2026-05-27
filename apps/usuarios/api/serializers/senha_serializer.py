@@ -20,7 +20,8 @@ User = get_user_model()
 class EsqueciMinhaSenhaSerializer(serializers.Serializer):
     """Serializer para solicitar recuperação de senha.
 
-    Recebe apenas o nome de usuário necessário para iniciar o fluxo de recuperação.
+    Recebe apenas o nome de usuário necessário para iniciar o fluxo de
+    recuperação.
     """
 
     username = serializers.CharField(required=True)
@@ -39,7 +40,9 @@ class RedefinirSenhaSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
     new_pass = serializers.CharField(write_only=True, trim_whitespace=False)
-    new_pass_confirm = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_pass_confirm = serializers.CharField(
+        write_only=True, trim_whitespace=False
+    )
 
     default_error_messages = {
         "user_not_found": "Usuário não encontrado.",
@@ -84,7 +87,8 @@ class RedefinirSenhaSerializer(serializers.Serializer):
             user = User.objects.get(pk=decoded_uid)
         except User.DoesNotExist:
             logger.warning(
-                "Tentativa de redefinição para usuário inexistente UID: %s", decoded_uid
+                "Tentativa de redefinição para usuário inexistente UID: %s",
+                decoded_uid,
             )
             self.fail("user_not_found")
         except ValueError:
@@ -104,7 +108,7 @@ class RedefinirSenhaSerializer(serializers.Serializer):
         attrs.pop("uid", None)  # Não precisamos mais do UID, temos o user
 
         logger.info(
-            "Validação bem-sucedida para redefinição de senha do usuário ID: %s",
+            "Validação bem-sucedida para redefinição de senha do usuário ID: %s",  # noqa: E501
             user.id,
         )
 
@@ -134,7 +138,9 @@ class AtualizarSenhaSerializer(serializers.Serializer):
         if not valid:
             first_field, first_error = next(iter(self.errors.items()))
             message = (
-                first_error[0] if isinstance(first_error, list) else str(first_error)
+                first_error[0]
+                if isinstance(first_error, list)
+                else str(first_error)
             )
 
             self._errors = {"detail": message, "field": first_field}
@@ -160,7 +166,9 @@ class AtualizarSenhaSerializer(serializers.Serializer):
         user = self.context["request"].user
 
         if not user.check_password(data["senha_atual"]):
-            raise serializers.ValidationError({"senha_atual": "Senha atual incorreta."})
+            raise serializers.ValidationError(
+                {"senha_atual": "Senha atual incorreta."}
+            )
 
         if data["nova_senha"] != data["confirmacao_nova_senha"]:
             raise serializers.ValidationError(

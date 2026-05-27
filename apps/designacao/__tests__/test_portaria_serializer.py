@@ -8,7 +8,9 @@ from datetime import date
 
 import pytest
 
-from apps.designacao.api.serializers.portaria_serializer import PortariaListSerializer
+from apps.designacao.api.serializers.portaria_serializer import (
+    PortariaListSerializer,
+)
 from apps.designacao.models.apostila_detalhe import ApostilaDetalhe
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
@@ -274,7 +276,9 @@ class TestPortariaListSerializer:
         self, designacao_sem_cargo_sobreposto
     ):
         """Verifica nome usa nome civil quando servidor vazio."""
-        assert serialize(designacao_sem_cargo_sobreposto)["nome"] == "Ana Paula"
+        assert (
+            serialize(designacao_sem_cargo_sobreposto)["nome"] == "Ana Paula"
+        )
 
     def test_nome_cessacao_herda_da_designacao_pai(self, cessacao, designacao):
         # cessacao.ato_pai = designacao, que tem designacao_detalhe
@@ -317,7 +321,8 @@ class TestPortariaListSerializer:
     ):
         """Verifica cargo usa base quando sobreposto vazio."""
         assert (
-            serialize(designacao_sem_cargo_sobreposto)["cargo"] == "PROFESSOR DE EF II"
+            serialize(designacao_sem_cargo_sobreposto)["cargo"]
+            == "PROFESSOR DE EF II"
         )
 
     # ── data_designacao ───────────────────────────────────────────────────────
@@ -345,16 +350,18 @@ class TestPortariaListSerializer:
 
     def test_data_cessacao_designacao_sem_data_fim(self, designacao):
         """Verifica data cessacao designacao sem data fim."""
-        ato = AtoAdministrativo.objects.select_related("designacao_detalhe").get(
-            pk=designacao.pk
-        )
+        ato = AtoAdministrativo.objects.select_related(
+            "designacao_detalhe"
+        ).get(pk=designacao.pk)
         assert serialize(ato)["data_cessacao"] is None
 
-    def test_data_cessacao_designacao_com_data_fim(self, designacao_com_data_fim):
+    def test_data_cessacao_designacao_com_data_fim(
+        self, designacao_com_data_fim
+    ):
         """Verifica data cessacao designacao com data fim."""
-        ato = AtoAdministrativo.objects.select_related("designacao_detalhe").get(
-            pk=designacao_com_data_fim.pk
-        )
+        ato = AtoAdministrativo.objects.select_related(
+            "designacao_detalhe"
+        ).get(pk=designacao_com_data_fim.pk)
         assert serialize(ato)["data_cessacao"] == date(2024, 12, 31)
 
     def test_data_cessacao_insubsistencia_retorna_none(self, insubsistencia):
@@ -380,16 +387,21 @@ class TestPortariaListSerializer:
 
     def test_observacoes_insubsistencia(self, insubsistencia):
         """Verifica observacoes insubsistencia."""
-        ato = AtoAdministrativo.objects.select_related("insubsistencia_detalhe").get(
-            pk=insubsistencia.pk
+        ato = AtoAdministrativo.objects.select_related(
+            "insubsistencia_detalhe"
+        ).get(pk=insubsistencia.pk)
+        assert (
+            serialize(ato)["observacoes"]
+            == "Portaria revogada por erro material."
         )
-        assert serialize(ato)["observacoes"] == "Portaria revogada por erro material."
 
-    def test_observacoes_insubsistencia_vazia(self, insubsistencia_sem_observacoes):
+    def test_observacoes_insubsistencia_vazia(
+        self, insubsistencia_sem_observacoes
+    ):
         """Verifica observacoes insubsistencia vazia."""
-        ato = AtoAdministrativo.objects.select_related("insubsistencia_detalhe").get(
-            pk=insubsistencia_sem_observacoes.pk
-        )
+        ato = AtoAdministrativo.objects.select_related(
+            "insubsistencia_detalhe"
+        ).get(pk=insubsistencia_sem_observacoes.pk)
         assert serialize(ato)["observacoes"] == ""
 
     def test_observacoes_apostila(self, apostila):
@@ -397,4 +409,7 @@ class TestPortariaListSerializer:
         ato = AtoAdministrativo.objects.select_related("apostila_detalhe").get(
             pk=apostila.pk
         )
-        assert serialize(ato)["observacoes"] == "Apostila de retificacao de cargo."
+        assert (
+            serialize(ato)["observacoes"]
+            == "Apostila de retificacao de cargo."
+        )

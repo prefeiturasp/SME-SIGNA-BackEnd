@@ -1,6 +1,7 @@
 """Views para informações de unidades relacionadas à designação.
 
-Inclui endpoints para obter dados escolares de unidade e listar cargos disponíveis.
+Inclui endpoints para obter dados escolares de unidade e listar cargos
+disponíveis.
 """
 
 import logging
@@ -41,11 +42,15 @@ class DesignacaoUnidadeView(APIView):
             )
 
         try:
-            result = DesignacaoUnidadeService.obter_informacoes_escolares(codigo_ue)
+            result = DesignacaoUnidadeService.obter_informacoes_escolares(
+                codigo_ue
+            )
             return Response(result, status=status.HTTP_200_OK)
 
         except SmeIntegracaoException as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         except Exception:
             logger.exception("Erro inesperado ao buscar designação da unidade")
