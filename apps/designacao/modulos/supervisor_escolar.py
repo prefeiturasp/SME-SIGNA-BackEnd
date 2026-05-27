@@ -43,7 +43,7 @@ class ModuloSupervisorEscolarCalculator:
 
         if not codigo_dre:
             logger.warning(
-                "Código da DRE ausente ao calcular módulo de Supervisor Escolar "
+                "Código da DRE ausente ao calcular módulo de Supervisor Escolar "  # noqa: E501
                 "(UE %s).",
                 informacoes_ue.get("codigoUE"),
             )

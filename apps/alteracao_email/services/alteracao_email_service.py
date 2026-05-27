@@ -6,16 +6,18 @@ antes de efetivar a alteração.
 """
 
 import logging
+
 import environ
-from django.utils.timezone import now, timedelta
+
 from django.shortcuts import get_object_or_404
+from django.utils.timezone import now, timedelta
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
-from apps.usuarios.services.envia_email_service import EnviaEmailService
 from apps.helpers.exceptions import (
-    TokenJaUtilizadoException,
     TokenExpiradoException,
+    TokenJaUtilizadoException,
 )
+from apps.usuarios.services.envia_email_service import EnviaEmailService
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
@@ -37,16 +39,17 @@ class AlteracaoEmailService:
             novo_email (str): O novo endereço de e-mail para o usuário.
 
         Returns:
-            AlteracaoEmail: A instância criada da solicitação de alteração de e-mail.
+            AlteracaoEmail: A instância criada da solicitação de alteração de
+            e-mail.
         """
-        
+
         email_request = AlteracaoEmail.objects.create(
-            usuario=usuario,
-            novo_email=novo_email
+            usuario=usuario, novo_email=novo_email
         )
 
-
-        validation_link = f"{env('AMBIENTE_URL')}/confirmar-email/{email_request.token}"
+        validation_link = (
+            f"{env('AMBIENTE_URL')}/confirmar-email/{email_request.token}"
+        )
         logger.info(f"Link de validação gerado: {validation_link}")
 
         EnviaEmailService.enviar(
@@ -63,7 +66,8 @@ class AlteracaoEmailService:
         """Valida o token de alteração de e-mail e retorna a solicitação.
 
         Args:
-            token (uuid.UUID|str): O token de confirmação associado à solicitação.
+            token (uuid.UUID|str): O token de confirmação associado à
+            solicitação.
 
         Returns:
             tuple[User, AlteracaoEmail]: O usuário e a solicitação de alteração
@@ -74,7 +78,7 @@ class AlteracaoEmailService:
             TokenExpiradoException: Se o token expirou.
             Http404: Se a solicitação não for encontrada.
         """
-        
+
         email_request = get_object_or_404(AlteracaoEmail, token=token)
         usuario = email_request.usuario
 

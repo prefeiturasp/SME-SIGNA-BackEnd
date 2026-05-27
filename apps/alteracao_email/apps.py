@@ -14,5 +14,5 @@ class AlteracaoEmailConfig(AppConfig):
     campos de chave primária.
     """
 
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.alteracao_email'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.alteracao_email"

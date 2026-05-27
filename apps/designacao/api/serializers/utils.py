@@ -1,4 +1,3 @@
-
 """Utilitários de serialização para o aplicativo de designação.
 
 Contém funções auxiliares para validação e formatação de mensagens de erro
@@ -22,9 +21,10 @@ class NullableDateField(serializers.DateField):
             value: Valor de entrada que pode ser uma string vazia ou data.
 
         Returns:
-            datetime.date | None: Data validada ou None quando a string estiver vazia.
+            datetime.date | None: Data validada ou None quando a string estiver
+            vazia.
         """
-        if value == '':
+        if value == "":
             return None
         return super().to_internal_value(value)
 
@@ -36,7 +36,8 @@ def validar_somente_numeros(value):
         value: Texto a ser validado.
 
     Raises:
-        serializers.ValidationError: Se o valor contiver caracteres não numéricos.
+        serializers.ValidationError: Se o valor contiver caracteres não
+        numéricos.
 
     Returns:
         str: Valor original se for composto apenas por dígitos.
@@ -50,7 +51,8 @@ def extrair_mensagem_erro(detail):
     """Extrai mensagem de erro de uma estrutura de detalhe do DRF.
 
     Args:
-        detail: Estrutura de erro retornada pelo DRF, que pode ser dict, list ou outro.
+        detail: Estrutura de erro retornada pelo DRF, que pode ser dict, list
+        ou outro.
 
     Returns:
         str: Mensagem de erro unificada.
@@ -58,8 +60,8 @@ def extrair_mensagem_erro(detail):
     if isinstance(detail, dict):
         item = next(iter(detail.values()))
         return extrair_mensagem_erro(item)
-    
+
     if isinstance(detail, list) and detail:
         return extrair_mensagem_erro(detail[0])
-    
+
     return str(detail)

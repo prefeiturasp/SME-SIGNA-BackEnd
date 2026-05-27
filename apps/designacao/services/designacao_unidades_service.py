@@ -5,19 +5,20 @@ modularização e enriquecer dados de servidores e unidades.
 """
 
 import logging
-from datetime import datetime
-from typing import Dict, Any
-
-from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
-from apps.designacao.services.designacao_servidor_service import DesignacaoServidorService
-from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
-from apps.helpers.exceptions import SmeIntegracaoException
-from apps.designacao.modulos import Calculadores
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
-from apps.unidades.services.unidades_service import UnidadeIntegracaoService
-
 import re
 import unicodedata
+from datetime import datetime
+from typing import Any, Dict
+
+from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.designacao.modulos import Calculadores
+from apps.designacao.services.designacao_servidor_service import (
+    DesignacaoServidorService,
+)
+from apps.helpers.exceptions import SmeIntegracaoException
+from apps.unidades.services.unidades_service import UnidadeIntegracaoService
+from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ def normalizar(texto: str) -> str:
 
 class CicloService:
     """Serviço para definição e mapeamento de ciclos escolares."""
+
     CICLOS_MAPEADOS = {
         "alfabetizacao": "cicloAlfabetizacao",
         "interdisciplinar": "cicloInterdisciplinar",
@@ -221,7 +223,7 @@ class TurmaService:
                     "semCiclo": 0,
                     "total": 0,
                 }
-            ]
+            ],
         }
 
         for turma in turmas:
@@ -268,9 +270,9 @@ class TurmaService:
         return {
             "total": sum(t["total"] for t in turnos.values()),
             "turnos": list(turnos.values()),
-            "spi": spi
+            "spi": spi,
         }
-    
+
     @staticmethod
     def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
         """Verifica se a turma tem a disciplina São Paulo Integral."""
@@ -286,7 +288,8 @@ class ServidorService:
 
     @staticmethod
     def enriquecer(servidor: Dict[str, Any]) -> Dict[str, Any]:
-        """Enriquece o registro do servidor com dados de designação complementares."""
+        """Enriquece o registro do servidor com dados de designação
+        complementares."""
         rf = servidor.get("rf")
 
         try:
@@ -294,7 +297,9 @@ class ServidorService:
             cargos = SmeIntegracaoService.consulta_cargos_funcionario(rf)
             cargo = cargos[0] if cargos else {}
 
-            return DesignacaoServidorService.montar_dados_servidor(usuario, cargo)
+            return DesignacaoServidorService.montar_dados_servidor(
+                usuario, cargo
+            )
 
         except SmeIntegracaoException:
             logger.warning("Falha ao montar designação do servidor RF %s", rf)
@@ -308,7 +313,7 @@ class ServidorService:
                 "cargo_sobreposto_funcao_atividade": None,
                 "local_de_exercicio": None,
                 "laudo_medico": None,
-                "local_de_servico": None
+                "local_de_servico": None,
             }
 
 
@@ -316,7 +321,9 @@ class ModuloService:
     """Serviço para definição de módulo de cargos escolares."""
 
     @staticmethod
-    def definir_modulo(cargo_ue: Dict[str, Any], info_ue: Dict[str, Any]) -> int:
+    def definir_modulo(
+        cargo_ue: Dict[str, Any], info_ue: Dict[str, Any]
+    ) -> int:
         """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
         calculator = Calculadores.get(codigo)
@@ -342,12 +349,20 @@ class DesignacaoUnidadeService:
             Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
         """
         cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
-        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(codigo_ue)
+        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            codigo_ue
+        )
 
         codigo_dre = info_ue.get("codigoDRE")
-        unidades = UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(codigo_dre)
+        unidades = (
+            UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+                codigo_dre
+            )
+        )
 
-        unidade = next((u for u in unidades if u.get("codigoUe") == codigo_ue), None)
+        unidade = next(
+            (u for u in unidades if u.get("codigoUe") == codigo_ue), None
+        )
 
         turmas = TurmaService.calcular_turmas(codigo_ue)
         info_ue["turmas"] = turmas
@@ -355,14 +370,17 @@ class DesignacaoUnidadeService:
         for cargo in cargos:
             cargo["modulo"] = ModuloService.definir_modulo(cargo, info_ue)
             cargo["servidores"] = [
-                ServidorService.enriquecer(s) for s in cargo.get("servidores", [])
+                ServidorService.enriquecer(s)
+                for s in cargo.get("servidores", [])
             ]
 
         return {
             "cargos": DesignacaoDetalhe.get_cargos_formatados(),
             "funcionarios_unidade": {c["codigo_cargo"]: c for c in cargos},
             "turmas": turmas,
-            "codigo_hierarquico": unidade.get("codigoIntegracao") if unidade else None,
+            "codigo_hierarquico": (
+                unidade.get("codigoIntegracao") if unidade else None
+            ),
             "spi": turmas.get("spi"),
         }
 

@@ -4,18 +4,19 @@ Este módulo valida o endpoint de login, cobrindo sucesso, erros de
 autenticação, integração com SME e restrições de perfil.
 """
 
-import pytest
 import secrets
 from unittest.mock import patch
-from django.urls import reverse
+
+import pytest
+
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from django.urls import reverse
 from rest_framework.test import APIClient
-from apps.helpers.exceptions import (
-    SmeIntegracaoException
-)
+
+from apps.helpers.exceptions import SmeIntegracaoException
 
 User = get_user_model()
+
 
 @pytest.fixture(autouse=True)
 def set_signa_env(monkeypatch):
@@ -47,7 +48,6 @@ def test_login_success(client, mock_sme_success):
     assert user is not None
     assert user.name == "João da Silva"
     assert user.check_password(password)
-
 
 
 @pytest.mark.django_db
@@ -107,7 +107,7 @@ def test_login_updates_existing_user(client, mock_sme_success):
         username="1234567",
         password=old_password,
         name="Antigo",
-        email="old@mail.com"
+        email="old@mail.com",
     )
 
     new_password = secrets.token_urlsafe(16)
@@ -149,15 +149,22 @@ def test_login_sme_integracao_exception():
     client = APIClient()
     url = reverse("login")
 
-    with patch("apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica") as mocked_login:
+    with patch(
+        "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
+    ) as mocked_login:
         mocked_login.side_effect = SmeIntegracaoException("Falha SME")
 
-        response = client.post(url, {"username": "12345678", "password": wrong_password}, format="json")
+        response = client.post(
+            url,
+            {"username": "12345678", "password": wrong_password},
+            format="json",
+        )
 
     assert response.status_code == 400
     assert response.json()["detail"] == (
         "Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco."
     )
+
 
 @pytest.mark.django_db
 def test_login_generic_exception():
@@ -166,10 +173,14 @@ def test_login_generic_exception():
     client = APIClient()
     url = reverse("login")
 
-    with patch("apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica") as mocked_login:
+    with patch(
+        "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
+    ) as mocked_login:
         mocked_login.side_effect = Exception("Erro inesperado")
 
-        response = client.post(url, {"username": "1234567", "password": password}, format="json")
+        response = client.post(
+            url, {"username": "1234567", "password": password}, format="json"
+        )
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Erro interno"
@@ -235,7 +246,9 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypatch):
+def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(
+    client, monkeypatch
+):
     """Verifica bloqueio de acesso quando o código SIGNA esperado não está presente."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
@@ -252,7 +265,7 @@ def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypat
             "perfis": [
                 "OUTRO-SISTEMA",
                 "SISTEMA-TESTE",
-            ], 
+            ],
         }
 
         response = client.post(

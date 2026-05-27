@@ -8,4 +8,5 @@ from rest_framework import serializers
 
 class DesignacaoServidorRequestSerializer(serializers.Serializer):
     """Serializador simples contendo a RF do servidor."""
+
     rf = serializers.CharField()

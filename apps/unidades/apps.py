@@ -14,5 +14,5 @@ class UnidadesConfig(AppConfig):
     para chaves primárias.
     """
 
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'unidades'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "unidades"

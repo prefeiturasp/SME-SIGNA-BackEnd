@@ -3,35 +3,35 @@
 """
 
 import datetime
-import pytest
+
 from django.test import TestCase
 
+from apps.designacao.__tests__.factories import criar_ato_designacao
+from apps.designacao.api.filters.designacao_filter import DesignacaoFilter
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
-from apps.designacao.api.filters.designacao_filter import DesignacaoFilter
-from apps.designacao.__tests__.factories import criar_ato_designacao
 
 
 class DesignacaoFilterTest(TestCase):
-
     """Testes para designacao filter test."""
+
     def setUp(self):
         """Método setup."""
         self.impedimento1 = ImpedimentoSubstituicao.objects.create(
-            codigo='IMP1', descricao='Impedimento 1'
+            codigo="IMP1", descricao="Impedimento 1"
         )
         self.impedimento2 = ImpedimentoSubstituicao.objects.create(
-            codigo='IMP2', descricao='Impedimento 2'
+            codigo="IMP2", descricao="Impedimento 2"
         )
 
         self.d1 = criar_ato_designacao(
-            dre_nome='DRE Norte',
-            unidade_proponente='EMEF Teste 1',
-            indicado_rf='1234567',
+            dre_nome="DRE Norte",
+            unidade_proponente="EMEF Teste 1",
+            indicado_rf="1234567",
             indicado_codigo_cargo_base=1,
-            indicado_cargo_sobreposto='Diretor',
-            titular_nome_servidor='Maria Souza',
-            titular_rf='9999999',
+            indicado_cargo_sobreposto="Diretor",
+            titular_nome_servidor="Maria Souza",
+            titular_rf="9999999",
             titular_codigo_cargo_base=1,
             data_inicio=datetime.date(2024, 1, 1),
             impedimento_substituicao=self.impedimento1,
@@ -39,13 +39,13 @@ class DesignacaoFilterTest(TestCase):
         )
 
         self.d2 = criar_ato_designacao(
-            dre_nome='DRE Sul',
-            unidade_proponente='EMEF Teste 2',
-            indicado_rf='0000000',
+            dre_nome="DRE Sul",
+            unidade_proponente="EMEF Teste 2",
+            indicado_rf="0000000",
             indicado_codigo_cargo_base=2,
-            indicado_cargo_sobreposto='Supervisor',
-            titular_nome_servidor='Ana Paula',
-            titular_rf='7654321',
+            indicado_cargo_sobreposto="Supervisor",
+            titular_nome_servidor="Ana Paula",
+            titular_rf="7654321",
             titular_codigo_cargo_base=2,
             data_inicio=datetime.date(2024, 2, 1),
             impedimento_substituicao=self.impedimento2,
@@ -54,54 +54,56 @@ class DesignacaoFilterTest(TestCase):
 
     def _qs(self):
         """Método auxiliar para qs."""
-        return AtoAdministrativo.objects.filter(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+        return AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO
+        )
 
     def test_filter_rf(self):
         """Verifica filter rf."""
-        f = DesignacaoFilter({'rf': '1234567'}, queryset=self._qs())
+        f = DesignacaoFilter({"rf": "1234567"}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_nome(self):
         """Verifica filter nome."""
-        f = DesignacaoFilter({'nome': 'Ana'}, queryset=self._qs())
+        f = DesignacaoFilter({"nome": "Ana"}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_cargo_base(self):
         """Verifica filter cargo base."""
-        f = DesignacaoFilter({'cargo_base': 1}, queryset=self._qs())
+        f = DesignacaoFilter({"cargo_base": 1}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_cargo_sobreposto(self):
         """Verifica filter cargo sobreposto."""
-        f = DesignacaoFilter({'cargo_sobreposto': 2}, queryset=self._qs())
+        f = DesignacaoFilter({"cargo_sobreposto": 2}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_dre(self):
         """Verifica filter dre."""
-        f = DesignacaoFilter({'dre': 'Norte'}, queryset=self._qs())
+        f = DesignacaoFilter({"dre": "Norte"}, queryset=self._qs())
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_unidade(self):
         """Verifica filter unidade."""
-        f = DesignacaoFilter({'unidade': 'Teste 2'}, queryset=self._qs())
+        f = DesignacaoFilter({"unidade": "Teste 2"}, queryset=self._qs())
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
 
     def test_filter_ano(self):
         """Verifica filter ano."""
-        f = DesignacaoFilter({'ano': '2024'}, queryset=self._qs())
+        f = DesignacaoFilter({"ano": "2024"}, queryset=self._qs())
         self.assertEqual(f.qs.count(), 2)
 
     def test_filter_periodo(self):
         """Verifica filter periodo."""
         f = DesignacaoFilter(
-            {'periodo_after': '2024-01-15', 'periodo_before': '2024-12-31'},
-            queryset=self._qs()
+            {"periodo_after": "2024-01-15", "periodo_before": "2024-12-31"},
+            queryset=self._qs(),
         )
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)
@@ -109,14 +111,16 @@ class DesignacaoFilterTest(TestCase):
     def test_filter_impedimento_substituicao(self):
         """Verifica filter impedimento substituicao."""
         f = DesignacaoFilter(
-            {'impedimento_substituicao': self.impedimento1.id},
-            queryset=self._qs()
+            {"impedimento_substituicao": self.impedimento1.id},
+            queryset=self._qs(),
         )
         self.assertIn(self.d1, f.qs)
         self.assertNotIn(self.d2, f.qs)
 
     def test_filter_impedimento_codigo(self):
         """Verifica filter impedimento codigo."""
-        f = DesignacaoFilter({'impedimento_codigo': 'IMP2'}, queryset=self._qs())
+        f = DesignacaoFilter(
+            {"impedimento_codigo": "IMP2"}, queryset=self._qs()
+        )
         self.assertIn(self.d2, f.qs)
         self.assertNotIn(self.d1, f.qs)

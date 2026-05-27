@@ -6,19 +6,22 @@ funcionários, validando os comportamentos esperados em sucessos e
 falhas.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 import requests
-from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
+
+from rest_framework import status
+
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CARGOS_GESTAO_ESCOLAR,
+)
 from apps.helpers.exceptions import (
     AuthenticationError,
+    InternalError,
     SmeIntegracaoException,
-    InternalError
 )
-from apps.designacao.constants.cargos_gestao_escolar import (
-    CARGOS_GESTAO_ESCOLAR
-)
-from rest_framework import status
-from unittest.mock import patch, MagicMock, call
+from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 
 class FakeResponse:
@@ -124,9 +127,11 @@ def test_sme_autentica_internal_error(monkeypatch):
             "senha",
         )
 
+
 # ---------------------------------------------------------------------------
 # informacao_usuario_sgp
 # ---------------------------------------------------------------------------
+
 
 def test_informacao_usuario_sgp_success():
     """Verifica retorno de informações do usuário quando SME responde com sucesso."""
@@ -175,8 +180,10 @@ def test_informacao_usuario_sgp_connection_error():
 # redefine_senha
 # ---------------------------------------------------------------------------
 
+
 def test_redefine_senha_success(monkeypatch):
     """Verifica redefinição de senha SME bem-sucedida."""
+
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP 200 com sucesso."""
         return FakeResponse(200)
@@ -197,6 +204,7 @@ def test_redefine_senha_invalid_data_sem_mock():
 
 def test_redefine_senha_server_error(monkeypatch):
     """Verifica que erro de servidor durante redefinição de senha gera SmeIntegracaoException."""
+
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP 500 com erro interno."""
         return FakeResponse(500)
@@ -208,6 +216,7 @@ def test_redefine_senha_server_error(monkeypatch):
 
 def test_redefine_senha_request_exception(monkeypatch):
     """Verifica que exceção de requisição na redefinição de senha gera SmeIntegracaoException."""
+
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP com timeout."""
         raise requests.exceptions.RequestException("timeout")
@@ -219,6 +228,7 @@ def test_redefine_senha_request_exception(monkeypatch):
 
 def test_redefine_senha_internal_error(monkeypatch):
     """Verifica que erro interno inesperado na redefinição de senha gera SmeIntegracaoException."""
+
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP 500 com erro inesperado."""
         raise ValueError("erro inesperado")
@@ -246,6 +256,7 @@ def test_redefine_senha_bad_request_with_message():
 # altera_email
 # ---------------------------------------------------------------------------
 
+
 @patch("apps.usuarios.services.sme_integracao_service.requests.post")
 class TestAlteraEmail:
     """Testa a operação de alteração de e-mail no serviço SME."""
@@ -256,14 +267,18 @@ class TestAlteraEmail:
         mock_response.status_code = status.HTTP_200_OK
         mock_post.return_value = mock_response
 
-        result = SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+        result = SmeIntegracaoService.altera_email(
+            "1234567", "teste@sme.prefeitura.sp.gov.br"
+        )
         assert result == "OK"
         mock_post.assert_called_once()
 
     def test_parametros_invalidos(self, mock_post):
         """Verifica que parâmetros inválidos para alteração de e-mail geram exceção."""
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.altera_email("", "teste@sme.prefeitura.sp.gov.br")
+            SmeIntegracaoService.altera_email(
+                "", "teste@sme.prefeitura.sp.gov.br"
+            )
         assert "Registro funcional e email são obrigatórios" in str(exc.value)
 
         with pytest.raises(SmeIntegracaoException):
@@ -279,7 +294,9 @@ class TestAlteraEmail:
         mock_post.return_value = mock_response
 
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+            SmeIntegracaoService.altera_email(
+                "1234567", "teste@sme.prefeitura.sp.gov.br"
+            )
 
         assert "Erro API" in str(exc.value)
         mock_post.assert_called_once()
@@ -289,7 +306,9 @@ class TestAlteraEmail:
         mock_post.side_effect = requests.RequestException("Falha de rede")
 
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.altera_email("1234567", "teste@sme.prefeitura.sp.gov.br")
+            SmeIntegracaoService.altera_email(
+                "1234567", "teste@sme.prefeitura.sp.gov.br"
+            )
 
         assert "Falha de rede" in str(exc.value)
         mock_post.assert_called_once()
@@ -298,6 +317,7 @@ class TestAlteraEmail:
 # ---------------------------------------------------------------------------
 # consulta_cargos_funcionario
 # ---------------------------------------------------------------------------
+
 
 class TestConsultaCargos:
     """Testa a consulta de cargos de funcionários no SME."""
@@ -347,8 +367,14 @@ class TestConsultaCargos:
 
         # Primeira chamada → lista de cargos; segunda → info da UE base
         mock_get.side_effect = [
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)),
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=info_ue_mock)),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
+            ),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=info_ue_mock),
+            ),
         ]
 
         result = SmeIntegracaoService.consulta_cargos_funcionario("123456")
@@ -371,8 +397,14 @@ class TestConsultaCargos:
         info_ue_mock = {"siglaTipoEscola": "EMEI", "nome": "Escola Sobreposta"}
 
         mock_get.side_effect = [
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)),
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=info_ue_mock)),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
+            ),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=info_ue_mock),
+            ),
         ]
 
         result = SmeIntegracaoService.consulta_cargos_funcionario("123456")
@@ -395,8 +427,14 @@ class TestConsultaCargos:
         info_ue_mock = {"siglaTipoEscola": None}
 
         mock_get.side_effect = [
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=cargos_mock)),
-            MagicMock(status_code=status.HTTP_200_OK, json=MagicMock(return_value=info_ue_mock)),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=cargos_mock),
+            ),
+            MagicMock(
+                status_code=status.HTTP_200_OK,
+                json=MagicMock(return_value=info_ue_mock),
+            ),
         ]
 
         result = SmeIntegracaoService.consulta_cargos_funcionario("123456")
@@ -452,6 +490,7 @@ class TestConsultaCargos:
 # buscar_funcionarios_escolares
 # ---------------------------------------------------------------------------
 
+
 class TestBuscarFuncionariosEscolares:
     """Testa a busca de funcionários escolares por unidade escolar."""
 
@@ -466,15 +505,17 @@ class TestBuscarFuncionariosEscolares:
         """Verifica retorno de lista de funcionários escolares com status 200."""
         mock_get.return_value = MagicMock(
             status_code=status.HTTP_200_OK,
-            json=MagicMock(return_value=[
-                {
-                    "codigoRF": "123456",
-                    "nomeServidor": "João da Silva",
-                    "dataInicio": "01/01/2020",
-                    "dataFim": None,
-                    "estaAfastado": False,
-                }
-            ]),
+            json=MagicMock(
+                return_value=[
+                    {
+                        "codigoRF": "123456",
+                        "nomeServidor": "João da Silva",
+                        "dataInicio": "01/01/2020",
+                        "dataFim": None,
+                        "estaAfastado": False,
+                    }
+                ]
+            ),
         )
 
         result = SmeIntegracaoService.buscar_funcionarios_escolares("090450")
@@ -490,7 +531,9 @@ class TestBuscarFuncionariosEscolares:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_204_sem_conteudo(self, mock_get):
         """Verifica que resposta 204 retorna lista de servidores vazia."""
-        mock_get.return_value = MagicMock(status_code=status.HTTP_204_NO_CONTENT)
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_204_NO_CONTENT
+        )
 
         result = SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
@@ -523,7 +566,9 @@ class TestBuscarFuncionariosEscolares:
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
-        assert "Erro ao buscar funcionários da gestão escolar" in str(exc.value)
+        assert "Erro ao buscar funcionários da gestão escolar" in str(
+            exc.value
+        )
 
     @patch(
         "apps.usuarios.services.sme_integracao_service.requests.get",
@@ -540,6 +585,7 @@ class TestBuscarFuncionariosEscolares:
 # ---------------------------------------------------------------------------
 # consulta_informacoes_unidades_escolares
 # ---------------------------------------------------------------------------
+
 
 class TestConsultaInformacoesUnidadesEscolares:
     """Testa a consulta de informações de unidades escolares no SME."""
@@ -564,7 +610,9 @@ class TestConsultaInformacoesUnidadesEscolares:
         mock_response.json.return_value = dados_mock
         mock_get.return_value = mock_response
 
-        result = SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+        result = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            "090450"
+        )
 
         assert result == dados_mock
         mock_get.assert_called_once()
@@ -578,9 +626,13 @@ class TestConsultaInformacoesUnidadesEscolares:
         mock_get.return_value = mock_response
 
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+                "090450"
+            )
 
-        assert "Erro ao consultar informações da unidade escolar" in str(exc.value)
+        assert "Erro ao consultar informações da unidade escolar" in str(
+            exc.value
+        )
         mock_get.assert_called_once()
 
     @patch(
@@ -590,7 +642,9 @@ class TestConsultaInformacoesUnidadesEscolares:
     def test_request_exception(self, mock_get):
         """Verifica que exceção de requisição gera erro de comunicação com SME."""
         with pytest.raises(SmeIntegracaoException) as exc:
-            SmeIntegracaoService.consulta_informacoes_unidades_escolares("090450")
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+                "090450"
+            )
 
         assert "Erro de comunicação com SME" in str(exc.value)
 
@@ -598,6 +652,7 @@ class TestConsultaInformacoesUnidadesEscolares:
 # ---------------------------------------------------------------------------
 # buscar_turmas_ue_ano
 # ---------------------------------------------------------------------------
+
 
 class TestBuscarTurmasUeAno:
     """Testa a busca de turmas por UE e ano letivo."""
@@ -613,7 +668,9 @@ class TestBuscarTurmasUeAno:
         """Verifica que busca de turmas por ano retorna dados esperados."""
         mock_response = MagicMock()
         mock_response.status_code = status.HTTP_200_OK
-        mock_response.json.return_value = [{"codigoTurma": 1, "nome": "Turma Teste"}]
+        mock_response.json.return_value = [
+            {"codigoTurma": 1, "nome": "Turma Teste"}
+        ]
         mock_get.return_value = mock_response
 
         resultado = SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
@@ -649,7 +706,9 @@ class TestBuscarTurmasUeAno:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_request_exception(self, mock_get, mock_logger):
         """Verifica logger e exceção quando há falha de conexão no SME."""
-        mock_get.side_effect = requests.exceptions.RequestException("Falha de Conexão")
+        mock_get.side_effect = requests.exceptions.RequestException(
+            "Falha de Conexão"
+        )
 
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
@@ -663,6 +722,7 @@ class TestBuscarTurmasUeAno:
 # ---------------------------------------------------------------------------
 # buscar_dados_turma
 # ---------------------------------------------------------------------------
+
 
 class TestBuscarDadosTurma:
     """Testa a busca de dados de turma no SME."""
@@ -703,7 +763,9 @@ class TestBuscarDadosTurma:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_request_exception_com_logger(self, mock_get, mock_logger):
         """Verifica logger em caso de exceção de conexão ao buscar dados da turma."""
-        mock_get.side_effect = requests.exceptions.RequestException("Falha na rede")
+        mock_get.side_effect = requests.exceptions.RequestException(
+            "Falha na rede"
+        )
 
         with pytest.raises(SmeIntegracaoException) as exc:
             SmeIntegracaoService.buscar_dados_turma(12345)
@@ -713,9 +775,11 @@ class TestBuscarDadosTurma:
             "Erro de comunicação com API de dados da turma"
         )
 
+
 # ---------------------------------------------------------------------------
 # buscar_disciplinas_turma
 # ---------------------------------------------------------------------------
+
 
 class TestBuscarDisciplinasTurma:
     """Testa a busca de disciplinas de turma no SME."""
@@ -748,7 +812,9 @@ class TestBuscarDisciplinasTurma:
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_204_retorna_lista_vazia(self, mock_get):
         """Verifica retorno de lista vazia quando API responde 204."""
-        mock_get.return_value = MagicMock(status_code=status.HTTP_204_NO_CONTENT)
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_204_NO_CONTENT
+        )
 
         resultado = SmeIntegracaoService.buscar_disciplinas_turma(10)
 
@@ -795,9 +861,11 @@ class TestBuscarDisciplinasTurma:
             10,
         )
 
+
 # ---------------------------------------------------------------------------
 # formatar_cargo
 # ---------------------------------------------------------------------------
+
 
 class TestFormatarCargo:
     """Testa o formato de cargos retornado pelo SME."""
@@ -812,7 +880,10 @@ class TestFormatarCargo:
 
     def test_texto_com_hifen_retorna_parte_antes(self):
         """Verifica que texto com hífen retorna apenas a parte antes do hífen."""
-        assert SmeIntegracaoService.formatar_cargo("DIRETOR - ESCOLA") == "DIRETOR"
+        assert (
+            SmeIntegracaoService.formatar_cargo("DIRETOR - ESCOLA")
+            == "DIRETOR"
+        )
 
     def test_texto_sem_hifen_retorna_inteiro(self):
         """Verifica que texto sem hífen é retornado integralmente."""

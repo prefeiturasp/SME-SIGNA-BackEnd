@@ -4,8 +4,8 @@ Este módulo expõe apenas os campos de perfil necessários para a rota
 "me" do endpoint de usuários.
 """
 
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 User = get_user_model()
 
@@ -15,6 +15,7 @@ class UserMeSerializer(serializers.ModelSerializer):
 
     Retorna os campos públicos do perfil do usuário autenticado.
     """
+
     class Meta:
         model = User
         fields = (
@@ -23,4 +24,3 @@ class UserMeSerializer(serializers.ModelSerializer):
             "email",
             "cpf",
         )
-

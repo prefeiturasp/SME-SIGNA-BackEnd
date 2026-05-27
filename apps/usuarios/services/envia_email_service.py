@@ -7,8 +7,8 @@ as ferramentas de e-mail do Django.
 import logging
 
 from django.core.exceptions import ValidationError
+from django.core.mail import BadHeaderError, EmailMessage
 from django.template.loader import render_to_string
-from django.core.mail import EmailMessage, BadHeaderError
 
 logger = logging.getLogger(__name__)
 
@@ -69,13 +69,17 @@ class EnviaEmailService:
             email = EmailMessage(
                 subject=assunto,
                 body=corpo_html,
-                to=[destinatario] if isinstance(destinatario, str) else destinatario,
+                to=(
+                    [destinatario]
+                    if isinstance(destinatario, str)
+                    else destinatario
+                ),
             )
-            email.content_subtype = 'html'
+            email.content_subtype = "html"
             email.send()
 
             logger.info(
-                f"E-mail enviado com sucesso para {destinatario} usando o template '{template_html}'."
+                f"E-mail enviado com sucesso para {destinatario} usando o template '{template_html}'."  # noqa: E501
             )
 
         except (ValidationError, BadHeaderError) as e:

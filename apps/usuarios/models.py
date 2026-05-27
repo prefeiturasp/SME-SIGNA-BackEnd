@@ -5,8 +5,9 @@ com campos adicionais e comportamento de senha seguro.
 """
 
 import uuid
-from django.db import models
+
 from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class User(AbstractUser):
@@ -14,9 +15,12 @@ class User(AbstractUser):
 
     Estende o AbstractUser com UUID, nome completo, CPF e e-mail opcional.
     """
+
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField("Nome completo", max_length=150, blank=True)
-    cpf = models.CharField("CPF", max_length=11, unique=True, null=True, blank=True)
+    cpf = models.CharField(
+        "CPF", max_length=11, unique=True, null=True, blank=True
+    )
     email = models.EmailField("E-mail", unique=True, null=True, blank=True)
 
     class Meta:
@@ -36,7 +40,9 @@ class User(AbstractUser):
         Se a senha fornecida não estiver em formato hash suportado, ela é
         convertida usando set_password antes da persistência.
         """
-        if self.password and not self.password.startswith(('pbkdf2_', 'bcrypt', 'argon2')):
+        if self.password and not self.password.startswith(
+            ("pbkdf2_", "bcrypt", "argon2")
+        ):
             self.set_password(self.password)
 
         super().save(*args, **kwargs)

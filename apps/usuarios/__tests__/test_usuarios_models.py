@@ -4,8 +4,10 @@ Este módulo valida a criação de usuários, a representação em string
 (@str) e a persistência segura de senhas no modelo de usuário.
 """
 
-import pytest
 import secrets
+
+import pytest
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -40,10 +42,7 @@ def test_user_str():
     """
     password = secrets.token_urlsafe(16)
 
-    user = User.objects.create_user(
-        username="testeuser",
-        password=password
-    )
+    user = User.objects.create_user(username="testeuser", password=password)
 
     assert str(user) == "testeuser"
 

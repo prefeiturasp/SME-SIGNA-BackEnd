@@ -5,8 +5,9 @@ incluindo envio bem-sucedido, validação de parâmetros obrigatórios e
 tratamento de exceções inesperadas.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from django.core import mail
 from django.core.exceptions import ValidationError
@@ -21,7 +22,7 @@ def use_locmem_email_backend(settings):
     O backend em memória evita envios reais de e-mail durante a execução dos
     testes.
     """
-    settings.EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 
 @pytest.mark.django_db
@@ -30,6 +31,7 @@ class TestEnviaEmailService:
 
     Verifica envio de e-mail com sucesso e as validações de dados obrigatórios.
     """
+
     @pytest.fixture
     def email_data(self):
         """Retorna dados válidos de e-mail para os testes."""
@@ -48,24 +50,31 @@ class TestEnviaEmailService:
 
         assert len(mail.outbox) == 1
         email = mail.outbox[0]
-        assert email.subject == email_data['assunto']
-        assert email.to == [email_data['destinatario']]
-        assert 'Usuário Teste' in email.body
+        assert email.subject == email_data["assunto"]
+        assert email.to == [email_data["destinatario"]]
+        assert "Usuário Teste" in email.body
 
     def test_send_email_empty_destinatario_raises(self, email_data):
         """Verifica que destinatário vazio causa ValidationError."""
-        email_data['destinatario'] = ''
+        email_data["destinatario"] = ""
         with pytest.raises(ValidationError):
             EnviaEmailService.enviar(**email_data)
 
     def test_send_email_empty_assunto_raises(self, email_data):
         """Verifica que assunto vazio causa ValidationError."""
-        email_data['assunto'] = ''
+        email_data["assunto"] = ""
         with pytest.raises(ValidationError):
             EnviaEmailService.enviar(**email_data)
 
-    def test_send_email_unexpected_exception_raises_runtimeerror(self, email_data):
+    def test_send_email_unexpected_exception_raises_runtimeerror(
+        self, email_data
+    ):
         """Verifica que exceções inesperadas são convertidas em RuntimeError."""
-        with patch('django.core.mail.EmailMessage.send', side_effect=Exception("Erro inesperado")):
-            with pytest.raises(RuntimeError, match="Erro inesperado ao enviar e-mail."):
+        with patch(
+            "django.core.mail.EmailMessage.send",
+            side_effect=Exception("Erro inesperado"),
+        ):
+            with pytest.raises(
+                RuntimeError, match="Erro inesperado ao enviar e-mail."
+            ):
                 EnviaEmailService.enviar(**email_data)
