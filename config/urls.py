@@ -1,19 +1,14 @@
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-
 from django.contrib import admin
 from django.urls import include, path
+from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
+                                   SpectacularSwaggerView)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
 urlpatterns = [
     # Endpoints JWT (Simple JWT)
-    path(
-        "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"
-    ),
-    path(
-        "api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"
-    ),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # APIs da sua app (apps.usuarios)
     path("api/usuario/", include("apps.usuarios.urls")),
     # APIs da sua app (apps.alteracao_email)
@@ -34,4 +29,12 @@ urlpatterns = [
     path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),
     # não enviar para produção
     path("admin/", admin.site.urls),
+    # Documentação da API
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
