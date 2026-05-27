@@ -8,7 +8,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.designacao_legado_filter import (
@@ -17,39 +16,18 @@ from apps.designacao.api.filters.designacao_legado_filter import (
 from apps.designacao.api.serializers.designacao_legado_serializer import (
     DesignacaoLegadoSerializer,
 )
+from apps.designacao.api.views.designacao_base import (
+    DesignacaoBasePagination,
+    DesignacaoPaginacaoMixin,
+)
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.services.designacao_service import DesignacaoService
 
-
-class DesignacaoLegadoPagination(PageNumberPagination):
-    """Paginação customizada para views de designação legada.
-
-    Permite desabilitar a paginação quando o parâmetro
-    no_pagination=true estiver presente.
-    """
-
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 100
-
-    def paginate_queryset(self, queryset, request, view=None):
-        """Decide se a paginação deve ser aplicada.
-
-        Args:
-            queryset: Queryset a ser paginado.
-            request: Requisição HTTP.
-            view: View atual.
-
-        Returns:
-            list|None: Lista paginada ou None quando a paginação está
-            desabilitada.
-        """
-        if request.query_params.get("no_pagination", "").lower() == "true":
-            return None
-        return super().paginate_queryset(queryset, request, view)
+DesignacaoLegadoPagination = DesignacaoBasePagination
 
 
 class DesignacaoLegadoViewSet(
+    DesignacaoPaginacaoMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -98,36 +76,6 @@ class DesignacaoLegadoViewSet(
             .select_related("impedimento_substituicao", "cessacao")
             .order_by("-criado_em")
         )
-
-    def _is_no_pagination(self):
-        """Verifica se a paginação deve ser desabilitada.
-
-        Returns:
-            bool: True quando no_pagination=true estiver presente.
-        """
-        return (
-            self.request.query_params.get("no_pagination", "").lower()
-            == "true"
-        )
-
-    def _has_filters(self):
-        """Verifica se a requisição contém filtros além da paginação.
-
-        Returns:
-            bool: True quando houver parâmetros além dos de paginação.
-        """
-        PAGINATION_PARAMS = {"page", "page_size", "format", "no_pagination"}
-        return bool(set(self.request.query_params.keys()) - PAGINATION_PARAMS)
-
-    def _should_limit_queryset(self):
-        """Determina se o queryset deve ser limitado para evitar
-        retornos muito grandes.
-
-        Returns:
-            bool: True quando não houver filtros nem desabilitação de
-            paginação.
-        """
-        return not self._has_filters() and not self._is_no_pagination()
 
     def list(self, request, *args, **kwargs):
         """Lista designações legadas conforme filtros e paginação.

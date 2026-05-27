@@ -7,10 +7,13 @@ para o detalhe de uma designação.
 from django.db import models
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.designacao import ImpedimentoSubstituicao
+from apps.designacao.models.designacao import (
+    ImpedimentoSubstituicao,
+    ServidorDesignacaoMixin,
+)
 
 
-class DesignacaoDetalhe(models.Model):
+class DesignacaoDetalhe(ServidorDesignacaoMixin):
     """Representa os detalhes complementares de uma designação."""
 
     class TipoVaga(models.TextChoices):
@@ -39,54 +42,6 @@ class DesignacaoDetalhe(models.Model):
     dre = models.CharField(max_length=50, blank=True, default="")
     funcionarios_da_unidade = models.CharField(
         max_length=50, blank=True, default=""
-    )
-
-    # Indicado
-    indicado_nome_civil = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    indicado_nome_servidor = models.CharField(max_length=255)
-    indicado_rf = models.CharField(max_length=8)
-    indicado_vinculo = models.IntegerField()
-    indicado_cargo_base = models.CharField(max_length=255)
-    indicado_codigo_cargo_base = models.IntegerField(null=True, blank=True)
-    indicado_lotacao = models.CharField(max_length=255)
-    indicado_cargo_sobreposto = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    indicado_codigo_cargo_sobreposto = models.IntegerField(
-        null=True, blank=True
-    )
-    indicado_local_exercicio = models.CharField(max_length=255)
-    indicado_local_servico = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-
-    # Titular
-    titular_nome_civil = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    titular_nome_servidor = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    titular_rf = models.CharField(max_length=8, blank=True, default="")
-    titular_vinculo = models.IntegerField(null=True, blank=True)
-    titular_cargo_base = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    titular_codigo_cargo_base = models.IntegerField(null=True, blank=True)
-    titular_lotacao = models.CharField(max_length=255, blank=True, default="")
-    titular_cargo_sobreposto = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    titular_codigo_cargo_sobreposto = models.IntegerField(
-        null=True, blank=True
-    )
-    titular_local_exercicio = models.CharField(
-        max_length=255, blank=True, default=""
-    )
-    titular_local_servico = models.CharField(
-        max_length=255, blank=True, default=""
     )
 
     # Período

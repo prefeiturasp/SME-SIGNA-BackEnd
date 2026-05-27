@@ -8,47 +8,9 @@ from django.db import models
 from django.utils import timezone
 
 
-class ImpedimentoSubstituicao(models.Model):
-    """Representa um impedimento que pode afetar a substituição de
-    atividade."""
-
-    codigo = models.CharField(max_length=50, unique=True)
-    descricao = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = "impedimento_substituicao"
-
-    def __str__(self):
-        """Retorna a representação textual do impedimento de substituição.
-
-        Returns:
-            str: Descrição do impedimento.
-        """
-        return self.descricao
-
-
-class Designacao(models.Model):
-    """Representa uma designação de servidor com dados de vaga, portaria e
-    período."""
-
-    class TipoVaga(models.TextChoices):
-        VAGO = "VAGO", "Cargo Vago"
-        DISPONIVEL = "DISPONIVEL", "Cargo Disponível"
-
-    class CargoVaga(models.IntegerChoices):
-        ASSISTENTE_DIRETOR = 3085, "ASSISTENTE DE DIRETOR DE ESCOLA"
-        DIRETOR = 3360, "DIRETOR DE ESCOLA"
-        COORDENADOR_PEDAGOGICO = 3379, "COORDENADOR PEDAGOGICO"
-        SECRETARIO = 3182, "SECRETARIO DE ESCOLA"
-        SUPERVISOR = 3352, "SUPERVISOR ESCOLAR"
-
-    # --- Unidade ---
-    dre_nome = models.CharField(max_length=255)
-    unidade_proponente = models.CharField(max_length=255)
-    codigo_hierarquico = models.CharField(max_length=50)
-    ue = models.CharField(max_length=50)
-    dre = models.CharField(max_length=50)
-    funcionarios_da_unidade = models.CharField(max_length=50)
+class ServidorDesignacaoMixin(models.Model):
+    """Campos de indicado e titular compartilhados entre Designacao
+    e DesignacaoDetalhe."""
 
     # --- Indicado ---
     indicado_nome_civil = models.CharField(
@@ -97,6 +59,52 @@ class Designacao(models.Model):
     titular_local_servico = models.CharField(
         max_length=255, blank=True, default=""
     )
+
+    class Meta:
+        abstract = True
+
+
+class ImpedimentoSubstituicao(models.Model):
+    """Representa um impedimento que pode afetar a substituição de
+    atividade."""
+
+    codigo = models.CharField(max_length=50, unique=True)
+    descricao = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "impedimento_substituicao"
+
+    def __str__(self):
+        """Retorna a representação textual do impedimento de substituição.
+
+        Returns:
+            str: Descrição do impedimento.
+        """
+        return self.descricao
+
+
+class Designacao(ServidorDesignacaoMixin):
+    """Representa uma designação de servidor com dados de vaga, portaria e
+    período."""
+
+    class TipoVaga(models.TextChoices):
+        VAGO = "VAGO", "Cargo Vago"
+        DISPONIVEL = "DISPONIVEL", "Cargo Disponível"
+
+    class CargoVaga(models.IntegerChoices):
+        ASSISTENTE_DIRETOR = 3085, "ASSISTENTE DE DIRETOR DE ESCOLA"
+        DIRETOR = 3360, "DIRETOR DE ESCOLA"
+        COORDENADOR_PEDAGOGICO = 3379, "COORDENADOR PEDAGOGICO"
+        SECRETARIO = 3182, "SECRETARIO DE ESCOLA"
+        SUPERVISOR = 3352, "SUPERVISOR ESCOLAR"
+
+    # --- Unidade ---
+    dre_nome = models.CharField(max_length=255)
+    unidade_proponente = models.CharField(max_length=255)
+    codigo_hierarquico = models.CharField(max_length=50)
+    ue = models.CharField(max_length=50)
+    dre = models.CharField(max_length=50)
+    funcionarios_da_unidade = models.CharField(max_length=50)
 
     # --- Portaria ---
     numero_portaria = models.CharField(max_length=20)
