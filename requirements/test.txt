@@ -1,5 +1,11 @@
 -r base.txt
-pytest>=7
-pytest-django
-coverage
-factory-boy
+
+# Test runner
+pytest>=9.0,<10
+pytest-django>=4.0,<5
+
+# Coverage
+coverage>=7.0,<8
+
+# Fixtures / fake data
+factory-boy>=3.3,<4

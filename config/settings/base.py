@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # Local apps
     "apps.core",
     "apps.usuarios",
@@ -96,9 +97,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database: usa DATABASE_URL do .env
 DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'
-    )
+    "default": env.db("DATABASE_URL", default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
 }
 
 # Password validation (padrão)
@@ -136,9 +135,8 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SIMPLE_JWT = {
@@ -171,4 +169,13 @@ LOGGING = {
         "handlers": ["console"],
         "level": "INFO",
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Django-DRF SIGNA API",
+    "DESCRIPTION": "Documentação de API endpoints da aplicação SIGNA",
+    "VERSION": "0.0.0",
+    # "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "SCHEMA_PATH_PREFIX": "/api/",
 }

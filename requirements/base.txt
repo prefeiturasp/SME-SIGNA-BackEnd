@@ -2,35 +2,32 @@
 Django>=4.2,<5
 
 # DRF
-djangorestframework>=3.15
+djangorestframework>=3.15,<4
 
 # JWT
-djangorestframework-simplejwt>=5.3
+djangorestframework-simplejwt>=5.3,<6
 
 # CORS
-django-cors-headers>=4.3
+django-cors-headers>=4.3,<5
 
 # Env
-python-dotenv>=1.0
-django-environ>=0.12
+python-dotenv>=1.0,<2
+django-environ>=0.12,<1
 
 # PostgreSQL driver
-psycopg2-binary>=2.9
+psycopg2-binary>=2.9,<3
 
-# Servidor WSGI (pode estar no production também)
-gunicorn>=21.0
+# WSGI Server
+gunicorn>=21.0,<23
 
-# Static files (para produção)
-whitenoise>=6.5
+# Static files
+whitenoise>=6.5,<7
 
 # HTTP requests
-requests==2.32.5
-
-#test
-pytest==9.0.1
-pytest-cov==7.0.0
-pytest-django==4.11.1
-pytest-mock==3.15.1
+requests>=2.32.5,<3
 
 # Filters
 django-filter>=23.0,<25
+
+# Swagger
+drf-spectacular==0.28.0
