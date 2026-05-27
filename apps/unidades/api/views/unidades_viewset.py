@@ -8,6 +8,7 @@ import logging
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -28,7 +29,7 @@ class UnidadeViewSet(ViewSet):
 
     permission_classes = [AllowAny]
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs) -> Response:
         """Lista DREs ou UEs conforme os parâmetros da requisição.
 
         Args:
@@ -69,7 +70,7 @@ class UnidadeViewSet(ViewSet):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def _listar_dres(self):
+    def _listar_dres(self) -> Response:
         """Recupera todas as DREs a partir da API SME Integração.
 
         Returns:
@@ -92,7 +93,7 @@ class UnidadeViewSet(ViewSet):
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _listar_ues(self, codigo_dre):
+    def _listar_ues(self, codigo_dre: str | None) -> Response:
         """Recupera as Unidades Escolares vinculadas a uma DRE específica.
 
         Args:
@@ -164,7 +165,7 @@ class UnidadeViewSet(ViewSet):
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _resposta_erro(self, mensagem, status_code):
+    def _resposta_erro(self, mensagem: str, status_code: int) -> Response:
         """Retorna uma resposta de erro padronizada.
 
         Args:

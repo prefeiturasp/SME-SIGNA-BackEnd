@@ -80,7 +80,7 @@ class UnidadeSerializer(serializers.Serializer):
     # Campo customizado
     tipo_nome_ue = serializers.SerializerMethodField()
 
-    def get_tipo_nome_ue(self, obj):
+    def get_tipo_nome_ue(self, obj: dict) -> str | None:
         """Combina tipo e nome da UE.
 
         Args:
