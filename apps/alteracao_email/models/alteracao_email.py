@@ -26,6 +26,6 @@ class AlteracaoEmail(models.Model):
     criado_em = models.DateTimeField(auto_now_add=True)
     ja_usado = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Retorna representação textual da solicitação."""
         return f"{self.usuario.username} -> {self.novo_email}"

@@ -11,6 +11,7 @@ import logging
 from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.alteracao_email.api.serializers.alteracao_email_serializer import (
@@ -39,7 +40,7 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
 
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         """Cria uma solicitação de alteração de e-mail para o
         usuário autenticado.
 
@@ -88,7 +89,7 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
 
-    def update(self, request, pk=None):
+    def update(self, request: Request, pk: str | None = None) -> Response:
         """Valida um token de alteração de e-mail e aplica a
         atualização do e-mail.
 

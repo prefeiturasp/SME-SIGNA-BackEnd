@@ -17,6 +17,7 @@ from apps.helpers.exceptions import (
     TokenExpiradoException,
     TokenJaUtilizadoException,
 )
+from apps.usuarios.models import User
 from apps.usuarios.services.envia_email_service import EnviaEmailService
 
 env = environ.Env()
@@ -31,7 +32,7 @@ class AlteracaoEmailService:
     """
 
     @staticmethod
-    def solicitar(usuario, novo_email):
+    def solicitar(usuario: User, novo_email: str) -> AlteracaoEmail:
         """Solicita a alteração de e-mail e envia o e-mail de confirmação.
 
         Args:
@@ -62,7 +63,7 @@ class AlteracaoEmailService:
         return email_request
 
     @staticmethod
-    def validar(token):
+    def validar(token: str) -> tuple[User, AlteracaoEmail]:
         """Valida o token de alteração de e-mail e retorna a solicitação.
 
         Args:
