@@ -27,7 +27,7 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         },
     )
 
-    def is_valid(self, raise_exception=False):
+    def is_valid(self, raise_exception: bool = False) -> bool:
         """Valida o serializer e normaliza o formato de erro.
 
         Substitui os erros padrão do serializer por um dicionário contendo a
@@ -59,7 +59,7 @@ class AlteracaoEmailSerializer(serializers.Serializer):
 
         return valid
 
-    def validate_new_email(self, value):
+    def validate_new_email(self, value: str) -> str:
         """Valida o novo e-mail recebido pelo serializer.
 
         Verifica se o novo e-mail não é igual ao atual, se pertence ao domínio
