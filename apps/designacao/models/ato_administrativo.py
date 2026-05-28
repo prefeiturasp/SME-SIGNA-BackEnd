@@ -57,7 +57,7 @@ class AtoAdministrativo(models.Model):
     class Meta:
         db_table = "ato_administrativo"
 
-    def clean(self):
+    def clean(self) -> None:
         """Valida as regras de hierarquia e consistência do ato administrativo.
 
         Garante que cada tipo de ato possua um tipo de ato pai válido
@@ -92,7 +92,7 @@ class AtoAdministrativo(models.Model):
                     }
                 )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Salva o ato administrativo aplicando regras automáticas
         de hierarquia.
 
@@ -111,7 +111,7 @@ class AtoAdministrativo(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Retorna o status atual do ato administrativo.
 
         O status considera se o ato está ativo e, no caso de designações,
@@ -133,7 +133,7 @@ class AtoAdministrativo(models.Model):
         return "ativo"
 
     @property
-    def eh_valido(self):
+    def eh_valido(self) -> bool:
         """Indica se o ato administrativo é válido.
 
         Returns:

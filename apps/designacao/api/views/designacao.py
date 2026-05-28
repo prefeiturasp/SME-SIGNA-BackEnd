@@ -4,10 +4,12 @@ Fornece endpoints para listagem, recuperação, criação e atualização de
 designações, com suporte a filtros, pesquisa, ordenação e paginação.
 """
 
+from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.designacao_filter import DesignacaoFilter
@@ -66,7 +68,7 @@ class DesignacaoViewSet(
         "designacao_detalhe__data_fim",
     ]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset base de designações.
 
         Realiza filtros por tipo de ato administrativo, aplica otimizações
@@ -99,7 +101,7 @@ class DesignacaoViewSet(
 
     # ── List ─────────────────────────────────────────────────────────────────
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs) -> Response:
         """Lista designações conforme filtros e paginação.
 
         Args:
@@ -128,7 +130,7 @@ class DesignacaoViewSet(
 
     # ── Create ───────────────────────────────────────────────────────────────
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """Cria uma nova designação.
 
         Args:
@@ -152,7 +154,7 @@ class DesignacaoViewSet(
 
     # ── Partial update ───────────────────────────────────────────────────────
 
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Request, *args, **kwargs) -> Response:
         """Atualiza parcialmente uma designação existente.
 
         Args:
@@ -175,7 +177,7 @@ class DesignacaoViewSet(
     # ── Actions de cargos ────────────────────────────────────────────────────
 
     @action(detail=False, methods=["get"], url_path="cargos-base-pareados")
-    def cargos_base_pareados(self, request):
+    def cargos_base_pareados(self, request: Request) -> Response:
         """Retorna cargos base pareados entre indicado e titular.
 
         Args:
@@ -197,7 +199,7 @@ class DesignacaoViewSet(
     @action(
         detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados"
     )
-    def cargos_sobrepostos_pareados(self, request):
+    def cargos_sobrepostos_pareados(self, request: Request) -> Response:
         """Retorna cargos sobrepostos pareados entre indicado e titular.
 
         Args:

@@ -389,7 +389,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "insubsistencia",
         ]
 
-    def get_status(self, obj):
+    def get_status(self, obj: AtoAdministrativo) -> str:
         """Retorna o status do ato administrativo.
 
         Args:
@@ -400,7 +400,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         """
         return obj.status
 
-    def get_impedimento_display(self, obj):
+    def get_impedimento_display(self, obj: AtoAdministrativo) -> str | None:
         """Retorna a descrição do impedimento de substituição.
 
         Args:
@@ -415,7 +415,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def get_tipo_vaga_display(self, obj):
+    def get_tipo_vaga_display(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o texto descritivo do tipo de vaga.
 
         Args:
@@ -429,7 +429,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def get_cargo_vaga_display(self, obj):
+    def get_cargo_vaga_display(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o texto descritivo do cargo da vaga.
 
         Args:
@@ -443,7 +443,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def get_cessacao(self, obj):
+    def get_cessacao(self, obj: AtoAdministrativo) -> dict | None:
         """Retorna dados da cessação associada à designação.
 
         Args:
@@ -485,7 +485,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def _serializar_insubsistencia(self, ato):
+    def _serializar_insubsistencia(
+        self, ato: AtoAdministrativo
+    ) -> dict | None:
         """Serializa a insubsistência válida de um ato.
 
         Args:
@@ -515,7 +517,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def _serializar_apostilas(self, ato):
+    def _serializar_apostilas(self, ato: AtoAdministrativo) -> list:
         """Serializa apostilas relacionadas a um ato.
 
         Args:
@@ -544,7 +546,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
                 pass
         return resultado
 
-    def get_apostilas(self, obj):
+    def get_apostilas(self, obj: AtoAdministrativo) -> list:
         """Retorna as apostilas associadas ao ato.
 
         Args:
@@ -555,7 +557,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         """
         return self._serializar_apostilas(obj)
 
-    def get_insubsistencia(self, obj):
+    def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
         """Retorna a insubsistência ativa da designação.
 
         Args:

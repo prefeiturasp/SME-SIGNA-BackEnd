@@ -3,6 +3,8 @@
 Fornece endpoints para criar, listar, recuperar e excluir cessões.
 """
 
+from django.db.models import QuerySet
+
 from rest_framework import mixins, viewsets
 from rest_framework.pagination import PageNumberPagination
 
@@ -40,7 +42,7 @@ class CessacaoViewSet(
     serializer_class = CessacaoSerializer
     pagination_class = CessacaoPagination
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset de cessões ativas.
 
         Returns:

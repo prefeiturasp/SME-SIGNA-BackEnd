@@ -4,12 +4,15 @@ Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do
 D.O.
 """
 
+from django.db.models import QuerySet
+
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, mixins
 from rest_framework import serializers as drf_serializers
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.portaria_filter import PortariaFilter
@@ -52,7 +55,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     ordering = ["numero_portaria"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset base de portarias.
 
         Returns:
@@ -71,7 +74,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     @action(
         detail=False, methods=["post"], url_path="atualizar-data-publicacao"
     )
-    def atualizar_data_publicacao(self, request):
+    def atualizar_data_publicacao(self, request: Request) -> Response:
         """Atualiza a data de publicação de portarias selecionadas.
 
         Args:

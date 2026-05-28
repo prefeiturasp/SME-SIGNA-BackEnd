@@ -35,7 +35,7 @@ class ApostilaSerializer(serializers.ModelSerializer):
             "d_o",
         ]
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Valida o payload completo de apostila.
 
         Args:

@@ -15,7 +15,7 @@ flake8>=7.0,<8
 
 # Type checking
 mypy>=1.10,<2
-# django-stubs>=5.0,<6
+django-stubs>=5.0,<6
 
 # Pre-commit
 # pre-commit>=3.7,<4

@@ -48,7 +48,7 @@ class Insubsistencia(models.Model):
     class Meta:
         db_table = "insubsistencia"
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs) -> None:
         """Realiza exclusão lógica da insubsistência.
 
         Marca o registro como removido sem excluí-lo fisicamente do banco,

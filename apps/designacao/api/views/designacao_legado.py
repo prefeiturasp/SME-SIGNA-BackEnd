@@ -4,10 +4,12 @@ Fornece endpoints para CRUD de designações legadas, com filtros,
 pesquisa, ordenação e ações auxiliares para cargos pareados.
 """
 
+from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.designacao_legado_filter import (
@@ -64,7 +66,7 @@ class DesignacaoLegadoViewSet(
 
     ordering_fields = ["criado_em", "data_inicio", "data_fim", "ano_vigente"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset base para designações legadas.
 
         Returns:
@@ -77,7 +79,7 @@ class DesignacaoLegadoViewSet(
             .order_by("-criado_em")
         )
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs) -> Response:
         """Lista designações legadas conforme filtros e paginação.
 
         Args:
@@ -107,7 +109,7 @@ class DesignacaoLegadoViewSet(
         return Response(DesignacaoLegadoSerializer(queryset, many=True).data)
 
     @action(detail=False, methods=["get"], url_path="cargos-base-pareados")
-    def cargos_base_pareados(self, request):
+    def cargos_base_pareados(self, request: Request) -> Response:
         """Retorna cargos base pareados entre indicado e titular.
 
         Args:
@@ -129,7 +131,7 @@ class DesignacaoLegadoViewSet(
     @action(
         detail=False, methods=["get"], url_path="cargos-sobrepostos-pareados"
     )
-    def cargos_sobrepostos_pareados(self, request):
+    def cargos_sobrepostos_pareados(self, request: Request) -> Response:
         """Retorna cargos sobrepostos pareados entre indicado e titular.
 
         Args:

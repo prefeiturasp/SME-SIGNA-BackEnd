@@ -3,8 +3,11 @@
 Fornece endpoints para listagem, recuperação, criação e exclusão de apostilas.
 """
 
+from django.db.models import QuerySet
+
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.serializers.v2.apostila_serializer import (
@@ -42,7 +45,7 @@ class ApostilaV2ViewSet(
     serializer_class = ApostilaV2ReadSerializer
     pagination_class = ApostilaV2Pagination
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset de apostilas para a view.
 
         Returns:
@@ -61,7 +64,7 @@ class ApostilaV2ViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """Cria uma nova apostila a partir dos dados enviados na requisição.
 
         Args:

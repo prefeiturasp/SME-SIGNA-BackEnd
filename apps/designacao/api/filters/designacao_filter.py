@@ -53,7 +53,9 @@ class DesignacaoFilter(django_filters.FilterSet):
         lookup_expr="exact",
     )
 
-    def filter_rf(self, queryset, name, value):
+    def filter_rf(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
         """Filtra designações pelo número de RF.
 
         Args:
@@ -70,7 +72,9 @@ class DesignacaoFilter(django_filters.FilterSet):
             | models.Q(designacao_detalhe__titular_rf=value)
         )
 
-    def filter_nome(self, queryset, name, value):
+    def filter_nome(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
         """Filtra designações pelo nome do servidor.
 
         Args:
@@ -91,7 +95,9 @@ class DesignacaoFilter(django_filters.FilterSet):
             )
         )
 
-    def filter_cargo_base(self, queryset, name, value):
+    def filter_cargo_base(
+        self, queryset: models.QuerySet, name: str, value: int
+    ) -> models.QuerySet:
         """Filtra designações pelo código de cargo base.
 
         Args:

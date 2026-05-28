@@ -4,6 +4,9 @@ Fornece campos e representações customizadas para exibir portarias na tela de
 publicação do Diário Oficial.
 """
 
+import datetime
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -41,7 +44,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             "observacoes",
         ]
 
-    def _get_designacao_detalhe(self, obj):
+    def _get_designacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o DesignacaoDetalhe do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
@@ -52,7 +55,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return getattr(raiz, "designacao_detalhe", None)
         return None
 
-    def get_tipo_de_ato(self, obj):
+    def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
         """Retorna o tipo de ato em formato legível.
 
         Args:
@@ -63,7 +66,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         """
         return obj.get_tipo_display()
 
-    def get_nome(self, obj):
+    def get_nome(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o nome do servidor indicado para a portaria.
 
         Args:
@@ -79,7 +82,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             )
         return None
 
-    def get_cargo(self, obj):
+    def get_cargo(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o cargo associado à portaria.
 
         Args:
@@ -96,7 +99,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
             )
         return None
 
-    def get_data_designacao(self, obj):
+    def get_data_designacao(
+        self, obj: AtoAdministrativo
+    ) -> datetime.date | None:
         """Retorna a data de início da designação.
 
         Args:
@@ -110,7 +115,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return detalhe.data_inicio
         return None
 
-    def get_data_cessacao(self, obj):
+    def get_data_cessacao(
+        self, obj: AtoAdministrativo
+    ) -> datetime.date | None:
         """Retorna a data de cessação conforme o tipo de ato.
 
         Args:
@@ -131,7 +138,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 return detalhe.data_fim
         return None
 
-    def get_observacoes(self, obj):
+    def get_observacoes(self, obj: AtoAdministrativo) -> str | None:
         """Retorna observações específicas por tipo de ato."""
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
             insubsistencia = getattr(obj, "insubsistencia_detalhe", None)

@@ -44,7 +44,9 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
         lookup_expr="exact",
     )
 
-    def filter_rf(self, queryset, name, value):
+    def filter_rf(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
         """Filtra designações legadas pelo número de RF.
 
         Args:
@@ -60,7 +62,9 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
             models.Q(indicado_rf=value) | models.Q(titular_rf=value)
         )
 
-    def filter_nome(self, queryset, name, value):
+    def filter_nome(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
         """Filtra designações legadas pelo nome do servidor.
 
         Args:
@@ -77,7 +81,9 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
             | models.Q(titular_nome_servidor__icontains=value)
         )
 
-    def filter_cargo_base(self, queryset, name, value):
+    def filter_cargo_base(
+        self, queryset: models.QuerySet, name: str, value: int
+    ) -> models.QuerySet:
         """Filtra designações legadas pelo código de cargo base.
 
         Args:
