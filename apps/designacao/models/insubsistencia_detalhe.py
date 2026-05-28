@@ -1,14 +1,24 @@
+"""Modelo de detalhes de insubsistência.
+
+Armazena observações e informações complementares associadas a um ato de
+insubsistência.
+"""
+
 from django.db import models
+
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
 class InsubsistenciaDetalhe(models.Model):
+    """Representa os detalhes adicionais de uma insubsistência."""
 
     ato = models.OneToOneField(
-        AtoAdministrativo, on_delete=models.CASCADE,
-        related_name='insubsistencia_detalhe', primary_key=True
+        AtoAdministrativo,
+        on_delete=models.CASCADE,
+        related_name="insubsistencia_detalhe",
+        primary_key=True,
     )
-    observacoes = models.TextField(blank=True, default='')
+    observacoes = models.TextField(blank=True, default="")
 
     class Meta:
-        db_table = 'insubsistencia_detalhe'
+        db_table = "insubsistencia_detalhe"

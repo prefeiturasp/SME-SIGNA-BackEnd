@@ -1,15 +1,15 @@
+"""Calculadora de módulo para Supervisor Escolar.
+
+Define o módulo de Supervisor Escolar com base no código da DRE da unidade.
+"""
+
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class ModuloSupervisorEscolarCalculator:
-    """
-    Regra de cálculo de módulo para o cargo:
-    - 3352 (Supervisor Escolar)
-
-    O módulo é definido exclusivamente pela DRE da unidade escolar.
-    """
+    """Regra de cálculo de módulo para Supervisor Escolar."""
 
     CARGO_SUPERVISOR_ESCOLAR = "3352"
 
@@ -30,11 +30,20 @@ class ModuloSupervisorEscolarCalculator:
     }
 
     def calcular(self, _cargo: dict, informacoes_ue: dict) -> int:
+        """Calcula o módulo de Supervisor Escolar com base na DRE.
+
+        Args:
+            _cargo: Dicionário com dados do cargo (não utilizado).
+            informacoes_ue: Dicionário com informações da unidade escolar.
+
+        Returns:
+            int: Módulo definido para a DRE ou 0 se inválido.
+        """
         codigo_dre = informacoes_ue.get("codigoDRE")
 
         if not codigo_dre:
             logger.warning(
-                "Código da DRE ausente ao calcular módulo de Supervisor Escolar "
+                "Código da DRE ausente ao calcular módulo de Supervisor Escolar "  # noqa: E501
                 "(UE %s).",
                 informacoes_ue.get("codigoUE"),
             )

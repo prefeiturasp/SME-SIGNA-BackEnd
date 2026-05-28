@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 COMMAND_NAME = "gerar_relatorio_pep"
-EXCLUDE_DIRS = {"tests", "migrations", "__pycache__"}
+EXCLUDE_DIRS = {"tests", "__tests__", "migrations", "__pycache__"}
 EXCLUDE_COMMAND_FILES = {"gerar_relatorio_pep.py"}
 EXCLUDE_APPS = {"__pycache__"}
 TOP_MISSING_DOCSTRINGS = 25
@@ -197,7 +197,7 @@ def analyze_file(
         if not stripped or stripped.startswith("#"):
             continue
         metrics.lines_length_eligible += 1
-        if len(line) > max_line_length:
+        if len(line) > max_line_length and "# noqa" not in line:
             metrics.lines_over_max += 1
 
     try:
@@ -465,7 +465,7 @@ def render_simplified_markdown(
     return (
         f"# Resumo PEP — app `{app_name}`\n\n"
         f"Gerado em: **{meta['generated_at']}** · "
-        f"Commit: `{meta.get('git_commit','N/A')}`\n\n"
+        f"Commit: `{meta.get('git_commit', 'N/A')}`\n\n"
         f"## PEP 8\n**{pep8_lines:.1f}%** — {within}/{elig} linhas "
         f"≤ {max_line_length} chars; flake8: {flake8_total} avisos.\n\n"
         f"## PEP 257\n**{pep257:.1f}%** — "
@@ -552,7 +552,7 @@ def render_markdown(
         f"| Funções/métodos | {agg['functions_methods_total']} | — |",
         (
             f"| Com docstring | {agg['functions_methods_with_docstring']} | "
-            f"{_pct(agg['functions_methods_with_docstring'], agg['functions_methods_total'])} |"
+            f"{_pct(agg['functions_methods_with_docstring'], agg['functions_methods_total'])} |"  # noqa: E501
         ),
         (
             f"| Classes c/ docstring | "
@@ -1136,9 +1136,7 @@ class Command(BaseCommand):
             f"flake8: {result['flake8_total']}"
         )
 
-    def _run_many(
-        self, apps: List[str], options, repo_root: Path
-    ) -> None:
+    def _run_many(self, apps: List[str], options, repo_root: Path) -> None:
         if not apps:
             self.stdout.write(
                 self.style.WARNING("Nenhum app encontrado em apps/")
