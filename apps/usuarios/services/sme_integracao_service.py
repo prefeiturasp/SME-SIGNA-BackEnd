@@ -100,7 +100,7 @@ class SmeIntegracaoService:
             raise InternalError("Erro interno ao autenticar no CoreSSO")
 
     @classmethod
-    def informacao_usuario_sgp(cls, username):
+    def informacao_usuario_sgp(cls, username: str) -> dict:
         """Consulta os dados do usuário na SME pelo username.
 
         Args:
@@ -134,7 +134,7 @@ class SmeIntegracaoService:
             )
 
     @classmethod
-    def redefine_senha(cls, registro_funcional, senha):
+    def redefine_senha(cls, registro_funcional: str, senha: str) -> str:
         """
         Redefine a senha de um usuário no sistema SME.
 
@@ -185,7 +185,7 @@ class SmeIntegracaoService:
             raise SmeIntegracaoException(str(err))
 
     @classmethod
-    def altera_email(cls, registro_funcional, email):
+    def altera_email(cls, registro_funcional: str, email: str) -> str:
         """
         Altera o email de um usuário no sistema SME.
 
@@ -313,7 +313,9 @@ class SmeIntegracaoService:
         return cargo
 
     @classmethod
-    def _montar_ue(cls, codigo_ue, nome_ue):
+    def _montar_ue(
+        cls, codigo_ue: str | int | None, nome_ue: str | None
+    ) -> str | None:
         """Formata a descrição da unidade escolar para exibição.
 
         Args:

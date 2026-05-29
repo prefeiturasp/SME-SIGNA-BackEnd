@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from rest_framework import permissions, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -50,7 +51,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
     MENSAGEM_USUARIO_NAO_ENCONTRADO = "Usuário não encontrado"
     MENSAGEM_ERRO_INTERNO = "Erro interno no servidor."
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         """Inicia o fluxo de recuperação de senha.
 
         Valida o usuário e envia um e-mail contendo o link de redefinição.
@@ -94,7 +95,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.exception("Erro inesperado no fluxo de esqueci minha senha")
             return Response({"detail": self.MENSAGEM_ERRO_INTERNO}, status=500)
 
-    def _consultar_sme(self, username, user_local):
+    def _consultar_sme(
+        self, username: str, user_local: User | None
+    ) -> dict | None:
         """
         Consulta dados do usuário na SME.
         Retorna None se houver erro e não existir usuário local.
@@ -114,14 +117,18 @@ class EsqueciMinhaSenhaViewSet(APIView):
                 raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
             return None
 
-    def _validar_usuario_existe(self, user_local, dados_sme):
+    def _validar_usuario_existe(
+        self, user_local: User | None, dados_sme: dict | None
+    ) -> None:
         """
         Valida se o usuário existe localmente ou na SME.
         """
         if not user_local and not dados_sme:
             raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
 
-    def _obter_email(self, dados_sme, user_local, username):
+    def _obter_email(
+        self, dados_sme: dict | None, user_local: User | None, username: str
+    ) -> str:
         """
         Determina o email do usuário (prioridade: SME > banco local).
         Valida se o email existe e não está vazio.
@@ -140,7 +147,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
         return email
 
-    def _processar_envio_email(self, username, email):
+    def _processar_envio_email(self, username: str, email: str) -> Response:
         """Gera token de recuperação e envia o e-mail para o usuário.
 
         Args:
@@ -174,7 +181,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
             status=200,
         )
 
-    def _criar_ou_atualizar_usuario_local(self, username, dados_sme):
+    def _criar_ou_atualizar_usuario_local(
+        self, username: str, dados_sme: dict
+    ) -> User:
         """
         Cria ou atualiza usuário local com dados da SME.
         Usa update_or_create para evitar duplicação.
@@ -237,7 +246,7 @@ class RedefinirSenhaViewSet(APIView):
     STATUS_ERROR = "error"
     STATUS_SUCCESS = "success"
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs) -> Response:
         """Processa a redefinição de senha usando UID e token.
 
         Valida os dados do formulário e redefine a senha na SME e localmente.
@@ -323,7 +332,7 @@ class AtualizarSenhaViewSet(APIView):
     MENSAGEM_SUCESSO = "Senha alterada com sucesso."
     MENSAGEM_ERRO_INTERNO = "Erro interno do servidor."
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         """Processa a alteração de senha do usuário autenticado.
 
         Valida a senha atual e atualiza a senha na SME e no banco local.
