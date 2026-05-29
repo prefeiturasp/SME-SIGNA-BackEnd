@@ -8,6 +8,7 @@ import logging
 
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -27,7 +28,7 @@ class DesignacaoServidorView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         """Processa requisição para buscar designação do servidor.
 
         Args:

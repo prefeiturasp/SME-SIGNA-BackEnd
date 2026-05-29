@@ -76,7 +76,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
             "insubsistencia",
         ]
 
-    def get_status(self, obj):
+    def get_status(self, obj: AtoAdministrativo) -> str:
         """Retorna o status do ato de apostila.
 
         Args:
@@ -87,7 +87,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
         """
         return obj.status
 
-    def get_alteracoes(self, obj):
+    def get_alteracoes(self, obj: AtoAdministrativo) -> list:
         """Retorna as alterações registradas na apostila.
 
         Args:
@@ -102,7 +102,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
         except Exception:
             return []
 
-    def get_insubsistencia(self, obj):
+    def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
         """Retorna a insubsistência ativa associada à apostila.
 
         Args:

@@ -4,6 +4,8 @@ Fornece lógica para criar insubsistências, reverter apostilas e manter a
 consistência dos atos administrativos relacionados.
 """
 
+from typing import Any
+
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
@@ -167,7 +169,7 @@ class InsubsistenciaService:
             detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato: AtoAdministrativo):
+    def _get_detalhe(ato: AtoAdministrativo) -> Any | None:
         """Retorna o detalhe associado a um ato administrativo, se houver."""
         if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato, "designacao_detalhe", None)
@@ -176,7 +178,9 @@ class InsubsistenciaService:
         return None
 
     @staticmethod
-    def _coerce_valor(ato, detalhe, campo, valor_str):
+    def _coerce_valor(
+        ato: AtoAdministrativo, detalhe: Any, campo: str, valor_str: Any
+    ) -> Any:
         """Converte o valor de string para o tipo de campo apropriado.
 
         Args:
@@ -220,13 +224,13 @@ class InsubsistenciaService:
     # ── Métodos legado ───────────────────────────────────────────────────────
 
     @staticmethod
-    def montar_dados_insubsistencia_designacao(serializer):
+    def montar_dados_insubsistencia_designacao(serializer: Any) -> Any:
         """Método legado que retorna o serializer de designação sem
         alteração."""
         return serializer
 
     @staticmethod
-    def montar_dados_insubsistencia_cessacao(serializer):
+    def montar_dados_insubsistencia_cessacao(serializer: Any) -> Any:
         """Método legado que ajusta o serializer para insubsistência de
         cessação."""
         designacao_obj = serializer.validated_data.get("designacao")

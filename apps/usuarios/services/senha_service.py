@@ -19,7 +19,7 @@ class SenhaService:
     """Serviço para lógica de recuperação de senha via nome de usuário."""
 
     @staticmethod
-    def gerar_token_para_usuario(user):
+    def gerar_token_para_usuario(user: User) -> tuple[str, str]:
         """Gera UID e token para reset de senha do usuário.
 
         Args:
@@ -36,7 +36,7 @@ class SenhaService:
         return uid, token
 
     @staticmethod
-    def gerar_token_para_reset(username: str, email: str):
+    def gerar_token_para_reset(username: str, email: str) -> dict:
         """Gera os dados necessários para o fluxo de reset de senha.
 
         Busca o usuário pelo username, gera UID e token, e retorna o nome

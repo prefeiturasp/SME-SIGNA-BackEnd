@@ -234,6 +234,7 @@ class TestPortariaListView:
             "id",
             "portaria",
             "doc",
+            "ano",
             "tipo_de_ato",
             "nome",
             "cargo",
@@ -241,6 +242,11 @@ class TestPortariaListView:
             "data_cessacao",
             "numero_sei",
             "observacoes",
+            "designacao",
+            "cessacao",
+            "tipo_insubsistencia",
+            "tipo_apostila",
+            "tipo",
         }
 
     def test_ordenacao_padrao_por_numero_portaria(

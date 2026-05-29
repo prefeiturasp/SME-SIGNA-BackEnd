@@ -54,7 +54,7 @@ class Apostila(models.Model):
     class Meta:
         db_table = "apostila"
 
-    def clean(self):
+    def clean(self) -> None:
         """Valida a consistência dos vínculos e referências da apostila.
 
         Garante que a apostila esteja vinculada exclusivamente a uma

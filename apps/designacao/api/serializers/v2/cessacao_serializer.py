@@ -39,7 +39,7 @@ class CessacaoV2WriteSerializer(serializers.Serializer):
     aposentadoria = serializers.BooleanField(required=False, default=False)
     data_cessacao = serializers.DateField()
 
-    def validate_numero_portaria(self, value):
+    def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
 
         Args:
@@ -50,7 +50,7 @@ class CessacaoV2WriteSerializer(serializers.Serializer):
         """
         return validar_somente_numeros(value)
 
-    def validate_ano_vigente(self, value):
+    def validate_ano_vigente(self, value: str) -> str:
         """Valida que o ano vigente contenha apenas dígitos.
 
         Args:
@@ -107,7 +107,7 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
             "insubsistencia",
         ]
 
-    def get_insubsistencia(self, obj):
+    def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
         """Retorna a insubsistência associada à cessação.
 
         Args:

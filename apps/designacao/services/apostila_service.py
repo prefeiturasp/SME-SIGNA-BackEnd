@@ -5,6 +5,7 @@ incluindo validações e aplicação de alterações em atos administrativos.
 """
 
 import datetime
+from typing import Any
 
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
@@ -185,7 +186,7 @@ class ApostilaService:
     def _encontrar_campo(
         campo: str,
         ato_pai: AtoAdministrativo,
-        detalhe,
+        detalhe: Any | None,
     ) -> tuple[str, str]:
         """Encontra o campo a ser alterado no ato pai ou no detalhe.
 
@@ -266,7 +267,7 @@ class ApostilaService:
         ApostilaAlteracao.objects.bulk_create(registros)
 
     @staticmethod
-    def _salvar_updates(obj, updates: dict) -> None:
+    def _salvar_updates(obj: Any, updates: dict) -> None:
         """Aplica os updates em um objeto e salva em lote.
 
         Args:
@@ -278,7 +279,7 @@ class ApostilaService:
         obj.save(update_fields=list(updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato_pai: AtoAdministrativo):
+    def _get_detalhe(ato_pai: AtoAdministrativo) -> Any | None:
         """Retorna o detalhe associado a um ato administrativo.
 
         Args:

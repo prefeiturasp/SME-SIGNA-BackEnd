@@ -17,7 +17,7 @@ class EnviaEmailService:
     """Serviço para envio de e-mails HTML usando recursos padrão do Django."""
 
     @staticmethod
-    def validar(destinatario, assunto):
+    def validar(destinatario: str | list, assunto: str) -> None:
         """Valida os parâmetros básicos do e-mail.
 
         Args:
@@ -33,7 +33,7 @@ class EnviaEmailService:
             raise ValidationError("Assunto não pode ser vazio.")
 
     @staticmethod
-    def renderizar_corpo(template_html, contexto):
+    def renderizar_corpo(template_html: str, contexto: dict) -> str:
         """Renderiza o corpo do e-mail a partir de um template HTML.
 
         Args:
@@ -46,7 +46,13 @@ class EnviaEmailService:
         return render_to_string(template_html, contexto)
 
     @classmethod
-    def enviar(cls, destinatario, assunto, template_html, contexto):
+    def enviar(
+        cls,
+        destinatario: str | list,
+        assunto: str,
+        template_html: str,
+        contexto: dict,
+    ) -> None:
         """Envia um e-mail HTML.
 
         Args:

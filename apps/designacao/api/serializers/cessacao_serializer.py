@@ -25,7 +25,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
         model = Cessacao
         fields = "__all__"
 
-    def get_insubsistencia(self, obj):
+    def get_insubsistencia(self, obj: Cessacao) -> dict | None:
         """Retorna a insubsistência mais recente associada à cessação.
 
         Args:
@@ -45,7 +45,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
 
         return None
 
-    def validate_numero_portaria(self, value):
+    def validate_numero_portaria(self, value: str) -> str:
         """Valida o número da portaria apenas com dígitos.
 
         Args:
@@ -56,7 +56,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
         """
         return validar_somente_numeros(value)
 
-    def validate_ano_vigente(self, value):
+    def validate_ano_vigente(self, value: str) -> str:
         """Valida o ano vigente apenas com dígitos.
 
         Args:
@@ -67,7 +67,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
         """
         return validar_somente_numeros(value)
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Valida a consistência dos dados de cessação.
 
         Args:
