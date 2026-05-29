@@ -385,6 +385,6 @@ class DesignacaoUnidadeService:
         }
 
     @staticmethod
-    def listar_cargos_vaga():
+    def listar_cargos_vaga() -> list:
         """Retorna a lista de cargos de vaga formatados."""
         return DesignacaoDetalhe.get_cargos_formatados()

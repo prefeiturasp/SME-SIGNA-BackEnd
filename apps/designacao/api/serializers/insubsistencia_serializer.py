@@ -32,7 +32,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         model = Insubsistencia
         fields = "__all__"
 
-    def validate_numero_portaria(self, value):
+    def validate_numero_portaria(self, value: str) -> str:
         """Valida o número da portaria como apenas dígitos.
 
         Args:
@@ -43,7 +43,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         """
         return validar_somente_numeros(value)
 
-    def validate_ano_vigente(self, value):
+    def validate_ano_vigente(self, value: str) -> str:
         """Valida o ano vigente como apenas dígitos.
 
         Args:
@@ -54,7 +54,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         """
         return validar_somente_numeros(value)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Insubsistencia:
         """Cria a insubsistência removendo dados auxiliares de tipo.
 
         Args:
@@ -66,7 +66,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
         validated_data.pop("tipo_insubsistencia", None)
         return super().create(validated_data)
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Valida regras de negócio para insubsistência.
 
         Verifica se a designação está informada e garante que não haja

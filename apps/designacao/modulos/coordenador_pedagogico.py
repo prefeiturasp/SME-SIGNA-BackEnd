@@ -61,7 +61,7 @@ class ModuloCoordenadorPedagogicoCalculator:
         """
         return (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
 
-    def _regra_modulo_fixo(self, sigla_tipo: str):
+    def _regra_modulo_fixo(self, sigla_tipo: str) -> int | None:
         """Aplica regras de módulo fixo para determinados tipos de escola.
 
         Args:

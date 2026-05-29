@@ -76,7 +76,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
         db_table = "designacao_detalhe"
 
     @classmethod
-    def get_cargos_formatados(cls):
+    def get_cargos_formatados(cls) -> list:
         """Retorna os cargos de vaga formatados para consumo da API.
 
         Converte os valores definidos em `CargoVaga` para uma lista

@@ -74,7 +74,7 @@ class ImpedimentoSubstituicao(models.Model):
     class Meta:
         db_table = "impedimento_substituicao"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Retorna a representação textual do impedimento de substituição.
 
         Returns:
@@ -147,14 +147,14 @@ class Designacao(ServidorDesignacaoMixin):
         db_table = "designacao"
 
     @classmethod
-    def get_cargos_formatados(cls):
+    def get_cargos_formatados(cls) -> list:
         """Substitui a constante CARGOS_GESTAO_ESCOLAR"""
         return [
             {"codigoCargo": choice.value, "nomeCargo": choice.label}
             for choice in cls.CargoVaga
         ]
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs) -> None:
         """Realiza exclusão lógica da designação.
 
         Marca o registro como removido sem excluí-lo fisicamente do banco,
