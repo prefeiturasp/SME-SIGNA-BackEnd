@@ -51,7 +51,7 @@ class RedefinirSenhaSerializer(serializers.Serializer):
         "uid_invalid": "UID inválido ou malformado.",
     }
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         """Valida os dados de redefinição e carrega o usuário.
 
         Args:
@@ -125,7 +125,7 @@ class AtualizarSenhaSerializer(serializers.Serializer):
     nova_senha = serializers.CharField(write_only=True)
     confirmacao_nova_senha = serializers.CharField(write_only=True)
 
-    def is_valid(self, raise_exception=False):
+    def is_valid(self, raise_exception: bool = False) -> bool:
         """Formata os erros de validação para resposta simplificada.
 
         Args:
@@ -150,7 +150,7 @@ class AtualizarSenhaSerializer(serializers.Serializer):
 
         return valid
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
         """Valida a senha atual e a confirmação da nova senha.
 
         Args:
