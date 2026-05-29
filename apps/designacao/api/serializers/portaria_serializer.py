@@ -29,17 +29,11 @@ class PortariaListSerializer(serializers.ModelSerializer):
     numero_sei = serializers.CharField(source="sei_numero")
     observacoes = serializers.SerializerMethodField()
 
-    ano=serializers.CharField(source="ano_vigente")
+    ano = serializers.CharField(source="ano_vigente")
     designacao = serializers.SerializerMethodField()
     cessacao = serializers.SerializerMethodField()
     tipo_insubsistencia = serializers.SerializerMethodField()
     tipo_apostila = serializers.SerializerMethodField()
-
- 
-    
-    
-    
-
     class Meta:
         model = AtoAdministrativo
         fields = [
@@ -58,8 +52,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             "cessacao",
             "tipo_insubsistencia",
             "tipo_apostila",
-            "tipo"
-        
+            "tipo"        
         ]
 
     def _get_cessacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
@@ -74,7 +67,6 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return getattr(pai, "cessacao_detalhe", None)
 
         return None
-
     
     def _get_designacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o DesignacaoDetalhe do ato raiz (designação original)."""
@@ -86,7 +78,6 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if raiz:
             return getattr(raiz, "designacao_detalhe", None)
         return None
-
 
     def _get_designacao_ato_administrativo(self, obj: AtoAdministrativo) -> AtoAdministrativo | None:
         """Retorna o numero_portaria do ato raiz (designação original)."""
@@ -112,8 +103,6 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if raiz and raiz.tipo == AtoAdministrativo.Tipo.CESSACAO:
             return raiz            
         return None
-
-
     
     def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
         """Retorna o tipo de ato em formato legível.
@@ -125,9 +114,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             str: Nome legível do tipo de ato.
         """
         return obj.get_tipo_display()
-
      
-
     def get_designacao(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna os dados de designação do ato administrativo atual ou do pai dele
 
@@ -171,7 +158,6 @@ class PortariaListSerializer(serializers.ModelSerializer):
             }
         return None
 
-
     def get_cessacao(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna os dados de cessação do ato administrativo atual ou do pai dele.
 
@@ -198,9 +184,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "data_cessacao": detalhe.data_cessacao,
             }
         return None
-
- 
-    
+   
     def get_nome(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o nome do servidor indicado para a portaria.
 

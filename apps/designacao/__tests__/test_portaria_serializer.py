@@ -17,6 +17,7 @@ from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
+
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
@@ -30,6 +31,50 @@ def serialize(ato):
         dict: Dados serializados do ato administrativo.
     """
     return PortariaListSerializer(ato).data
+
+
+# ─── Constantes ────────────────────────────────────────────────────────────
+
+
+DADOS_CESSACAO = {
+            "portaria": "002/2024", 
+            "ano_vigente": "2024", 
+            "numero_sei": "6018.2024/0002345-6", 
+            "doc": date(2024, 10, 24), 
+            "remocao": False, 
+            "a_pedido": False, 
+            "aposentadoria": False, 
+            "data_cessacao": date(2024, 6, 30)
+}
+
+DADOS_DESIGNACAO = {
+             "portaria": "001/2024",
+             "ano_vigente": "2024",
+             "numero_sei": "6018.2024/0001234-5",
+             "doc": date(2024, 10, 23),
+             "dre_nome": "DRE BUTANTA",
+             "indicado_rf": "12345678",
+             "indicado_vinculo": 1,
+             "indicado_nome_civil": "Maria da Silva",
+             "indicado_nome_servidor": "MARIA SILVA",
+             "indicado_lotacao": "EMEF TESTE 1",
+             "indicado_cargo_base": "PROFESSOR DE EF I",
+             "indicado_cargo_sobreposto": "DIRETOR DE ESCOLA",
+             "indicado_local_exercicio": "EMEF TESTE 1",
+             "tipo_vaga": "VAGO",
+             "titular_nome_civil": "",
+             "titular_nome_servidor": "",
+             "titular_rf": "",
+             "titular_cargo_base": "",
+             "titular_vinculo": None,
+             "titular_tipo_vinculo": "Nao encontrado",
+             "impedimento_substituicao": None,
+             "ue": "",
+             "codigo_hierarquico": "108600",
+             "data_inicio": date(2024, 1, 15),
+             "data_fim": None
+}
+
 
 
 # ─── Fixtures base ────────────────────────────────────────────────────────────
@@ -184,7 +229,6 @@ def insubsistencia_sem_observacoes(db, designacao):
     InsubsistenciaDetalhe.objects.create(ato=ato, observacoes="")
     return ato
 
-
 @pytest.fixture
 def apostila(db, designacao):
     """Método apostila."""
@@ -200,6 +244,25 @@ def apostila(db, designacao):
     ApostilaDetalhe.objects.create(
         ato=ato,
         observacao="Apostila de retificacao de cargo.",
+    )
+    return ato
+
+
+@pytest.fixture
+def apostila_cessacao(db, cessacao):
+    """Método apostila."""
+    ato = AtoAdministrativo.objects.create(
+        tipo="APOSTILA",
+        numero_portaria="005/2024",
+        ano_vigente="2024",
+        sei_numero="6019.2024/0004567-8",
+        doc=None,
+        ativo=True,
+        ato_pai=cessacao,
+    )
+    ApostilaDetalhe.objects.create(
+        ato=ato,
+        observacao="Apostila de retificacao de cessação.",
     )
     return ato
 
@@ -223,6 +286,7 @@ class TestPortariaListSerializer:
             "id",
             "portaria",
             "doc",
+            "ano",
             "tipo_de_ato",
             "nome",
             "cargo",
@@ -230,7 +294,28 @@ class TestPortariaListSerializer:
             "data_cessacao",
             "numero_sei",
             "observacoes",
+            "designacao",
+            "cessacao",
+            "tipo_insubsistencia",
+            "tipo_apostila",
+            "tipo"
         }
+       
+    def test_designacao(self, designacao):
+        """Verifica designacao."""        
+        assert serialize(designacao)["designacao"] == DADOS_DESIGNACAO
+
+    def test_cessacao(self, cessacao):
+        """Verifica cessacao."""                
+        assert serialize(cessacao)["cessacao"] == DADOS_CESSACAO
+ 
+    def test_desinacao_de_apostila_designacao(self, apostila):
+        """Verifica tipo de ato apostila."""
+        assert serialize(apostila)["designacao"] == DADOS_DESIGNACAO
+
+    def test_desinacao_de_apostila_cessacao(self, apostila_cessacao):
+        """Verifica tipo de ato apostila_cessacao."""
+        assert serialize(apostila_cessacao)["cessacao"] == DADOS_CESSACAO
 
     def test_portaria(self, designacao):
         """Verifica portaria."""
@@ -265,6 +350,24 @@ class TestPortariaListSerializer:
     def test_tipo_de_ato_apostila(self, apostila):
         """Verifica tipo de ato apostila."""
         assert serialize(apostila)["tipo_de_ato"] == "Apostila"
+
+    # ── tipo_de_ato ───────────────────────────────────────────────────────────
+
+    def test_tipo_de_designacao(self, designacao):
+        """Verifica tipo de ato designacao."""
+        assert serialize(designacao)["tipo"] == "DESIGNACAO"
+
+    def test_tipo_de_cessacao(self, cessacao):
+        """Verifica tipo de ato cessacao."""
+        assert serialize(cessacao)["tipo"] == "CESSACAO"
+
+    def test_tipo_de_insubsistencia(self, insubsistencia):
+        """Verifica tipo de ato insubsistencia."""
+        assert serialize(insubsistencia)["tipo"] == "INSUBSISTENCIA"
+
+    def test_tipo_de_apostila(self, apostila):
+        """Verifica tipo de ato apostila."""
+        assert serialize(apostila)["tipo"] == "APOSTILA"
 
     # ── nome ─────────────────────────────────────────────────────────────────
 
