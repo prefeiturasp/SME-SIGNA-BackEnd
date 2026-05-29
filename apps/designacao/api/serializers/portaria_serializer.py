@@ -34,6 +34,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
     cessacao = serializers.SerializerMethodField()
     tipo_insubsistencia = serializers.SerializerMethodField()
     tipo_apostila = serializers.SerializerMethodField()
+
     class Meta:
         model = AtoAdministrativo
         fields = [
@@ -52,7 +53,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             "cessacao",
             "tipo_insubsistencia",
             "tipo_apostila",
-            "tipo"        
+            "tipo",
         ]
 
     def _get_cessacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
@@ -62,12 +63,12 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return getattr(obj, "cessacao_detalhe", None)
         # Para os demais: busca no ato_raiz ou ato_pai
         pai = obj.ato_pai
-        
+
         if pai and pai.tipo == AtoAdministrativo.Tipo.CESSACAO:
             return getattr(pai, "cessacao_detalhe", None)
 
         return None
-    
+
     def _get_designacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o DesignacaoDetalhe do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
@@ -79,7 +80,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return getattr(raiz, "designacao_detalhe", None)
         return None
 
-    def _get_designacao_ato_administrativo(self, obj: AtoAdministrativo) -> AtoAdministrativo | None:
+    def _get_designacao_ato_administrativo(
+        self, obj: AtoAdministrativo
+    ) -> AtoAdministrativo | None:
         """Retorna o numero_portaria do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
@@ -89,8 +92,10 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if raiz:
             return raiz
         return None
-        
-    def _get_cessacao_ato_administrativo(self, obj: AtoAdministrativo) -> AtoAdministrativo | None:
+
+    def _get_cessacao_ato_administrativo(
+        self, obj: AtoAdministrativo
+    ) -> AtoAdministrativo | None:
         """Retorna os dados principais de cessação."""
         # Para CESSACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
@@ -101,9 +106,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if pai and pai.tipo == AtoAdministrativo.Tipo.CESSACAO:
             return pai
         if raiz and raiz.tipo == AtoAdministrativo.Tipo.CESSACAO:
-            return raiz            
+            return raiz
         return None
-    
+
     def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
         """Retorna o tipo de ato em formato legível.
 
@@ -114,9 +119,10 @@ class PortariaListSerializer(serializers.ModelSerializer):
             str: Nome legível do tipo de ato.
         """
         return obj.get_tipo_display()
-     
+
     def get_designacao(self, obj: AtoAdministrativo) -> Any | None:
-        """Retorna os dados de designação do ato administrativo atual ou do pai dele
+        """Retorna os dados de designação
+           do ato administrativo atual ou do pai dele
 
         Args:
             obj: Instância de AtoAdministrativo.
@@ -124,10 +130,10 @@ class PortariaListSerializer(serializers.ModelSerializer):
         Returns:
             Any|None: Nome do servidor indicado ou civil.
         """
-        
+
         detalhe = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
-        
+
         if detalhe:
             return {
                 "portaria": ato_designacao.numero_portaria,
@@ -135,31 +141,32 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "numero_sei": ato_designacao.sei_numero,
                 "doc": ato_designacao.doc,
                 "dre_nome": detalhe.dre_nome,
-                "indicado_rf":detalhe.indicado_rf,                
+                "indicado_rf": detalhe.indicado_rf,
                 "indicado_vinculo": detalhe.indicado_vinculo,
                 "indicado_nome_civil": detalhe.indicado_nome_civil,
                 "indicado_nome_servidor": detalhe.indicado_nome_servidor,
                 "indicado_lotacao": detalhe.indicado_lotacao,
-                "indicado_cargo_base": detalhe.indicado_cargo_base,                
-                "indicado_cargo_sobreposto":detalhe.indicado_cargo_sobreposto,
-                "indicado_local_exercicio":detalhe.indicado_local_exercicio,
+                "indicado_cargo_base": detalhe.indicado_cargo_base,
+                "indicado_cargo_sobreposto": detalhe.indicado_cargo_sobreposto,
+                "indicado_local_exercicio": detalhe.indicado_local_exercicio,
                 "tipo_vaga": detalhe.tipo_vaga,
-                "titular_nome_civil":detalhe.titular_nome_civil,
+                "titular_nome_civil": detalhe.titular_nome_civil,
                 "titular_nome_servidor": detalhe.titular_nome_servidor,
                 "titular_rf": detalhe.titular_rf,
                 "titular_cargo_base": detalhe.titular_cargo_base,
                 "titular_vinculo": detalhe.titular_vinculo,
                 "titular_tipo_vinculo": "Nao encontrado",
-                "impedimento_substituicao": detalhe.impedimento_substituicao,                              
-                "ue": detalhe.ue,                
+                "impedimento_substituicao": detalhe.impedimento_substituicao,
+                "ue": detalhe.ue,
                 "codigo_hierarquico": detalhe.codigo_hierarquico,
                 "data_inicio": detalhe.data_inicio,
-                "data_fim": detalhe.data_fim,                
+                "data_fim": detalhe.data_fim,
             }
         return None
 
     def get_cessacao(self, obj: AtoAdministrativo) -> Any | None:
-        """Retorna os dados de cessação do ato administrativo atual ou do pai dele.
+        """Retorna os dados de cessação
+           do ato administrativo atual ou do pai dele.
 
         Args:
             obj: Instância de AtoAdministrativo.
@@ -167,11 +174,10 @@ class PortariaListSerializer(serializers.ModelSerializer):
         Returns:
             str|None: Nome do servidor indicado ou civil.
         """
-        
+
         detalhe = self._get_cessacao_detalhe(obj)
         ato_cessacao = self._get_cessacao_ato_administrativo(obj)
-        
-        
+
         if detalhe:
             return {
                 "portaria": ato_cessacao.numero_portaria,
@@ -180,11 +186,11 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "doc": ato_cessacao.doc,
                 "remocao": detalhe.remocao,
                 "a_pedido": detalhe.a_pedido,
-                "aposentadoria": detalhe.aposentadoria,                
+                "aposentadoria": detalhe.aposentadoria,
                 "data_cessacao": detalhe.data_cessacao,
             }
         return None
-   
+
     def get_nome(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o nome do servidor indicado para a portaria.
 
@@ -194,9 +200,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
         Returns:
             str|None: Nome do servidor indicado ou civil.
         """
-        
+
         detalhe = self._get_designacao_detalhe(obj)
-        
+
         if detalhe:
             return (
                 detalhe.indicado_nome_servidor or detalhe.indicado_nome_civil
@@ -274,7 +280,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
             pai = obj.ato_pai
             return pai.tipo
-        
+
         return None
 
     def get_tipo_apostila(self, obj: AtoAdministrativo) -> str | None:
@@ -282,5 +288,5 @@ class PortariaListSerializer(serializers.ModelSerializer):
         if obj.tipo == AtoAdministrativo.Tipo.APOSTILA:
             pai = obj.ato_pai
             return pai.tipo
-        
+
         return None
