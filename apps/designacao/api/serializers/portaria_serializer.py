@@ -4,6 +4,9 @@ Fornece campos e representações customizadas para exibir portarias na tela de
 publicação do Diário Oficial.
 """
 
+import datetime
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -59,7 +62,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         
         ]
 
-    def _get_cessacao_detalhe(self, obj):
+    def _get_cessacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o CessacaoDetalhe do ato raiz (cessação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
@@ -72,7 +75,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         return None
 
-    def _get_designacao_detalhe(self, obj):
+    
+    def _get_designacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o DesignacaoDetalhe do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
@@ -84,7 +88,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         return None
 
 
-    def _get_designacao_ato_administrativo(self, obj):
+    def _get_designacao_ato_administrativo(self, obj: AtoAdministrativo) -> AtoAdministrativo | None:
         """Retorna o numero_portaria do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
@@ -95,7 +99,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return raiz
         return None
         
-    def _get_cessacao_ato_administrativo(self, obj):
+    def _get_cessacao_ato_administrativo(self, obj: AtoAdministrativo) -> AtoAdministrativo | None:
         """Retorna o numero_portaria do ato raiz (designação original)."""
         # Para DESIGNACAO: próprio detalhe
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
@@ -110,7 +114,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
         return None
 
 
-    def get_tipo_de_ato(self, obj):
+    
+    def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
         """Retorna o tipo de ato em formato legível.
 
         Args:
@@ -123,7 +128,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
      
 
-    def get_designacao(self, obj):
+    def get_designacao(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o nome do servidor indicado para a portaria.
 
         Args:
@@ -196,7 +201,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         return None
 
 
-    def get_cessacao(self, obj):
+    def get_cessacao(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna o nome do servidor indicado para a portaria.
 
         Args:
@@ -224,7 +229,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
         return None
 
  
-    def get_nome(self, obj):
+    
+    def get_nome(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o nome do servidor indicado para a portaria.
 
         Args:
@@ -242,7 +248,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             )
         return None
 
-    def get_cargo(self, obj):
+    def get_cargo(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o cargo associado à portaria.
 
         Args:
@@ -259,7 +265,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
             )
         return None
 
-    def get_data_designacao(self, obj):
+    def get_data_designacao(
+        self, obj: AtoAdministrativo
+    ) -> datetime.date | None:
         """Retorna a data de início da designação.
 
         Args:
@@ -273,7 +281,9 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return detalhe.data_inicio
         return None
 
-    def get_data_cessacao(self, obj):
+    def get_data_cessacao(
+        self, obj: AtoAdministrativo
+    ) -> datetime.date | None:
         """Retorna a data de cessação conforme o tipo de ato.
 
         Args:
@@ -294,7 +304,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 return detalhe.data_fim
         return None
 
-    def get_observacoes(self, obj):
+    def get_observacoes(self, obj: AtoAdministrativo) -> str | None:
         """Retorna observações específicas por tipo de ato."""
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
             insubsistencia = getattr(obj, "insubsistencia_detalhe", None)
@@ -304,7 +314,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
             return getattr(apostila, "observacao", None)
         return None
 
-    def get_tipo_insubsistencia(self, obj):
+    def get_tipo_insubsistencia(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o tipo de insubsistência."""
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
             pai = obj.ato_pai
@@ -312,7 +322,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         
         return None
 
-    def get_tipo_apostila(self, obj):
+    def get_tipo_apostila(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o tipo de apostila."""
         if obj.tipo == AtoAdministrativo.Tipo.APOSTILA:
             pai = obj.ato_pai

@@ -3,8 +3,11 @@
 Fornece endpoints para listagem, recuperação, criação e exclusão de cessões.
 """
 
+from django.db.models import QuerySet
+
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.serializers.v2.cessacao_serializer import (
@@ -42,7 +45,7 @@ class CessacaoV2ViewSet(
     serializer_class = CessacaoV2ReadSerializer
     pagination_class = CessacaoV2Pagination
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset de cessões para a view.
 
         Returns:
@@ -56,7 +59,7 @@ class CessacaoV2ViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """Cria uma nova cessação com os dados recebidos.
 
         Args:

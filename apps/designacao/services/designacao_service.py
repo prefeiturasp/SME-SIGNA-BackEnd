@@ -5,7 +5,7 @@ designação.
 """
 
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, QuerySet
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
@@ -70,7 +70,7 @@ class DesignacaoService:
 
     @staticmethod
     def get_cargos_pareados(
-        queryset,
+        queryset: QuerySet,
         cod1: str,
         nome1: str,
         cod2: str,

@@ -3,6 +3,7 @@
 Fornece endpoint para retorno de valores e labels de impedimentos usados na UI.
 """
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -12,7 +13,7 @@ from apps.designacao.models import ImpedimentoSubstituicao
 class ImpedimentoSubstituicaoView(APIView):
     """View que retorna lista de impedimentos de substituição."""
 
-    def get(self, request):
+    def get(self, request: Request) -> Response:
         """Recupera todos os impedimentos de substituição.
 
         Args:

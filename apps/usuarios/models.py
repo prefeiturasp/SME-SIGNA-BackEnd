@@ -27,14 +27,14 @@ class User(AbstractUser):
         verbose_name = "Usuário"
         verbose_name_plural = "Usuários"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Retorna a representação em string do usuário.
 
         Prioriza username, depois e-mail e, por fim, UUID.
         """
         return self.username or self.email or str(self.uuid)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para garantir a criptografia da senha.
 
         Se a senha fornecida não estiver em formato hash suportado, ela é

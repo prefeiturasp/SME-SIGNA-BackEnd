@@ -32,7 +32,7 @@ class Cessacao(models.Model):
     class Meta:
         db_table = "cessacao"
 
-    def delete(self, *args, **kwargs):
+    def delete(self, *args, **kwargs) -> None:
         """Realiza exclusão lógica da cessação.
 
         Marca o registro como removido sem excluí-lo fisicamente do banco,

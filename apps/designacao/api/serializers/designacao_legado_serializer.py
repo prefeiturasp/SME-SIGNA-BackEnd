@@ -83,7 +83,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
         model = Designacao
         fields = "__all__"
 
-    def get_cessacao(self, obj):
+    def get_cessacao(self, obj: Designacao) -> dict | None:
         """Retorna os dados de cessação associados à designação.
 
         Args:
@@ -100,7 +100,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
             pass
         return None
 
-    def get_insubsistencia(self, obj):
+    def get_insubsistencia(self, obj: Designacao) -> dict | None:
         """Retorna a insubsistência mais recente vinculada à designação.
 
         Args:
@@ -119,7 +119,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
             return InsubsistenciaSerializer(insubsistencia).data
         return None
 
-    def get_apostilas(self, obj):
+    def get_apostilas(self, obj: Designacao) -> list:
         """Retorna as apostilas associadas à designação.
 
         Args:
@@ -133,7 +133,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
         )
         return ApostilaSerializer(apostilas, many=True).data
 
-    def get_impedimento_display(self, obj):
+    def get_impedimento_display(self, obj: Designacao) -> str | None:
         """Retorna a descrição do impedimento de substituição.
 
         Args:
@@ -146,7 +146,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
             return obj.impedimento_substituicao.descricao
         return None
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Designacao, validated_data: dict) -> Designacao:
         """Atualiza a instância de designação ignorando campos imutáveis.
 
         Args:

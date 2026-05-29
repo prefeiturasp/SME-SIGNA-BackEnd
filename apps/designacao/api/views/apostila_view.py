@@ -3,8 +3,11 @@
 Fornece endpoints para criar, listar e recuperar apostilas.
 """
 
+from django.db.models import QuerySet
+
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.serializers.apostila_serializer import (
@@ -28,7 +31,7 @@ class ApostilaViewSet(
 
     serializer_class = ApostilaSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """Retorna o queryset de apostilas ativas.
 
         Returns:
@@ -40,7 +43,7 @@ class ApostilaViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         """Cria uma nova apostila a partir dos dados da requisição.
 
         Args:

@@ -27,7 +27,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     doc = NullableDateField(required=False, default=None, allow_null=True)
     observacoes = serializers.CharField(required=False, default="")
 
-    def validate_numero_portaria(self, value):
+    def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
 
         Args:
@@ -38,7 +38,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
         """
         return validar_somente_numeros(value)
 
-    def validate_ano_vigente(self, value):
+    def validate_ano_vigente(self, value: str) -> str:
         """Valida que o ano vigente contenha apenas dígitos.
 
         Args:
@@ -76,7 +76,7 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
             "observacoes",
         ]
 
-    def get_status(self, obj):
+    def get_status(self, obj: AtoAdministrativo) -> str:
         """Retorna o status do ato de insubsistência.
 
         Args:
