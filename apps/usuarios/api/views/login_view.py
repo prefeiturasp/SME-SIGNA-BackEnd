@@ -15,6 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.helpers.exceptions import (
@@ -39,7 +40,7 @@ class LoginView(TokenObtainPairView):
 
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs) -> Response:
         """Processa o login do usuário e retorna tokens JWT.
 
         Valida as credenciais, autentica na SME, verifica o perfil do usuário,
@@ -109,7 +110,7 @@ class LoginView(TokenObtainPairView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _valida_perfil_signa(self, dados_sme: dict):
+    def _valida_perfil_signa(self, dados_sme: dict) -> None:
         """Valida se o usuário possui perfil autorizado no SIGNA.
 
         Args:
@@ -129,7 +130,9 @@ class LoginView(TokenObtainPairView):
         if perfil_signa not in perfis_normalizados:
             raise PerfilNaoAutorizadoError()
 
-    def _criar_ou_atualizar_user(self, login, senha, dados_sme):
+    def _criar_ou_atualizar_user(
+        self, login: str, senha: str, dados_sme: dict
+    ) -> User:
         """Cria ou atualiza o usuário local com dados retornados pela SME.
 
         Se o usuário for criado ou a senha estiver desatualizada, atualiza a
@@ -155,7 +158,7 @@ class LoginView(TokenObtainPairView):
 
             return user
 
-    def _gerar_tokens(self, user):
+    def _gerar_tokens(self, user: User) -> dict[str, str]:
         """Gera tokens JWT personalizados para o usuário.
 
         Retorna um dicionário com os tokens refresh e access contendo

@@ -18,7 +18,7 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         """Valida e normaliza o nome de usuário antes de autenticar.
 
         Args:
