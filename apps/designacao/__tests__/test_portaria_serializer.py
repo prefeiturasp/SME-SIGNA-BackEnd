@@ -67,7 +67,6 @@ DADOS_DESIGNACAO = {
     "titular_rf": "",
     "titular_cargo_base": "",
     "titular_vinculo": None,
-    "titular_tipo_vinculo": "Nao encontrado",
     "impedimento_substituicao": None,
     "ue": "",
     "codigo_hierarquico": "108600",
