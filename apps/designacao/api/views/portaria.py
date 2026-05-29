@@ -59,14 +59,18 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             QuerySet: Atos administrativos com joins necessários para
             exibição de portarias.
         """
-        return AtoAdministrativo.objects.select_related(
+        resp=AtoAdministrativo.objects.select_related(
             "designacao_detalhe",
             "cessacao_detalhe",
             "insubsistencia_detalhe",
             "apostila_detalhe",
             "ato_pai__designacao_detalhe",
-            "ato_raiz__designacao_detalhe",
+            "ato_raiz__designacao_detalhe",            
+            "ato_pai__cessacao_detalhe",     
+            "ato_pai__apostila_detalhe",     
         ).order_by("numero_portaria")
+        
+        return resp
 
     @action(
         detail=False, methods=["post"], url_path="atualizar-data-publicacao"
