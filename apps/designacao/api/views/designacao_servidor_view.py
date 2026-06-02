@@ -18,7 +18,7 @@ from apps.designacao.api.serializers.designacao_servidor_request_serializer impo
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class DesignacaoServidorView(APIView):
 
             return Response(dados, status=status.HTTP_200_OK)
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.warning("Erro ao obter designação do servidor: %s", str(e))
             return Response(
                 {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -218,14 +219,7 @@ def run_flake8(app_name: str, repo_root: Path) -> Tuple[Counter, List[str]]:
     if not (repo_root / app_rel).exists():
         return Counter(), []
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "flake8",
-        "--max-line-length=79",
-        "--extend-exclude=migrations,tests,__pycache__",
-        app_rel,
-    ]
+    cmd = [sys.executable, "-m", "flake8", app_rel]
     try:
         result = subprocess.run(
             cmd,
@@ -247,6 +241,121 @@ def run_flake8(app_name: str, repo_root: Path) -> Tuple[Counter, List[str]]:
             if len(code) >= 4 and code[0] in "EWFN":
                 codes[code] += 1
     return codes, raw_lines
+
+
+# =========================================================================
+# mypy
+# =========================================================================
+
+MYPY_CODE_TO_PEP: Dict[str, str] = {
+    # PEP 484 — Type Hints
+    "arg-type": "PEP 484",
+    "return-value": "PEP 484",
+    "return": "PEP 484",
+    "assignment": "PEP 484",
+    "attr-defined": "PEP 484",
+    "call-arg": "PEP 484",
+    "call-overload": "PEP 484",
+    "index": "PEP 484",
+    "operator": "PEP 484",
+    "type-arg": "PEP 484",
+    "valid-type": "PEP 484",
+    "override": "PEP 484",
+    "no-untyped-def": "PEP 484",
+    "no-untyped-call": "PEP 484",
+    "no-any-return": "PEP 484",
+    "no-any-explicit": "PEP 484",
+    "redundant-cast": "PEP 484",
+    "type-var": "PEP 484",
+    "union-attr": "PEP 484",
+    "has-type": "PEP 484",
+    "import": "PEP 484",
+    "import-untyped": "PEP 484",
+    "import-not-found": "PEP 484",
+    "name-defined": "PEP 484",
+    # PEP 526 — Anotações de variáveis
+    "annotation-unchecked": "PEP 526",
+    "var-annotated": "PEP 526",
+    # PEP 544 — Protocols
+    "misc": "PEP 544",
+    # PEP 589 — TypedDict
+    "typeddict-item": "PEP 589",
+    "typeddict-unknown-key": "PEP 589",
+    # PEP 591 — Final
+    "final-override": "PEP 591",
+    "cannot-redefine": "PEP 591",
+    # PEP 612 — ParamSpec
+    "valid-newtype": "PEP 612",
+}
+
+_MYPY_PEP_DESCRIPTIONS: Dict[str, str] = {
+    "PEP 484": "Type Hints",
+    "PEP 526": "Anotações de variáveis",
+    "PEP 544": "Protocols",
+    "PEP 589": "TypedDict",
+    "PEP 591": "Final",
+    "PEP 612": "ParamSpec",
+}
+
+
+def _mypy_code_from_line(line: str) -> Optional[str]:
+    """Extrai o código entre colchetes no final da linha MyPy, ex: [arg-type]."""
+    match = re.search(r"\[([a-z0-9\-]+)\]$", line.strip())
+    return match.group(1) if match else None
+
+
+def run_mypy(
+    app_name: str, repo_root: Path
+) -> Tuple[Counter, List[str], Dict[str, int]]:
+    """Roda mypy no app.
+
+    Retorna:
+        codes       — Counter com 'error' / 'warning' / 'note'
+        raw_lines   — linhas brutas do mypy
+        pep_summary — dict { 'PEP 484': N, 'PEP 526': N, ... }
+    """
+    app_rel = f"{APPS_PARENT}/{app_name}"
+    if not (repo_root / app_rel).exists():
+        return Counter(), [], {}
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "mypy",
+        app_rel,
+        "--ignore-missing-imports",
+        "--no-error-summary",
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return Counter(), ["mypy não disponível no ambiente"], {}
+
+    codes: Counter = Counter()
+    pep_counter: Counter = Counter()
+    raw_lines: List[str] = []
+    for line in result.stdout.splitlines():
+        raw_lines.append(line)
+        if ": error:" in line:
+            codes["error"] += 1
+        elif ": warning:" in line:
+            codes["warning"] += 1
+        elif ": note:" in line:
+            codes["note"] += 1
+
+        if ": error:" in line or ": warning:" in line:
+            mypy_code = _mypy_code_from_line(line)
+            if mypy_code:
+                pep = MYPY_CODE_TO_PEP.get(mypy_code, "PEP 484")
+                pep_counter[pep] += 1
+
+    return codes, raw_lines, dict(pep_counter)
 
 
 # =========================================================================
@@ -354,12 +463,15 @@ def _status_emoji(pct: float) -> str:
     return "🔴 Precisa melhorar"
 
 
-def _estimar_horas_ajuste(summary: Dict[str, Any], flake8_total: int) -> int:
+def _estimar_horas_ajuste(
+    summary: Dict[str, Any], flake8_total: int, mypy_errors: int = 0
+) -> int:
     horas = (
         flake8_total * 0.005
         + summary["functions_methods_without_docstring"] * 0.05
         + summary["hints_sem"] * 0.03
         + summary["lines_over_79"] * 0.005
+        + mypy_errors * 0.1
     )
     return max(1, round(horas))
 
@@ -444,7 +556,14 @@ def aggregate(file_metrics: List[FileMetrics]) -> Dict[str, Any]:
 # Renderização (por app)
 # =========================================================================
 def render_simplified_markdown(
-    summary, flake8_total, pep440, meta, max_line_length, app_name
+    summary,
+    flake8_total,
+    mypy_codes,
+    mypy_pep_summary,
+    pep440,
+    meta,
+    max_line_length,
+    app_name,
 ):
     agg = summary
     elig = agg["lines_length_eligible"]
@@ -461,33 +580,60 @@ def render_simplified_markdown(
     dep_lines = pep440.get("total_dependency_lines") or 0
     inv_n = len(pep440.get("invalid_lines") or [])
     pep440_pct = _pct_float(dep_lines - inv_n, dep_lines)
+    pep8_flake8 = _pct_float(max(elig - flake8_total, 0), elig)
+    mypy_errors = mypy_codes.get("error", 0)
+    mypy_warnings = mypy_codes.get("warning", 0)
+    mypy_pct = _pct_float(max(elig - mypy_errors, 0), elig)
+
+    # Todas as PEPs monitoradas, mesmo com 0 erros
+    all_peps = {p: mypy_pep_summary.get(p, 0) for p in _MYPY_PEP_DESCRIPTIONS}
+    rows = "\n".join(
+        f"| `{pep}` | {_MYPY_PEP_DESCRIPTIONS[pep]} | {n} |"
+        for pep, n in sorted(all_peps.items(), key=lambda x: -x[1])
+    )
+    pep_table = (
+        "\n\n#### PEPs verificadas pelo MyPy\n\n"
+        "| PEP | Descrição | Erros |\n"
+        "| --- | --- | ---: |\n"
+        f"{rows}"
+    )
 
     return (
         f"# Resumo PEP — app `{app_name}`\n\n"
         f"Gerado em: **{meta['generated_at']}** · "
         f"Commit: `{meta.get('git_commit', 'N/A')}`\n\n"
-        f"## PEP 8\n**{pep8_lines:.1f}%** — {within}/{elig} linhas "
-        f"≤ {max_line_length} chars; flake8: {flake8_total} avisos.\n\n"
+        f"## PEP 8\n"
+        f"Largura de linha: **{pep8_lines:.1f}%** ({over} violações).\n\n"
+        f"Flake8 geral: **{pep8_flake8:.1f}%** ({flake8_total} violações).\n\n"
         f"## PEP 257\n**{pep257:.1f}%** — "
-        f"{agg['symbols_with_docstring']}/{sym_total} símbolos com docstring."
-        f"\n\n"
+        f"{agg['symbols_with_docstring']}/{sym_total} símbolos com docstring.\n\n"
         f"## PEP 484\nCompleto: **{pep484_full:.1f}%** · "
-        f"Completo+parcial: **{pep484_partial:.1f}%** "
-        f"({ft} funções/métodos).\n\n"
+        f"Completo+parcial: **{pep484_partial:.1f}%** ({ft} funções/métodos).\n\n"
         f"## PEP 440\n**{pep440_pct:.1f}%** — "
-        f"{dep_lines - inv_n}/{dep_lines} linhas parseáveis; "
-        f"inválidas: {inv_n}.\n"
+        f"{dep_lines - inv_n}/{dep_lines} linhas parseáveis; inválidas: {inv_n}.\n\n"
+        f"## MyPy\n**{mypy_pct:.1f}%** — "
+        f"{mypy_errors} erro(s), {mypy_warnings} aviso(s)."
+        f"{pep_table}\n"
     )
 
 
 def render_simplified_txt(
-    summary, flake8_total, pep440, meta, max_line_length, *, service_name
+    summary,
+    flake8_total,
+    mypy_codes,
+    mypy_pep_summary,
+    pep440,
+    meta,
+    max_line_length,
+    *,
+    service_name,
 ):
     agg = summary
     elig = agg["lines_length_eligible"]
     over = agg["lines_over_79"]
     within = elig - over
     pep8_lines = _pct_float(within, elig)
+    pep8_flake8 = _pct_float(max(elig - flake8_total, 0), elig)
     sym_total = agg["functions_methods_total"] + agg["classes_total"]
     pep257 = _pct_float(agg["symbols_with_docstring"], sym_total)
     ft = agg["functions_methods_total"]
@@ -498,7 +644,17 @@ def render_simplified_txt(
     dep_lines = pep440.get("total_dependency_lines") or 0
     inv_n = len(pep440.get("invalid_lines") or [])
     pep440_pct = _pct_float(dep_lines - inv_n, dep_lines)
-    horas = _estimar_horas_ajuste(agg, flake8_total)
+    mypy_errors = mypy_codes.get("error", 0)
+    mypy_warnings = mypy_codes.get("warning", 0)
+    mypy_pct = _pct_float(max(elig - mypy_errors, 0), elig)
+    horas = _estimar_horas_ajuste(agg, flake8_total, mypy_errors)
+
+    # Todas as PEPs monitoradas, mesmo com 0 erros
+    all_peps = {p: mypy_pep_summary.get(p, 0) for p in _MYPY_PEP_DESCRIPTIONS}
+    pep_lines = "\n  PEPs verificadas pelo MyPy:\n"
+    for pep, n in sorted(all_peps.items(), key=lambda x: -x[1]):
+        desc = _MYPY_PEP_DESCRIPTIONS.get(pep, "—")
+        pep_lines += f"    {pep} ({desc}): {n} erro(s)\n"
 
     return (
         "================================================================\n"
@@ -507,17 +663,19 @@ def render_simplified_txt(
         "================================================================\n\n"
         f"Data: {meta['generated_at']}\n"
         f"Commit: {meta.get('git_commit', 'não informado')}\n\n"
-        f"PEP 8  — {pep8_lines:.1f}% ({_status_palavra(pep8_lines)}) — "
-        f"{over} linha(s) acima de {max_line_length} chars de {elig}.\n"
+        f"PEP 8 (linhas)  — {pep8_lines:.1f}% ({_status_palavra(pep8_lines)}) — "
+        f"{over} linha(s) acima de {max_line_length} chars.\n"
+        f"PEP 8 (flake8)  — {pep8_flake8:.1f}% ({_status_palavra(pep8_flake8)}) — "
+        f"{flake8_total} violações.\n"
         f"PEP 257 — {pep257:.1f}% ({_status_palavra(pep257)}) — "
         f"{agg['symbols_with_docstring']}/{sym_total} documentados.\n"
-        f"PEP 484 — completo {pep484_full:.1f}% / "
-        f"com parcial {pep484_partial:.1f}% "
-        f"({_status_palavra(pep484_partial)}) — "
-        f"{agg['hints_completo']}/{ft} completos.\n"
+        f"PEP 484 — completo {pep484_full:.1f}% / com parcial {pep484_partial:.1f}% "
+        f"({_status_palavra(pep484_partial)}) — {agg['hints_completo']}/{ft} completos.\n"
         f"PEP 440 — {pep440_pct:.1f}% ({_status_palavra(pep440_pct)}) — "
-        f"{dep_lines - inv_n}/{dep_lines} linhas válidas, "
-        f"{inv_n} inválidas.\n\n"
+        f"{dep_lines - inv_n}/{dep_lines} linhas válidas, {inv_n} inválidas.\n"
+        f"MyPy    — {mypy_pct:.1f}% ({_status_palavra(mypy_pct)}) — "
+        f"{mypy_errors} erro(s), {mypy_warnings} aviso(s).\n"
+        f"{pep_lines}\n"
         f"Estimativa grosseira de ajuste: ~{horas}h\n"
     )
 
@@ -527,12 +685,20 @@ def render_markdown(
     file_metrics,
     flake8_codes,
     flake8_lines,
+    mypy_codes,
+    mypy_lines,
+    mypy_pep_summary,
     pep440,
     meta,
     max_line_length,
     app_name,
 ):
     agg = summary
+    mypy_errors = mypy_codes.get("error", 0)
+    mypy_warnings = mypy_codes.get("warning", 0)
+    elig = agg["lines_length_eligible"]
+    mypy_pct = _pct_float(max(elig - mypy_errors, 0), elig)
+
     lines = [
         f"# Relatório PEP — app `{app_name}`",
         "",
@@ -564,8 +730,11 @@ def render_markdown(
             f"{_pct(agg['hints_completo'], agg['functions_methods_total'])} |"
         ),
         f"| flake8 | {sum(flake8_codes.values())} | — |",
+        f"| mypy erros | {mypy_errors} | — |",
+        f"| mypy avisos | {mypy_warnings} | — |",
         "",
     ]
+
     if flake8_codes:
         lines += [
             "### Top flake8",
@@ -576,6 +745,7 @@ def render_markdown(
         for code, count in flake8_codes.most_common(10):
             lines.append(f"| `{code}` | {count} |")
         lines.append("")
+
     if flake8_lines:
         lines += [
             "<details><summary>Primeiras 30 linhas flake8</summary>",
@@ -583,6 +753,37 @@ def render_markdown(
             "```",
         ]
         lines += flake8_lines[:30]
+        lines += ["```", "<​/details>", ""]
+
+    if mypy_codes:
+        lines += [
+            "### MyPy",
+            "",
+            f"Conformidade: **{mypy_pct:.1f}%** — "
+            f"{mypy_errors} erro(s), {mypy_warnings} aviso(s).",
+            "",
+        ]
+
+    # Sempre exibe todas as PEPs monitoradas, mesmo com 0 erros
+    all_peps = {p: mypy_pep_summary.get(p, 0) for p in _MYPY_PEP_DESCRIPTIONS}
+    lines += [
+        "#### PEPs verificadas pelo MyPy",
+        "",
+        "| PEP | Descrição | Erros |",
+        "| --- | --- | ---: |",
+    ]
+    for pep, count in sorted(all_peps.items(), key=lambda x: -x[1]):
+        desc = _MYPY_PEP_DESCRIPTIONS.get(pep, "—")
+        lines.append(f"| `{pep}` | {desc} | {count} |")
+    lines.append("")
+
+    if mypy_lines:
+        lines += [
+            "<details><summary>Primeiras 30 linhas mypy</summary>",
+            "",
+            "```",
+        ]
+        lines += mypy_lines[:30]
         lines += ["```", "<​/details>", ""]
 
     lines += [
@@ -634,7 +835,9 @@ def render_markdown(
     return "\n".join(lines)
 
 
-def build_simple_summary(summary, flake8_total, pep440, max_line_length):
+def build_simple_summary(
+    summary, flake8_total, mypy_codes, pep440, max_line_length
+):
     agg = summary
     elig = agg["lines_length_eligible"]
     over = agg["lines_over_79"]
@@ -643,9 +846,14 @@ def build_simple_summary(summary, flake8_total, pep440, max_line_length):
     inv_n = len(pep440.get("invalid_lines") or [])
     sym_total = agg["functions_methods_total"] + agg["classes_total"]
     ft = agg["functions_methods_total"]
+    flake8_pct = _pct_float(max(elig - flake8_total, 0), elig)
+    mypy_errors = mypy_codes.get("error", 0)
+    mypy_warnings = mypy_codes.get("warning", 0)
+    mypy_pct = _pct_float(max(elig - mypy_errors, 0), elig)
     return {
         "pep8_line_width_compliance_pct": round(_pct_float(within, elig), 2),
         "pep8_lines_over_max": over,
+        "pep8_flake8_compliance_pct": round(flake8_pct, 2),
         "pep8_flake8_violations": flake8_total,
         "pep257_docstring_compliance_pct": round(
             _pct_float(agg["symbols_with_docstring"], sym_total), 2
@@ -659,6 +867,9 @@ def build_simple_summary(summary, flake8_total, pep440, max_line_length):
         "pep440_requirement_lines_parseable_pct": round(
             _pct_float(dep_lines - inv_n, dep_lines), 2
         ),
+        "mypy_errors": mypy_errors,
+        "mypy_warnings": mypy_warnings,
+        "mypy_compliance_pct": round(mypy_pct, 2),
         "max_line_length": max_line_length,
     }
 
@@ -667,12 +878,15 @@ def build_json_payload(
     summary,
     file_metrics,
     flake8_codes,
+    mypy_codes,
+    mypy_pep_summary,
     pep440,
     meta,
     max_line_length,
     app_name,
 ):
     by_file = []
+
     for fm in file_metrics:
         funcs = fm.functions_and_methods
         by_file.append(
@@ -694,6 +908,21 @@ def build_json_payload(
                 "hints_sem": sum(1 for s in funcs if s.hint_level == "sem"),
             }
         )
+
+    flake8_total = sum(flake8_codes.values())
+    mypy_errors = mypy_codes.get("error", 0)
+    mypy_warnings = mypy_codes.get("warning", 0)
+
+    elig = summary["lines_length_eligible"]
+    over = summary["lines_over_79"]
+
+    pep8_line_pct = _pct_float(elig - over, elig)
+    pep8_flake8_pct = _pct_float(max(elig - flake8_total, 0), elig)
+    mypy_pct = _pct_float(max(elig - mypy_errors, 0), elig)
+
+    # Todas as PEPs monitoradas no JSON, mesmo com 0 erros
+    all_peps = {p: mypy_pep_summary.get(p, 0) for p in _MYPY_PEP_DESCRIPTIONS}
+
     return {
         "generated_at": meta["generated_at"],
         "command": meta["command"],
@@ -702,8 +931,26 @@ def build_json_payload(
         "max_line_length": max_line_length,
         "summary": summary,
         "simple": build_simple_summary(
-            summary, sum(flake8_codes.values()), pep440, max_line_length
+            summary, flake8_total, mypy_codes, pep440, max_line_length
         ),
+        "pep8": {
+            "line_length": {
+                "compliance_pct": round(pep8_line_pct, 2),
+                "violations": over,
+            },
+            "flake8": {
+                "compliance_pct": round(pep8_flake8_pct, 2),
+                "violations": flake8_total,
+                "breakdown": dict(flake8_codes.most_common()),
+            },
+        },
+        "mypy": {
+            "compliance_pct": round(mypy_pct, 2),
+            "errors": mypy_errors,
+            "warnings": mypy_warnings,
+            "breakdown": dict(mypy_codes),
+            "pep_breakdown": all_peps,
+        },
         "flake8": dict(flake8_codes.most_common()),
         "pep440": pep440,
         "by_file": by_file,
@@ -770,6 +1017,9 @@ def _build_payload_args(
     file_metrics,
     flake8_codes,
     flake8_lines,
+    mypy_codes,
+    mypy_lines,
+    mypy_pep_summary,
     pep440,
     meta,
     max_line_length,
@@ -782,6 +1032,9 @@ def _build_payload_args(
             "file_metrics": file_metrics,
             "flake8_codes": flake8_codes,
             "flake8_lines": flake8_lines,
+            "mypy_codes": mypy_codes,
+            "mypy_lines": mypy_lines,
+            "mypy_pep_summary": mypy_pep_summary,
             "pep440": pep440,
             "meta": meta,
             "max_line_length": max_line_length,
@@ -790,6 +1043,8 @@ def _build_payload_args(
         "render_md_simple": {
             "summary": summary,
             "flake8_total": flake8_total,
+            "mypy_codes": mypy_codes,
+            "mypy_pep_summary": mypy_pep_summary,
             "pep440": pep440,
             "meta": meta,
             "max_line_length": max_line_length,
@@ -798,6 +1053,8 @@ def _build_payload_args(
         "render_txt_simple": {
             "summary": summary,
             "flake8_total": flake8_total,
+            "mypy_codes": mypy_codes,
+            "mypy_pep_summary": mypy_pep_summary,
             "pep440": pep440,
             "meta": meta,
             "max_line_length": max_line_length,
@@ -806,6 +1063,8 @@ def _build_payload_args(
             "summary": summary,
             "file_metrics": file_metrics,
             "flake8_codes": flake8_codes,
+            "mypy_codes": mypy_codes,
+            "mypy_pep_summary": mypy_pep_summary,
             "pep440": pep440,
             "meta": meta,
             "max_line_length": max_line_length,
@@ -837,6 +1096,7 @@ def run_for_app(
     ]
     summary = aggregate(file_metrics)
     flake8_codes, flake8_lines = run_flake8(app_name, repo_root)
+    mypy_codes, mypy_lines, mypy_pep_summary = run_mypy(app_name, repo_root)
     pep440 = analyze_pep440(repo_root / "requirements")
     meta = _build_meta(repo_root, app_name)
     flake8_total = sum(flake8_codes.values())
@@ -846,6 +1106,9 @@ def run_for_app(
         file_metrics,
         flake8_codes,
         flake8_lines,
+        mypy_codes,
+        mypy_lines,
+        mypy_pep_summary,
         pep440,
         meta,
         max_line_length,
@@ -862,6 +1125,7 @@ def run_for_app(
         "payload": json_payload,
         "summary": summary,
         "flake8_total": flake8_total,
+        "mypy_codes": mypy_codes,
     }
 
 
@@ -884,6 +1148,8 @@ def _sum_totals(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
         "hints_parcial": 0,
         "hints_sem": 0,
         "flake8": 0,
+        "mypy_errors": 0,
+        "mypy_warnings": 0,
     }
     for d in per_app:
         s = d["payload"]["summary"]
@@ -903,6 +1169,9 @@ def _sum_totals(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
         totals["hints_parcial"] += s["hints_parcial"]
         totals["hints_sem"] += s["hints_sem"]
         totals["flake8"] += d["flake8_total"]
+        mypy = d["payload"].get("mypy", {})
+        totals["mypy_errors"] += mypy.get("errors", 0)
+        totals["mypy_warnings"] += mypy.get("warnings", 0)
     return totals
 
 
@@ -919,10 +1188,15 @@ def _compute_compliance(
 ) -> Dict[str, float]:
     elig = totals["lines_eligible"]
     within = elig - totals["lines_over"]
+    flake8_total = totals["flake8"]
+    mypy_errors = totals["mypy_errors"]
+
     dep_lines = pep440.get("total_dependency_lines") or 0
     inv_n = len(pep440.get("invalid_lines") or [])
+
     return {
-        "pep8": _pct_float(within, elig),
+        "pep8_line_length": _pct_float(within, elig),
+        "pep8_flake8": _pct_float(max(elig - flake8_total, 0), elig),
         "pep257": _pct_float(totals["symbols_doc"], totals["symbols_total"]),
         "pep484_full": _pct_float(totals["hints_completo"], totals["funcs"]),
         "pep484_partial": _pct_float(
@@ -930,6 +1204,7 @@ def _compute_compliance(
             totals["funcs"],
         ),
         "pep440": _pct_float(dep_lines - inv_n, dep_lines),
+        "mypy": _pct_float(max(elig - mypy_errors, 0), elig),
     }
 
 
@@ -953,11 +1228,18 @@ def _render_consolidated_md(
         "| PEP | Aderência | Situação |",
         MD_TABLE_SEP_STATUS,
         (
-            f"| PEP 8 (largura linha) | **{compliance['pep8']:.1f}%** | "
-            f"{_status_emoji(compliance['pep8'])} |"
+            f"| PEP 8 (largura linha) | "
+            f"**{compliance['pep8_line_length']:.1f}%** | "
+            f"{_status_emoji(compliance['pep8_line_length'])} |"
         ),
         (
-            f"| PEP 257 (docstrings) | **{compliance['pep257']:.1f}%** | "
+            f"| PEP 8 (flake8 geral) | "
+            f"**{compliance['pep8_flake8']:.1f}%** | "
+            f"{_status_emoji(compliance['pep8_flake8'])} |"
+        ),
+        (
+            f"| PEP 257 (docstrings) | "
+            f"**{compliance['pep257']:.1f}%** | "
             f"{_status_emoji(compliance['pep257'])} |"
         ),
         (
@@ -971,8 +1253,14 @@ def _render_consolidated_md(
             f"{_status_emoji(compliance['pep484_partial'])} |"
         ),
         (
-            f"| PEP 440 (requirements) | **{compliance['pep440']:.1f}%** | "
+            f"| PEP 440 (requirements) | "
+            f"**{compliance['pep440']:.1f}%** | "
             f"{_status_emoji(compliance['pep440'])} |"
+        ),
+        (
+            f"| MyPy (type errors) | "
+            f"**{compliance['mypy']:.1f}%** | "
+            f"{_status_emoji(compliance['mypy'])} |"
         ),
         "",
         "## Totais",
@@ -990,33 +1278,59 @@ def _render_consolidated_md(
         f"| Hints parciais | {totals['hints_parcial']} |",
         f"| Sem hints | {totals['hints_sem']} |",
         f"| flake8 (total) | {totals['flake8']} |",
+        f"| mypy erros | {totals['mypy_errors']} |",
+        f"| mypy avisos | {totals['mypy_warnings']} |",
         "",
         "## Por app",
         "",
         (
-            "| App | Arquivos | Funções | Sem doc | Linhas >max | "
-            "flake8 | PEP 8 % | PEP 257 % | PEP 484 % |"
+            "| App | Arquivos | Funções | Sem doc | "
+            "Linhas >max | flake8 | MyPy erros | "
+            "PEP8 Linhas % | PEP8 Flake8 % | "
+            "PEP257 % | PEP484 % | MyPy % |"
         ),
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        (
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | "
+            "---: | ---: | ---: | ---: | ---: |"
+        ),
     ]
+
     for d in per_app:
         s = d["payload"]["summary"]
         simple = d["payload"].get("simple", {})
+        mypy = d["payload"].get("mypy", {})
+
         md.append(
-            f"| `{d['app']}` | {s['files_count']} | "
+            f"| `{d['app']}` | "
+            f"{s['files_count']} | "
             f"{s['functions_methods_total']} | "
             f"{s['functions_methods_without_docstring']} | "
-            f"{s['lines_over_79']} | {d['flake8_total']} | "
+            f"{s['lines_over_79']} | "
+            f"{d['flake8_total']} | "
+            f"{mypy.get('errors', 0)} | "
             f"{simple.get('pep8_line_width_compliance_pct', 0):.1f}% | "
+            f"{simple.get('pep8_flake8_compliance_pct', 0):.1f}% | "
             f"{simple.get('pep257_docstring_compliance_pct', 0):.1f}% | "
-            f"{simple.get('pep484_full_hints_pct', 0):.1f}% |"
+            f"{simple.get('pep484_full_hints_pct', 0):.1f}% | "
+            f"{simple.get('mypy_compliance_pct', 0):.1f}% |"
         )
-    md += ["", "## Top códigos flake8 (agregado)", ""]
+
+    md += [
+        "",
+        "## Top códigos flake8 (agregado)",
+        "",
+    ]
+
     if agg_codes:
         md += ["| Código | Ocorrências |", MD_TABLE_SEP_RIGHT]
         for code, n in sorted(agg_codes.items(), key=lambda x: -x[1])[:15]:
             md.append(f"| `{code}` | {n} |")
-    md += ["", "_Relatórios detalhados por app em `apps/<app>/docs/`._"]
+
+    md += [
+        "",
+        "_Relatórios detalhados por app em `apps/<app>/docs/`._",
+    ]
+
     return "\n".join(md) + "\n"
 
 
@@ -1066,7 +1380,7 @@ def consolidate(
 # =========================================================================
 class Command(BaseCommand):
     help = (
-        "Gera relatório PEP 8/257/484/440 de um app Django "
+        "Gera relatório PEP 8/257/484/440 + MyPy de um app Django "
         "(MD + JSON + TXT). Suporta --all e --only para múltiplos apps."
     )
 
@@ -1120,6 +1434,7 @@ class Command(BaseCommand):
         )
         paths = result["paths"]
         s = result["summary"]
+        mypy = result["mypy_codes"]
         self.stdout.write(self.style.SUCCESS(f"MD:   {paths['md']}"))
         self.stdout.write(
             self.style.SUCCESS(f"MD resumido: {paths['md_simple']}")
@@ -1133,7 +1448,8 @@ class Command(BaseCommand):
             f"Funções: {s['functions_methods_total']} | "
             f"Sem doc: {s['functions_methods_without_docstring']} | "
             f"Linhas >{options['max_line_length']}: {s['lines_over_79']} | "
-            f"flake8: {result['flake8_total']}"
+            f"flake8: {result['flake8_total']} | "
+            f"mypy erros: {mypy.get('error', 0)}"
         )
 
     def _run_many(self, apps: List[str], options, repo_root: Path) -> None:

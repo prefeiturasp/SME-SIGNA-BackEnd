@@ -12,8 +12,8 @@ from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmailService,
 )
 from apps.helpers.exceptions import (
-    TokenExpiradoException,
-    TokenJaUtilizadoException,
+    TokenExpiradoError,
+    TokenJaUtilizadoError,
 )
 from apps.usuarios.models import User
 
@@ -83,7 +83,7 @@ class TestValidar:
             ja_usado=True,
         )
 
-        with pytest.raises(TokenJaUtilizadoException):
+        with pytest.raises(TokenJaUtilizadoError):
             AlteracaoEmailService.validar(email_request.token)
 
     def test_validar_token_expirado(self, user):
@@ -95,7 +95,7 @@ class TestValidar:
         email_request.criado_em = now() - timedelta(minutes=31)
         email_request.save(update_fields=["criado_em"])
 
-        with pytest.raises(TokenExpiradoException):
+        with pytest.raises(TokenExpiradoError):
             AlteracaoEmailService.validar(email_request.token)
 
     def test_validar_token_inexistente(self):

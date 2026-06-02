@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from apps.helpers.exceptions import (
     AuthenticationError,
     PerfilNaoAutorizadoError,
-    SmeIntegracaoException,
+    SmeIntegracaoError,
 )
 from apps.usuarios.api.serializers.login_serializer import LoginSerializer
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
@@ -84,7 +84,7 @@ class LoginView(TokenObtainPairView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.warning("Falha na autenticação: %s", str(e))
             return Response(
                 {

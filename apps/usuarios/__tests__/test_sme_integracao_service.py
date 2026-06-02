@@ -19,7 +19,7 @@ from apps.designacao.constants.cargos_gestao_escolar import (
 from apps.helpers.exceptions import (
     AuthenticationError,
     InternalError,
-    SmeIntegracaoException,
+    SmeIntegracaoError,
 )
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
@@ -81,7 +81,7 @@ def test_sme_autentica_unauthorized(monkeypatch):
 
 
 def test_sme_autentica_other_status(monkeypatch):
-    """Verifica que status inesperado gera SmeIntegracaoException."""
+    """Verifica que status inesperado gera SmeIntegracaoError."""
 
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP com erro interno."""
@@ -89,7 +89,7 @@ def test_sme_autentica_other_status(monkeypatch):
 
     monkeypatch.setattr(requests, "post", fake_post)
 
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.autentica(
             "1234",
             "senha",
@@ -97,7 +97,7 @@ def test_sme_autentica_other_status(monkeypatch):
 
 
 def test_sme_autentica_request_exception(monkeypatch):
-    """Verifica que erro de request gera SmeIntegracaoException."""
+    """Verifica que erro de request gera SmeIntegracaoError."""
 
     def fake_post(*args, **kwargs):
         """Simula exceção de comunicação HTTP."""
@@ -105,7 +105,7 @@ def test_sme_autentica_request_exception(monkeypatch):
 
     monkeypatch.setattr(requests, "post", fake_post)
 
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.autentica(
             "1234",
             "senha",
@@ -146,24 +146,24 @@ def test_informacao_usuario_sgp_success():
 
 
 def test_informacao_usuario_sgp_not_found():
-    """Verifica que resposta 404 de usuário gera SmeIntegracaoException."""
+    """Verifica que resposta 404 de usuário gera SmeIntegracaoError."""
     with patch("requests.get") as mock_get:
         mock_response = MagicMock(status_code=404)
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.informacao_usuario_sgp("1234567")
 
         assert "Dados não encontrados" in str(exc.value)
 
 
 def test_informacao_usuario_sgp_other_error_status():
-    """Verifica que outros erros HTTP na consulta de usuário geram SmeIntegracaoException."""
+    """Verifica que outros erros HTTP na consulta de usuário geram SmeIntegracaoError."""
     with patch("requests.get") as mock_get:
         mock_response = MagicMock(status_code=500)
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException):
+        with pytest.raises(SmeIntegracaoError):
             SmeIntegracaoService.informacao_usuario_sgp("1234567")
 
 
@@ -194,47 +194,47 @@ def test_redefine_senha_success(monkeypatch):
 
 
 def test_redefine_senha_invalid_data_sem_mock():
-    """Verifica que dados inválidos na redefinição de senha geram SmeIntegracaoException."""
-    with pytest.raises(SmeIntegracaoException):
+    """Verifica que dados inválidos na redefinição de senha geram SmeIntegracaoError."""
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.redefine_senha("", "NovaSenha123")
 
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.redefine_senha("123456", "")
 
 
 def test_redefine_senha_server_error(monkeypatch):
-    """Verifica que erro de servidor durante redefinição de senha gera SmeIntegracaoException."""
+    """Verifica que erro de servidor durante redefinição de senha gera SmeIntegracaoError."""
 
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP 500 com erro interno."""
         return FakeResponse(500)
 
     monkeypatch.setattr(requests, "post", fake_post)
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
 
 
 def test_redefine_senha_request_exception(monkeypatch):
-    """Verifica que exceção de requisição na redefinição de senha gera SmeIntegracaoException."""
+    """Verifica que exceção de requisição na redefinição de senha gera SmeIntegracaoError."""
 
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP com timeout."""
         raise requests.exceptions.RequestException("timeout")
 
     monkeypatch.setattr(requests, "post", fake_post)
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
 
 
 def test_redefine_senha_internal_error(monkeypatch):
-    """Verifica que erro interno inesperado na redefinição de senha gera SmeIntegracaoException."""
+    """Verifica que erro interno inesperado na redefinição de senha gera SmeIntegracaoError."""
 
     def fake_post(*args, **kwargs):
         """Simula resposta HTTP 500 com erro inesperado."""
         raise ValueError("erro inesperado")
 
     monkeypatch.setattr(requests, "post", fake_post)
-    with pytest.raises(SmeIntegracaoException):
+    with pytest.raises(SmeIntegracaoError):
         SmeIntegracaoService.redefine_senha("123456", "NovaSenha123")
 
 
@@ -246,7 +246,7 @@ def test_redefine_senha_bad_request_with_message():
         mock_response.content = b'{"Erro":"Senha invalida"}'
         mock_post.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.redefine_senha("123456", "SenhaRuim")
 
         assert "Senha invalida" in str(exc.value)
@@ -275,13 +275,13 @@ class TestAlteraEmail:
 
     def test_parametros_invalidos(self, mock_post):
         """Verifica que parâmetros inválidos para alteração de e-mail geram exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.altera_email(
                 "", "teste@sme.prefeitura.sp.gov.br"
             )
         assert "Registro funcional e email são obrigatórios" in str(exc.value)
 
-        with pytest.raises(SmeIntegracaoException):
+        with pytest.raises(SmeIntegracaoError):
             SmeIntegracaoService.altera_email("1234567", "")
 
         mock_post.assert_not_called()
@@ -293,7 +293,7 @@ class TestAlteraEmail:
         mock_response.content = b'{"mensagem":"Erro API"}'
         mock_post.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.altera_email(
                 "1234567", "teste@sme.prefeitura.sp.gov.br"
             )
@@ -302,10 +302,10 @@ class TestAlteraEmail:
         mock_post.assert_called_once()
 
     def test_excecao_generica(self, mock_post):
-        """Verifica que exceção genérica de rede é capturada como SmeIntegracaoException."""
+        """Verifica que exceção genérica de rede é capturada como SmeIntegracaoError."""
         mock_post.side_effect = requests.RequestException("Falha de rede")
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.altera_email(
                 "1234567", "teste@sme.prefeitura.sp.gov.br"
             )
@@ -324,7 +324,7 @@ class TestConsultaCargos:
 
     def test_sem_registro_funcional(self):
         """Verifica que ausência de registro funcional gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_cargos_funcionario("")
         assert "Registro funcional é obrigatório" in str(exc.value)
 
@@ -449,7 +449,7 @@ class TestConsultaCargos:
         mock_response.text = "Erro interno"
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_cargos_funcionario("123456")
 
         assert "Erro ao consultar cargos do servidor" in str(exc.value)
@@ -459,8 +459,8 @@ class TestConsultaCargos:
         side_effect=requests.exceptions.RequestException("timeout"),
     )
     def test_request_exception(self, mock_get):
-        """Verifica que exceção de requisição na consulta de cargos é convertida para SmeIntegracaoException."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        """Verifica que exceção de requisição na consulta de cargos é convertida para SmeIntegracaoError."""
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_cargos_funcionario("123456")
 
         assert "Erro de comunicação com SME" in str(exc.value)
@@ -496,7 +496,7 @@ class TestBuscarFuncionariosEscolares:
 
     def test_sem_codigo_ue(self):
         """Verifica que ausência de código UE gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_funcionarios_escolares("")
         assert "Código da UE é obrigatório" in str(exc.value)
 
@@ -563,7 +563,7 @@ class TestBuscarFuncionariosEscolares:
         mock_response.text = "Erro interno"
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
         assert "Erro ao buscar funcionários da gestão escolar" in str(
@@ -575,8 +575,8 @@ class TestBuscarFuncionariosEscolares:
         side_effect=requests.exceptions.RequestException("timeout"),
     )
     def test_request_exception(self, mock_get):
-        """Verifica que exceção de requisição ao buscar funcionários é reportada como SmeIntegracaoException."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        """Verifica que exceção de requisição ao buscar funcionários é reportada como SmeIntegracaoError."""
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_funcionarios_escolares("090450")
 
         assert "Erro de comunicação com SME" in str(exc.value)
@@ -592,7 +592,7 @@ class TestConsultaInformacoesUnidadesEscolares:
 
     def test_sem_codigo(self):
         """Verifica que ausência de código de unidade escolar gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_informacoes_unidades_escolares("")
         assert "Registro funcional é obrigatório" in str(exc.value)
 
@@ -625,7 +625,7 @@ class TestConsultaInformacoesUnidadesEscolares:
         mock_response.text = "Erro interno"
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_informacoes_unidades_escolares(
                 "090450"
             )
@@ -641,7 +641,7 @@ class TestConsultaInformacoesUnidadesEscolares:
     )
     def test_request_exception(self, mock_get):
         """Verifica que exceção de requisição gera erro de comunicação com SME."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.consulta_informacoes_unidades_escolares(
                 "090450"
             )
@@ -659,7 +659,7 @@ class TestBuscarTurmasUeAno:
 
     def test_falta_parametros(self):
         """Verifica que falta de parâmetros de UE ou ano gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("", None)
         assert "Código da UE e ano letivo são obrigatórios" in str(exc.value)
 
@@ -680,12 +680,12 @@ class TestBuscarTurmasUeAno:
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_erro_404(self, mock_get):
-        """Verifica erro 404 ao buscar turmas resulta em SmeIntegracaoException."""
+        """Verifica erro 404 ao buscar turmas resulta em SmeIntegracaoError."""
         mock_response = MagicMock()
         mock_response.status_code = status.HTTP_404_NOT_FOUND
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2024)
 
         assert "Erro ao consultar cargos do servidor" in str(exc.value)
@@ -697,7 +697,7 @@ class TestBuscarTurmasUeAno:
         mock_response.status_code = status.HTTP_400_BAD_REQUEST
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
 
         assert "Erro ao consultar cargos do servidor" in str(exc.value)
@@ -710,7 +710,7 @@ class TestBuscarTurmasUeAno:
             "Falha de Conexão"
         )
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_turmas_ue_ano("UE01", 2026)
 
         assert "Erro de comunicação com SME" in str(exc.value)
@@ -729,7 +729,7 @@ class TestBuscarDadosTurma:
 
     def test_validacao_id_nulo(self):
         """Verifica que código de turma nulo gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_dados_turma(None)
         assert "Código da turma é obrigatório" in str(exc.value)
 
@@ -754,7 +754,7 @@ class TestBuscarDadosTurma:
         mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_dados_turma(12345)
 
         assert "Erro ao consultar cargos do servidor" in str(exc.value)
@@ -767,7 +767,7 @@ class TestBuscarDadosTurma:
             "Falha na rede"
         )
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_dados_turma(12345)
 
         assert "Erro de comunicação com SME" in str(exc.value)
@@ -786,7 +786,7 @@ class TestBuscarDisciplinasTurma:
 
     def test_sem_codigo_turma(self):
         """Verifica que falta de código de turma gera exceção."""
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_disciplinas_turma(None)
         assert "Código da turma é obrigatório" in str(exc.value)
 
@@ -841,7 +841,7 @@ class TestBuscarDisciplinasTurma:
         mock_response.text = "Erro interno"
         mock_get.return_value = mock_response
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_disciplinas_turma(10)
 
         assert "Erro de comunicação com SME" in str(exc.value)
@@ -852,7 +852,7 @@ class TestBuscarDisciplinasTurma:
         """Verifica log de exceção para falha de conexão na busca de disciplinas."""
         mock_get.side_effect = requests.exceptions.RequestException("timeout")
 
-        with pytest.raises(SmeIntegracaoException) as exc:
+        with pytest.raises(SmeIntegracaoError) as exc:
             SmeIntegracaoService.buscar_disciplinas_turma(10)
 
         assert "Erro de comunicação com SME" in str(exc.value)

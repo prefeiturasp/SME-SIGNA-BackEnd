@@ -14,7 +14,7 @@ from apps.designacao.services.designacao_unidades_service import (
     ModuloService,
     TurmaService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 
 @pytest.mark.django_db
@@ -170,8 +170,8 @@ class TestDesignacaoUnidadeService:
             {"codigo_cargo": 1001, "servidores": [{"rf": "RF_ERRO"}]}
         ]
 
-        mock_usuario.side_effect = SmeIntegracaoException("Erro SME")
-        mock_consulta_cargos.side_effect = SmeIntegracaoException("Erro SME")
+        mock_usuario.side_effect = SmeIntegracaoError("Erro SME")
+        mock_consulta_cargos.side_effect = SmeIntegracaoError("Erro SME")
 
         mock_info_ue.return_value = {"codigoDRE": "DRE1"}
         mock_buscar_turmas.return_value = []

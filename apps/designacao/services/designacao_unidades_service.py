@@ -16,7 +16,7 @@ from apps.designacao.modulos import Calculadores
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 from apps.unidades.services.unidades_service import UnidadeIntegracaoService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
@@ -301,7 +301,7 @@ class ServidorService:
                 usuario, cargo
             )
 
-        except SmeIntegracaoException:
+        except SmeIntegracaoError:
             logger.warning("Falha ao montar designação do servidor RF %s", rf)
             return {
                 "nome_servidor": None,

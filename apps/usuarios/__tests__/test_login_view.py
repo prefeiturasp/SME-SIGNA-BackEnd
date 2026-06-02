@@ -13,7 +13,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 User = get_user_model()
 
@@ -152,7 +152,7 @@ def test_login_sme_integracao_exception():
     with patch(
         "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
     ) as mocked_login:
-        mocked_login.side_effect = SmeIntegracaoException("Falha SME")
+        mocked_login.side_effect = SmeIntegracaoError("Falha SME")
 
         response = client.post(
             url,

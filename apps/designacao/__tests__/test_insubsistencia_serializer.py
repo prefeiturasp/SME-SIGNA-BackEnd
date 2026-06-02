@@ -45,7 +45,7 @@ class InsubsistenciaSerializerTest(TestCase):
         """Verifica serializer valido na cessacao."""
         designacao = self._criar_designacao()
 
-        cessacao = Cessacao.objects.create(
+        Cessacao.objects.create(
             designacao=designacao,
             numero_portaria="12345",
             ano_vigente="2024",

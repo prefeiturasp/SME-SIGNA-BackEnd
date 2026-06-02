@@ -6,7 +6,7 @@ integrações com o SGP.
 
 import logging
 
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
@@ -26,12 +26,12 @@ class DesignacaoServidorService:
             dict: Dados padronizados da designação do servidor.
 
         Raises:
-            SmeIntegracaoException: Se o registro funcional não for
+            SmeIntegracaoError: Se o registro funcional não for
             informado ou o servidor não tiver cargos.
         """
 
         if not registro_funcional:
-            raise SmeIntegracaoException("Registro funcional é obrigatório")
+            raise SmeIntegracaoError("Registro funcional é obrigatório")
 
         usuario = SmeIntegracaoService.informacao_usuario_sgp(
             registro_funcional
@@ -42,7 +42,7 @@ class DesignacaoServidorService:
         )
 
         if not cargos:
-            raise SmeIntegracaoException("Servidor não possui cargos")
+            raise SmeIntegracaoError("Servidor não possui cargos")
 
         cargo = cargos[0]
 

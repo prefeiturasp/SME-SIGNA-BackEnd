@@ -22,31 +22,31 @@ class InternalError(Exception):
     pass
 
 
-class EmailNaoCadastrado(Exception):
+class EmailNaoCadastradoError(Exception):
     """Email não cadastrado"""
 
     pass
 
 
-class SmeIntegracaoException(Exception):
+class SmeIntegracaoError(Exception):
     """Problema na integração com a SME"""
 
     pass
 
 
-class CargaUsuarioException(Exception):
+class CargaUsuarioError(Exception):
     """Erro ao cadastrar usuário no CoreSSO"""
 
     pass
 
 
-class TokenJaUtilizadoException(Exception):
+class TokenJaUtilizadoError(Exception):
     """Token de validação já foi usado."""
 
     pass
 
 
-class TokenExpiradoException(Exception):
+class TokenExpiradoError(Exception):
     """Token de validação expirou."""
 
     pass
@@ -56,8 +56,11 @@ class UserNotFoundError(Exception):
     """Erro quando usuário não é encontrado"""
 
     def __init__(self, message, usuario=None):
-        super().__init__(message)
+        super().__init__(message, usuario)
         self.usuario = usuario
+
+    def __str__(self):
+        return str(self.args[0])
 
 
 class PerfilNaoAutorizadoError(Exception):

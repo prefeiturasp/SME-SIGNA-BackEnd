@@ -17,8 +17,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.helpers.exceptions import (
-    EmailNaoCadastrado,
-    SmeIntegracaoException,
+    EmailNaoCadastradoError,
+    SmeIntegracaoError,
     UserNotFoundError,
 )
 from apps.helpers.utils import anonimizar_email
@@ -85,7 +85,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             # 6. Gera token e envia email
             return self._processar_envio_email(username, email)
 
-        except EmailNaoCadastrado as e:
+        except EmailNaoCadastradoError as e:
             return Response({"detail": str(e)}, status=400)
 
         except UserNotFoundError as e:
@@ -104,7 +104,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         """
         try:
             return SmeIntegracaoService.informacao_usuario_sgp(username)
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error("Erro ao consultar SME para %s: %s", username, str(e))
             if not user_local:
                 raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
@@ -143,7 +143,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
         if not email or not email.strip():
             logger.warning("RF %s sem email cadastrado", username)
-            raise EmailNaoCadastrado(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
+            raise EmailNaoCadastradoError(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
 
         return email
 
@@ -218,7 +218,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.error(
                 "Falha ao sincronizar usuário %s: %s", username, str(e)
             )
-            raise EmailNaoCadastrado(
+            raise EmailNaoCadastradoError(
                 "Já existe um usuário com este e-mail. <br/>"
                 "Entre em contato com o administrador do sistema."
             )
@@ -281,7 +281,7 @@ class RedefinirSenhaViewSet(APIView):
                 user.username,
                 new_password,
             )
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
                 "Falha ao redefinir senha na SME para usuário ID=%s: %s",
                 user.id,
@@ -366,7 +366,7 @@ class AtualizarSenhaViewSet(APIView):
                     status=status.HTTP_200_OK,
                 )
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
                 "Erro na integração SME para alteração de senha do usuário ID %s: %s",  # noqa: E501
                 user.id,
