@@ -247,54 +247,61 @@ def run_flake8(app_name: str, repo_root: Path) -> Tuple[Counter, List[str]]:
 # mypy
 # =========================================================================
 
+PEP_484 = "PEP 484"
+PEP_526 = "PEP 526"
+PEP_544 = "PEP 544"
+PEP_589 = "PEP 589"
+PEP_591 = "PEP 591"
+PEP_612 = "PEP 612"
+
 MYPY_CODE_TO_PEP: Dict[str, str] = {
     # PEP 484 — Type Hints
-    "arg-type": "PEP 484",
-    "return-value": "PEP 484",
-    "return": "PEP 484",
-    "assignment": "PEP 484",
-    "attr-defined": "PEP 484",
-    "call-arg": "PEP 484",
-    "call-overload": "PEP 484",
-    "index": "PEP 484",
-    "operator": "PEP 484",
-    "type-arg": "PEP 484",
-    "valid-type": "PEP 484",
-    "override": "PEP 484",
-    "no-untyped-def": "PEP 484",
-    "no-untyped-call": "PEP 484",
-    "no-any-return": "PEP 484",
-    "no-any-explicit": "PEP 484",
-    "redundant-cast": "PEP 484",
-    "type-var": "PEP 484",
-    "union-attr": "PEP 484",
-    "has-type": "PEP 484",
-    "import": "PEP 484",
-    "import-untyped": "PEP 484",
-    "import-not-found": "PEP 484",
-    "name-defined": "PEP 484",
+    "arg-type": PEP_484,
+    "return-value": PEP_484,
+    "return": PEP_484,
+    "assignment": PEP_484,
+    "attr-defined": PEP_484,
+    "call-arg": PEP_484,
+    "call-overload": PEP_484,
+    "index": PEP_484,
+    "operator": PEP_484,
+    "type-arg": PEP_484,
+    "valid-type": PEP_484,
+    "override": PEP_484,
+    "no-untyped-def": PEP_484,
+    "no-untyped-call": PEP_484,
+    "no-any-return": PEP_484,
+    "no-any-explicit": PEP_484,
+    "redundant-cast": PEP_484,
+    "type-var": PEP_484,
+    "union-attr": PEP_484,
+    "has-type": PEP_484,
+    "import": PEP_484,
+    "import-untyped": PEP_484,
+    "import-not-found": PEP_484,
+    "name-defined": PEP_484,
     # PEP 526 — Anotações de variáveis
-    "annotation-unchecked": "PEP 526",
-    "var-annotated": "PEP 526",
+    "annotation-unchecked": PEP_526,
+    "var-annotated": PEP_526,
     # PEP 544 — Protocols
-    "misc": "PEP 544",
+    "misc": PEP_544,
     # PEP 589 — TypedDict
-    "typeddict-item": "PEP 589",
-    "typeddict-unknown-key": "PEP 589",
+    "typeddict-item": PEP_589,
+    "typeddict-unknown-key": PEP_589,
     # PEP 591 — Final
-    "final-override": "PEP 591",
-    "cannot-redefine": "PEP 591",
+    "final-override": PEP_591,
+    "cannot-redefine": PEP_591,
     # PEP 612 — ParamSpec
-    "valid-newtype": "PEP 612",
+    "valid-newtype": PEP_612,
 }
 
 _MYPY_PEP_DESCRIPTIONS: Dict[str, str] = {
-    "PEP 484": "Type Hints",
-    "PEP 526": "Anotações de variáveis",
-    "PEP 544": "Protocols",
-    "PEP 589": "TypedDict",
-    "PEP 591": "Final",
-    "PEP 612": "ParamSpec",
+    PEP_484: "Type Hints",
+    PEP_526: "Anotações de variáveis",
+    PEP_544: "Protocols",
+    PEP_589: "TypedDict",
+    PEP_591: "Final",
+    PEP_612: "ParamSpec",
 }
 
 
@@ -352,7 +359,7 @@ def run_mypy(
         if ": error:" in line or ": warning:" in line:
             mypy_code = _mypy_code_from_line(line)
             if mypy_code:
-                pep = MYPY_CODE_TO_PEP.get(mypy_code, "PEP 484")
+                pep = MYPY_CODE_TO_PEP.get(mypy_code, PEP_484)
                 pep_counter[pep] += 1
 
     return codes, raw_lines, dict(pep_counter)
@@ -562,7 +569,6 @@ def render_simplified_markdown(
     mypy_pep_summary,
     pep440,
     meta,
-    max_line_length,
     app_name,
 ):
     agg = summary
@@ -1047,7 +1053,6 @@ def _build_payload_args(
             "mypy_pep_summary": mypy_pep_summary,
             "pep440": pep440,
             "meta": meta,
-            "max_line_length": max_line_length,
             "app_name": app_name,
         },
         "render_txt_simple": {
