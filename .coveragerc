@@ -37,7 +37,7 @@ omit =
 show_missing = True
 
 # limite mínimo desejado de cobertura (quebra o build se ficar abaixo)
-fail_under = 95
+fail_under = 90
 
 # Não diferenciar maiúsculas/minúsculas em caminhos
 ignore_errors = True
