@@ -280,7 +280,7 @@ def soma(a, b):
 class TestMypyCode:
 
     def test_deve_extrair_codigo(self):
-        line = "arquivo.py:10: error: incompatibilidade " "[arg-type]"
+        line = "arquivo.py:10: error: incompatibilidade [arg-type]"
 
         assert _mypy_code_from_line(line) == "arg-type"
 
@@ -363,10 +363,10 @@ class TestAnalyzePep440:
 class TestPercentuais:
 
     def test_pct_float_zero(self):
-        assert _pct_float(0, 0) == 100.0
+        assert _pct_float(0, 0) == pytest.approx(100.0)
 
     def test_pct_float_normal(self):
-        assert _pct_float(5, 10) == 50.0
+        assert _pct_float(5, 10) == pytest.approx(50.0)
 
 
 class TestStatus:
@@ -731,7 +731,7 @@ class TestRunMypy:
 
         mock_run.return_value = result
 
-        codes, lines, peps = run_mypy(
+        codes, _, peps = run_mypy(
             "usuarios",
             tmp_path,
         )
