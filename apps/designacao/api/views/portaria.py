@@ -67,6 +67,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "cessacao_detalhe",
             "insubsistencia_detalhe",
             "apostila_detalhe",
+            
             "ato_pai__designacao_detalhe",
             "ato_raiz__designacao_detalhe",            
             "ato_pai__cessacao_detalhe",     

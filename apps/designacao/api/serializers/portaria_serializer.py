@@ -133,7 +133,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         detalhe = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
-
+         
         if detalhe:
             return {
                 "portaria": ato_designacao.numero_portaria,
@@ -155,11 +155,14 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "titular_rf": detalhe.titular_rf,
                 "titular_cargo_base": detalhe.titular_cargo_base,
                 "titular_vinculo": detalhe.titular_vinculo,                
-                "impedimento_substituicao": detalhe.impedimento_substituicao,
+                "impedimento_substituicao": detalhe.impedimento_substituicao.descricao if detalhe.impedimento_substituicao else None,
+                "impedimento_substituicao_id": detalhe.impedimento_substituicao.id if detalhe.impedimento_substituicao else None,
                 "ue": detalhe.ue,
                 "codigo_hierarquico": detalhe.codigo_hierarquico,
                 "data_inicio": detalhe.data_inicio,
                 "data_fim": detalhe.data_fim,
+                "cargo_vaga": detalhe.cargo_vaga,
+                "unidade_proponente": detalhe.unidade_proponente,
             }
         return None
 
