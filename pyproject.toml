@@ -1,2 +1,36 @@
 [tool.black]
 line-length = 79
+target-version = ['py312']
+extend-exclude = '''
+^/.*migrations/                  # Ignora qualquer pasta migrations
+| ^/.*venv/                      # Ignora venv
+| ^/.*\.venv/                    # Ignora .venv
+| gerar_relatorio_pep\.py        # Ignora o script do relatório
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.flake8]
+max-line-length = 79
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+extend-exclude = [
+    "*/migrations/*",
+    "venv",
+    ".venv",
+    "apps/core/management/commands/gerar_relatorio_pep.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "N"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/__tests__/*.py" = ["E501"]
+"*/tests/*.py" = ["E501"]
+"*/tests/**/*.py" = ["E501"]
+"*/models/__init__.py" = ["F401"]

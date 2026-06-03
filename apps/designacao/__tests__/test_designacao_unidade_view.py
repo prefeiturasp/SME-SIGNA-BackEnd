@@ -10,7 +10,7 @@ import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 
 @pytest.mark.django_db
@@ -69,7 +69,7 @@ class TestDesignacaoUnidadeView:
         )
         self.client.force_authenticate(user=user)
 
-        mock_service.side_effect = SmeIntegracaoException(
+        mock_service.side_effect = SmeIntegracaoError(
             "Erro integração SME"
         )
 

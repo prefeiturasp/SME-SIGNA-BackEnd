@@ -11,9 +11,9 @@ from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmailService,
 )
 from apps.helpers.exceptions import (
-    SmeIntegracaoException,
-    TokenExpiradoException,
-    TokenJaUtilizadoException,
+    SmeIntegracaoError,
+    TokenExpiradoError,
+    TokenJaUtilizadoError,
 )
 
 
@@ -117,7 +117,7 @@ class TestValidarAlteracaoEmailViewSet:
         with patch.object(
             AlteracaoEmailService,
             "validar",
-            side_effect=TokenJaUtilizadoException("Token já foi utilizado."),
+            side_effect=TokenJaUtilizadoError("Token já foi utilizado."),
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")
 
@@ -131,7 +131,7 @@ class TestValidarAlteracaoEmailViewSet:
         with patch.object(
             AlteracaoEmailService,
             "validar",
-            side_effect=TokenExpiradoException("Token expirado."),
+            side_effect=TokenExpiradoError("Token expirado."),
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")
 
@@ -169,7 +169,7 @@ class TestValidarAlteracaoEmailViewSet:
             ),
             patch(
                 "apps.alteracao_email.api.views.alteracao_email_viewset.SmeIntegracaoService.altera_email",
-                side_effect=SmeIntegracaoException("Falha na SME"),
+                side_effect=SmeIntegracaoError("Falha na SME"),
             ) as mock_integracao,
         ):
             response = api_client.put(f"{self.endpoint}{pk}/")

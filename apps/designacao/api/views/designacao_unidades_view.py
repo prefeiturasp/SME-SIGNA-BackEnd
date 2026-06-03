@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from apps.designacao.services.designacao_unidades_service import (
     DesignacaoUnidadeService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class DesignacaoUnidadeView(APIView):
             )
             return Response(result, status=status.HTTP_200_OK)
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             return Response(
                 {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
             )

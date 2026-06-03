@@ -14,8 +14,8 @@ from django.utils.timezone import now, timedelta
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
 from apps.helpers.exceptions import (
-    TokenExpiradoException,
-    TokenJaUtilizadoException,
+    TokenExpiradoError,
+    TokenJaUtilizadoError,
 )
 from apps.usuarios.models import User
 from apps.usuarios.services.envia_email_service import EnviaEmailService
@@ -75,8 +75,8 @@ class AlteracaoEmailService:
                 de e-mail correspondente ao token.
 
         Raises:
-            TokenJaUtilizadoException: Se o token já foi utilizado.
-            TokenExpiradoException: Se o token expirou.
+            TokenJaUtilizadoError: Se o token já foi utilizado.
+            TokenExpiradoError: Se o token expirou.
             Http404: Se a solicitação não for encontrada.
         """
 
@@ -84,10 +84,10 @@ class AlteracaoEmailService:
         usuario = email_request.usuario
 
         if email_request.ja_usado:
-            raise TokenJaUtilizadoException("Este token já foi utilizado.")
+            raise TokenJaUtilizadoError("Este token já foi utilizado.")
 
         if email_request.criado_em < now() - timedelta(minutes=30):
-            raise TokenExpiradoException("Token expirado.")
+            raise TokenExpiradoError("Token expirado.")
 
         logger.info(f"E-mail alterado com sucesso: {usuario.email}")
         return usuario, email_request

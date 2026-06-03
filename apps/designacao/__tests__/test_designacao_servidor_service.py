@@ -9,7 +9,7 @@ import pytest
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 
 @pytest.mark.django_db
@@ -80,7 +80,7 @@ class TestDesignacaoServidorService:
     def test_obter_designacao_sem_registro_funcional_raises(self):
         """Verifica obter designacao sem registro funcional raises."""
         with pytest.raises(
-            SmeIntegracaoException,
+            SmeIntegracaoError,
             match="Registro funcional é obrigatório",
         ):
             DesignacaoServidorService.obter_designacao("")
@@ -107,7 +107,7 @@ class TestDesignacaoServidorService:
         mock_consulta_cargos.return_value = []
 
         with pytest.raises(
-            SmeIntegracaoException,
+            SmeIntegracaoError,
             match="Servidor não possui cargos",
         ):
             DesignacaoServidorService.obter_designacao("0000000")

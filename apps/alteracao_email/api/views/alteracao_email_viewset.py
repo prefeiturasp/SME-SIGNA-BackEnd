@@ -21,9 +21,9 @@ from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmailService,
 )
 from apps.helpers.exceptions import (
-    SmeIntegracaoException,
-    TokenExpiradoException,
-    TokenJaUtilizadoException,
+    SmeIntegracaoError,
+    TokenExpiradoError,
+    TokenJaUtilizadoError,
 )
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
@@ -128,17 +128,17 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
                     status=status.HTTP_200_OK,
                 )
 
-        except TokenJaUtilizadoException as e:
+        except TokenJaUtilizadoError as e:
             return Response(
                 {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        except TokenExpiradoException as e:
+        except TokenExpiradoError as e:
             return Response(
                 {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
                 "Erro na integração SME para alteração de email do usuário ID %s: %s",  # noqa: E501
                 usuario,
