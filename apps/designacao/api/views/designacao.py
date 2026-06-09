@@ -78,6 +78,7 @@ class DesignacaoViewSet(
         Returns:
             QuerySet: Queryset otimizado de atos administrativos do tipo
             designação.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -110,6 +111,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com a lista de designações.
+
         """
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -139,6 +141,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da designação criada.
+
         """
         serializer = DesignacaoWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -163,6 +166,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados atualizados da designação.
+
         """
         ato = self.get_object()
         serializer = DesignacaoWriteSerializer(data=request.data, partial=True)
@@ -184,6 +188,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Lista de cargos base pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
@@ -206,6 +211,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Lista de cargos sobrepostos pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(

@@ -37,6 +37,7 @@ class DesignacaoBasePagination(PageNumberPagination):
         Returns:
             list|None: Lista paginada ou None quando a paginação está
             desabilitada.
+
         """
         if request.query_params.get("no_pagination", "").lower() == "true":
             return None
@@ -45,7 +46,8 @@ class DesignacaoBasePagination(PageNumberPagination):
 
 class DesignacaoPaginacaoMixin:
     """Helpers de paginação e filtros compartilhados pelas views de
-    designação."""
+    designação.
+    """
 
     # Anotação para que type checkers reconheçam que a view terá `request`
     request: Any
@@ -55,6 +57,7 @@ class DesignacaoPaginacaoMixin:
 
         Returns:
             bool: True quando no_pagination=true estiver presente.
+
         """
         return (
             self.request.query_params.get("no_pagination", "").lower()
@@ -66,6 +69,7 @@ class DesignacaoPaginacaoMixin:
 
         Returns:
             bool: True quando houver parâmetros além dos de paginação.
+
         """
         return bool(set(self.request.query_params.keys()) - _PAGINATION_PARAMS)
 
@@ -76,5 +80,6 @@ class DesignacaoPaginacaoMixin:
         Returns:
             bool: True quando não houver filtros nem desabilitação de
             paginação.
+
         """
         return not self._has_filters() and not self._is_no_pagination()

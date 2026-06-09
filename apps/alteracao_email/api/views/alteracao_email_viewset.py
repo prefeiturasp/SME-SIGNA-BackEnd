@@ -54,8 +54,8 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
             rest_framework.response.Response: Uma resposta com status 201 se o
                 e-mail de confirmação foi enviado com sucesso, ou 500 em caso
                 de erro inesperado.
-        """
 
+        """
         serializer = AlteracaoEmailSerializer(
             data=request.data, context={"request": request}
         )
@@ -105,8 +105,8 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
             rest_framework.response.Response: Uma resposta com status 200 se o
                 e-mail foi alterado com sucesso, 400 em caso de erro de
                 validação ou integração, ou 500 para erros inesperados.
-        """
 
+        """
         if pk is None:
             return Response(
                 {"detail": "Token não informado."},

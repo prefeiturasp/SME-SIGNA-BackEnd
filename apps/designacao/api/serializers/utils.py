@@ -25,6 +25,7 @@ class NullableDateField(serializers.DateField):
         Returns:
             datetime.date | None: Data validada ou None quando a string estiver
             vazia.
+
         """
         if value == "":
             return None
@@ -43,6 +44,7 @@ def validar_somente_numeros(value: str) -> str:
 
     Returns:
         str: Valor original se for composto apenas por dígitos.
+
     """
     if not value.isdigit():
         raise serializers.ValidationError("Deve conter apenas números.")
@@ -58,6 +60,7 @@ def extrair_mensagem_erro(detail: dict | list | str) -> str:
 
     Returns:
         str: Mensagem de erro unificada.
+
     """
     if isinstance(detail, dict):
         item = next(iter(detail.values()))

@@ -56,6 +56,7 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por RF de indicado ou
             titular.
+
         """
         return queryset.filter(
             models.Q(indicado_rf=value) | models.Q(titular_rf=value)
@@ -74,6 +75,7 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por nome de indicado ou
             titular.
+
         """
         return queryset.filter(
             models.Q(indicado_nome_servidor__icontains=value)
@@ -93,6 +95,7 @@ class DesignacaoLegadoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por cargo base de
             indicado ou titular.
+
         """
         return queryset.filter(
             models.Q(indicado_codigo_cargo_base=value)

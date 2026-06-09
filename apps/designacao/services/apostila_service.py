@@ -51,6 +51,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se a designação ou cessação não for válida
             ou se já existir uma apostila ativa.
+
         """
         designacao_id = data.pop("designacao")
         ato_apostilado = data.pop("ato_apostilado")
@@ -137,6 +138,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se o ato pai for inválido ou não puder ser
             apostilado.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
         alteracoes: list = data.get("alteracoes", [])
@@ -206,6 +208,7 @@ class ApostilaService:
 
         Raises:
             ValidationError: Se o campo não existir no ato pai ou detalhe.
+
         """
         if hasattr(ato_pai, campo):
             raw = getattr(ato_pai, campo)
@@ -233,6 +236,7 @@ class ApostilaService:
             ato_pai: Ato administrativo original que está sendo apostilado.
             apostila_detalhe: Registro de detalhe da apostila.
             alteracoes: Lista de alterações a serem aplicadas.
+
         """
         detalhe = ApostilaService._get_detalhe(ato_pai)
         buckets: dict[str, dict] = {"ato_pai": {}, "detalhe": {}}
@@ -278,6 +282,7 @@ class ApostilaService:
         Args:
             obj: Objeto Django cujos campos serão atualizados.
             updates: Dicionário campo-valor com as alterações.
+
         """
         for campo, valor in updates.items():
             setattr(obj, campo, valor)
@@ -292,6 +297,7 @@ class ApostilaService:
 
         Returns:
             object | None: O detalhe associado ou None.
+
         """
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato_pai, "designacao_detalhe", None)

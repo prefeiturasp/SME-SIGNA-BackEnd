@@ -59,6 +59,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Returns:
             QuerySet: Atos administrativos com joins necessários para
             exibição de portarias.
+
         """
         resp = AtoAdministrativo.objects.select_related(
             "designacao_detalhe",
@@ -89,6 +90,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Raises:
             ValidationError: Se os campos obrigatórios não estiverem
             presentes ou se nenhum ato for encontrado.
+
         """
         ids = request.data.get("ids", [])
         data_publicacao = request.data.get("data_publicacao", "")

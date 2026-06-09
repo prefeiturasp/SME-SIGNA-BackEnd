@@ -49,6 +49,7 @@ class CessacaoV2ViewSet(
 
         Returns:
             QuerySet: Cessões ordenadas por data de criação decrescente.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -68,6 +69,7 @@ class CessacaoV2ViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da cessação criada.
+
         """
         serializer = CessacaoV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

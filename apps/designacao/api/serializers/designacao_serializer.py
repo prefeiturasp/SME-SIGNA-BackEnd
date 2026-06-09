@@ -405,6 +405,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Status do ato.
+
         """
         return obj.status
 
@@ -416,6 +417,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Descrição do impedimento ou None se não houver.
+
         """
         try:
             imp = obj.designacao_detalhe.impedimento_substituicao
@@ -431,6 +433,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Descrição do tipo de vaga ou None em caso de erro.
+
         """
         try:
             return obj.designacao_detalhe.get_tipo_vaga_display()
@@ -445,6 +448,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Descrição do cargo da vaga ou None em caso de erro.
+
         """
         try:
             return obj.designacao_detalhe.get_cargo_vaga_display()
@@ -459,6 +463,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             dict|None: Dados simplificados da cessação ou None se não existir.
+
         """
         # Usa filhos prefetchados (.all() aproveita o cache do prefetch_related)  # noqa: E501
         cessacao_ato = next(
@@ -504,6 +509,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados de insubsistência ou None se não houver ato
             válido.
+
         """
         insub = next(
             (
@@ -533,6 +539,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             list: Lista de apostilas serializadas.
+
         """
         resultado = []
         for f in ato.filhos.all():
@@ -562,6 +569,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             list: Lista de apostilas serializadas.
+
         """
         return self._serializar_apostilas(obj)
 
@@ -573,6 +581,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         Returns:
             dict|None: Dados da insubsistência ou None se não existir.
+
         """
         # Retorna a insubsistência que ainda está ativa (não foi tornada sem efeito)  # noqa: E501
         insub = next(

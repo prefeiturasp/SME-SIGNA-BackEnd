@@ -18,9 +18,7 @@ User = get_user_model()
 
 @pytest.fixture
 def auth_client(db):
-    """
-    Cria um usuário e retorna um cliente autenticado.
-    """
+    """Cria um usuário e retorna um cliente autenticado."""
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username="testuser", password=password)
     client = APIClient()
@@ -30,9 +28,7 @@ def auth_client(db):
 
 @pytest.fixture
 def designacao(db):
-    """
-    Factory simples de Designacao.
-    """
+    """Factory simples de Designacao."""
     return Designacao.objects.create(
         dre_nome="DRE TESTE",
         unidade_proponente="Unidade Teste",
@@ -55,9 +51,7 @@ def designacao(db):
 
 @pytest.fixture
 def cessacao(db, designacao):
-    """
-    Factory simples de Cessacao.
-    """
+    """Factory simples de Cessacao."""
     return Cessacao.objects.create(
         designacao=designacao,
         numero_portaria="456",

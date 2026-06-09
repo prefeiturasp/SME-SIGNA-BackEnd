@@ -85,6 +85,7 @@ class BaseEOLService:
             EOLIntegrationError: Em outros erros de integração.
             EOLTimeoutError: Em caso de timeout na requisição.
             EOLCommunicationError: Em falha geral de comunicação.
+
         """
         try:
             logger.info("Iniciando requisição ao EOL: %s", context)
@@ -144,6 +145,7 @@ class DREIntegracaoService(BaseEOLService):
 
         Raises:
             EOLUnexpectedResponseError: Se a resposta não for uma lista.
+
         """
         base_url = env(ENV_URL, default="")
         url = f"{base_url}{ENDPOINT_DRES}"
@@ -165,6 +167,7 @@ class DREIntegracaoService(BaseEOLService):
 
         Returns:
             dict|None: Dados da DRE encontrada ou None se não existir.
+
         """
         try:
             dres = cls.get_dres()
@@ -204,6 +207,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         Returns:
             list[dict]: Lista de unidades escolares.
+
         """
         dre_codigo_str = str(dre_codigo or "").strip()
 
@@ -233,6 +237,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         Returns:
             list[dict]: Lista de unidades escolares com tipo de unidade.
+
         """
         dre_codigo_str = str(dre_codigo or "").strip()
 
@@ -263,6 +268,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         Returns:
             list[dict]: Lista de códigos de integração.
+
         """
         dre_codigo_str = str(dre_codigo or "").strip()
 
@@ -291,6 +297,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         Returns:
             dict: Dados da unidade de supervisão formatados.
+
         """
         dre_codigo_str = str(dre_codigo or "").strip()
 
@@ -336,6 +343,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
         Returns:
             dict: Dados formatados com chaves esperadas pelo frontend.
+
         """
         return {
             "codigoEscola": data.get("codigo"),

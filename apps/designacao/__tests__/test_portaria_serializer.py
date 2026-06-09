@@ -28,6 +28,7 @@ def serialize(ato):
 
     Returns:
         dict: Dados serializados do ato administrativo.
+
     """
     return PortariaListSerializer(ato).data
 

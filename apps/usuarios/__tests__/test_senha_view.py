@@ -174,7 +174,6 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     )
     def test_post_user_not_found(self, mock_sme):
         """Usuário não existe nem local nem SME"""
-
         mock_sme.return_value = None
 
         response = self.client.post(
@@ -439,8 +438,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     def test_post_integrity_error_creating_local_user(
         self, mock_env, mock_update_or_create, mock_informacao_usuario
     ):
-        """
-        Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
+        """Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
         Deve retornar EmailNaoCadastradoError com mensagem amigável.
         """
         mock_env.return_value = "http://localhost:8000"
@@ -468,9 +466,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         )
 
     def test_criar_ou_atualizar_usuario_local_sem_nome(self):
-        """
-        Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME.
-        """
+        """Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME."""
         view = EsqueciMinhaSenhaViewSet()
         username = "user_sem_nome"
 
@@ -493,9 +489,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertEqual(user.email, "original@teste.com")
 
     def test_criar_ou_atualizar_usuario_local_success_direct(self):
-        """
-        Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta.
-        """
+        """Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta."""
         view = EsqueciMinhaSenhaViewSet()
         username = "novo_user_direct"
         dados_sme = {
@@ -517,8 +511,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertTrue(User.objects.filter(username=username).exists())
 
     def test_criar_ou_atualizar_usuario_local_lines_154_155(self):
-        """
-        Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
+        """Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
         Executa o método diretamente e verifica o efeito colateral no banco.
         """
         view = EsqueciMinhaSenhaViewSet()
@@ -550,8 +543,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     def test_post_sme_integracao_exception_when_user_not_local(
         self, mock_informacao_usuario
     ):
-        """
-        Testa SmeIntegracaoError na consulta SME quando usuário não existe localmente.
+        """Testa SmeIntegracaoError na consulta SME quando usuário não existe localmente.
         Isso deve acionar a linha 83: raise UserNotFoundError
         """
         # 1. Garante que o usuário NÃO existe localmente
@@ -585,7 +577,6 @@ class TestRedefinirSenhaViewSet:
     )
     def test_post_success(self, mock_sme, mock_serializer):
         """Verifica que redefinição de senha bem-sucedida retorna status 200."""
-
         factory = APIRequestFactory()
         mock_sme.return_value = None
 
@@ -781,7 +772,6 @@ class TestAtualizarSenhaViewSet:
 
     def test_sucesso(self, view, mock_request):
         """Verifica atualização de senha com request válido."""
-
         mock_request.data = {
             "username": "testuser",
             "senha_atual": self.old_password,

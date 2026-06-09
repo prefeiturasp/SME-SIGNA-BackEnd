@@ -39,8 +39,8 @@ class AlteracaoEmailService:
         Returns:
             AlteracaoEmail: A instância criada da solicitação de alteração de
             e-mail.
-        """
 
+        """
         email_request = AlteracaoEmail.objects.create(
             usuario=usuario, novo_email=novo_email
         )
@@ -75,8 +75,8 @@ class AlteracaoEmailService:
             TokenJaUtilizadoError: Se o token já foi utilizado.
             TokenExpiradoError: Se o token expirou.
             Http404: Se a solicitação não for encontrada.
-        """
 
+        """
         email_request = get_object_or_404(AlteracaoEmail, token=token)
         usuario = email_request.usuario
 

@@ -137,9 +137,7 @@ class TestRedefinirSenhaSerializer:
         )
 
     def test_serializer_uid_not_numeric(self, django_user_model):
-        """
-        UID decodificado não numérico deve retornar uid_invalid
-        """
+        """UID decodificado não numérico deve retornar uid_invalid"""
         user = django_user_model.objects.create_user(
             username="teste", password="Senha@123"
         )

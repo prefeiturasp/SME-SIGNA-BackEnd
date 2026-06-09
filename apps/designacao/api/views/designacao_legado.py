@@ -71,6 +71,7 @@ class DesignacaoLegadoViewSet(
         Returns:
             QuerySet: Designações não deletadas com carregamento de
             relacionamentos.
+
         """
         return (
             Designacao.objects.filter(is_deleted=False)
@@ -88,6 +89,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Resposta HTTP com a lista de designações.
+
         """
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -116,6 +118,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Lista de cargos base pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
@@ -138,6 +141,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Lista de cargos sobrepostos pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(

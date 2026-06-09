@@ -66,6 +66,7 @@ class AtoAdministrativo(models.Model):
         Raises:
             ValidationError: Quando as regras de consistência não forem
             atendidas.
+
         """
         if self.ato_pai_id:
             assert self.ato_pai is not None
@@ -103,6 +104,7 @@ class AtoAdministrativo(models.Model):
         Args:
             *args: Argumentos posicionais adicionais.
             **kwargs: Argumentos nomeados adicionais.
+
         """
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
@@ -122,6 +124,7 @@ class AtoAdministrativo(models.Model):
         Returns:
             str: Status do ato, podendo ser 'ativo', 'cessada' ou
             'insubsistente'.
+
         """
         if not self.ativo:
             return "insubsistente"
@@ -140,5 +143,6 @@ class AtoAdministrativo(models.Model):
 
         Returns:
             bool: True quando o ato está ativo.
+
         """
         return self.ativo

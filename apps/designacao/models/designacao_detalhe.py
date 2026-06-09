@@ -84,6 +84,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
 
         Returns:
             list[dict]: Lista de cargos formatados com código e descrição.
+
         """
         return [
             {"codigoCargo": c.value, "nomeCargo": c.label}

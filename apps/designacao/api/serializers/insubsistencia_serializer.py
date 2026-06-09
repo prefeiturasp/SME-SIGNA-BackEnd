@@ -40,6 +40,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Valor contendo apenas números.
+
         """
         return validar_somente_numeros(value)
 
@@ -51,6 +52,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Valor contendo apenas números.
+
         """
         return validar_somente_numeros(value)
 
@@ -62,6 +64,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
         Returns:
             Insubsistencia: Instância criada do modelo.
+
         """
         validated_data.pop("tipo_insubsistencia", None)
         return super().create(validated_data)
@@ -83,6 +86,7 @@ class InsubsistenciaSerializer(serializers.ModelSerializer):
 
         Returns:
             dict: Dados validados.
+
         """
         from apps.designacao.models.designacao import Designacao
 

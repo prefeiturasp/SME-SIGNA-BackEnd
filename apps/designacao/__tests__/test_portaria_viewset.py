@@ -36,6 +36,7 @@ def auth_client(db):
 
     Returns:
         APIClient: Cliente autenticado pronto para uso nos testes.
+
     """
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(
@@ -52,6 +53,7 @@ def designacao(db):
 
     Returns:
         AtoAdministrativo: Ato de designação com detalhes associados.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
@@ -88,6 +90,7 @@ def designacao_2(db):
 
     Returns:
         AtoAdministrativo: Segundo ato de designação usado em filtros e ordenação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
@@ -124,6 +127,7 @@ def cessacao(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de cessação com detalhes de cessação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
@@ -147,6 +151,7 @@ def insubsistencia(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de insubsistência com observações.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
@@ -170,6 +175,7 @@ def apostila(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de apostila com observação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
@@ -193,6 +199,7 @@ def inativo(db):
 
     Returns:
         AtoAdministrativo: Ato de designação marcado como inativo.
+
     """
     return AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",

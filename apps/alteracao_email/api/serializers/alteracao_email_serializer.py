@@ -41,8 +41,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
 
         Returns:
             bool: True se os dados são válidos, False caso contrário.
-        """
 
+        """
         valid = super().is_valid(raise_exception=False)
         if not valid:
 
@@ -77,8 +77,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
             serializers.ValidationError: Se o e-mail for igual ao atual, não
                 pertencer ao domínio institucional, já estiver cadastrado ou
                 não for válido.
-        """
 
+        """
         usuario = self.context["request"].user
         if usuario.email == value:
             raise serializers.ValidationError(

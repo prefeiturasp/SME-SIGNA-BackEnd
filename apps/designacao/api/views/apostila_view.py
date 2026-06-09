@@ -35,6 +35,7 @@ class ApostilaViewSet(
 
         Returns:
             QuerySet: Apostilas não deletadas ordenadas por data de criação.
+
         """
         return (
             Apostila.objects.filter(is_deleted=False)
@@ -53,6 +54,7 @@ class ApostilaViewSet(
         Returns:
             Response: Resposta HTTP com os dados da apostila criada ou
             erro de validação.
+
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

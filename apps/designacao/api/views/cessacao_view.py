@@ -46,6 +46,7 @@ class CessacaoViewSet(
 
         Returns:
             QuerySet: Cessões não deletadas ordenadas por data de criação.
+
         """
         return (
             Cessacao.objects.filter(is_deleted=False)

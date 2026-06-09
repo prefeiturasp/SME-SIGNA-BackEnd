@@ -351,8 +351,7 @@ class TestConsultaCargos:
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_sucesso_com_cd_ue_base_e_sigla(self, mock_get):
-        """
-        Quando cdUeCargoBase está preenchido, deve chamar consulta_informacoes_unidades_escolares
+        """Quando cdUeCargoBase está preenchido, deve chamar consulta_informacoes_unidades_escolares
         e prefixar ueCargoBase com a sigla retornada.
         """
         cargos_mock = [
@@ -383,9 +382,7 @@ class TestConsultaCargos:
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_sucesso_com_cd_ue_sobreposto_e_sigla(self, mock_get):
-        """
-        Quando cdUeCargoSobreposto está preenchido, deve prefixar ueCargoSobreposto com a sigla.
-        """
+        """Quando cdUeCargoSobreposto está preenchido, deve prefixar ueCargoSobreposto com a sigla."""
         cargos_mock = [
             {
                 "cdUeCargoBase": None,
@@ -413,9 +410,7 @@ class TestConsultaCargos:
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_sucesso_com_cd_ue_base_sem_sigla(self, mock_get):
-        """
-        Quando a UE não retorna siglaTipoEscola, ueCargoBase não deve ser alterado.
-        """
+        """Quando a UE não retorna siglaTipoEscola, ueCargoBase não deve ser alterado."""
         cargos_mock = [
             {
                 "cdUeCargoBase": "090450",

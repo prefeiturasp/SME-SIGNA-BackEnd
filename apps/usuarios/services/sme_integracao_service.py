@@ -56,6 +56,7 @@ class SmeIntegracaoService:
             AuthenticationError: Quando as credenciais são inválidas.
             SmeIntegracaoError: Em caso de falha na autenticação.
             InternalError: Em caso de erro interno não esperado.
+
         """
         payload = {
             "usuario": login,
@@ -113,6 +114,7 @@ class SmeIntegracaoService:
         Raises:
             SmeIntegracaoError: Quando os dados não são encontrados.
             requests.RequestException: Em caso de falha de conexão.
+
         """
         logger.info(
             "Consultando dados na API externa para: %s",
@@ -139,8 +141,7 @@ class SmeIntegracaoService:
 
     @classmethod
     def redefine_senha(cls, registro_funcional: str, senha: str) -> str:
-        """
-        Redefine a senha de um usuário no sistema SME.
+        """Redefine a senha de um usuário no sistema SME.
 
         IMPORTANTE: Se a nova senha for uma das senhas padrões, a API do SME
         não permite a atualização. Para resetar para senha padrão,
@@ -155,8 +156,8 @@ class SmeIntegracaoService:
 
         Raises:
             SmeIntegracaoError: Em caso de erro na operação
-        """
 
+        """
         if not registro_funcional or not senha:
             raise SmeIntegracaoError(
                 "Registro funcional e senha são obrigatórios"
@@ -190,8 +191,7 @@ class SmeIntegracaoService:
 
     @classmethod
     def altera_email(cls, registro_funcional: str, email: str) -> str:
-        """
-        Altera o email de um usuário no sistema SME.
+        """Altera o email de um usuário no sistema SME.
 
         Args:
             registro_funcional: Username/registro funcional do usuário
@@ -202,8 +202,8 @@ class SmeIntegracaoService:
 
         Raises:
             SmeIntegracaoError: Em caso de erro na operação
-        """
 
+        """
         if not registro_funcional or not email:
             raise SmeIntegracaoError(
                 "Registro funcional e email são obrigatórios"
@@ -237,9 +237,7 @@ class SmeIntegracaoService:
 
     @classmethod
     def consulta_cargos_funcionario(cls, registro_funcional: str) -> list:
-        """
-        Consulta cargos (base e sobreposto) de um servidor pelo RF.
-        """
+        """Consulta cargos (base e sobreposto) de um servidor pelo RF."""
         if not registro_funcional:
             raise SmeIntegracaoError(MSG_RF_OBRIGATORIO)
 
@@ -267,6 +265,7 @@ class SmeIntegracaoService:
 
         Raises:
             SmeIntegracaoError: Quando a consulta falha.
+
         """
         url = f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"  # noqa: E501
 
@@ -297,6 +296,7 @@ class SmeIntegracaoService:
 
         Returns:
             dict: Dados de cargo normalizados.
+
         """
         if cargo.get("cargoBase"):
             cargo["cargoBase"] = cls.formatar_cargo(cargo["cargoBase"])
@@ -331,6 +331,7 @@ class SmeIntegracaoService:
         Returns:
             str | None: Nome formatado da unidade ou o valor original quando
             não for possível formatar.
+
         """
         if not codigo_ue:
             return nome_ue
@@ -356,8 +357,8 @@ class SmeIntegracaoService:
 
         Raises:
             SmeIntegracaoError: Quando ocorre erro na consulta à SME.
-        """
 
+        """
         if not codigo_ue:
             raise SmeIntegracaoError("Código da UE é obrigatório")
 
@@ -455,6 +456,7 @@ class SmeIntegracaoService:
         Raises:
             SmeIntegracaoError: Quando houver falha de comunicação
             ou dados inválidos.
+
         """
         if not codigo_ue or not ano_letivo:
             raise SmeIntegracaoError(
@@ -497,6 +499,7 @@ class SmeIntegracaoService:
         Raises:
             SmeIntegracaoError: Quando a turma não for encontrada ou a API
             falhar.
+
         """
         if not codigo_turma:
             raise SmeIntegracaoError("Código da turma é obrigatório")
@@ -538,6 +541,7 @@ class SmeIntegracaoService:
         Raises:
             SmeIntegracaoError: Quando houver problema de conexão
             ou retorno inválido.
+
         """
         if not codigo_ue:
             raise SmeIntegracaoError(MSG_RF_OBRIGATORIO)
@@ -587,6 +591,7 @@ class SmeIntegracaoService:
         Raises:
             SmeIntegracaoError: Quando a API retornar erro ou
             houver falha de comunicação.
+
         """
         if not codigo_turma:
             raise SmeIntegracaoError("Código da turma é obrigatório")
@@ -645,6 +650,7 @@ class SmeIntegracaoService:
 
         Returns:
             str: Cargo formatado ou vazio quando o texto for inválido.
+
         """
         if not texto:
             return ""

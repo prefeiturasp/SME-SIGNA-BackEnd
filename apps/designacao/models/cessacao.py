@@ -45,6 +45,7 @@ class Cessacao(models.Model):
         Args:
             using: Alias da conexão de banco de dados.
             keep_parents: Mantém os modelos pai na exclusão.
+
         """
         self.is_deleted = True
         self.deleted_at = timezone.now()

@@ -10,7 +10,8 @@ from django.utils import timezone
 
 class ServidorDesignacaoMixin(models.Model):
     """Campos de indicado e titular compartilhados entre Designacao
-    e DesignacaoDetalhe."""
+    e DesignacaoDetalhe.
+    """
 
     # --- Indicado ---
     indicado_nome_civil = models.CharField(
@@ -66,7 +67,8 @@ class ServidorDesignacaoMixin(models.Model):
 
 class ImpedimentoSubstituicao(models.Model):
     """Representa um impedimento que pode afetar a substituição de
-    atividade."""
+    atividade.
+    """
 
     codigo = models.CharField(max_length=50, unique=True)
     descricao = models.CharField(max_length=255)
@@ -79,13 +81,15 @@ class ImpedimentoSubstituicao(models.Model):
 
         Returns:
             str: Descrição do impedimento.
+
         """
         return self.descricao
 
 
 class Designacao(ServidorDesignacaoMixin):
     """Representa uma designação de servidor com dados de vaga, portaria e
-    período."""
+    período.
+    """
 
     class TipoVaga(models.TextChoices):
         VAGO = "VAGO", "Cargo Vago"
@@ -148,7 +152,7 @@ class Designacao(ServidorDesignacaoMixin):
 
     @classmethod
     def get_cargos_formatados(cls) -> list:
-        """Substitui a constante CARGOS_GESTAO_ESCOLAR"""
+        """Substitui a constante CARGOS_GESTAO_ESCOLAR."""
         return [
             {"codigoCargo": choice.value, "nomeCargo": choice.label}
             for choice in cls.CargoVaga
@@ -167,6 +171,7 @@ class Designacao(ServidorDesignacaoMixin):
         Args:
             using: Alias da conexão de banco de dados.
             keep_parents: Mantém os modelos pai na exclusão.
+
         """
         self.is_deleted = True
         self.deleted_at = timezone.now()

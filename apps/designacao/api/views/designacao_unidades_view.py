@@ -33,6 +33,7 @@ class DesignacaoUnidadeView(APIView):
 
         Returns:
             Response: Dados escolares da unidade ou mensagem de erro.
+
         """
         codigo_ue = request.query_params.get("codigo_ue")
 
@@ -74,6 +75,7 @@ class DesignacaoUnidadeCargosView(APIView):
 
         Returns:
             Response: Lista de cargos ou mensagem de erro.
+
         """
         try:
             cargos = DesignacaoUnidadeService.listar_cargos_vaga()

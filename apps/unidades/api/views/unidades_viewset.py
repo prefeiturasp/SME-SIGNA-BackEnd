@@ -40,6 +40,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: A resposta com a lista de DREs ou
                 unidades escolares, ou uma mensagem de erro.
+
         """
         tipo = request.query_params.get("tipo")
         codigo_dre = request.query_params.get("dre")
@@ -76,6 +77,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: Resposta com a lista de DREs ou
                 mensagem de erro em caso de falha.
+
         """
         try:
             dres = DREIntegracaoService.get_dres()
@@ -102,6 +104,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: Resposta com a lista de unidades
                 ou mensagem de erro em caso de falha.
+
         """
         if not codigo_dre:
             logger.warning("Parâmetro 'dre' não informado para tipo UE")
@@ -174,5 +177,6 @@ class UnidadeViewSet(ViewSet):
 
         Returns:
             rest_framework.response.Response: A resposta de erro formatada.
+
         """
         return Response({"detail": mensagem}, status=status_code)

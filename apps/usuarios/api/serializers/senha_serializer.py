@@ -37,6 +37,7 @@ class RedefinirSenhaSerializer(serializers.Serializer):
         token (str): Token de redefinição gerado pelo Django.
         new_pass (str): Nova senha do usuário.
         new_pass_confirm (str): Confirmação da nova senha.
+
     """
 
     uid = serializers.CharField()
@@ -64,6 +65,7 @@ class RedefinirSenhaSerializer(serializers.Serializer):
 
         Raises:
             serializers.ValidationError: Quando qualquer dado estiver inválido.
+
         """
         uid = attrs.get("uid")
         token = attrs.get("token")
@@ -135,6 +137,7 @@ class AtualizarSenhaSerializer(serializers.Serializer):
 
         Returns:
             bool: True se os dados estiverem válidos.
+
         """
         valid = super().is_valid(raise_exception=False)
         if not valid:
@@ -164,6 +167,7 @@ class AtualizarSenhaSerializer(serializers.Serializer):
         Raises:
             serializers.ValidationError: Quando a senha atual está
             incorreta ou as senhas não coincidem.
+
         """
         user = self.context["request"].user
 

@@ -29,6 +29,7 @@ def _filhos_ativos_ids(
 
     Returns:
         list[int]: Lista de IDs dos atos filhos ativos.
+
     """
     return list(
         ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list(
@@ -54,6 +55,7 @@ class InsubsistenciaService:
         Raises:
             ValidationError: Se o ato pai já estiver insubsistente ou
             já possuir uma insubsistência ativa.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
 
@@ -130,6 +132,7 @@ class InsubsistenciaService:
             apostila_ato: Ato administrativo do tipo apostila que será
             revertido.
             alvo: Ato administrativo que receberá a reversão dos valores.
+
         """
         try:
             alteracoes = list(apostila_ato.apostila_detalhe.alteracoes.all())
@@ -193,6 +196,7 @@ class InsubsistenciaService:
         Returns:
             Valor convertido para o tipo do campo, ou valor original se
             a conversão falhar.
+
         """
         from django.db.models import BooleanField, FloatField, IntegerField
 
@@ -227,13 +231,15 @@ class InsubsistenciaService:
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer: Any) -> Any:
         """Método legado que retorna o serializer de designação sem
-        alteração."""
+        alteração.
+        """
         return serializer
 
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer: Any) -> Any:
         """Método legado que ajusta o serializer para insubsistência de
-        cessação."""
+        cessação.
+        """
         designacao_obj = serializer.validated_data.get("designacao")
 
         designacao_completa = Designacao.objects.select_related(

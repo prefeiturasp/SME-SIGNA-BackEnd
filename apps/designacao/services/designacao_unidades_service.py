@@ -31,6 +31,7 @@ def normalizar(texto: str) -> str:
 
     Returns:
         str: Texto normalizado em ASCII sem acentos.
+
     """
     if not texto:
         return ""
@@ -67,6 +68,7 @@ class CicloService:
 
         Returns:
             int | None: Número encontrado ou None se não houver.
+
         """
         match = re.search(r"\d+", nome or "")
         return int(match.group()) if match else None
@@ -80,6 +82,7 @@ class CicloService:
 
         Returns:
             str: Código do ciclo definido.
+
         """
         modalidade = turma.get("siglaModalidade")
         nome = turma.get("nomeTurmaEOL", "")
@@ -171,6 +174,7 @@ class CicloService:
 
         Returns:
             str: Chave de ciclo mapeada.
+
         """
         return cls.CICLOS_MAPEADOS.get(ciclo, "semCiclo")
 
@@ -210,6 +214,7 @@ class TurmaService:
 
         Returns:
             Dict[str, Any]: Dados agregados de turmas, turnos e SPI.
+
         """
         ano = datetime.now().year
         turmas = cast(
@@ -332,7 +337,8 @@ class ServidorService:
     @staticmethod
     def enriquecer(servidor: Dict[str, Any]) -> Dict[str, Any]:
         """Enriquece o registro do servidor com dados de designação
-        complementares."""
+        complementares.
+        """
         rf = servidor.get("rf")
 
         if not isinstance(rf, str):
@@ -405,6 +411,7 @@ class DesignacaoUnidadeService:
 
         Returns:
             Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
+
         """
         cargos = cast(
             list[Dict[str, Any]],

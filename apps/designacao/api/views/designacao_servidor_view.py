@@ -36,6 +36,7 @@ class DesignacaoServidorView(APIView):
 
         Returns:
             Response: Dados da designação ou mensagem de erro.
+
         """
         serializer = DesignacaoServidorRequestSerializer(data=request.data)
 

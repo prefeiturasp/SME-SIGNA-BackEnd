@@ -99,8 +99,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
     def _consultar_sme(
         self, username: str, user_local: User | None
     ) -> dict | None:
-        """
-        Consulta dados do usuário na SME.
+        """Consulta dados do usuário na SME.
         Retorna None se houver erro e não existir usuário local.
         """
         try:
@@ -132,17 +131,14 @@ class EsqueciMinhaSenhaViewSet(APIView):
     def _validar_usuario_existe(
         self, user_local: User | None, dados_sme: dict | None
     ) -> None:
-        """
-        Valida se o usuário existe localmente ou na SME.
-        """
+        """Valida se o usuário existe localmente ou na SME."""
         if not user_local and not dados_sme:
             raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
 
     def _obter_email(
         self, dados_sme: dict | None, user_local: User | None, username: str
     ) -> str:
-        """
-        Determina o email do usuário (prioridade: SME > banco local).
+        """Determina o email do usuário (prioridade: SME > banco local).
         Valida se o email existe e não está vazio.
         """
         email = None
@@ -165,6 +161,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         Args:
             username (str): RF ou nome de usuário do usuário.
             email (str): Endereço de e-mail para envio.
+
         """
         logger.info("Gerando token: %s", username)
 
@@ -196,8 +193,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
     def _criar_ou_atualizar_usuario_local(
         self, username: str, dados_sme: dict
     ) -> User:
-        """
-        Cria ou atualiza usuário local com dados da SME.
+        """Cria ou atualiza usuário local com dados da SME.
         Usa update_or_create para evitar duplicação.
         """
         logger.info("Sincronizando usuário local para %s", username)
@@ -239,8 +235,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
 
 class RedefinirSenhaViewSet(APIView):
-    """
-    View para redefinição de senha via UID e token.
+    """View para redefinição de senha via UID e token.
 
     Fonte da verdade:
     - A autenticação e alteração de senha acontecem na SME.

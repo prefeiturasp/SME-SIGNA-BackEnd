@@ -88,6 +88,7 @@ class PortariaFilter(django_filters.FilterSet):
 
         Returns:
             Queryset filtrado com o tipo de ato selecionado.
+
         """
         if value == "DESIGNACAO_CESSACAO":
             return queryset.filter(tipo__in=["DESIGNACAO", "CESSACAO"])

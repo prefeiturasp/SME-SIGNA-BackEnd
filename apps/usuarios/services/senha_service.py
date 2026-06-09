@@ -29,6 +29,7 @@ class SenhaService:
 
         Returns:
             tuple[str, str]: UID codificado em base64 e token de redefinição.
+
         """
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -53,6 +54,7 @@ class SenhaService:
 
         Raises:
             User.DoesNotExist: Se o usuário não for encontrado.
+
         """
         logger.info(
             "Iniciando geração de token para usuário: %s",

@@ -42,6 +42,7 @@ class InsubsistenciaViewSet(
 
         Returns:
             QuerySet: Insubsistências não deletadas ordenadas por criação.
+
         """
         return (
             Insubsistencia.objects.filter(is_deleted=False)
@@ -60,6 +61,7 @@ class InsubsistenciaViewSet(
         Returns:
             Response: Resposta HTTP com os dados da insubsistência criada ou
             erro.
+
         """
         try:
             serializer = self.get_serializer(data=request.data)

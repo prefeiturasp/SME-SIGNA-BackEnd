@@ -86,6 +86,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Status do ato.
+
         """
         return obj.status
 
@@ -97,6 +98,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
 
         Returns:
             list: Lista de alterações serializadas.
+
         """
         try:
             qs = obj.apostila_detalhe.alteracoes.all()
@@ -112,6 +114,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
 
         Returns:
             dict|None: Dados da insubsistência ou None se não houver.
+
         """
         insub = next(
             (

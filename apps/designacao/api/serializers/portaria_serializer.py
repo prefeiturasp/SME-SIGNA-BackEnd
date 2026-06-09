@@ -117,20 +117,21 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Nome legível do tipo de ato.
+
         """
         return obj.get_tipo_display()
 
     def get_designacao(self, obj: AtoAdministrativo) -> Any | None:
         """Retorna os dados de designação
-           do ato administrativo atual ou do pai dele
+           do ato administrativo atual ou do pai dele.
 
         Args:
             obj: Instância de AtoAdministrativo.
 
         Returns:
             Any|None: Nome do servidor indicado ou civil.
-        """
 
+        """
         detalhe = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
 
@@ -172,8 +173,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Nome do servidor indicado ou civil.
-        """
 
+        """
         detalhe = self._get_cessacao_detalhe(obj)
         ato_cessacao = self._get_cessacao_ato_administrativo(obj)
 
@@ -198,8 +199,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Nome do servidor indicado ou civil.
-        """
 
+        """
         detalhe = self._get_designacao_detalhe(obj)
 
         if detalhe:
@@ -216,6 +217,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Cargo sobreposto ou cargo base do indicado.
+
         """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
@@ -235,6 +237,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             date|None: Data de início da designação.
+
         """
         detalhe = self._get_designacao_detalhe(obj)
         if detalhe:
@@ -251,6 +254,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
 
         Returns:
             date|None: Data de cessação para o ato ou None se não houver.
+
         """
         # Cessação direta no ato
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
