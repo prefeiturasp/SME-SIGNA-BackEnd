@@ -7,7 +7,6 @@ Este módulo valida a criação de usuários, a representação em string
 import secrets
 
 import pytest
-
 from django.contrib.auth import get_user_model
 
 User = get_user_model()

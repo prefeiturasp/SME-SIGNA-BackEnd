@@ -80,7 +80,11 @@ class ModuloLotacaoCalculator:
         tipos_validos = {"EMEBS", "EMEF", "EMEFM", "CIEJA"}
         return 1 if sigla_tipo in tipos_validos else 0
 
-    def _regra_assistente(self, sigla_tipo: str, qtd_classes: int) -> int:
+    def _regra_assistente(
+        self,
+        sigla_tipo: str,
+        qtd_classes: int | None,
+    ) -> int:
         """Calcula o módulo do assistente de direção conforme o tipo e classes.
 
         Args:

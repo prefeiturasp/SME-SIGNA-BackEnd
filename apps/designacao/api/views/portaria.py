@@ -5,9 +5,7 @@ D.O.
 """
 
 from django.db.models import QuerySet
-
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins
 from rest_framework import serializers as drf_serializers
 from rest_framework import viewsets

@@ -7,9 +7,6 @@ valida o perfil, sincroniza o usuário local e retorna tokens JWT.
 import logging
 
 import environ
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
@@ -17,6 +14,8 @@ from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.helpers.exceptions import (
     AuthenticationError,
@@ -24,9 +23,10 @@ from apps.helpers.exceptions import (
     SmeIntegracaoError,
 )
 from apps.usuarios.api.serializers.login_serializer import LoginSerializer
+from apps.usuarios.models import User
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
-User = get_user_model()
+UserModel = get_user_model()
 logger = logging.getLogger(__name__)
 env = environ.Env()
 
@@ -38,7 +38,8 @@ class LoginView(TokenObtainPairView):
     sincroniza o usuário local e devolve os tokens de acesso e refresh.
     """
 
-    permission_classes = [permissions.AllowAny]
+    # Respita configuração global de permissões, permitindo acesso anônimo
+    permission_classes = (permissions.AllowAny,)  # type: ignore[assignment]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         """Processa o login do usuário e retorna tokens JWT.
@@ -60,12 +61,15 @@ class LoginView(TokenObtainPairView):
         senha = serializer.validated_data["password"]
 
         try:
-
             dados_sme = SmeIntegracaoService.autentica(login, senha)
 
             self._valida_perfil_signa(dados_sme)
 
-            user = self._criar_ou_atualizar_user(login, senha, dados_sme)
+            user = self._criar_ou_atualizar_user(
+                login,
+                senha,
+                dados_sme,
+            )
             tokens = self._gerar_tokens(user)
 
             return Response(
@@ -88,7 +92,10 @@ class LoginView(TokenObtainPairView):
             logger.warning("Falha na autenticação: %s", str(e))
             return Response(
                 {
-                    "detail": "Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco."  # noqa: E501
+                    "detail": (
+                        "Parece que estamos com uma instabilidade "
+                        "no momento. Tente entrar novamente daqui a pouco."
+                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -97,7 +104,8 @@ class LoginView(TokenObtainPairView):
             return Response(
                 {
                     "detail": (
-                        "Desculpe, mas o acesso ao SIGNA é restrito a perfis específicos."  # noqa: E501
+                        "Desculpe, mas o acesso ao SIGNA é "
+                        "restrito a perfis específicos."
                     )
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -111,14 +119,7 @@ class LoginView(TokenObtainPairView):
             )
 
     def _valida_perfil_signa(self, dados_sme: dict) -> None:
-        """Valida se o usuário possui perfil autorizado no SIGNA.
-
-        Args:
-            dados_sme (dict): Dados retornados pela SME sobre o usuário.
-
-        Raises:
-            PerfilNaoAutorizadoError: Se o perfil não for válido ou autorizado.
-        """
+        """Valida se o usuário possui perfil autorizado no SIGNA."""
         perfis = dados_sme.get("perfis")
 
         if not perfis or not isinstance(perfis, list):
@@ -131,14 +132,12 @@ class LoginView(TokenObtainPairView):
             raise PerfilNaoAutorizadoError()
 
     def _criar_ou_atualizar_user(
-        self, login: str, senha: str, dados_sme: dict
+        self,
+        login: str,
+        senha: str,
+        dados_sme: dict,
     ) -> User:
-        """Cria ou atualiza o usuário local com dados retornados pela SME.
-
-        Se o usuário for criado ou a senha estiver desatualizada, atualiza a
-        senha local também.
-        """
-
+        """Cria ou atualiza o usuário local com dados retornados pela SME."""
         with transaction.atomic():
             defaults = {
                 "name": dados_sme.get("nome"),
@@ -147,7 +146,7 @@ class LoginView(TokenObtainPairView):
                 "last_login": timezone.now(),
             }
 
-            user, created = User.objects.update_or_create(
+            user, created = UserModel.objects.update_or_create(
                 username=login,
                 defaults=defaults,
             )
@@ -159,11 +158,7 @@ class LoginView(TokenObtainPairView):
             return user
 
     def _gerar_tokens(self, user: User) -> dict[str, str]:
-        """Gera tokens JWT personalizados para o usuário.
-
-        Retorna um dicionário com os tokens refresh e access contendo
-        informações adicionais do usuário.
-        """
+        """Gera tokens JWT personalizados para o usuário."""
         refresh = RefreshToken.for_user(user)
 
         refresh["username"] = user.username

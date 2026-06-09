@@ -4,7 +4,7 @@ Contém funções auxiliares para validação e formatação de mensagens de err
 usadas pelos serializadores da API.
 """
 
-import datetime
+from typing import Any
 
 from rest_framework import serializers
 
@@ -16,7 +16,7 @@ class NullableDateField(serializers.DateField):
     em vez de disparar um erro de validação do DRF.
     """
 
-    def to_internal_value(self, value: str) -> datetime.date | None:
+    def to_internal_value(self, value: Any) -> Any:
         """Converte o valor de entrada para o valor interno do campo.
 
         Args:

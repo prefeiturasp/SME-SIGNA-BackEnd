@@ -5,7 +5,6 @@ insubsistências.
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request

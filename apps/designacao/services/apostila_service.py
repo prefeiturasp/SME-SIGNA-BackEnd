@@ -84,7 +84,10 @@ class ApostilaService:
 
         alvo = alvo_designacao or alvo_cessacao
 
-        if alvo.is_deleted:
+        if alvo is None:
+            raise ValidationError("Ato alvo não encontrado para apostila.")
+
+        if getattr(alvo, "is_deleted", False):
             raise ValidationError("Não é possível apostilar um ato deletado.")
 
         queryset = Apostila.objects.filter(
@@ -108,13 +111,15 @@ class ApostilaService:
                 "Já existe uma apostila válida para este ato."
             )
 
+        from typing import cast
+
         return Apostila.objects.create(
-            tipo=data.get("tipo"),
+            tipo=cast(str, data.get("tipo")),
             designacao=alvo_designacao,
             cessacao=alvo_cessacao,
-            sei_numero=data.get("sei_numero"),
-            observacao=data.get("observacao"),
-            d_o=data.get("d_o", ""),
+            sei_numero=cast(str, data.get("sei_numero")),
+            observacao=cast(str, data.get("observacao")),
+            d_o=cast(str, data.get("d_o", "")),
         )
 
     # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────

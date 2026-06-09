@@ -8,7 +8,6 @@ respostas mockadas e helpers para criar requests DRF.
 from unittest.mock import Mock
 
 import pytest
-
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 

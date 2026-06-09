@@ -3,10 +3,8 @@
 Fornece endpoints para criação, listagem e recuperação de insubsistências.
 """
 
-from environ import logger
-
 from django.db.models import QuerySet
-
+from environ import logger
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request

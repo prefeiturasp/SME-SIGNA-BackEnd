@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from django.core.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (

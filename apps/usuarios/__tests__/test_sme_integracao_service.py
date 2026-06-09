@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
-
 from rest_framework import status
 
 from apps.designacao.constants.cargos_gestao_escolar import (

@@ -6,7 +6,6 @@ designações, com suporte a filtros, pesquisa, ordenação e paginação.
 
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request

@@ -1,20 +1,17 @@
 import secrets
 import uuid
+from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
-
 from django.http import Http404
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
 from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmailService,
 )
-from apps.helpers.exceptions import (
-    TokenExpiradoError,
-    TokenJaUtilizadoError,
-)
+from apps.helpers.exceptions import TokenExpiradoError, TokenJaUtilizadoError
 from apps.usuarios.models import User
 
 

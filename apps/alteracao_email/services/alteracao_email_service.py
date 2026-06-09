@@ -6,17 +6,14 @@ antes de efetivar a alteração.
 """
 
 import logging
+from datetime import timedelta
 
 import environ
-
 from django.shortcuts import get_object_or_404
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now
 
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
-from apps.helpers.exceptions import (
-    TokenExpiradoError,
-    TokenJaUtilizadoError,
-)
+from apps.helpers.exceptions import TokenExpiradoError, TokenJaUtilizadoError
 from apps.usuarios.models import User
 from apps.usuarios.services.envia_email_service import EnviaEmailService
 

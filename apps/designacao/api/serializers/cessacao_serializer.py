@@ -35,10 +35,12 @@ class CessacaoSerializer(serializers.ModelSerializer):
             dict|None: Dados serializados da insubsistência, ou None se não
             existir.
         """
+        insubs_qs = getattr(obj, "insubsistencia", None)
+        if not insubs_qs:
+            return None
+
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False)
-            .order_by("-criado_em")
-            .first()
+            insubs_qs.filter(is_deleted=False).order_by("-criado_em").first()
         )
         if insubsistencia and not insubsistencia.is_deleted:
             return InsubsistenciaSerializer(insubsistencia).data

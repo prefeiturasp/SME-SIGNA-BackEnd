@@ -5,9 +5,9 @@ redefinir senha via UID/token e alterar senha de usuário autenticado.
 """
 
 import logging
+from typing import cast
 
 import environ
-
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from rest_framework import permissions, status
@@ -27,12 +27,13 @@ from apps.usuarios.api.serializers.senha_serializer import (
     EsqueciMinhaSenhaSerializer,
     RedefinirSenhaSerializer,
 )
+from apps.usuarios.models import User
 from apps.usuarios.services.envia_email_service import EnviaEmailService
 from apps.usuarios.services.senha_service import SenhaService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+UserModel = get_user_model()
 env = environ.Env()
 
 
@@ -65,7 +66,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.info("Fluxo de recuperação iniciado para %s", username)
 
             # 1. Busca usuário local
-            user_local = User.objects.filter(username=username).first()
+            user_local = UserModel.objects.filter(username=username).first()
 
             # 2. Consulta SME
             dados_sme = self._consultar_sme(username, user_local)
@@ -104,17 +105,28 @@ class EsqueciMinhaSenhaViewSet(APIView):
         """
         try:
             return SmeIntegracaoService.informacao_usuario_sgp(username)
-        except SmeIntegracaoError as e:
-            logger.error("Erro ao consultar SME para %s: %s", username, str(e))
-            if not user_local:
-                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
-            return None
-        except Exception:
-            logger.exception(
-                "Erro inesperado ao consultar SME para %s", username
+
+        except SmeIntegracaoError as exc:
+            logger.error(
+                "Erro ao consultar SME para %s: %s",
+                username,
+                str(exc),
             )
             if not user_local:
-                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
+                raise UserNotFoundError(
+                    self.MENSAGEM_USUARIO_NAO_ENCONTRADO
+                ) from exc
+            return None
+
+        except Exception as exc:
+            logger.exception(
+                "Erro inesperado ao consultar SME para %s",
+                username,
+            )
+            if not user_local:
+                raise UserNotFoundError(
+                    self.MENSAGEM_USUARIO_NAO_ENCONTRADO
+                ) from exc
             return None
 
     def _validar_usuario_existe(
@@ -195,13 +207,13 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.warning(
                 "Dados SME sem nome para %s, pulando sincronização", username
             )
-            return User.objects.get(
+            return UserModel.objects.get(
                 username=username
             )  # Retorna usuário existente
 
         try:
             with transaction.atomic():
-                user, created = User.objects.update_or_create(
+                user, created = UserModel.objects.update_or_create(
                     username=username,
                     defaults={
                         "name": nome,
@@ -214,14 +226,16 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.info("Usuário %s %s localmente", username, action)
             return user
 
-        except IntegrityError as e:
+        except IntegrityError as exc:
             logger.error(
-                "Falha ao sincronizar usuário %s: %s", username, str(e)
+                "Falha ao sincronizar usuário %s: %s",
+                username,
+                str(exc),
             )
             raise EmailNaoCadastradoError(
                 "Já existe um usuário com este e-mail. <br/>"
                 "Entre em contato com o administrador do sistema."
-            )
+            ) from exc
 
 
 class RedefinirSenhaViewSet(APIView):
@@ -347,7 +361,7 @@ class AtualizarSenhaViewSet(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = request.user
+        user = cast(User, request.user)
         nova_senha = serializer.validated_data["nova_senha"]
 
         try:

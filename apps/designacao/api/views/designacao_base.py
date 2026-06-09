@@ -4,6 +4,8 @@ Contém a paginação comum e os helpers de controle de paginação/filtros
 usados por DesignacaoViewSet e DesignacaoLegadoViewSet.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -44,6 +46,9 @@ class DesignacaoBasePagination(PageNumberPagination):
 class DesignacaoPaginacaoMixin:
     """Helpers de paginação e filtros compartilhados pelas views de
     designação."""
+
+    # Anotação para que type checkers reconheçam que a view terá `request`
+    request: Any
 
     def _is_no_pagination(self) -> bool:
         """Verifica se a paginação deve ser desabilitada.

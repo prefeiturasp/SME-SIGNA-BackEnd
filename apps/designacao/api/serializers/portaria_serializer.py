@@ -134,7 +134,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         detalhe = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
 
-        if detalhe:
+        if detalhe and ato_designacao is not None:
             return {
                 "portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
@@ -177,7 +177,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         detalhe = self._get_cessacao_detalhe(obj)
         ato_cessacao = self._get_cessacao_ato_administrativo(obj)
 
-        if detalhe:
+        if detalhe and ato_cessacao is not None:
             return {
                 "portaria": ato_cessacao.numero_portaria,
                 "ano_vigente": ato_cessacao.ano_vigente,
@@ -278,7 +278,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
         """Retorna o tipo de insubsistência se designação ou cessação."""
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
             pai = obj.ato_pai
-            return pai.tipo
+            if pai is not None:
+                return pai.tipo
 
         return None
 
@@ -286,6 +287,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
         """Retorna o tipo de apostila."""
         if obj.tipo == AtoAdministrativo.Tipo.APOSTILA:
             pai = obj.ato_pai
-            return pai.tipo
+            if pai is not None:
+                return pai.tipo
 
         return None

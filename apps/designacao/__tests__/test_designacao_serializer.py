@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from django.test import TestCase
 
 from apps.designacao.__tests__.factories import criar_designacao_legado

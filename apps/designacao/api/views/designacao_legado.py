@@ -6,7 +6,6 @@ pesquisa, ordenação e ações auxiliares para cargos pareados.
 
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request

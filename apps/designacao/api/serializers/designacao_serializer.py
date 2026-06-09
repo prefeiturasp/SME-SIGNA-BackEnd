@@ -135,10 +135,12 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     )
 
     # Impedimento
-    impedimento_substituicao = serializers.PrimaryKeyRelatedField(
-        queryset=ImpedimentoSubstituicao.objects.all(),
-        required=False,
-        allow_null=True,
+    impedimento_substituicao: serializers.PrimaryKeyRelatedField = (
+        serializers.PrimaryKeyRelatedField(
+            queryset=ImpedimentoSubstituicao.objects.all(),
+            required=False,
+            allow_null=True,
+        )
     )
 
     # Vaga
@@ -296,11 +298,17 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     )
 
     # Impedimento
-    impedimento_substituicao = serializers.PrimaryKeyRelatedField(
-        source="designacao_detalhe.impedimento_substituicao", read_only=True
+    impedimento_substituicao: serializers.PrimaryKeyRelatedField = (
+        serializers.PrimaryKeyRelatedField(
+            source="designacao_detalhe.impedimento_substituicao",
+            read_only=True,
+        )
     )
-    impedimento_substituicao_detail = ImpedimentoSubstituicaoSerializer(
-        source="designacao_detalhe.impedimento_substituicao", read_only=True
+    impedimento_substituicao_detail: ImpedimentoSubstituicaoSerializer = (
+        ImpedimentoSubstituicaoSerializer(
+            source="designacao_detalhe.impedimento_substituicao",
+            read_only=True,
+        )
     )
     impedimento_display = serializers.SerializerMethodField()
 

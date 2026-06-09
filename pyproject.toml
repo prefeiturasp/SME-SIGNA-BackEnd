@@ -15,6 +15,22 @@ line_length = 79
 [tool.flake8]
 max-line-length = 79
 
+exclude = [
+    "migrations",
+    "*/migrations/*",
+    "__pycache__",
+    "venv",
+    ".venv",
+]
+
+per-file-ignores = [
+    "*/__tests__/*.py:E501",
+    "*/tests/*.py:E501",
+    "*/tests/**/*.py:E501",
+    "*/models/__init__.py:F401",
+    "apps/core/management/commands/gerar_relatorio_pep.py:E501",
+]
+
 [tool.ruff]
 line-length = 79
 target-version = "py312"

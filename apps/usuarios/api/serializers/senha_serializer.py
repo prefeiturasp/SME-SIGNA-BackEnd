@@ -12,9 +12,11 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 
-logger = logging.getLogger(__name__)
+from apps.usuarios.models import User
 
-User = get_user_model()
+UserModel = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 
 class EsqueciMinhaSenhaSerializer(serializers.Serializer):
@@ -68,7 +70,6 @@ class RedefinirSenhaSerializer(serializers.Serializer):
         new_pass = attrs.get("new_pass")
         new_pass_confirm = attrs.get("new_pass_confirm")
 
-        # 1. Confirma que as senhas são iguais
         if new_pass != new_pass_confirm:
             logger.warning(
                 "Tentativa de redefinição com senhas diferentes para UID: %s",
@@ -76,15 +77,16 @@ class RedefinirSenhaSerializer(serializers.Serializer):
             )
             self.fail("pass_mismatch")
 
-        # 2. Decodifica UID (já validado em validate_uid)
+        if uid is None:
+            self.fail("uid_invalid")
+
         try:
             decoded_uid = force_str(urlsafe_base64_decode(uid))
         except (ValueError, TypeError):
             self.fail("uid_invalid")
 
-        # 3. Busca o usuário pelo UID decodificado
         try:
-            user = User.objects.get(pk=decoded_uid)
+            user = UserModel.objects.get(pk=decoded_uid)
         except User.DoesNotExist:
             logger.warning(
                 "Tentativa de redefinição para usuário inexistente UID: %s",

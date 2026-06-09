@@ -8,7 +8,6 @@ tratamento de exceções inesperadas.
 from unittest.mock import patch
 
 import pytest
-
 from django.core import mail
 from django.core.exceptions import ValidationError
 

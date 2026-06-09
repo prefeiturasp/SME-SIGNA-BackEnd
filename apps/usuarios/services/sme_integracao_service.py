@@ -8,7 +8,6 @@ import logging
 
 import environ
 import requests
-
 from rest_framework import status
 
 from apps.designacao.constants.cargos_gestao_escolar import (
@@ -88,16 +87,18 @@ class SmeIntegracaoService:
 
             return response.json()
 
-        except requests.exceptions.RequestException as e:
-            logger.error("Erro de comunicação: %s", e)
-            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_CORESSO)
+        except requests.exceptions.RequestException as exc:
+            logger.error("Erro de comunicação: %s", exc)
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_CORESSO) from exc
 
         except (AuthenticationError, SmeIntegracaoError):
             raise
 
-        except Exception as e:
-            logger.error("Erro interno na autenticação: %s", e)
-            raise InternalError("Erro interno ao autenticar no CoreSSO")
+        except Exception as exc:
+            logger.error("Erro interno na autenticação: %s", exc)
+            raise InternalError(
+                "Erro interno ao autenticar no CoreSSO"
+            ) from exc
 
     @classmethod
     def informacao_usuario_sgp(cls, username: str) -> dict:
@@ -113,7 +114,10 @@ class SmeIntegracaoService:
             SmeIntegracaoError: Quando os dados não são encontrados.
             requests.RequestException: Em caso de falha de conexão.
         """
-        logger.info(f"Consultando dados na API externa para: {username}")
+        logger.info(
+            "Consultando dados na API externa para: %s",
+            username,
+        )
         try:
             url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/{username}/dados"  # noqa: E501
             response = requests.get(
@@ -127,11 +131,11 @@ class SmeIntegracaoService:
                 logger.info(f"Dados não encontrados: {response}")
                 raise SmeIntegracaoError("Dados não encontrados.")
 
-        except requests.RequestException:
+        except requests.RequestException as exc:
             logger.exception("Erro de conexão com a API externa")
             raise requests.RequestException(
                 "Erro ao conectar-se à API externa."
-            )
+            ) from exc
 
     @classmethod
     def redefine_senha(cls, registro_funcional: str, senha: str) -> str:
@@ -181,8 +185,8 @@ class SmeIntegracaoService:
                 mensagem = texto.strip("{}'\"")
                 logger.info("Erro ao redefinir senha: %s", mensagem)
                 raise SmeIntegracaoError(mensagem)
-        except Exception as err:
-            raise SmeIntegracaoError(str(err))
+        except Exception as exc:
+            raise SmeIntegracaoError(str(exc)) from exc
 
     @classmethod
     def altera_email(cls, registro_funcional: str, email: str) -> str:
@@ -228,8 +232,8 @@ class SmeIntegracaoService:
                 mensagem = texto.strip("{}'\"")
                 logger.info("Erro ao Alterar email: %s", mensagem)
                 raise SmeIntegracaoError(mensagem)
-        except Exception as err:
-            raise SmeIntegracaoError(str(err))
+        except Exception as exc:
+            raise SmeIntegracaoError(str(exc)) from exc
 
     @classmethod
     def consulta_cargos_funcionario(cls, registro_funcional: str) -> list:
@@ -314,29 +318,31 @@ class SmeIntegracaoService:
 
     @classmethod
     def _montar_ue(
-        cls, codigo_ue: str | int | None, nome_ue: str | None
+        cls,
+        codigo_ue: str | int | None,
+        nome_ue: str | None,
     ) -> str | None:
         """Formata a descrição da unidade escolar para exibição.
 
         Args:
-            codigo_ue (str|int): Código da unidade escolar.
-            nome_ue (str): Nome da unidade escolar.
+            codigo_ue (str | int | None): Código da unidade escolar.
+            nome_ue (str | None): Nome da unidade escolar.
 
         Returns:
-            str: Nome formatado da unidade ou o valor original quando não for
-            possível.
+            str | None: Nome formatado da unidade ou o valor original quando
+            não for possível formatar.
         """
         if not codigo_ue:
             return nome_ue
 
-        info = cls.consulta_informacoes_unidades_escolares(codigo_ue)
+        info = cls.consulta_informacoes_unidades_escolares(str(codigo_ue))
+
         sigla = info.get("siglaTipoEscola")
 
-        if not sigla:
+        if not isinstance(sigla, str):
             return nome_ue
 
-        nome_formatado = nome_ue
-        return f"{sigla.upper()} - {nome_formatado}"
+        return f"{sigla.upper()} - {nome_ue}"
 
     @classmethod
     def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
@@ -517,7 +523,10 @@ class SmeIntegracaoService:
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
-    def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
+    def consulta_informacoes_unidades_escolares(
+        cls,
+        codigo_ue: str,
+    ) -> dict[str, object]:
         """Consulta informações de uma unidade escolar na SME.
 
         Args:

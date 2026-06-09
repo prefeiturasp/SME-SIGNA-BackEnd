@@ -4,7 +4,6 @@ Fornece endpoints para criar, listar, recuperar e excluir cessões.
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, viewsets
 from rest_framework.pagination import PageNumberPagination
 

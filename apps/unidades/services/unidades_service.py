@@ -119,13 +119,13 @@ class BaseEOLService:
             logger.info("Sucesso na requisição: %s", context)
             return data
 
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as exc:
             logger.error("Timeout: %s", context)
-            raise EOLTimeoutError("Tempo limite excedido")
+            raise EOLTimeoutError("Tempo limite excedido") from exc
 
-        except requests.exceptions.RequestException as e:
-            logger.error("Erro de comunicação (%s): %s", context, str(e))
-            raise EOLCommunicationError(str(e))
+        except requests.exceptions.RequestException as exc:
+            logger.error("Erro de comunicação (%s): %s", context, str(exc))
+            raise EOLCommunicationError(str(exc)) from exc
 
 
 class DREIntegracaoService(BaseEOLService):

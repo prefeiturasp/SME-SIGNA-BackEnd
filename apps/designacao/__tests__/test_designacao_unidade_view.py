@@ -6,7 +6,6 @@ import secrets
 from unittest.mock import patch
 
 import pytest
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -69,9 +68,7 @@ class TestDesignacaoUnidadeView:
         )
         self.client.force_authenticate(user=user)
 
-        mock_service.side_effect = SmeIntegracaoError(
-            "Erro integração SME"
-        )
+        mock_service.side_effect = SmeIntegracaoError("Erro integração SME")
 
         response = self.client.get(self.url, {"codigo_ue": "UE_TESTE"})
 

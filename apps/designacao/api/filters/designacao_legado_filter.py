@@ -5,7 +5,6 @@ cargo base e demais campos legados de designação.
 """
 
 import django_filters
-
 from django.db import models
 
 from apps.designacao.models.designacao import (

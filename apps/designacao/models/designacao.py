@@ -154,16 +154,22 @@ class Designacao(ServidorDesignacaoMixin):
             for choice in cls.CargoVaga
         ]
 
-    def delete(self, *args, **kwargs) -> None:
+    def delete(
+        self,
+        using: str | None = None,
+        keep_parents: bool = False,
+    ) -> tuple[int, dict[str, int]]:
         """Realiza exclusão lógica da designação.
 
         Marca o registro como removido sem excluí-lo fisicamente do banco,
         registrando a data e hora da exclusão.
 
         Args:
-            *args: Argumentos posicionais adicionais.
-            **kwargs: Argumentos nomeados adicionais.
+            using: Alias da conexão de banco de dados.
+            keep_parents: Mantém os modelos pai na exclusão.
         """
         self.is_deleted = True
         self.deleted_at = timezone.now()
-        self.save()
+        self.save(update_fields=["is_deleted", "deleted_at"])
+
+        return (1, {self._meta.label: 1})

@@ -4,6 +4,8 @@ Define payloads de escrita e leitura de apostilas, incluindo alterações e
 referência à insubsistência associada.
 """
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.designacao.api.serializers.utils import NullableDateField
@@ -87,7 +89,7 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
         """
         return obj.status
 
-    def get_alteracoes(self, obj: AtoAdministrativo) -> list:
+    def get_alteracoes(self, obj: AtoAdministrativo) -> Any:
         """Retorna as alterações registradas na apostila.
 
         Args:

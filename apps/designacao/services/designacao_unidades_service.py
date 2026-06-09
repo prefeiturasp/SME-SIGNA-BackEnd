@@ -8,7 +8,7 @@ import logging
 import re
 import unicodedata
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
@@ -119,6 +119,9 @@ class CicloService:
         """Define o ciclo para modalidade EJA a partir do semestre."""
         semestre = cls.extrair_numero(nome)
 
+        if semestre is None:
+            return "sem_ciclo"
+
         mapa = {
             1: "alfabetizacao",
             2: "basica",
@@ -209,9 +212,12 @@ class TurmaService:
             Dict[str, Any]: Dados agregados de turmas, turnos e SPI.
         """
         ano = datetime.now().year
-        turmas = SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano)
+        turmas = cast(
+            list[Dict[str, Any]],
+            SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano),
+        )
         turnos = cls.estrutura_turnos()
-        spi = {
+        spi: Dict[str, Any] = {
             "tipo": "",
             "total": 0,
             "turnos": [
@@ -229,49 +235,86 @@ class TurmaService:
         for turma in turmas:
             codigo = turma.get("codigoTurma")
 
-            disciplinas = SmeIntegracaoService.buscar_disciplinas_turma(codigo)
+            codigo_turma = cls._normalizar_codigo_turma(codigo)
+            if codigo_turma is None:
+                continue
 
-            tem_spi = cls.turma_tem_spi(disciplinas)
+            disciplinas = cast(
+                list[Dict[str, Any]],
+                SmeIntegracaoService.buscar_disciplinas_turma(codigo_turma),
+            )
 
-            if tem_spi:
-                spi["tipo"] = "São Paulo Integral"
+            if cls.turma_tem_spi(disciplinas):
+                cls._registrar_spi(spi, turma)
 
-                ciclo = CicloService.definir_ciclo_turma(turma)
-                ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
+            dados = cast(
+                Dict[str, Any],
+                SmeIntegracaoService.buscar_dados_turma(codigo_turma),
+            )
+            tipo_turno = dados.get("tipoTurno")
 
-                spi_turno = spi["turnos"][0]
+            if not isinstance(tipo_turno, int):
+                continue
 
-                spi_turno["total"] += 1
-                spi["total"] += 1
-
-                if ciclo_key not in spi_turno:
-                    spi_turno[ciclo_key] = 0
-
-                spi_turno[ciclo_key] += 1
-
-            dados = SmeIntegracaoService.buscar_dados_turma(codigo)
-
-            turno_key = TURNOS_MAP.get(dados.get("tipoTurno"))
+            turno_key = TURNOS_MAP.get(tipo_turno)
             if not turno_key:
                 continue
 
             ciclo = CicloService.definir_ciclo_turma(turma)
             ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
 
-            turno = turnos[turno_key]
-            turno["total"] += 1
-
-            if ciclo_key not in turno:
-                logger.warning("Ciclo não mapeado: %s", ciclo_key)
-                turno[ciclo_key] = 0
-
-            turno[ciclo_key] += 1
+            cls._incrementar_contadores_turno(turnos, turno_key, ciclo_key)
 
         return {
             "total": sum(t["total"] for t in turnos.values()),
             "turnos": list(turnos.values()),
             "spi": spi,
         }
+
+    @staticmethod
+    def _normalizar_codigo_turma(codigo: Any) -> Any | None:
+        """Normaliza o código da turma aceitando int ou string.
+
+        Retorna `int` quando a string for dígito puro,
+        mantém string caso contrário.
+        Retorna None para tipos inválidos.
+        """
+        if isinstance(codigo, int):
+            return codigo
+        if isinstance(codigo, str):
+            return int(codigo) if codigo.isdigit() else codigo
+        return None
+
+    @staticmethod
+    def _registrar_spi(spi: Dict[str, Any], turma: Dict[str, Any]) -> None:
+        """Registra uma turma com SPI na estrutura `spi`."""
+        spi["tipo"] = "São Paulo Integral"
+
+        ciclo = CicloService.definir_ciclo_turma(turma)
+        ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
+
+        spi_turno = cast(Dict[str, Any], spi["turnos"][0])
+        spi_turno["total"] += 1
+        spi["total"] += 1
+
+        if ciclo_key not in spi_turno:
+            spi_turno[ciclo_key] = 0
+
+        spi_turno[ciclo_key] += 1
+
+    @staticmethod
+    def _incrementar_contadores_turno(
+        turnos: Dict[str, Dict[str, Any]], turno_key: str, ciclo_key: str
+    ) -> None:
+        """Incrementa contadores para um dado `turno_key` e `ciclo_key`."""
+        turno = turnos[turno_key]
+        turno["total"] += 1
+
+        if ciclo_key not in turno:
+            logger.warning("Ciclo não mapeado: %s", ciclo_key)
+            turno[ciclo_key] = 0
+
+        turno[ciclo_key] += 1
 
     @staticmethod
     def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
@@ -291,6 +334,21 @@ class ServidorService:
         """Enriquece o registro do servidor com dados de designação
         complementares."""
         rf = servidor.get("rf")
+
+        if not isinstance(rf, str):
+            logger.warning("RF inválido no registro do servidor: %s", rf)
+            return {
+                "nome_servidor": None,
+                "nome_civil": None,
+                "rf": rf,
+                "vinculo": None,
+                "cargo_base": None,
+                "lotacao": None,
+                "cargo_sobreposto_funcao_atividade": None,
+                "local_de_exercicio": None,
+                "laudo_medico": None,
+                "local_de_servico": None,
+            }
 
         try:
             usuario = SmeIntegracaoService.informacao_usuario_sgp(rf)
@@ -326,7 +384,7 @@ class ModuloService:
     ) -> int:
         """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
-        calculator = Calculadores.get(codigo)
+        calculator: Any = Calculadores.get(codigo)
 
         if not calculator:
             logger.debug("Cargo %s sem regra de módulo", codigo)
@@ -348,17 +406,26 @@ class DesignacaoUnidadeService:
         Returns:
             Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
         """
-        cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
-        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
-            codigo_ue
+        cargos = cast(
+            list[Dict[str, Any]],
+            SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue),
+        )
+        info_ue = cast(
+            Dict[str, Any],
+            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+                codigo_ue
+            ),
         )
 
         codigo_dre = info_ue.get("codigoDRE")
-        unidades = (
-            UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
-                codigo_dre
+        if not isinstance(codigo_dre, (str, int)):
+            unidades: list[Dict[str, Any]] = []
+        else:
+            unidades = (
+                UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+                    codigo_dre
+                )
             )
-        )
 
         unidade = next(
             (u for u in unidades if u.get("codigoUe") == codigo_ue), None

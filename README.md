@@ -25,6 +25,7 @@ Primeiro, clone o projeto:
 
 ### 📦 Instalando as dependências do projeto
     $ pip install -r requirements/local.txt
+    $ pre-commit install
 
 ### 📦 Instalando as dependências do projeto de teste
     $ pip install -r requirements/test.txt  
@@ -74,4 +75,7 @@ python manage.py gerar_relatorio_pep --only core usuarios designacao
 
 # Customizando saída do consolidado
 python manage.py gerar_relatorio_pep --all --output-dir docs/relatorios
+
+### ✅ Validando o projeto
+pre-commit run --all-files
 

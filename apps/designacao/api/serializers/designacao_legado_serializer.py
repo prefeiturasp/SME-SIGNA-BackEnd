@@ -5,6 +5,8 @@ insubsistência
 apositilas e impedimentos de substituição.
 """
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.designacao.api.serializers.apostila_serializer import (
@@ -110,16 +112,18 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
             dict|None: Dados serializados da insubsistência ou None se não
             existir.
         """
+        insubs_qs = getattr(obj, "insubsistencia", None)
+        if not insubs_qs:
+            return None
+
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False)
-            .order_by("-criado_em")
-            .first()
+            insubs_qs.filter(is_deleted=False).order_by("-criado_em").first()
         )
         if insubsistencia:
             return InsubsistenciaSerializer(insubsistencia).data
         return None
 
-    def get_apostilas(self, obj: Designacao) -> list:
+    def get_apostilas(self, obj: Designacao) -> Any:
         """Retorna as apostilas associadas à designação.
 
         Args:

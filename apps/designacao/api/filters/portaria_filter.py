@@ -5,7 +5,6 @@ informações de designação de servidor e data de cessação.
 """
 
 import django_filters
-
 from django.db import models
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
