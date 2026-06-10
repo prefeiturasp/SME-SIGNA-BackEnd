@@ -51,6 +51,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se a designação ou cessação não for válida
             ou se já existir uma apostila ativa.
+
         """
         designacao_id = data.pop("designacao")
         ato_apostilado = data.pop("ato_apostilado")
@@ -84,7 +85,10 @@ class ApostilaService:
 
         alvo = alvo_designacao or alvo_cessacao
 
-        if alvo.is_deleted:
+        if alvo is None:
+            raise ValidationError("Ato alvo não encontrado para apostila.")
+
+        if getattr(alvo, "is_deleted", False):
             raise ValidationError("Não é possível apostilar um ato deletado.")
 
         queryset = Apostila.objects.filter(
@@ -108,13 +112,15 @@ class ApostilaService:
                 "Já existe uma apostila válida para este ato."
             )
 
+        from typing import cast
+
         return Apostila.objects.create(
-            tipo=data.get("tipo"),
+            tipo=cast(str, data.get("tipo")),
             designacao=alvo_designacao,
             cessacao=alvo_cessacao,
-            sei_numero=data.get("sei_numero"),
-            observacao=data.get("observacao"),
-            d_o=data.get("d_o", ""),
+            sei_numero=cast(str, data.get("sei_numero")),
+            observacao=cast(str, data.get("observacao")),
+            d_o=cast(str, data.get("d_o", "")),
         )
 
     # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────
@@ -132,6 +138,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se o ato pai for inválido ou não puder ser
             apostilado.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
         alteracoes: list = data.get("alteracoes", [])
@@ -201,6 +208,7 @@ class ApostilaService:
 
         Raises:
             ValidationError: Se o campo não existir no ato pai ou detalhe.
+
         """
         if hasattr(ato_pai, campo):
             raw = getattr(ato_pai, campo)
@@ -228,6 +236,7 @@ class ApostilaService:
             ato_pai: Ato administrativo original que está sendo apostilado.
             apostila_detalhe: Registro de detalhe da apostila.
             alteracoes: Lista de alterações a serem aplicadas.
+
         """
         detalhe = ApostilaService._get_detalhe(ato_pai)
         buckets: dict[str, dict] = {"ato_pai": {}, "detalhe": {}}
@@ -273,6 +282,7 @@ class ApostilaService:
         Args:
             obj: Objeto Django cujos campos serão atualizados.
             updates: Dicionário campo-valor com as alterações.
+
         """
         for campo, valor in updates.items():
             setattr(obj, campo, valor)
@@ -287,6 +297,7 @@ class ApostilaService:
 
         Returns:
             object | None: O detalhe associado ou None.
+
         """
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato_pai, "designacao_detalhe", None)

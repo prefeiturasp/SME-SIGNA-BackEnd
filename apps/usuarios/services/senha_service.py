@@ -11,8 +11,10 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from apps.usuarios.models import User
+
 logger = logging.getLogger(__name__)
-User = get_user_model()
+UserModel = get_user_model()
 
 
 class SenhaService:
@@ -27,16 +29,17 @@ class SenhaService:
 
         Returns:
             tuple[str, str]: UID codificado em base64 e token de redefinição.
-        """
-        """
-        Gera token e UID para reset de senha.
+
         """
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         return uid, token
 
     @staticmethod
-    def gerar_token_para_reset(username: str, email: str) -> dict:
+    def gerar_token_para_reset(
+        username: str,
+        email: str,
+    ) -> dict[str, str]:
         """Gera os dados necessários para o fluxo de reset de senha.
 
         Busca o usuário pelo username, gera UID e token, e retorna o nome
@@ -51,10 +54,14 @@ class SenhaService:
 
         Raises:
             User.DoesNotExist: Se o usuário não for encontrado.
-        """
-        logger.info(f"Iniciando geração de token para usuário: {username}")
 
-        user = User.objects.get(username=username)
+        """
+        logger.info(
+            "Iniciando geração de token para usuário: %s",
+            username,
+        )
+
+        user = UserModel.objects.get(username=username)
 
         uid, token = SenhaService.gerar_token_para_usuario(user)
 
@@ -66,5 +73,8 @@ class SenhaService:
             "name": name,
         }
 
-        logger.info(f"Token de reset gerado com sucesso para {username}")
+        logger.info(
+            "Token de reset gerado com sucesso para %s",
+            username,
+        )
         return resultado

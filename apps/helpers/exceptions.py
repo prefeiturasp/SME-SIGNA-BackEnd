@@ -1,41 +1,41 @@
 class AuthenticationError(Exception):
-    """Erro de autenticação personalizado"""
+    """Erro de autenticação personalizado."""
 
     pass
 
 
 class CargoNotFoundError(Exception):
-    """Erro quando cargo não é encontrado"""
+    """Erro quando cargo não é encontrado."""
 
     pass
 
 
 class CessacaoNotFoundError(Exception):
-    """Erro quando cessação não é encontrada"""
+    """Erro quando cessação não é encontrada."""
 
     pass
 
 
 class InternalError(Exception):
-    """Erro interno do sistema"""
+    """Erro interno do sistema."""
 
     pass
 
 
 class EmailNaoCadastradoError(Exception):
-    """Email não cadastrado"""
+    """Email não cadastrado."""
 
     pass
 
 
 class SmeIntegracaoError(Exception):
-    """Problema na integração com a SME"""
+    """Problema na integração com a SME."""
 
     pass
 
 
 class CargaUsuarioError(Exception):
-    """Erro ao cadastrar usuário no CoreSSO"""
+    """Erro ao cadastrar usuário no CoreSSO."""
 
     pass
 
@@ -53,7 +53,7 @@ class TokenExpiradoError(Exception):
 
 
 class UserNotFoundError(Exception):
-    """Erro quando usuário não é encontrado"""
+    """Erro quando usuário não é encontrado."""
 
     def __init__(self, message, usuario=None):
         super().__init__(message, usuario)
@@ -64,6 +64,6 @@ class UserNotFoundError(Exception):
 
 
 class PerfilNaoAutorizadoError(Exception):
-    """Não possui perfil signa"""
+    """Não possui perfil signa."""
 
     pass

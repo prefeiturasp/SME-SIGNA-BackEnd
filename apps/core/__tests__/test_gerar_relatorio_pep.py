@@ -1,16 +1,16 @@
-import pytest
+import ast
+from collections import Counter
 from pathlib import Path
 from unittest.mock import Mock, patch
+
+import pytest
 from django.core.management import CommandError
+
 from apps.core.management.commands.gerar_relatorio_pep import (
     Command,
-    run_for_app,
-)
-
-import ast
-from apps.core.management.commands.gerar_relatorio_pep import (
     FileMetrics,
     SymbolMetrics,
+    _build_payload_args,
     _estimar_horas_ajuste,
     _hint_level,
     _mypy_code_from_line,
@@ -18,24 +18,16 @@ from apps.core.management.commands.gerar_relatorio_pep import (
     _pct_float,
     _status_emoji,
     _status_palavra,
-    aggregate,
-    analyze_pep440,
-    _build_payload_args,
     _walk_symbols,
+    aggregate,
     analyze_file,
+    analyze_pep440,
     build_json_payload,
     consolidate,
     render_simplified_markdown,
     render_simplified_txt,
-)
-
-from collections import Counter
-from collections import Counter
-from unittest.mock import Mock, patch
-
-from apps.core.management.commands.gerar_relatorio_pep import run_flake8
-
-from apps.core.management.commands.gerar_relatorio_pep import (
+    run_flake8,
+    run_for_app,
     run_mypy,
 )
 

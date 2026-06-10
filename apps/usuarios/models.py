@@ -21,7 +21,7 @@ class User(AbstractUser):
     cpf = models.CharField(
         "CPF", max_length=11, unique=True, null=True, blank=True
     )
-    email = models.EmailField("E-mail", unique=True, null=True, blank=True)
+    email = models.EmailField("E-mail", unique=True, blank=True)
 
     class Meta:
         verbose_name = "Usuário"

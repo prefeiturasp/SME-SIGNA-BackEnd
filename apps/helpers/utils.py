@@ -1,9 +1,8 @@
 def anonimizar_email(email: str) -> str:
-    """
-    Anonimiza o nome de usuário de um e-mail.
+    """Anonimiza o nome de usuário de um e-mail.
     Exemplo:
         - "joaosilva@email.com" -> "joa****@email.com"
-        - "ab@dominio.com" -> "a*@dominio.com"
+        - "ab@dominio.com" -> "a*@dominio.com".
     """
     nome_usuario, dominio = email.split("@", 1)
 

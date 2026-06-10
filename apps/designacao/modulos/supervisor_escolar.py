@@ -38,6 +38,7 @@ class ModuloSupervisorEscolarCalculator:
 
         Returns:
             int: Módulo definido para a DRE ou 0 se inválido.
+
         """
         codigo_dre = informacoes_ue.get("codigoDRE")
 

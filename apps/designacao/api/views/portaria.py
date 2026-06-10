@@ -5,9 +5,7 @@ D.O.
 """
 
 from django.db.models import QuerySet
-
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins
 from rest_framework import serializers as drf_serializers
 from rest_framework import viewsets
@@ -61,6 +59,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Returns:
             QuerySet: Atos administrativos com joins necessários para
             exibição de portarias.
+
         """
         resp = AtoAdministrativo.objects.select_related(
             "designacao_detalhe",
@@ -91,6 +90,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Raises:
             ValidationError: Se os campos obrigatórios não estiverem
             presentes ou se nenhum ato for encontrado.
+
         """
         ids = request.data.get("ids", [])
         data_publicacao = request.data.get("data_publicacao", "")

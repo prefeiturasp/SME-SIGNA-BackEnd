@@ -5,6 +5,7 @@ Este módulo contém o serializador responsável por verificar se o novo e-mail
 institucional e se não está em uso por outro usuário.
 """
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from rest_framework import serializers
 
@@ -40,8 +41,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
 
         Returns:
             bool: True se os dados são válidos, False caso contrário.
-        """
 
+        """
         valid = super().is_valid(raise_exception=False)
         if not valid:
 
@@ -76,8 +77,8 @@ class AlteracaoEmailSerializer(serializers.Serializer):
             serializers.ValidationError: Se o e-mail for igual ao atual, não
                 pertencer ao domínio institucional, já estiver cadastrado ou
                 não for válido.
-        """
 
+        """
         usuario = self.context["request"].user
         if usuario.email == value:
             raise serializers.ValidationError(
@@ -97,7 +98,9 @@ class AlteracaoEmailSerializer(serializers.Serializer):
         try:
             validate_email(value)
 
-        except Exception:
-            raise serializers.ValidationError("Digite um e-mail válido!")
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(
+                "Digite um e-mail válido!"
+            ) from exc
 
         return value

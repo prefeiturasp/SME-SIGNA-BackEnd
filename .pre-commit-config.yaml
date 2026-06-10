@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pycqa/isort
+    rev: 9.0.0a3
+    hooks:
+      - id: isort
+        exclude: migrations/
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        exclude: migrations/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-check
+      #  args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: ./venv/bin/mypy .
+        language: system
+        pass_filenames: false
+        args: [--config-file=mypy.ini]
+      - id: check-pep440
+        name: check-pep440
+        entry: ./venv/bin/python scripts/check_pep440.py
+        language: system
+        pass_filenames: false

@@ -35,6 +35,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
 
         Returns:
             str: Valor validado com apenas dígitos.
+
         """
         return validar_somente_numeros(value)
 
@@ -46,6 +47,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
 
         Returns:
             str: Valor validado com apenas dígitos.
+
         """
         return validar_somente_numeros(value)
 
@@ -84,5 +86,6 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Status do ato.
+
         """
         return obj.status

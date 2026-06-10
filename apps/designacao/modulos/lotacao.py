@@ -25,6 +25,7 @@ class ModuloLotacaoCalculator:
 
         Returns:
             int: Módulo calculado com base no cargo e tipo de escola.
+
         """
         codigo_cargo = self._obter_codigo_cargo(cargo)
         sigla_tipo = self._obter_sigla(informacoes_ue)
@@ -50,6 +51,7 @@ class ModuloLotacaoCalculator:
 
         Returns:
             str: Código do cargo como string.
+
         """
         return str(cargo.get("codigo_cargo"))
 
@@ -61,6 +63,7 @@ class ModuloLotacaoCalculator:
 
         Returns:
             str: Sigla do tipo de escola em maiúsculas.
+
         """
         return (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
 
@@ -76,11 +79,16 @@ class ModuloLotacaoCalculator:
 
         Returns:
             int: 1 para tipos válidos, 0 caso contrário.
+
         """
         tipos_validos = {"EMEBS", "EMEF", "EMEFM", "CIEJA"}
         return 1 if sigla_tipo in tipos_validos else 0
 
-    def _regra_assistente(self, sigla_tipo: str, qtd_classes: int) -> int:
+    def _regra_assistente(
+        self,
+        sigla_tipo: str,
+        qtd_classes: int | None,
+    ) -> int:
         """Calcula o módulo do assistente de direção conforme o tipo e classes.
 
         Args:
@@ -89,6 +97,7 @@ class ModuloLotacaoCalculator:
 
         Returns:
             int: Módulo calculado para assistente de direção.
+
         """
         if sigla_tipo == "CEI":
             return 1

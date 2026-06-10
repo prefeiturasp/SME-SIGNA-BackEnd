@@ -47,6 +47,7 @@ class CessacaoV2WriteSerializer(serializers.Serializer):
 
         Returns:
             str: Valor validado com apenas dígitos.
+
         """
         return validar_somente_numeros(value)
 
@@ -58,6 +59,7 @@ class CessacaoV2WriteSerializer(serializers.Serializer):
 
         Returns:
             str: Valor validado com apenas dígitos.
+
         """
         return validar_somente_numeros(value)
 
@@ -115,6 +117,7 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
 
         Returns:
             dict|None: Dados da insubsistência ou None se não houver.
+
         """
         for filho in obj.filhos.all():
             if filho.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:

@@ -5,6 +5,8 @@ insubsistência
 apositilas e impedimentos de substituição.
 """
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.designacao.api.serializers.apostila_serializer import (
@@ -91,6 +93,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
 
         Returns:
             dict|None: Dados serializados da cessação ou None se não existir.
+
         """
         try:
             cessacao = obj.cessacao
@@ -109,17 +112,20 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados serializados da insubsistência ou None se não
             existir.
+
         """
+        insubs_qs = getattr(obj, "insubsistencia", None)
+        if not insubs_qs:
+            return None
+
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False)
-            .order_by("-criado_em")
-            .first()
+            insubs_qs.filter(is_deleted=False).order_by("-criado_em").first()
         )
         if insubsistencia:
             return InsubsistenciaSerializer(insubsistencia).data
         return None
 
-    def get_apostilas(self, obj: Designacao) -> list:
+    def get_apostilas(self, obj: Designacao) -> Any:
         """Retorna as apostilas associadas à designação.
 
         Args:
@@ -127,6 +133,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
 
         Returns:
             list: Lista de apostilas serializadas.
+
         """
         apostilas = obj.apostilas.filter(is_deleted=False).order_by(
             "-criado_em"
@@ -141,6 +148,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
 
         Returns:
             str|None: Descrição do impedimento ou None se não existir.
+
         """
         if obj.impedimento_substituicao:
             return obj.impedimento_substituicao.descricao
@@ -155,6 +163,7 @@ class DesignacaoLegadoSerializer(serializers.ModelSerializer):
 
         Returns:
             Designacao: Instância atualizada.
+
         """
         for field in ("is_deleted", "deleted_at", "criado_em", "id"):
             validated_data.pop(field, None)

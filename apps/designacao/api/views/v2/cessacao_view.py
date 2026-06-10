@@ -4,7 +4,6 @@ Fornece endpoints para listagem, recuperação, criação e exclusão de cessõe
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -50,6 +49,7 @@ class CessacaoV2ViewSet(
 
         Returns:
             QuerySet: Cessões ordenadas por data de criação decrescente.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -69,6 +69,7 @@ class CessacaoV2ViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da cessação criada.
+
         """
         serializer = CessacaoV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

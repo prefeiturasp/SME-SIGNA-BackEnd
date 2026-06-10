@@ -28,8 +28,8 @@ class DesignacaoServidorService:
         Raises:
             SmeIntegracaoError: Se o registro funcional não for
             informado ou o servidor não tiver cargos.
-        """
 
+        """
         if not registro_funcional:
             raise SmeIntegracaoError("Registro funcional é obrigatório")
 
@@ -58,8 +58,8 @@ class DesignacaoServidorService:
 
         Returns:
             dict: Dados padronizados da designação do servidor.
-        """
 
+        """
         possui_cargo_sobreposto = bool(cargo.get("cargoSobreposto"))
 
         cargo_sobreposto_funcao_atividade = (

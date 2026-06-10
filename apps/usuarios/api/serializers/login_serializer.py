@@ -29,6 +29,7 @@ class LoginSerializer(serializers.Serializer):
 
         Raises:
             serializers.ValidationError: Quando o RF não contém 7 ou 8 dígitos.
+
         """
         username = attrs.get("username")
 

@@ -4,7 +4,6 @@ Fornece endpoints para listagem, recuperação, criação e exclusão de apostil
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -50,6 +49,7 @@ class ApostilaV2ViewSet(
 
         Returns:
             QuerySet: Apostilas ordenadas por data de criação decrescente.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -74,6 +74,7 @@ class ApostilaV2ViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da apostila criada.
+
         """
         serializer = ApostilaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

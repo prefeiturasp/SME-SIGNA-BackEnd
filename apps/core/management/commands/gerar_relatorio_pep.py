@@ -18,7 +18,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -70,7 +70,7 @@ class FileMetrics:
 # Caminhos / descoberta
 # =========================================================================
 def _repo_root() -> Path:
-    return Path(settings.BASE_DIR)
+    return Path(cast(Any, settings).BASE_DIR)
 
 
 def _app_dir(app_name: str) -> Path:

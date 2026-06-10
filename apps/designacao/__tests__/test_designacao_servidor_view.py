@@ -5,7 +5,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.exceptions import ValidationError

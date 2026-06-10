@@ -1,7 +1,6 @@
 import secrets
 
 import pytest
-
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
 

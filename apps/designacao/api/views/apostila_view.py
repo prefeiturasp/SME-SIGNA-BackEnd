@@ -4,7 +4,6 @@ Fornece endpoints para criar, listar e recuperar apostilas.
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -36,6 +35,7 @@ class ApostilaViewSet(
 
         Returns:
             QuerySet: Apostilas não deletadas ordenadas por data de criação.
+
         """
         return (
             Apostila.objects.filter(is_deleted=False)
@@ -54,6 +54,7 @@ class ApostilaViewSet(
         Returns:
             Response: Resposta HTTP com os dados da apostila criada ou
             erro de validação.
+
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -64,12 +65,18 @@ class ApostilaViewSet(
             )
 
         except ValidationError as e:
-            if isinstance(e.detail, list):
-                message = e.detail[0]
-            elif isinstance(e.detail, dict):
-                message = next(iter(e.detail.values()))[0]
+            detail = e.detail
+            message: str
+            if isinstance(detail, list):
+                message = str(detail[0])
+            elif isinstance(detail, dict):
+                first = next(iter(detail.values()))
+                if isinstance(first, list):
+                    message = str(first[0])
+                else:
+                    message = str(first)
             else:
-                message = str(e.detail)
+                message = str(detail)
 
             return Response(
                 {"detail": message}, status=status.HTTP_400_BAD_REQUEST

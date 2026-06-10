@@ -16,9 +16,7 @@ User = get_user_model()
 
 
 class MeView(APIView):
-    """
-    Retorna os dados do usuário autenticado (requer Bearer access token).
-    """
+    """Retorna os dados do usuário autenticado (requer Bearer access token)."""
 
     permission_classes = (permissions.IsAuthenticated,)
 

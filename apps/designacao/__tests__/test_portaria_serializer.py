@@ -17,7 +17,6 @@ from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
@@ -29,6 +28,7 @@ def serialize(ato):
 
     Returns:
         dict: Dados serializados do ato administrativo.
+
     """
     return PortariaListSerializer(ato).data
 
