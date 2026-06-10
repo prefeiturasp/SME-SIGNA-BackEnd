@@ -8,7 +8,7 @@ import logging
 import re
 import unicodedata
 from datetime import datetime
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
@@ -74,7 +74,7 @@ class CicloService:
         return int(match.group()) if match else None
 
     @classmethod
-    def definir_ciclo_turma(cls, turma: Dict[str, Any]) -> str:
+    def definir_ciclo_turma(cls, turma: dict[str, Any]) -> str:
         """Define o ciclo escolar de uma turma com base em sua modalidade.
 
         Args:
@@ -188,7 +188,7 @@ class TurmaService:
     """Serviço para cálculo e organização de turmas por turnos e ciclos."""
 
     @staticmethod
-    def estrutura_turnos() -> Dict[str, Dict[str, Any]]:
+    def estrutura_turnos() -> dict[str, dict[str, Any]]:
         """Cria a estrutura inicial de contagem de turnos e ciclos."""
         ciclos = CicloService.listar_ciclos_saida()
         base = dict.fromkeys(ciclos, 0)
@@ -206,7 +206,7 @@ class TurmaService:
         }
 
     @classmethod
-    def calcular_turmas(cls, codigo_ue: str) -> Dict[str, Any]:
+    def calcular_turmas(cls, codigo_ue: str) -> dict[str, Any]:
         """Calcula dados de turmas e SPI para uma unidade escolar.
 
         Args:
@@ -218,11 +218,11 @@ class TurmaService:
         """
         ano = datetime.now().year
         turmas = cast(
-            list[Dict[str, Any]],
+            list[dict[str, Any]],
             SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano),
         )
         turnos = cls.estrutura_turnos()
-        spi: Dict[str, Any] = {
+        spi: dict[str, Any] = {
             "tipo": "",
             "total": 0,
             "turnos": [
@@ -245,7 +245,7 @@ class TurmaService:
                 continue
 
             disciplinas = cast(
-                list[Dict[str, Any]],
+                list[dict[str, Any]],
                 SmeIntegracaoService.buscar_disciplinas_turma(codigo_turma),
             )
 
@@ -253,7 +253,7 @@ class TurmaService:
                 cls._registrar_spi(spi, turma)
 
             dados = cast(
-                Dict[str, Any],
+                dict[str, Any],
                 SmeIntegracaoService.buscar_dados_turma(codigo_turma),
             )
             tipo_turno = dados.get("tipoTurno")
@@ -291,14 +291,14 @@ class TurmaService:
         return None
 
     @staticmethod
-    def _registrar_spi(spi: Dict[str, Any], turma: Dict[str, Any]) -> None:
+    def _registrar_spi(spi: dict[str, Any], turma: dict[str, Any]) -> None:
         """Registra uma turma com SPI na estrutura `spi`."""
         spi["tipo"] = "São Paulo Integral"
 
         ciclo = CicloService.definir_ciclo_turma(turma)
         ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
 
-        spi_turno = cast(Dict[str, Any], spi["turnos"][0])
+        spi_turno = cast(dict[str, Any], spi["turnos"][0])
         spi_turno["total"] += 1
         spi["total"] += 1
 
@@ -309,7 +309,7 @@ class TurmaService:
 
     @staticmethod
     def _incrementar_contadores_turno(
-        turnos: Dict[str, Dict[str, Any]], turno_key: str, ciclo_key: str
+        turnos: dict[str, dict[str, Any]], turno_key: str, ciclo_key: str
     ) -> None:
         """Incrementa contadores para um dado `turno_key` e `ciclo_key`."""
         turno = turnos[turno_key]
@@ -322,7 +322,7 @@ class TurmaService:
         turno[ciclo_key] += 1
 
     @staticmethod
-    def turma_tem_spi(disciplinas: list[Dict[str, Any]]) -> bool:
+    def turma_tem_spi(disciplinas: list[dict[str, Any]]) -> bool:
         """Verifica se a turma tem a disciplina São Paulo Integral."""
         for d in disciplinas:
             nome = d.get("disciplina", "")
@@ -335,7 +335,7 @@ class ServidorService:
     """Serviço para enriquecer dados de servidor com informações adicionais."""
 
     @staticmethod
-    def enriquecer(servidor: Dict[str, Any]) -> Dict[str, Any]:
+    def enriquecer(servidor: dict[str, Any]) -> dict[str, Any]:
         """Enriquece o registro do servidor com dados de designação
         complementares.
         """
@@ -386,7 +386,7 @@ class ModuloService:
 
     @staticmethod
     def definir_modulo(
-        cargo_ue: Dict[str, Any], info_ue: Dict[str, Any]
+        cargo_ue: dict[str, Any], info_ue: dict[str, Any]
     ) -> int:
         """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
@@ -403,7 +403,7 @@ class DesignacaoUnidadeService:
     """Serviço de agregação de informações escolares para uma unidade."""
 
     @classmethod
-    def obter_informacoes_escolares(cls, codigo_ue: str) -> Dict[str, Any]:
+    def obter_informacoes_escolares(cls, codigo_ue: str) -> dict[str, Any]:
         """Obtém informações escolares completas para uma unidade escolar.
 
         Args:
@@ -414,11 +414,11 @@ class DesignacaoUnidadeService:
 
         """
         cargos = cast(
-            list[Dict[str, Any]],
+            list[dict[str, Any]],
             SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue),
         )
         info_ue = cast(
-            Dict[str, Any],
+            dict[str, Any],
             SmeIntegracaoService.consulta_informacoes_unidades_escolares(
                 codigo_ue
             ),
@@ -426,7 +426,7 @@ class DesignacaoUnidadeService:
 
         codigo_dre = info_ue.get("codigoDRE")
         if not isinstance(codigo_dre, (str, int)):
-            unidades: list[Dict[str, Any]] = []
+            unidades: list[dict[str, Any]] = []
         else:
             unidades = (
                 UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(

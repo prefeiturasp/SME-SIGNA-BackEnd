@@ -788,12 +788,14 @@ class TestAtualizarSenhaViewSet:
         ) as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
 
-            with patch(
-                "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha"
+            with (
+                patch(
+                    "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha"
+                ),
+                patch.object(mock_request.user, "set_password"),
+                patch.object(mock_request.user, "save"),
             ):
-                with patch.object(mock_request.user, "set_password"):
-                    with patch.object(mock_request.user, "save"):
-                        response = view.post(mock_request)
+                response = view.post(mock_request)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["detail"] == "Senha alterada com sucesso."
@@ -908,14 +910,14 @@ class TestAtualizarSenhaViewSet:
         ) as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
 
-            with patch(
-                "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
-                side_effect=Exception("Erro inesperado"),
+            with (
+                patch(
+                    "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
+                    side_effect=Exception("Erro inesperado"),
+                ),
+                patch("apps.usuarios.api.views.senha_view.logger.exception"),
             ):
-                with patch(
-                    "apps.usuarios.api.views.senha_view.logger.exception"
-                ):
-                    response = view.post(mock_request)
+                response = view.post(mock_request)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["detail"] == "Erro interno do servidor."
