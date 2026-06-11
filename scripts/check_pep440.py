@@ -10,18 +10,18 @@ Sai com código 1 se houver linhas inválidas, 0 caso contrário.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from packaging.requirements import InvalidRequirement, Requirement
 
 
 def _parse_requirement_line(
     line: str, file_name: str
-) -> Tuple[Dict[str, Any], bool, bool]:
+) -> tuple[dict[str, Any], bool, bool]:
     """Parse requirement line and return metadata with git and pinned flags."""
     # `InvalidRequirement` and `Requirement` are imported at module level; if
     # `packaging` is missing the ImportError will propagate to the caller.
-    entry: Dict[str, Any] = {"file": file_name, "line": line}
+    entry: dict[str, Any] = {"file": file_name, "line": line}
     if line.startswith("git+"):
         entry["type"] = "git"
         return entry, True, False
@@ -38,7 +38,7 @@ def _parse_requirement_line(
     return entry, False, pinned
 
 
-def analyze_pep440(requirements_dir: Path) -> Dict[str, Any]:
+def analyze_pep440(requirements_dir: Path) -> dict[str, Any]:
     """Analyze PEP 440 compliance across all requirements files."""
     if not requirements_dir.exists():
         return {
@@ -52,8 +52,8 @@ def analyze_pep440(requirements_dir: Path) -> Dict[str, Any]:
         }
 
     files = sorted(requirements_dir.glob("*.txt"))
-    entries: List[Dict[str, Any]] = []
-    invalid: List[str] = []
+    entries: list[dict[str, Any]] = []
+    invalid: list[str] = []
     git_pins = 0
     pinned_eq = 0
     total = 0
