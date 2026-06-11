@@ -8,10 +8,6 @@ extend-exclude = '''
 | gerar_relatorio_pep\.py        # Ignora o script do relatório
 '''
 
-[tool.isort]
-profile = "black"
-line_length = 79
-
 [tool.flake8]
 max-line-length = 79
 
@@ -44,6 +40,38 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "D"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = [
+    "*/manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/settings.py",
+    "*/urls.py",
+    "*/apps.py",
+    "*/admin.py",
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__tests__/*",
+    "*_test.py",
+    "test_*.py",
+    "*/modulos/base.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
+ignore_errors = true
+exclude_lines = [
+    "pragma: no cover",
+    "if settings.DEBUG",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [tool.ruff.lint.per-file-ignores]
 "*/__tests__/*.py" = ["E501", "D"]

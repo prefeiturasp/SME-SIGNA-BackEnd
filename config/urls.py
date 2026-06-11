@@ -11,6 +11,7 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
+    path("api/", include("apps.core.urls")),
     # Endpoints JWT (Simple JWT)
     path(
         "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"

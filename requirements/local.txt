@@ -9,7 +9,6 @@ django-extensions>=3.2,<4
 
 # Formatação e linting
 black>=24.0,<25
-isort>=5.13,<6
 flake8>=7.0,<8
 ruff>=0.12,<1
 
@@ -22,3 +21,6 @@ types-django-filter>=25.2,<26
 
 # Git hooks
 pre-commit>=4.0,<5
+
+# Documentação
+sphinx>=7.0,<9

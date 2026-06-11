@@ -1,10 +1,4 @@
 repos:
-  - repo: https://github.com/pycqa/isort
-    rev: 9.0.0a3
-    hooks:
-      - id: isort
-        exclude: migrations/
-
   - repo: https://github.com/psf/black
     rev: 24.10.0
     hooks:
@@ -15,7 +9,8 @@ repos:
     rev: v0.15.12
     hooks:
       - id: ruff-check
-      #  args: [--fix]
+        exclude: migrations/
+        args: [--fix]
 
   - repo: local
     hooks:
