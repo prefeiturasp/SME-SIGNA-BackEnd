@@ -5,7 +5,7 @@ redefinir senha via UID/token e alterar senha de usuário autenticado.
 """
 
 import logging
-from typing import cast
+from typing import Any, cast
 
 import environ
 from django.contrib.auth import get_user_model
@@ -255,7 +255,7 @@ class RedefinirSenhaViewSet(APIView):
     STATUS_ERROR = "error"
     STATUS_SUCCESS = "success"
 
-    def post(self, request: Request, *args, **kwargs) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Processa a redefinição de senha usando UID e token.
 
         Valida os dados do formulário e redefine a senha na SME e localmente.

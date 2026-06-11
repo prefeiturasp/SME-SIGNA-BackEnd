@@ -4,6 +4,8 @@ Fornece endpoints para listagem, recuperação, criação e atualização de
 designações, com suporte a filtros, pesquisa, ordenação e paginação.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
@@ -101,7 +103,7 @@ class DesignacaoViewSet(
 
     # ── List ─────────────────────────────────────────────────────────────────
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista designações conforme filtros e paginação.
 
         Args:
@@ -131,7 +133,7 @@ class DesignacaoViewSet(
 
     # ── Create ───────────────────────────────────────────────────────────────
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova designação.
 
         Args:
@@ -156,7 +158,9 @@ class DesignacaoViewSet(
 
     # ── Partial update ───────────────────────────────────────────────────────
 
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
         """Atualiza parcialmente uma designação existente.
 
         Args:

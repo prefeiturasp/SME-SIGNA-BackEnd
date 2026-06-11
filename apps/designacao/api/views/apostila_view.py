@@ -3,6 +3,8 @@
 Fornece endpoints para criar, listar e recuperar apostilas.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
@@ -43,7 +45,7 @@ class ApostilaViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova apostila a partir dos dados da requisição.
 
         Args:

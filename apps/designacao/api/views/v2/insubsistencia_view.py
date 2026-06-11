@@ -4,6 +4,8 @@ Fornece endpoints para listagem, recuperação, criação e exclusão de
 insubsistências.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
@@ -64,7 +66,7 @@ class InsubsistenciaV2ViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova insubsistência a partir dos dados enviados.
 
         Args:
@@ -87,7 +89,7 @@ class InsubsistenciaV2ViewSet(
             status=status.HTTP_201_CREATED,
         )
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Remove a insubsistência e reactiva o ato pai associado.
 
         Args:

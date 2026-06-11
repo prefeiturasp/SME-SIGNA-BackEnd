@@ -5,6 +5,7 @@ valida o perfil, sincroniza o usuário local e retorna tokens JWT.
 """
 
 import logging
+from typing import Any
 
 import environ
 from django.contrib.auth import get_user_model
@@ -41,7 +42,7 @@ class LoginView(TokenObtainPairView):
     # Respita configuração global de permissões, permitindo acesso anônimo
     permission_classes = (permissions.AllowAny,)  # type: ignore[assignment]
 
-    def post(self, request: Request, *args, **kwargs) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Processa o login do usuário e retorna tokens JWT.
 
         Valida as credenciais, autentica na SME, verifica o perfil do usuário,

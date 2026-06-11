@@ -55,11 +55,11 @@ class TokenExpiradoError(Exception):
 class UserNotFoundError(Exception):
     """Erro quando usuário não é encontrado."""
 
-    def __init__(self, message, usuario=None):
+    def __init__(self, message: str, usuario: object = None) -> None:
         super().__init__(message, usuario)
         self.usuario = usuario
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.args[0])
 
 

@@ -5,6 +5,7 @@ ou UEs de uma DRE específica, sem usar banco de dados local.
 """
 
 import logging
+from typing import Any
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -29,7 +30,7 @@ class UnidadeViewSet(ViewSet):
 
     permission_classes = [AllowAny]
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista DREs ou UEs conforme os parâmetros da requisição.
 
         Args:
