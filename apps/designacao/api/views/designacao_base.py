@@ -45,9 +45,7 @@ class DesignacaoBasePagination(PageNumberPagination):
 
 
 class DesignacaoPaginacaoMixin:
-    """Helpers de paginação e filtros compartilhados pelas views de
-    designação.
-    """
+    """Helpers de paginação compartilhados pelas views de designação."""
 
     # Anotação para que type checkers reconheçam que a view terá `request`
     request: Any
@@ -74,8 +72,7 @@ class DesignacaoPaginacaoMixin:
         return bool(set(self.request.query_params.keys()) - _PAGINATION_PARAMS)
 
     def _should_limit_queryset(self) -> bool:
-        """Determina se o queryset deve ser limitado para evitar
-        retornos muito grandes.
+        """Determina se o queryset deve ser limitado.
 
         Returns:
             bool: True quando não houver filtros nem desabilitação de

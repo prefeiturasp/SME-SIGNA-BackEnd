@@ -334,8 +334,7 @@ class UnidadeIntegracaoService(BaseEOLService):
 
     @staticmethod
     def _formatar_unidade_supervisao(data: dict) -> dict:
-        """Formata os dados da unidade de supervisão para o
-        formato usado pela API.
+        """Formata os dados da unidade de supervisão para uso na API.
 
         Args:
             data (dict): Dados brutos da unidade de supervisão retornados pela

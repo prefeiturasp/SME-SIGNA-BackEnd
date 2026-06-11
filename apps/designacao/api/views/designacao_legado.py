@@ -4,6 +4,8 @@ Fornece endpoints para CRUD de designações legadas, com filtros,
 pesquisa, ordenação e ações auxiliares para cargos pareados.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
@@ -79,7 +81,7 @@ class DesignacaoLegadoViewSet(
             .order_by("-criado_em")
         )
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista designações legadas conforme filtros e paginação.
 
         Args:

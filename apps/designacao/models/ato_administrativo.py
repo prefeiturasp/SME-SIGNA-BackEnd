@@ -4,6 +4,8 @@ Define os tipos de ato, hierarquia pai/raiz e regras de validação
 para designação, cessação, apostila e insubsistência.
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -94,7 +96,7 @@ class AtoAdministrativo(models.Model):
                     }
                 )
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Salva o ato administrativo aplicando regras automáticas
         de hierarquia.
 

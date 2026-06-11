@@ -336,9 +336,7 @@ class ServidorService:
 
     @staticmethod
     def enriquecer(servidor: dict[str, Any]) -> dict[str, Any]:
-        """Enriquece o registro do servidor com dados de designação
-        complementares.
-        """
+        """Enriquece os dados do servidor com informações de designação."""
         rf = servidor.get("rf")
 
         if not isinstance(rf, str):
