@@ -185,7 +185,7 @@ class InsubsistenciaService:
     def _coerce_valor(
         ato: AtoAdministrativo, detalhe: Any, campo: str, valor_str: Any
     ) -> Any:
-        """Converte o valor de string para o tipo de campo apropriado.
+        """Converta o valor de string para o tipo de campo apropriado.
 
         Args:
             ato: Instância do ato administrativo alvo.
@@ -230,16 +230,12 @@ class InsubsistenciaService:
 
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer: Any) -> Any:
-        """Método legado que retorna o serializer de designação sem
-        alteração.
-        """
+        """Retorna o serializer de designação sem alteração."""
         return serializer
 
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer: Any) -> Any:
-        """Método legado que ajusta o serializer para insubsistência de
-        cessação.
-        """
+        """Ajusta o serializer de insubsistência de cessação."""
         designacao_obj = serializer.validated_data.get("designacao")
 
         designacao_completa = Designacao.objects.select_related(

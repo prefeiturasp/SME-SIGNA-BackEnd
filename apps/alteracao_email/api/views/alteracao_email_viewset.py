@@ -33,8 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
-    """Gerencia solicitações para iniciar a alteração de e-mail
-    do usuário autenticado.
+    """Gerencia solicitações de alteração de e-mail do usuário autenticado.
 
     O viewset recebe o novo endereço de e-mail, valida-o pelo serializer e
     delega a criação da solicitação de alteração de e-mail à camada de serviço.
@@ -43,8 +42,7 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request: Request) -> Response:
-        """Cria uma solicitação de alteração de e-mail para o
-        usuário autenticado.
+        """Cria uma solicitação de alteração de e-mail.
 
         Args:
             request (rest_framework.request.Request): A requisição recebida que
@@ -82,8 +80,7 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
 
 
 class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
-    """Gerencia a validação de tokens de alteração de e-mail e
-    finaliza a alteração.
+    """Gerencia a validação de tokens de alteração de e-mail.
 
     Este viewset valida o token fornecido, atualiza o e-mail do usuário no
     serviço de integração SME e marca a solicitação de alteração de e-mail
@@ -93,8 +90,7 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def update(self, request: Request, pk: str | None = None) -> Response:
-        """Valida um token de alteração de e-mail e aplica a
-        atualização do e-mail.
+        """Valida um token de alteração de e-mail e aplica a atualização.
 
         Args:
             request (rest_framework.request.Request): A requisição recebida.

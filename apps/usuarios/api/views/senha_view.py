@@ -100,6 +100,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         self, username: str, user_local: User | None
     ) -> dict | None:
         """Consulta dados do usuário na SME.
+
         Retorna None se houver erro e não existir usuário local.
         """
         try:
@@ -139,6 +140,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         self, dados_sme: dict | None, user_local: User | None, username: str
     ) -> str:
         """Determina o email do usuário (prioridade: SME > banco local).
+
         Valida se o email existe e não está vazio.
         """
         email = None
@@ -194,6 +196,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         self, username: str, dados_sme: dict
     ) -> User:
         """Cria ou atualiza usuário local com dados da SME.
+
         Usa update_or_create para evitar duplicação.
         """
         logger.info("Sincronizando usuário local para %s", username)

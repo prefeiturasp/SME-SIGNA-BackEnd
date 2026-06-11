@@ -16,9 +16,9 @@ import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -53,16 +53,16 @@ class FileMetrics:
     lines_over_max: int = 0
     lines_length_eligible: int = 0
     module_has_docstring: bool = False
-    symbols: List[SymbolMetrics] = field(default_factory=list)
+    symbols: list[SymbolMetrics] = field(default_factory=list)
 
     @property
-    def functions_and_methods(self) -> List[SymbolMetrics]:
+    def functions_and_methods(self) -> list[SymbolMetrics]:
         return [
             s for s in self.symbols if s.kind in ("function", "async_function")
         ]
 
     @property
-    def classes(self) -> List[SymbolMetrics]:
+    def classes(self) -> list[SymbolMetrics]:
         return [s for s in self.symbols if s.kind == "class"]
 
 
@@ -77,7 +77,7 @@ def _app_dir(app_name: str) -> Path:
     return _repo_root() / APPS_PARENT / app_name
 
 
-def discover_django_apps() -> List[str]:
+def discover_django_apps() -> list[str]:
     apps_dir = _repo_root() / APPS_PARENT
     if not apps_dir.exists():
         return []
@@ -91,8 +91,8 @@ def discover_django_apps() -> List[str]:
     return apps
 
 
-def discover_app_python_files(app_dir: Path) -> List[Path]:
-    files: List[Path] = []
+def discover_app_python_files(app_dir: Path) -> list[Path]:
+    files: list[Path] = []
     for path in sorted(app_dir.rglob("*.py")):
         parts = set(path.relative_to(app_dir).parts)
         if parts & EXCLUDE_DIRS:
@@ -126,8 +126,8 @@ def _hint_level(node: ast.AST) -> str:
     return "sem"
 
 
-def _walk_symbols(tree: ast.AST) -> List[SymbolMetrics]:
-    symbols: List[SymbolMetrics] = []
+def _walk_symbols(tree: ast.AST) -> list[SymbolMetrics]:
+    symbols: list[SymbolMetrics] = []
 
     class Visitor(ast.NodeVisitor):
         def visit_FunctionDef(self, node):
@@ -214,7 +214,7 @@ def analyze_file(
 # =========================================================================
 # flake8
 # =========================================================================
-def run_flake8(app_name: str, repo_root: Path) -> Tuple[Counter, List[str]]:
+def run_flake8(app_name: str, repo_root: Path) -> tuple[Counter, list[str]]:
     app_rel = f"{APPS_PARENT}/{app_name}"
     if not (repo_root / app_rel).exists():
         return Counter(), []
@@ -232,7 +232,7 @@ def run_flake8(app_name: str, repo_root: Path) -> Tuple[Counter, List[str]]:
         return Counter(), ["flake8 não disponível no ambiente"]
 
     codes: Counter = Counter()
-    raw_lines: List[str] = []
+    raw_lines: list[str] = []
     for line in result.stdout.splitlines():
         raw_lines.append(line)
         msg = line.rsplit(":", 1)[-1].strip() if ":" in line else ""
@@ -254,7 +254,7 @@ PEP_589 = "PEP 589"
 PEP_591 = "PEP 591"
 PEP_612 = "PEP 612"
 
-MYPY_CODE_TO_PEP: Dict[str, str] = {
+MYPY_CODE_TO_PEP: dict[str, str] = {
     # PEP 484 — Type Hints
     "arg-type": PEP_484,
     "return-value": PEP_484,
@@ -295,7 +295,7 @@ MYPY_CODE_TO_PEP: Dict[str, str] = {
     "valid-newtype": PEP_612,
 }
 
-_MYPY_PEP_DESCRIPTIONS: Dict[str, str] = {
+_MYPY_PEP_DESCRIPTIONS: dict[str, str] = {
     PEP_484: "Type Hints",
     PEP_526: "Anotações de variáveis",
     PEP_544: "Protocols",
@@ -305,7 +305,7 @@ _MYPY_PEP_DESCRIPTIONS: Dict[str, str] = {
 }
 
 
-def _mypy_code_from_line(line: str) -> Optional[str]:
+def _mypy_code_from_line(line: str) -> str | None:
     """Extrai o código entre colchetes no final da linha MyPy, ex: [arg-type]."""
     match = re.search(r"\[([a-z0-9\-]+)\]$", line.strip())
     return match.group(1) if match else None
@@ -313,7 +313,7 @@ def _mypy_code_from_line(line: str) -> Optional[str]:
 
 def run_mypy(
     app_name: str, repo_root: Path
-) -> Tuple[Counter, List[str], Dict[str, int]]:
+) -> tuple[Counter, list[str], dict[str, int]]:
     """Roda mypy no app.
 
     Retorna:
@@ -346,7 +346,7 @@ def run_mypy(
 
     codes: Counter = Counter()
     pep_counter: Counter = Counter()
-    raw_lines: List[str] = []
+    raw_lines: list[str] = []
     for line in result.stdout.splitlines():
         raw_lines.append(line)
         if ": error:" in line:
@@ -368,7 +368,7 @@ def run_mypy(
 # =========================================================================
 # PEP 440
 # =========================================================================
-def _empty_pep440_result() -> Dict[str, Any]:
+def _empty_pep440_result() -> dict[str, Any]:
     return {
         "files_analyzed": [],
         "total_dependency_lines": 0,
@@ -381,12 +381,12 @@ def _empty_pep440_result() -> Dict[str, Any]:
 
 
 def _parse_requirement_line(
-    line: str, file_name: str, invalid: List[str]
-) -> Tuple[Dict[str, Any], bool, bool]:
+    line: str, file_name: str, invalid: list[str]
+) -> tuple[dict[str, Any], bool, bool]:
     """Retorna (entry, is_git, is_pinned_eq)."""
     from packaging.requirements import InvalidRequirement, Requirement
 
-    entry: Dict[str, Any] = {"file": file_name, "line": line}
+    entry: dict[str, Any] = {"file": file_name, "line": line}
 
     if line.startswith("git+"):
         entry["type"] = "git"
@@ -404,13 +404,13 @@ def _parse_requirement_line(
         return entry, False, False
 
 
-def analyze_pep440(requirements_dir: Path) -> Dict[str, Any]:
+def analyze_pep440(requirements_dir: Path) -> dict[str, Any]:
     if not requirements_dir.exists():
         return _empty_pep440_result()
 
     files = sorted(requirements_dir.glob("*.txt"))
-    entries: List[Dict[str, Any]] = []
-    invalid: List[str] = []
+    entries: list[dict[str, Any]] = []
+    invalid: list[str] = []
     git_pins = 0
     pinned_eq = 0
     total = 0
@@ -471,7 +471,7 @@ def _status_emoji(pct: float) -> str:
 
 
 def _estimar_horas_ajuste(
-    summary: Dict[str, Any], flake8_total: int, mypy_errors: int = 0
+    summary: dict[str, Any], flake8_total: int, mypy_errors: int = 0
 ) -> int:
     horas = (
         flake8_total * 0.005
@@ -483,7 +483,7 @@ def _estimar_horas_ajuste(
     return max(1, round(horas))
 
 
-def _get_git_commit(repo_root: Path) -> Optional[str]:
+def _get_git_commit(repo_root: Path) -> str | None:
     try:
         r = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -500,14 +500,14 @@ def _get_git_commit(repo_root: Path) -> Optional[str]:
 # =========================================================================
 # Agregação
 # =========================================================================
-def aggregate(file_metrics: List[FileMetrics]) -> Dict[str, Any]:
-    funcs: List[SymbolMetrics] = []
-    classes: List[SymbolMetrics] = []
+def aggregate(file_metrics: list[FileMetrics]) -> dict[str, Any]:
+    funcs: list[SymbolMetrics] = []
+    classes: list[SymbolMetrics] = []
     modules_with_doc = 0
     modules_without_doc = 0
     lines_over = 0
     loc_total = 0
-    missing_docstrings: List[Tuple[str, SymbolMetrics]] = []
+    missing_docstrings: list[tuple[str, SymbolMetrics]] = []
 
     for fm in file_metrics:
         loc_total += fm.loc
@@ -966,11 +966,9 @@ def build_json_payload(
 # =========================================================================
 # Execução por app
 # =========================================================================
-def _build_meta(repo_root: Path, app_name: str) -> Dict[str, Any]:
+def _build_meta(repo_root: Path, app_name: str) -> dict[str, Any]:
     return {
-        "generated_at": datetime.now(timezone.utc).strftime(
-            "%Y-%m-%d %H:%M:%S UTC"
-        ),
+        "generated_at": datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "command": f"python manage.py {COMMAND_NAME} --app {app_name}",
         "git_commit": _get_git_commit(repo_root),
     }
@@ -978,9 +976,9 @@ def _build_meta(repo_root: Path, app_name: str) -> Dict[str, Any]:
 
 def _write_app_outputs(
     output_dir: Path,
-    payload_args: Dict[str, Any],
+    payload_args: dict[str, Any],
     service_name: str,
-) -> Dict[str, Path]:
+) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     md_path = output_dir / "RELATORIO_PEP.md"
@@ -1031,7 +1029,7 @@ def _build_payload_args(
     max_line_length,
     app_name,
     flake8_total,
-) -> Dict[str, Dict[str, Any]]:
+) -> dict[str, dict[str, Any]]:
     return {
         "render_md": {
             "summary": summary,
@@ -1083,9 +1081,9 @@ def run_for_app(
     *,
     repo_root: Path,
     max_line_length: int,
-    output_dir: Optional[Path],
+    output_dir: Path | None,
     service_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Executa análise completa de um app e grava arquivos."""
     app_dir = _app_dir(app_name)
     if not app_dir.exists():
@@ -1137,7 +1135,7 @@ def run_for_app(
 # =========================================================================
 # Consolidação (geral)
 # =========================================================================
-def _sum_totals(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
+def _sum_totals(per_app: list[dict[str, Any]]) -> dict[str, int]:
     totals = {
         "files": 0,
         "loc": 0,
@@ -1180,8 +1178,8 @@ def _sum_totals(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
     return totals
 
 
-def _aggregate_flake8_codes(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
-    agg: Dict[str, int] = {}
+def _aggregate_flake8_codes(per_app: list[dict[str, Any]]) -> dict[str, int]:
+    agg: dict[str, int] = {}
     for d in per_app:
         for code, n in d["payload"].get("flake8", {}).items():
             agg[code] = agg.get(code, 0) + n
@@ -1189,8 +1187,8 @@ def _aggregate_flake8_codes(per_app: List[Dict[str, Any]]) -> Dict[str, int]:
 
 
 def _compute_compliance(
-    totals: Dict[str, int], pep440: Dict[str, Any]
-) -> Dict[str, float]:
+    totals: dict[str, int], pep440: dict[str, Any]
+) -> dict[str, float]:
     elig = totals["lines_eligible"]
     within = elig - totals["lines_over"]
     flake8_total = totals["flake8"]
@@ -1214,10 +1212,10 @@ def _compute_compliance(
 
 
 def _render_consolidated_md(
-    per_app: List[Dict[str, Any]],
-    totals: Dict[str, int],
-    compliance: Dict[str, float],
-    agg_codes: Dict[str, int],
+    per_app: list[dict[str, Any]],
+    totals: dict[str, int],
+    compliance: dict[str, float],
+    agg_codes: dict[str, int],
     max_len: int,
     now: str,
 ) -> str:
@@ -1340,16 +1338,16 @@ def _render_consolidated_md(
 
 
 def consolidate(
-    per_app: List[Dict[str, Any]],
+    per_app: list[dict[str, Any]],
     out_dir: Path,
     max_len: int,
-) -> Dict[str, Path]:
+) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     totals = _sum_totals(per_app)
     agg_codes = _aggregate_flake8_codes(per_app)
     pep440 = per_app[0]["payload"].get("pep440", {})
     compliance = _compute_compliance(totals, pep440)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     md = _render_consolidated_md(
         per_app, totals, compliance, agg_codes, max_len, now
@@ -1418,7 +1416,7 @@ class Command(BaseCommand):
         parser.add_argument("--max-line-length", type=int, default=79)
         parser.add_argument("--service-name", default="SME-SIGNA-BACKEND")
 
-    def _resolve_apps(self, options) -> Tuple[List[str], bool]:
+    def _resolve_apps(self, options) -> tuple[list[str], bool]:
         """Retorna (lista_de_apps, modo_consolidado)."""
         if options["only"]:
             return list(options["only"]), True
@@ -1457,7 +1455,7 @@ class Command(BaseCommand):
             f"mypy erros: {mypy.get('error', 0)}"
         )
 
-    def _run_many(self, apps: List[str], options, repo_root: Path) -> None:
+    def _run_many(self, apps: list[str], options, repo_root: Path) -> None:
         if not apps:
             self.stdout.write(
                 self.style.WARNING("Nenhum app encontrado em apps/")
@@ -1468,7 +1466,7 @@ class Command(BaseCommand):
             self.style.NOTICE(f"Apps a analisar: {', '.join(apps)}")
         )
 
-        per_app: List[Dict[str, Any]] = []
+        per_app: list[dict[str, Any]] = []
         for app in apps:
             self.stdout.write(f"\n→ Rodando para: {app}")
             try:
