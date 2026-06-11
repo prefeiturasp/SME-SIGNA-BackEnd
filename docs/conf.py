@@ -16,6 +16,9 @@ language = "pt_BR"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
 ]
+
+todo_include_todos = True
 
 html_theme = "alabaster"
