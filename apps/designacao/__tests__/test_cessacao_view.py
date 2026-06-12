@@ -1,13 +1,18 @@
-import pytest
+"""Testes para a view de cessação.
+
+"""
+
+import secrets
 from datetime import date
+
+import pytest
+
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
 
 from apps.designacao.models import Cessacao, Designacao
-
-import secrets
 
 User = get_user_model()
 
@@ -33,7 +38,6 @@ def designacao(db):
         dre_nome="DRE TESTE",
         unidade_proponente="Unidade Teste",
         codigo_hierarquico="123",
-
         indicado_nome_civil="João da Silva",
         indicado_nome_servidor="João da Silva",
         indicado_rf="1234567",
@@ -41,13 +45,10 @@ def designacao(db):
         indicado_cargo_base="Professor",
         indicado_lotacao="Escola A",
         indicado_local_exercicio="Escola A",
-
         numero_portaria="123",
         ano_vigente="2024",
         sei_numero="123456789",
-
         data_inicio=date(2024, 1, 1),
-
         tipo_vaga=Designacao.TipoVaga.VAGO,
         cargo_vaga=Designacao.CargoVaga.DIRETOR,
     )
@@ -64,14 +65,15 @@ def cessacao(db, designacao):
         ano_vigente="2024",
         sei_numero="88888",
         a_pedido=True,
-        data_designacao="2024-02-01"
+        data_designacao="2024-02-01",
     )
 
 
-
 class TestCessacaoViewSet:
+    """Testes para cessacao view set."""
 
     def _payload(self, designacao_id):
+        """Método auxiliar para payload."""
         return {
             "designacao": designacao_id,
             "numero_portaria": "999",
@@ -79,9 +81,9 @@ class TestCessacaoViewSet:
             "sei_numero": "123456",
         }
 
-
     @pytest.mark.django_db
     def test_create_cessacao(self, auth_client, designacao):
+        """Verifica create cessacao."""
         url = reverse("designacao:cessacoes")
         payload = {
             "designacao": designacao.id,
@@ -89,25 +91,28 @@ class TestCessacaoViewSet:
             "ano_vigente": "2024",
             "sei_numero": "999999",
             "a_pedido": True,
-            "data_designacao": "2024-03-10"
+            "data_designacao": "2024-03-10",
         }
         response = auth_client.post(url, data=payload, format="json")
         print(response.data)
         assert response.status_code == 201
 
     def test_list_cessacoes(self, auth_client, cessacao):
+        """Verifica list cessacoes."""
         url = reverse("designacao:cessacoes")
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) >= 1
 
     def test_retrieve_cessacao(self, auth_client, cessacao):
+        """Verifica retrieve cessacao."""
         url = reverse("designacao:cessacao-detail", args=[cessacao.id])
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == cessacao.id
 
     def test_delete_soft_delete(self, auth_client, cessacao):
+        """Verifica delete soft delete."""
         url = reverse("designacao:cessacao-detail", args=[cessacao.id])
         response = auth_client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -117,11 +122,14 @@ class TestCessacaoViewSet:
 
     @pytest.mark.django_db
     def test_nao_lista_cessacoes_deletadas(self, auth_client, cessacao):
+        """Verifica nao lista cessacoes deletadas."""
         cessacao.is_deleted = True
         cessacao.save()
 
         url = reverse("designacao:cessacoes")
-        response = auth_client.get(url)  # aqui auth_client é o fixture, funciona
+        response = auth_client.get(
+            url
+        )  # aqui auth_client é o fixture, funciona
         assert response.status_code == status.HTTP_200_OK
 
         data_list = response.data

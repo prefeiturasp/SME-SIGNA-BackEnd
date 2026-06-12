@@ -1,23 +1,32 @@
-import pytest
+"""Testes da view de login.
+
+Este módulo valida o endpoint de login, cobrindo sucesso, erros de
+autenticação, integração com SME e restrições de perfil.
+"""
+
 import secrets
 from unittest.mock import patch
-from django.urls import reverse
+
+import pytest
+
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from django.urls import reverse
 from rest_framework.test import APIClient
-from apps.helpers.exceptions import (
-    SmeIntegracaoException
-)
+
+from apps.helpers.exceptions import SmeIntegracaoException
 
 User = get_user_model()
 
+
 @pytest.fixture(autouse=True)
 def set_signa_env(monkeypatch):
+    """Configura a variável de ambiente GUIDE_PERFIL_SIGNA para os testes."""
     monkeypatch.setenv("GUIDE_PERFIL_SIGNA", "0000")
 
 
 @pytest.mark.django_db
 def test_login_success(client, mock_sme_success):
+    """Verifica login bem-sucedido e criação/atualização de usuário."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -41,9 +50,9 @@ def test_login_success(client, mock_sme_success):
     assert user.check_password(password)
 
 
-
 @pytest.mark.django_db
 def test_login_unauthorized(client, mock_sme_unauthorized):
+    """Verifica retorno 401 quando as credenciais são inválidas."""
     url = reverse("login")
 
     payload = {
@@ -59,6 +68,7 @@ def test_login_unauthorized(client, mock_sme_unauthorized):
 
 @pytest.mark.django_db
 def test_login_sme_error(client, mock_sme_error):
+    """Verifica retorno 400 quando o SME responde com erro."""
     url = reverse("login")
 
     payload = {
@@ -74,6 +84,7 @@ def test_login_sme_error(client, mock_sme_error):
 
 @pytest.mark.django_db
 def test_login_sme_exception(client, mock_sme_exception):
+    """Verifica retorno 400 quando ocorre exceção durante a integração com SME."""
     url = reverse("login")
 
     payload = {
@@ -89,13 +100,14 @@ def test_login_sme_exception(client, mock_sme_exception):
 
 @pytest.mark.django_db
 def test_login_updates_existing_user(client, mock_sme_success):
+    """Verifica atualização dos dados do usuário existente após login bem-sucedido."""
     old_password = secrets.token_urlsafe(16)
 
     user = User.objects.create_user(
         username="1234567",
         password=old_password,
         name="Antigo",
-        email="old@mail.com"
+        email="old@mail.com",
     )
 
     new_password = secrets.token_urlsafe(16)
@@ -119,6 +131,7 @@ def test_login_updates_existing_user(client, mock_sme_success):
 
 @pytest.mark.django_db
 def test_login_authentication_error(client, mock_sme_auth_error):
+    """Verifica retorno 401 em caso de erro de autenticação local."""
     wrong_password = secrets.token_urlsafe(16)
     url = reverse("login")
     payload = {"username": "1234567", "password": wrong_password}
@@ -131,30 +144,43 @@ def test_login_authentication_error(client, mock_sme_auth_error):
 
 @pytest.mark.django_db
 def test_login_sme_integracao_exception():
+    """Verifica retorno 400 para exceções específicas de integração com SME."""
     wrong_password = secrets.token_urlsafe(16)
     client = APIClient()
     url = reverse("login")
 
-    with patch("apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica") as mocked_login:
+    with patch(
+        "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
+    ) as mocked_login:
         mocked_login.side_effect = SmeIntegracaoException("Falha SME")
 
-        response = client.post(url, {"username": "12345678", "password": wrong_password}, format="json")
+        response = client.post(
+            url,
+            {"username": "12345678", "password": wrong_password},
+            format="json",
+        )
 
     assert response.status_code == 400
     assert response.json()["detail"] == (
         "Parece que estamos com uma instabilidade no momento. Tente entrar novamente daqui a pouco."
     )
 
+
 @pytest.mark.django_db
 def test_login_generic_exception():
+    """Verifica retorno 500 para exceções genéricas inesperadas."""
     password = secrets.token_urlsafe(16)
     client = APIClient()
     url = reverse("login")
 
-    with patch("apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica") as mocked_login:
+    with patch(
+        "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.autentica"
+    ) as mocked_login:
         mocked_login.side_effect = Exception("Erro inesperado")
 
-        response = client.post(url, {"username": "1234567", "password": password}, format="json")
+        response = client.post(
+            url, {"username": "1234567", "password": password}, format="json"
+        )
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Erro interno"
@@ -162,6 +188,7 @@ def test_login_generic_exception():
 
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
+    """Verifica bloqueio de acesso quando o usuário não possui perfis."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -190,6 +217,7 @@ def test_login_perfil_nao_autorizado_sem_perfis(client, monkeypatch):
 
 @pytest.mark.django_db
 def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
+    """Verifica bloqueio de acesso quando perfis não são fornecidos como lista."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -218,7 +246,10 @@ def test_login_perfil_nao_autorizado_perfis_nao_lista(client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypatch):
+def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(
+    client, monkeypatch
+):
+    """Verifica bloqueio de acesso quando o código SIGNA esperado não está presente."""
     url = reverse("login")
     password = secrets.token_urlsafe(16)
 
@@ -234,7 +265,7 @@ def test_login_perfil_nao_autorizado_codigo_signa_nao_presente(client, monkeypat
             "perfis": [
                 "OUTRO-SISTEMA",
                 "SISTEMA-TESTE",
-            ], 
+            ],
         }
 
         response = client.post(

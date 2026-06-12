@@ -1,14 +1,21 @@
-import uuid
 import secrets
-import pytest
+import uuid
 from unittest.mock import patch
+
+import pytest
+
 from django.http import Http404
 from django.utils.timezone import now, timedelta
 
-from apps.usuarios.models import User
 from apps.alteracao_email.models.alteracao_email import AlteracaoEmail
-from apps.helpers.exceptions import TokenJaUtilizadoException, TokenExpiradoException
-from apps.alteracao_email.services.alteracao_email_service import AlteracaoEmailService
+from apps.alteracao_email.services.alteracao_email_service import (
+    AlteracaoEmailService,
+)
+from apps.helpers.exceptions import (
+    TokenExpiradoException,
+    TokenJaUtilizadoException,
+)
+from apps.usuarios.models import User
 
 
 @pytest.fixture
@@ -24,6 +31,7 @@ def user(db):
         user.set_password(pwd)
         user.save()
         return user
+
     return _create()
 
 
@@ -32,12 +40,16 @@ class TestSolicitar:
 
     def test_solicitar_sucesso(self, user):
 
-        with patch("apps.alteracao_email.services.alteracao_email_service.EnviaEmailService.enviar") as mock_enviar:
-            email_request = AlteracaoEmailService.solicitar(user, "novo@sme.prefeitura.sp.gov.br")
+        with patch(
+            "apps.alteracao_email.services.alteracao_email_service.EnviaEmailService.enviar"
+        ) as mock_enviar:
+            email_request = AlteracaoEmailService.solicitar(
+                user, "novo@sme.prefeitura.sp.gov.br"
+            )
 
         assert AlteracaoEmail.objects.count() == 1
         assert email_request.novo_email == "novo@sme.prefeitura.sp.gov.br"
-        
+
         mock_enviar.assert_called_once()
         _, kwargs = mock_enviar.call_args
 

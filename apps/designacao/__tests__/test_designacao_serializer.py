@@ -1,23 +1,38 @@
+"""Testes para serializer de designação.
+
+"""
+
 import pytest
+
 from django.test import TestCase
-from apps.designacao.models.designacao import Designacao, ImpedimentoSubstituicao
+
+from apps.designacao.__tests__.factories import criar_designacao_legado
+from apps.designacao.api.serializers.designacao_legado_serializer import (
+    DesignacaoLegadoSerializer as DesignacaoSerializer,
+)
+from apps.designacao.models.designacao import (
+    Designacao,
+    ImpedimentoSubstituicao,
+)
 from apps.designacao.models.insubsistencia import Insubsistencia
-from apps.designacao.api.serializers.designacao_legado_serializer import DesignacaoLegadoSerializer as DesignacaoSerializer
-from apps.designacao.__tests__.factories import criar_designacao, criar_designacao_legado
+
 
 class DesignacaoSerializerTest(TestCase):
+    """Testes para designacao serializer test."""
+
     def test_get_field_names_inclui_campos_extras(self):
+        """Verifica get field names inclui campos extras."""
         serializer = DesignacaoSerializer()
         fields = serializer.fields
 
-        self.assertIn('impedimento_substituicao_detail', fields)
-        self.assertIn('tipo_vaga_display', fields)
-        self.assertIn('cargo_vaga_display', fields)
-
+        self.assertIn("impedimento_substituicao_detail", fields)
+        self.assertIn("tipo_vaga_display", fields)
+        self.assertIn("cargo_vaga_display", fields)
 
     @pytest.mark.django_db
     def test_get_impedimento_display_com_valor(self):
-        impedimento = ImpedimentoSubstituicao.objects.get(codigo='LIC_MEDICA')
+        """Verifica get impedimento display com valor."""
+        impedimento = ImpedimentoSubstituicao.objects.get(codigo="LIC_MEDICA")
 
         designacao = Designacao.objects.create(
             dre_nome="DRE",
@@ -35,15 +50,16 @@ class DesignacaoSerializerTest(TestCase):
             sei_numero="123",
             data_inicio="2024-01-01",
             tipo_vaga=Designacao.TipoVaga.VAGO,
-            impedimento_substituicao=impedimento
+            impedimento_substituicao=impedimento,
         )
 
         serializer = DesignacaoSerializer(designacao)
 
-        assert serializer.data['impedimento_display'] == 'Por licença médica'
+        assert serializer.data["impedimento_display"] == "Por licença médica"
 
     @pytest.mark.django_db
     def test_get_impedimento_display_sem_valor(self):
+        """Verifica get impedimento display sem valor."""
         designacao = Designacao.objects.create(
             dre_nome="DRE",
             unidade_proponente="Unidade",
@@ -60,15 +76,16 @@ class DesignacaoSerializerTest(TestCase):
             sei_numero="123",
             data_inicio="2024-01-01",
             tipo_vaga=Designacao.TipoVaga.VAGO,
-            impedimento_substituicao=None
+            impedimento_substituicao=None,
         )
 
         serializer = DesignacaoSerializer(designacao)
 
-        assert serializer.data['impedimento_display'] is None
+        assert serializer.data["impedimento_display"] is None
 
     @pytest.mark.django_db
     def test_update_nao_permite_alterar_campos_protegidos(self):
+        """Verifica update nao permite alterar campos protegidos."""
         designacao = Designacao.objects.create(
             dre_nome="DRE",
             unidade_proponente="Unidade",
@@ -89,19 +106,23 @@ class DesignacaoSerializerTest(TestCase):
 
         serializer = DesignacaoSerializer()
 
-        updated = serializer.update(designacao, {
-            "indicado_nome_servidor": "Novo Nome",
-            "is_deleted": True,
-            "deleted_at": "2025-01-01T00:00:00",
-        })
+        updated = serializer.update(
+            designacao,
+            {
+                "indicado_nome_servidor": "Novo Nome",
+                "is_deleted": True,
+                "deleted_at": "2025-01-01T00:00:00",
+            },
+        )
 
         assert updated.indicado_nome_servidor == "Novo Nome"
         assert updated.is_deleted is False
         assert updated.deleted_at is None
 
-
     @pytest.mark.django_db
-    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(self):
+    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(
+        self,
+    ):
         """
         Deve retornar os dados da insubsistência ativa vinculada à designação.
         """
@@ -120,7 +141,8 @@ class DesignacaoSerializerTest(TestCase):
 
     @pytest.mark.django_db
     def test_update_com_impedimento(self):
-        impedimento = ImpedimentoSubstituicao.objects.get(codigo='FERIAS')
+        """Verifica update com impedimento."""
+        impedimento = ImpedimentoSubstituicao.objects.get(codigo="FERIAS")
 
         designacao = Designacao.objects.create(
             dre_nome="DRE",
@@ -142,8 +164,8 @@ class DesignacaoSerializerTest(TestCase):
 
         serializer = DesignacaoSerializer()
 
-        updated = serializer.update(designacao, {
-            "impedimento_substituicao": impedimento
-        })
+        updated = serializer.update(
+            designacao, {"impedimento_substituicao": impedimento}
+        )
 
         assert updated.impedimento_substituicao == impedimento

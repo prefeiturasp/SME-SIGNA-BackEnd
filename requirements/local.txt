@@ -1,4 +1,22 @@
--r base.txt
-# dev
-django-debug-toolbar
-ipython
+-r test.txt
+
+# Debug
+django-debug-toolbar>=4.4,<5
+
+# Shell aprimorado
+ipython>=8.0,<9
+django-extensions>=3.2,<4
+
+# Formatação e linting
+black>=24.0,<25
+isort>=5.13,<6
+flake8>=7.0,<8
+# pylint-django>=2.5,<3
+
+# Type checking
+mypy>=1.10,<2
+django-stubs>=5.0,<6
+djangorestframework-stubs>=3.15,<4
+
+# Pre-commit
+# pre-commit>=3.7,<4
