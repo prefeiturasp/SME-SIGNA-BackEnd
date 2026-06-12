@@ -6,6 +6,7 @@ pytest-django>=4.0,<5
 
 # Coverage
 coverage>=7.0,<8
+pytest-cov>=7.0,<8
 
 # Fixtures / fake data
 factory-boy>=3.3,<4

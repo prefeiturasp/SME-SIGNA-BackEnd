@@ -150,6 +150,7 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "indicado_cargo_base": detalhe.indicado_cargo_base,
                 "indicado_cargo_sobreposto": detalhe.indicado_cargo_sobreposto,
                 "indicado_local_exercicio": detalhe.indicado_local_exercicio,
+                "indicado_categoria": detalhe.indicado_categoria,
                 "tipo_vaga": detalhe.tipo_vaga,
                 "titular_nome_civil": detalhe.titular_nome_civil,
                 "titular_nome_servidor": detalhe.titular_nome_servidor,

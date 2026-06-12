@@ -77,6 +77,9 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     indicado_local_servico = serializers.CharField(
         max_length=255, required=False, default="", allow_blank=True
     )
+    indicado_categoria = serializers.CharField(
+        max_length=255, required=False, default="", allow_blank=True
+    )
 
     # Titular
     titular_nome_civil = serializers.CharField(
@@ -223,6 +226,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     indicado_local_servico = serializers.CharField(
         source="designacao_detalhe.indicado_local_servico", read_only=True
     )
+    indicado_categoria = serializers.CharField(
+        source="designacao_detalhe.indicado_categoria", read_only=True
+    )
 
     # Titular
     titular_nome_civil = serializers.CharField(
@@ -359,6 +365,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "indicado_codigo_cargo_sobreposto",
             "indicado_local_exercicio",
             "indicado_local_servico",
+            "indicado_categoria",
             # Titular
             "titular_nome_civil",
             "titular_nome_servidor",
