@@ -35,9 +35,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
     )
 
     # Indicado (adicional)
-    indicado_categoria = models.CharField(
-        max_length=255, blank=True, default=""
-    )
+    indicado_categoria = models.CharField(max_length=3, blank=True, default="")
 
     # Unidade
     dre_nome = models.CharField(max_length=255)
