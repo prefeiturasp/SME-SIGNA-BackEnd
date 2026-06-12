@@ -5,7 +5,6 @@
 import datetime
 
 import pytest
-
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (

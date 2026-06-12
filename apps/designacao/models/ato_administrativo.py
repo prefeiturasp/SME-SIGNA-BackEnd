@@ -4,6 +4,8 @@ Define os tipos de ato, hierarquia pai/raiz e regras de validação
 para designação, cessação, apostila e insubsistência.
 """
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -66,8 +68,10 @@ class AtoAdministrativo(models.Model):
         Raises:
             ValidationError: Quando as regras de consistência não forem
             atendidas.
+
         """
         if self.ato_pai_id:
+            assert self.ato_pai is not None
             tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
@@ -92,7 +96,7 @@ class AtoAdministrativo(models.Model):
                     }
                 )
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Salva o ato administrativo aplicando regras automáticas
         de hierarquia.
 
@@ -102,9 +106,11 @@ class AtoAdministrativo(models.Model):
         Args:
             *args: Argumentos posicionais adicionais.
             **kwargs: Argumentos nomeados adicionais.
+
         """
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
+            assert pai is not None
             self.ato_raiz_id = pai.ato_raiz_id if pai.ato_raiz_id else pai.pk
         if not kwargs.get("update_fields"):
             self.full_clean()
@@ -120,6 +126,7 @@ class AtoAdministrativo(models.Model):
         Returns:
             str: Status do ato, podendo ser 'ativo', 'cessada' ou
             'insubsistente'.
+
         """
         if not self.ativo:
             return "insubsistente"
@@ -138,5 +145,6 @@ class AtoAdministrativo(models.Model):
 
         Returns:
             bool: True quando o ato está ativo.
+
         """
         return self.ativo

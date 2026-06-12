@@ -34,6 +34,11 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
         primary_key=True,
     )
 
+    # Indicado (adicional)
+    indicado_categoria = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+
     # Unidade
     dre_nome = models.CharField(max_length=255)
     unidade_proponente = models.CharField(max_length=255)
@@ -84,6 +89,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
 
         Returns:
             list[dict]: Lista de cargos formatados com código e descrição.
+
         """
         return [
             {"codigoCargo": c.value, "nomeCargo": c.label}

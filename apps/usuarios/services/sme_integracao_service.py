@@ -8,7 +8,6 @@ import logging
 
 import environ
 import requests
-
 from rest_framework import status
 
 from apps.designacao.constants.cargos_gestao_escolar import (
@@ -17,7 +16,7 @@ from apps.designacao.constants.cargos_gestao_escolar import (
 from apps.helpers.exceptions import (
     AuthenticationError,
     InternalError,
-    SmeIntegracaoException,
+    SmeIntegracaoError,
 )
 
 MSG_RF_OBRIGATORIO = "Registro funcional é obrigatório"
@@ -55,8 +54,9 @@ class SmeIntegracaoService:
 
         Raises:
             AuthenticationError: Quando as credenciais são inválidas.
-            SmeIntegracaoException: Em caso de falha na autenticação.
+            SmeIntegracaoError: Em caso de falha na autenticação.
             InternalError: Em caso de erro interno não esperado.
+
         """
         payload = {
             "usuario": login,
@@ -82,22 +82,24 @@ class SmeIntegracaoService:
                 raise AuthenticationError("Credenciais inválidas")
 
             if response.status_code != 200:
-                raise SmeIntegracaoException(
+                raise SmeIntegracaoError(
                     f"Erro ao autenticar no CoreSSO: {response.status_code}"
                 )
 
             return response.json()
 
-        except requests.exceptions.RequestException as e:
-            logger.error("Erro de comunicação: %s", e)
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_CORESSO)
+        except requests.exceptions.RequestException as exc:
+            logger.error("Erro de comunicação: %s", exc)
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_CORESSO) from exc
 
-        except (AuthenticationError, SmeIntegracaoException):
+        except (AuthenticationError, SmeIntegracaoError):
             raise
 
-        except Exception as e:
-            logger.error("Erro interno na autenticação: %s", e)
-            raise InternalError("Erro interno ao autenticar no CoreSSO")
+        except Exception as exc:
+            logger.error("Erro interno na autenticação: %s", exc)
+            raise InternalError(
+                "Erro interno ao autenticar no CoreSSO"
+            ) from exc
 
     @classmethod
     def informacao_usuario_sgp(cls, username: str) -> dict:
@@ -110,10 +112,14 @@ class SmeIntegracaoService:
             dict: Dados do usuário retornados pela SME.
 
         Raises:
-            SmeIntegracaoException: Quando os dados não são encontrados.
+            SmeIntegracaoError: Quando os dados não são encontrados.
             requests.RequestException: Em caso de falha de conexão.
+
         """
-        logger.info(f"Consultando dados na API externa para: {username}")
+        logger.info(
+            "Consultando dados na API externa para: %s",
+            username,
+        )
         try:
             url = f"{env('SME_INTEGRACAO_URL', default='')}/AutenticacaoSgp/{username}/dados"  # noqa: E501
             response = requests.get(
@@ -125,18 +131,17 @@ class SmeIntegracaoService:
 
             else:
                 logger.info(f"Dados não encontrados: {response}")
-                raise SmeIntegracaoException("Dados não encontrados.")
+                raise SmeIntegracaoError("Dados não encontrados.")
 
-        except requests.RequestException:
+        except requests.RequestException as exc:
             logger.exception("Erro de conexão com a API externa")
             raise requests.RequestException(
                 "Erro ao conectar-se à API externa."
-            )
+            ) from exc
 
     @classmethod
     def redefine_senha(cls, registro_funcional: str, senha: str) -> str:
-        """
-        Redefine a senha de um usuário no sistema SME.
+        """Redefine a senha de um usuário no sistema SME.
 
         IMPORTANTE: Se a nova senha for uma das senhas padrões, a API do SME
         não permite a atualização. Para resetar para senha padrão,
@@ -150,11 +155,11 @@ class SmeIntegracaoService:
             Dict[str, Any]: Resposta da API ou confirmação de sucesso
 
         Raises:
-            SmeIntegracaoException: Em caso de erro na operação
-        """
+            SmeIntegracaoError: Em caso de erro na operação
 
+        """
         if not registro_funcional or not senha:
-            raise SmeIntegracaoException(
+            raise SmeIntegracaoError(
                 "Registro funcional e senha são obrigatórios"
             )
 
@@ -180,14 +185,13 @@ class SmeIntegracaoService:
                 texto = response.content.decode("utf-8")
                 mensagem = texto.strip("{}'\"")
                 logger.info("Erro ao redefinir senha: %s", mensagem)
-                raise SmeIntegracaoException(mensagem)
-        except Exception as err:
-            raise SmeIntegracaoException(str(err))
+                raise SmeIntegracaoError(mensagem)
+        except Exception as exc:
+            raise SmeIntegracaoError(str(exc)) from exc
 
     @classmethod
     def altera_email(cls, registro_funcional: str, email: str) -> str:
-        """
-        Altera o email de um usuário no sistema SME.
+        """Altera o email de um usuário no sistema SME.
 
         Args:
             registro_funcional: Username/registro funcional do usuário
@@ -197,11 +201,11 @@ class SmeIntegracaoService:
             Dict[str, Any]: Resposta da API ou confirmação de sucesso
 
         Raises:
-            SmeIntegracaoException: Em caso de erro na operação
-        """
+            SmeIntegracaoError: Em caso de erro na operação
 
+        """
         if not registro_funcional or not email:
-            raise SmeIntegracaoException(
+            raise SmeIntegracaoError(
                 "Registro funcional e email são obrigatórios"
             )
 
@@ -227,17 +231,15 @@ class SmeIntegracaoService:
                 texto = response.content.decode("utf-8")
                 mensagem = texto.strip("{}'\"")
                 logger.info("Erro ao Alterar email: %s", mensagem)
-                raise SmeIntegracaoException(mensagem)
-        except Exception as err:
-            raise SmeIntegracaoException(str(err))
+                raise SmeIntegracaoError(mensagem)
+        except Exception as exc:
+            raise SmeIntegracaoError(str(exc)) from exc
 
     @classmethod
     def consulta_cargos_funcionario(cls, registro_funcional: str) -> list:
-        """
-        Consulta cargos (base e sobreposto) de um servidor pelo RF.
-        """
+        """Consulta cargos (base e sobreposto) de um servidor pelo RF."""
         if not registro_funcional:
-            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
+            raise SmeIntegracaoError(MSG_RF_OBRIGATORIO)
 
         logger.info(
             "Consultando cargos do servidor no SME. RF: %s", registro_funcional
@@ -249,7 +251,7 @@ class SmeIntegracaoService:
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos")
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
     def _buscar_cargos(cls, registro_funcional: str) -> list:
@@ -262,7 +264,8 @@ class SmeIntegracaoService:
             list: Lista de cargos retornados pela API.
 
         Raises:
-            SmeIntegracaoException: Quando a consulta falha.
+            SmeIntegracaoError: Quando a consulta falha.
+
         """
         url = f"{env('SME_INTEGRACAO_URL', default='')}/funcionarios/cargo/{registro_funcional}"  # noqa: E501
 
@@ -278,7 +281,7 @@ class SmeIntegracaoService:
                 response.status_code,
                 response.text,
             )
-            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+            raise SmeIntegracaoError(MSG_ERRO_CARGOS)
 
         return response.json()
 
@@ -293,6 +296,7 @@ class SmeIntegracaoService:
 
         Returns:
             dict: Dados de cargo normalizados.
+
         """
         if cargo.get("cargoBase"):
             cargo["cargoBase"] = cls.formatar_cargo(cargo["cargoBase"])
@@ -314,29 +318,32 @@ class SmeIntegracaoService:
 
     @classmethod
     def _montar_ue(
-        cls, codigo_ue: str | int | None, nome_ue: str | None
+        cls,
+        codigo_ue: str | int | None,
+        nome_ue: str | None,
     ) -> str | None:
         """Formata a descrição da unidade escolar para exibição.
 
         Args:
-            codigo_ue (str|int): Código da unidade escolar.
-            nome_ue (str): Nome da unidade escolar.
+            codigo_ue (str | int | None): Código da unidade escolar.
+            nome_ue (str | None): Nome da unidade escolar.
 
         Returns:
-            str: Nome formatado da unidade ou o valor original quando não for
-            possível.
+            str | None: Nome formatado da unidade ou o valor original quando
+            não for possível formatar.
+
         """
         if not codigo_ue:
             return nome_ue
 
-        info = cls.consulta_informacoes_unidades_escolares(codigo_ue)
+        info = cls.consulta_informacoes_unidades_escolares(str(codigo_ue))
+
         sigla = info.get("siglaTipoEscola")
 
-        if not sigla:
+        if not isinstance(sigla, str):
             return nome_ue
 
-        nome_formatado = nome_ue
-        return f"{sigla.upper()} - {nome_formatado}"
+        return f"{sigla.upper()} - {nome_ue}"
 
     @classmethod
     def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
@@ -349,11 +356,11 @@ class SmeIntegracaoService:
             list: Lista de cargos e servidores vinculados à UE.
 
         Raises:
-            SmeIntegracaoException: Quando ocorre erro na consulta à SME.
-        """
+            SmeIntegracaoError: Quando ocorre erro na consulta à SME.
 
+        """
         if not codigo_ue:
-            raise SmeIntegracaoException("Código da UE é obrigatório")
+            raise SmeIntegracaoError("Código da UE é obrigatório")
 
         funcionarios = []
 
@@ -389,7 +396,7 @@ class SmeIntegracaoService:
                         response.status_code,
                         response.text,
                     )
-                    raise SmeIntegracaoException(
+                    raise SmeIntegracaoError(
                         "Erro ao buscar funcionários da gestão escolar"
                     )
 
@@ -431,7 +438,7 @@ class SmeIntegracaoService:
                     codigo_ue,
                     codigo_cargo,
                 )
-                raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+                raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
         return funcionarios
 
@@ -447,11 +454,12 @@ class SmeIntegracaoService:
             list: Lista de turmas encontradas.
 
         Raises:
-            SmeIntegracaoException: Quando houver falha de comunicação
+            SmeIntegracaoError: Quando houver falha de comunicação
             ou dados inválidos.
+
         """
         if not codigo_ue or not ano_letivo:
-            raise SmeIntegracaoException(
+            raise SmeIntegracaoError(
                 "Código da UE e ano letivo são obrigatórios"
             )
 
@@ -470,13 +478,13 @@ class SmeIntegracaoService:
             if response.status_code == status.HTTP_200_OK:
                 return response.json()
 
-            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+            raise SmeIntegracaoError(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
             logger.exception(
                 "Erro de comunicação com API de turmas de um ano letivo"
             )
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
     def buscar_dados_turma(cls, codigo_turma: int) -> dict:
@@ -489,11 +497,12 @@ class SmeIntegracaoService:
             dict: Dados detalhados da turma.
 
         Raises:
-            SmeIntegracaoException: Quando a turma não for encontrada ou a API
+            SmeIntegracaoError: Quando a turma não for encontrada ou a API
             falhar.
+
         """
         if not codigo_turma:
-            raise SmeIntegracaoException("Código da turma é obrigatório")
+            raise SmeIntegracaoError("Código da turma é obrigatório")
 
         url = (
             f"{env('SME_INTEGRACAO_URL', default='')}"
@@ -510,14 +519,17 @@ class SmeIntegracaoService:
             if response.status_code == status.HTTP_200_OK:
                 return response.json()
 
-            raise SmeIntegracaoException(MSG_ERRO_CARGOS)
+            raise SmeIntegracaoError(MSG_ERRO_CARGOS)
 
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de dados da turma")
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
-    def consulta_informacoes_unidades_escolares(cls, codigo_ue: str) -> list:
+    def consulta_informacoes_unidades_escolares(
+        cls,
+        codigo_ue: str,
+    ) -> dict[str, object]:
         """Consulta informações de uma unidade escolar na SME.
 
         Args:
@@ -527,11 +539,12 @@ class SmeIntegracaoService:
             list: Dados detalhados da unidade escolar.
 
         Raises:
-            SmeIntegracaoException: Quando houver problema de conexão
+            SmeIntegracaoError: Quando houver problema de conexão
             ou retorno inválido.
+
         """
         if not codigo_ue:
-            raise SmeIntegracaoException(MSG_RF_OBRIGATORIO)
+            raise SmeIntegracaoError(MSG_RF_OBRIGATORIO)
 
         logger.info(
             "Consultando informações da unidade escolar em SME. código: %s",
@@ -555,7 +568,7 @@ class SmeIntegracaoService:
                 response.status_code,
                 response.text,
             )
-            raise SmeIntegracaoException(
+            raise SmeIntegracaoError(
                 "Erro ao consultar informações da unidade escolar"
             )
 
@@ -563,7 +576,7 @@ class SmeIntegracaoService:
             logger.exception(
                 "Erro de comunicação com API de informações da unidade escolar"
             )
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
     def buscar_disciplinas_turma(cls, codigo_turma: int) -> list:
@@ -576,11 +589,12 @@ class SmeIntegracaoService:
             list: Lista de disciplinas vinculadas.
 
         Raises:
-            SmeIntegracaoException: Quando a API retornar erro ou
+            SmeIntegracaoError: Quando a API retornar erro ou
             houver falha de comunicação.
+
         """
         if not codigo_turma:
-            raise SmeIntegracaoException("Código da turma é obrigatório")
+            raise SmeIntegracaoError("Código da turma é obrigatório")
 
         url = (
             f"{env('SME_INTEGRACAO_URL', default='')}"
@@ -618,14 +632,14 @@ class SmeIntegracaoService:
                 response.status_code,
                 response.text,
             )
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME)
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME)
 
         except requests.exceptions.RequestException as e:
             logger.exception(
                 "Erro de comunicação com API de disciplinas da turma %s",
                 codigo_turma,
             )
-            raise SmeIntegracaoException(MSG_ERRO_COMUNICACAO_SME) from e
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @staticmethod
     def formatar_cargo(texto: str) -> str:
@@ -636,6 +650,7 @@ class SmeIntegracaoService:
 
         Returns:
             str: Cargo formatado ou vazio quando o texto for inválido.
+
         """
         if not texto:
             return ""

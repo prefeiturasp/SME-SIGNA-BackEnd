@@ -3,10 +3,10 @@
 Fornece endpoints para criação, listagem e recuperação de insubsistências.
 """
 
-from environ import logger
+from typing import Any
 
 from django.db.models import QuerySet
-
+from environ import logger
 from rest_framework import mixins, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -44,6 +44,7 @@ class InsubsistenciaViewSet(
 
         Returns:
             QuerySet: Insubsistências não deletadas ordenadas por criação.
+
         """
         return (
             Insubsistencia.objects.filter(is_deleted=False)
@@ -51,7 +52,7 @@ class InsubsistenciaViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova insubsistência.
 
         Args:
@@ -62,6 +63,7 @@ class InsubsistenciaViewSet(
         Returns:
             Response: Resposta HTTP com os dados da insubsistência criada ou
             erro.
+
         """
         try:
             serializer = self.get_serializer(data=request.data)

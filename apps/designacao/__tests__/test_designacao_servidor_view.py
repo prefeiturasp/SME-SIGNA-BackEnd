@@ -5,13 +5,12 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 User = get_user_model()
 
@@ -100,7 +99,7 @@ def test_post_sme_integracao_exception(
     serializer_instance.validated_data = {"rf": "0000000"}
     mock_serializer.return_value = serializer_instance
 
-    mock_service.side_effect = SmeIntegracaoException("Erro SME")
+    mock_service.side_effect = SmeIntegracaoError("Erro SME")
 
     response = auth_client.post(url, {"rf": "0000000"}, format="json")
 

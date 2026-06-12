@@ -1,2 +1,102 @@
 [tool.black]
 line-length = 79
+target-version = ['py312']
+extend-exclude = '''
+^/.*migrations/                  # Ignora qualquer pasta migrations
+'''
+
+[tool.flake8]
+max-line-length = 79
+
+exclude = [
+    "migrations",
+    "*/migrations/*",
+]
+
+per-file-ignores = [
+    # Testes: linhas longas são aceitáveis (asserts, fixtures, mensagens)
+    "*/__tests__/*.py:E501",
+    "*/tests/*.py:E501",
+    "*/tests/**/*.py:E501",
+    # __init__.py de modelos re-exporta símbolos — import não usado é intencional
+    "*/models/__init__.py:F401",
+    # Script utilitário interno com f-strings longas de relatório
+    "apps/core/management/commands/gerar_relatorio_pep.py:E501",
+]
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+extend-exclude = [
+    "*/migrations/*",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "D"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = [
+    "*/manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/settings.py",
+    "*/urls.py",
+    "*/apps.py",
+    "*/admin.py",
+    "*/migrations/*",
+    "*/tests/*",
+    "*/__tests__/*",
+    "*_test.py",
+    "test_*.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
+ignore_errors = true
+exclude_lines = [
+    "pragma: no cover",
+    "if settings.DEBUG",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.ruff.lint.per-file-ignores]
+# Testes: linhas longas e ausência de docstrings são aceitáveis
+"*/__tests__/*.py" = ["E501", "D"]
+"*/tests/*.py" = ["E501", "D"]
+# __init__.py de modelos re-exporta símbolos — F401 (import não usado) é intencional
+"*/models/__init__.py" = ["F401"]
+# Pacotes (__init__.py) não precisam de docstring de módulo (D104)
+"*/__init__.py" = ["D104"]
+# Migrations são código auto-gerado pelo Django
+"*/migrations/*.py" = ["D"]
+# Arquivos declarativos/boilerplate que não precisam de docstring de módulo (D100)
+"config/**/*.py" = ["D100"]
+"*/admin.py" = ["D100"]
+"*/urls.py" = ["D100"]
+"*/apps.py" = ["D100"]
+"*/management/commands/*.py" = ["D100"]
+# Script utilitário interno: docstrings e linhas longas em f-strings de relatório
+"apps/core/management/commands/gerar_relatorio_pep.py" = ["D", "E501"]
+# D106: classe Meta e TextChoices não precisam de docstring
+# D205/D401: estilo de docstring multiparagráfo em português
+"*/serializers/*.py" = ["D106", "D205", "D401"]
+# D106: classe Meta dos filtros não precisa de docstring
+"*/api/filters/*.py" = ["D106"]
+"*/filters/*.py" = ["D106"]
+# D106: Meta/TextChoices não precisam de docstring; D205: estilo aceitável em models
+"*/models.py" = ["D106", "D205"]
+# Modelos em pasta models/ (padrão diferente de models.py — precisam de exclusão própria)
+"apps/designacao/models/*.py" = ["D106", "D205"]
+"apps/unidades/models/*.py" = ["D106", "D205"]
+"apps/usuarios/models/*.py" = ["D106", "D205"]
+# Utilitários e exceções: __init__, __str__ e magic methods não precisam de docstring
+"apps/helpers/*.py" = ["D205", "D100", "D107", "D105"]
+# urls_v2.py tem nome não-padrão e não é coberto pelo padrão */urls.py
+"apps/designacao/urls_v2.py" = ["D100"]

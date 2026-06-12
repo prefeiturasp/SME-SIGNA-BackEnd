@@ -24,7 +24,7 @@ DEBUG = env.bool("DJANGO_DEBUG", default=False)  # default False
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # EMAIL
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = env(
     "DJANGO_EMAIL_BACKEND",
@@ -97,7 +97,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database: usa DATABASE_URL do .env
 DATABASES = {
-    "default": env.db("DATABASE_URL", default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+    "default": env.db(
+        "DATABASE_URL", default=f'sqlite:///{BASE_DIR / "db.sqlite3"}'
+    )
 }
 
 # Password validation (padrão)
@@ -135,7 +137,9 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 

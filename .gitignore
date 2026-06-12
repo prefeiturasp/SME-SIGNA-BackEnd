@@ -49,6 +49,11 @@ coverage.xml
 *.cover
 .hypothesis/
 
+# ====================
+# Sphinx
+# ====================
+docs/_build/
+
 # Relatórios PEP gerados via comando
 apps/*/docs/RELATORIO_PEP*.md
 apps/*/docs/RELATORIO_PEP*.txt

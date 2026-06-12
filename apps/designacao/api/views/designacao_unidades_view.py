@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from apps.designacao.services.designacao_unidades_service import (
     DesignacaoUnidadeService,
 )
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ class DesignacaoUnidadeView(APIView):
 
         Returns:
             Response: Dados escolares da unidade ou mensagem de erro.
+
         """
         codigo_ue = request.query_params.get("codigo_ue")
 
@@ -48,7 +49,7 @@ class DesignacaoUnidadeView(APIView):
             )
             return Response(result, status=status.HTTP_200_OK)
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             return Response(
                 {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -74,6 +75,7 @@ class DesignacaoUnidadeCargosView(APIView):
 
         Returns:
             Response: Lista de cargos ou mensagem de erro.
+
         """
         try:
             cargos = DesignacaoUnidadeService.listar_cargos_vaga()

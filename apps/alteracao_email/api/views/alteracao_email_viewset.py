@@ -7,6 +7,7 @@ serviço SME.
 """
 
 import logging
+from typing import cast
 
 from django.db import transaction
 from rest_framework import status, viewsets
@@ -21,18 +22,18 @@ from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmailService,
 )
 from apps.helpers.exceptions import (
-    SmeIntegracaoException,
-    TokenExpiradoException,
-    TokenJaUtilizadoException,
+    SmeIntegracaoError,
+    TokenExpiradoError,
+    TokenJaUtilizadoError,
 )
+from apps.usuarios.models import User
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
 
 
 class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
-    """Gerencia solicitações para iniciar a alteração de e-mail
-    do usuário autenticado.
+    """Gerencia solicitações de alteração de e-mail do usuário autenticado.
 
     O viewset recebe o novo endereço de e-mail, valida-o pelo serializer e
     delega a criação da solicitação de alteração de e-mail à camada de serviço.
@@ -41,8 +42,7 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request: Request) -> Response:
-        """Cria uma solicitação de alteração de e-mail para o
-        usuário autenticado.
+        """Cria uma solicitação de alteração de e-mail.
 
         Args:
             request (rest_framework.request.Request): A requisição recebida que
@@ -51,18 +51,19 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
         Returns:
             rest_framework.response.Response: Uma resposta com status 201 se o
                 e-mail de confirmação foi enviado com sucesso, ou 500 em caso
-                de
-                erro inesperado.
-        """
+                de erro inesperado.
 
+        """
         serializer = AlteracaoEmailSerializer(
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
 
         try:
+            usuario = cast(User, request.user)
+
             AlteracaoEmailService.solicitar(
-                usuario=request.user,
+                usuario=usuario,
                 novo_email=serializer.validated_data["new_email"],
             )
 
@@ -79,8 +80,7 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
 
 
 class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
-    """Gerencia a validação de tokens de alteração de e-mail e
-    finaliza a alteração.
+    """Gerencia a validação de tokens de alteração de e-mail.
 
     Este viewset valida o token fornecido, atualiza o e-mail do usuário no
     serviço de integração SME e marca a solicitação de alteração de e-mail
@@ -90,28 +90,32 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def update(self, request: Request, pk: str | None = None) -> Response:
-        """Valida um token de alteração de e-mail e aplica a
-        atualização do e-mail.
+        """Valida um token de alteração de e-mail e aplica a atualização.
 
         Args:
             request (rest_framework.request.Request): A requisição recebida.
             pk (str|int): O identificador do token usado para validar a
-            alteração
-                de e-mail.
+            alteração de e-mail.
 
         Returns:
             rest_framework.response.Response: Uma resposta com status 200 se o
                 e-mail foi alterado com sucesso, 400 em caso de erro de
-                validação
-                ou integração, ou 500 para erros inesperados.
+                validação ou integração, ou 500 para erros inesperados.
+
         """
+        if pk is None:
+            return Response(
+                {"detail": "Token não informado."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             with transaction.atomic():
                 usuario, email_request = AlteracaoEmailService.validar(pk)
 
                 SmeIntegracaoService.altera_email(
-                    usuario.username, email_request.novo_email
+                    usuario.username,
+                    email_request.novo_email,
                 )
 
                 usuario.email = email_request.novo_email
@@ -128,19 +132,22 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
                     status=status.HTTP_200_OK,
                 )
 
-        except TokenJaUtilizadoException as e:
+        except TokenJaUtilizadoError as e:
             return Response(
-                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        except TokenExpiradoException as e:
+        except TokenExpiradoError as e:
             return Response(
-                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
-                "Erro na integração SME para alteração de email do usuário ID %s: %s",  # noqa: E501
+                "Erro na integração SME para alteração de email "
+                "do usuário ID %s: %s",
                 usuario,
                 str(e),
             )

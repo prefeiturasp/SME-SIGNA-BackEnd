@@ -4,6 +4,8 @@ Contém a paginação comum e os helpers de controle de paginação/filtros
 usados por DesignacaoViewSet e DesignacaoLegadoViewSet.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -35,6 +37,7 @@ class DesignacaoBasePagination(PageNumberPagination):
         Returns:
             list|None: Lista paginada ou None quando a paginação está
             desabilitada.
+
         """
         if request.query_params.get("no_pagination", "").lower() == "true":
             return None
@@ -42,14 +45,17 @@ class DesignacaoBasePagination(PageNumberPagination):
 
 
 class DesignacaoPaginacaoMixin:
-    """Helpers de paginação e filtros compartilhados pelas views de
-    designação."""
+    """Helpers de paginação compartilhados pelas views de designação."""
+
+    # Anotação para que type checkers reconheçam que a view terá `request`
+    request: Any
 
     def _is_no_pagination(self) -> bool:
         """Verifica se a paginação deve ser desabilitada.
 
         Returns:
             bool: True quando no_pagination=true estiver presente.
+
         """
         return (
             self.request.query_params.get("no_pagination", "").lower()
@@ -61,15 +67,16 @@ class DesignacaoPaginacaoMixin:
 
         Returns:
             bool: True quando houver parâmetros além dos de paginação.
+
         """
         return bool(set(self.request.query_params.keys()) - _PAGINATION_PARAMS)
 
     def _should_limit_queryset(self) -> bool:
-        """Determina se o queryset deve ser limitado para evitar
-        retornos muito grandes.
+        """Determina se o queryset deve ser limitado.
 
         Returns:
             bool: True quando não houver filtros nem desabilitação de
             paginação.
+
         """
         return not self._has_filters() and not self._is_no_pagination()

@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from django.test import TestCase
 
 from apps.designacao.__tests__.factories import criar_designacao_legado
@@ -123,9 +122,7 @@ class DesignacaoSerializerTest(TestCase):
     def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(
         self,
     ):
-        """
-        Deve retornar os dados da insubsistência ativa vinculada à designação.
-        """
+        """Deve retornar os dados da insubsistência ativa vinculada à designação."""
         designacao = criar_designacao_legado()
         insubsistencia = Insubsistencia.objects.create(
             designacao=designacao,

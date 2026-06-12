@@ -7,7 +7,6 @@ substituição.
 """
 
 import django_filters
-
 from django.db import models
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -66,6 +65,7 @@ class DesignacaoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por RF de indicado ou
             titular.
+
         """
         return queryset.filter(
             models.Q(designacao_detalhe__indicado_rf=value)
@@ -85,6 +85,7 @@ class DesignacaoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por nome de indicado ou
             titular.
+
         """
         return queryset.filter(
             models.Q(
@@ -108,6 +109,7 @@ class DesignacaoFilter(django_filters.FilterSet):
         Returns:
             Queryset filtrado com correspondências por cargo base de
             indicado ou titular.
+
         """
         return queryset.filter(
             models.Q(designacao_detalhe__indicado_codigo_cargo_base=value)

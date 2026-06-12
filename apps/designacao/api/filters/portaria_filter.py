@@ -5,7 +5,6 @@ informações de designação de servidor e data de cessação.
 """
 
 import django_filters
-
 from django.db import models
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -89,6 +88,7 @@ class PortariaFilter(django_filters.FilterSet):
 
         Returns:
             Queryset filtrado com o tipo de ato selecionado.
+
         """
         if value == "DESIGNACAO_CESSACAO":
             return queryset.filter(tipo__in=["DESIGNACAO", "CESSACAO"])

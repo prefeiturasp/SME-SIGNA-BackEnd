@@ -4,9 +4,10 @@ Fornece endpoints para CRUD de designações legadas, com filtros,
 pesquisa, ordenação e ações auxiliares para cargos pareados.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -72,6 +73,7 @@ class DesignacaoLegadoViewSet(
         Returns:
             QuerySet: Designações não deletadas com carregamento de
             relacionamentos.
+
         """
         return (
             Designacao.objects.filter(is_deleted=False)
@@ -79,7 +81,7 @@ class DesignacaoLegadoViewSet(
             .order_by("-criado_em")
         )
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista designações legadas conforme filtros e paginação.
 
         Args:
@@ -89,6 +91,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Resposta HTTP com a lista de designações.
+
         """
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -117,6 +120,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Lista de cargos base pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
@@ -139,6 +143,7 @@ class DesignacaoLegadoViewSet(
 
         Returns:
             Response: Lista de cargos sobrepostos pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(

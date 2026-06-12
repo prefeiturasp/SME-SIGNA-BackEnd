@@ -36,6 +36,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         Args:
             sigla_tipo: Sigla do tipo de escola.
             esperado: Quantidade esperada de módulos.
+
         """
         informacoes_ue = {
             "siglaTipoEscola": sigla_tipo,
@@ -52,6 +53,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
 
         Args:
             caplog: Fixture do pytest para captura de logs.
+
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
@@ -82,6 +84,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         Args:
             qtd_classes: Quantidade total de classes.
             esperado: Quantidade esperada de módulos.
+
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEI",
@@ -111,6 +114,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         Args:
             qtd_classes: Quantidade total de classes.
             esperado: Quantidade esperada de módulos.
+
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",

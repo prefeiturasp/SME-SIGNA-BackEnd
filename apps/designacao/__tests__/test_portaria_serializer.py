@@ -17,7 +17,6 @@ from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
@@ -29,6 +28,7 @@ def serialize(ato):
 
     Returns:
         dict: Dados serializados do ato administrativo.
+
     """
     return PortariaListSerializer(ato).data
 
@@ -61,6 +61,7 @@ DADOS_DESIGNACAO = {
     "indicado_cargo_base": "PROFESSOR DE EF I",
     "indicado_cargo_sobreposto": "DIRETOR DE ESCOLA",
     "indicado_local_exercicio": "EMEF TESTE 1",
+    "indicado_categoria": "",
     "tipo_vaga": "VAGO",
     "titular_nome_civil": "",
     "titular_nome_servidor": "",

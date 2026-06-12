@@ -90,6 +90,7 @@ class UnidadeSerializer(serializers.Serializer):
         Returns:
             str|None: O nome completo da unidade no formato
                 "tipoUE nomeOficial" ou None se não houver dados suficientes.
+
         """
         tipo_ue = obj.get("tipoUE", "").strip()
         nome = obj.get("nomeOficial", "")

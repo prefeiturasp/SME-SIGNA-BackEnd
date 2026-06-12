@@ -47,6 +47,7 @@ class ApostilaSerializer(serializers.ModelSerializer):
 
         Returns:
             dict: Dados validados.
+
         """
         if not data.get("designacao"):
             raise serializers.ValidationError("Designação é obrigatória.")

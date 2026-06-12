@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from django.utils import timezone
 
 from apps.designacao.api.serializers.apostila_serializer import (

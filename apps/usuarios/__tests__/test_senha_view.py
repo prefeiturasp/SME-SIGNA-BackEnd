@@ -9,7 +9,6 @@ import secrets
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError
@@ -19,7 +18,7 @@ from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers, status
 from rest_framework.test import APIClient, APIRequestFactory
 
-from apps.helpers.exceptions import SmeIntegracaoException
+from apps.helpers.exceptions import SmeIntegracaoError
 from apps.usuarios.api.views.senha_view import (
     AtualizarSenhaSerializer,
     AtualizarSenhaViewSet,
@@ -150,7 +149,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self, mock_env, mock_enviar, mock_gerar_token, mock_informacao_usuario
     ):
         """Testa fluxo onde usuário existe localmente mas email vem da API"""
-        user = User.objects.create_user(
+        User.objects.create_user(
             username="7654321", email="", name="Usuário Sem Email"
         )
 
@@ -175,7 +174,6 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     )
     def test_post_user_not_found(self, mock_sme):
         """Usuário não existe nem local nem SME"""
-
         mock_sme.return_value = None
 
         response = self.client.post(
@@ -190,7 +188,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     )
     def test_post_email_not_found_anywhere(self, mock_informacao_usuario):
         """Testa quando email não é encontrado nem na API nem localmente"""
-        user = User.objects.create_user(
+        User.objects.create_user(
             username="1111111", email="", name="Usuário Sem Email"
         )
 
@@ -267,7 +265,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
     def test_post_username_length_boundaries(self):
         """Verifica o comportamento do endpoint com usernames nos limites válidos."""
-        user_7 = User.objects.create_user(
+        User.objects.create_user(
             username="7654321", email="teste7@teste.com", name="Teste 7"
         )
 
@@ -276,7 +274,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        user_8 = User.objects.create_user(
+        User.objects.create_user(
             username="12345678", email="teste8@teste.com", name="Teste 8"
         )
 
@@ -298,7 +296,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
     def test_post_username_exact_min_length(self):
         """Testa username com exatamente 7 caracteres"""
-        user = User.objects.create_user(
+        User.objects.create_user(
             username="0000000", email="teste@teste.com", name="Teste Zero"
         )
 
@@ -309,7 +307,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
     def test_post_username_exact_max_length(self):
         """Testa username com exatamente 8 caracteres"""
-        user = User.objects.create_user(
+        User.objects.create_user(
             username="99999999", email="teste@teste.com", name="Teste Nove"
         )
 
@@ -350,7 +348,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self, mock_env, mock_enviar, mock_gerar_token, mock_informacao_usuario
     ):
         """Testa quando email vem da segunda chamada à API"""
-        user = User.objects.create_user(
+        User.objects.create_user(
             username="5555555", email="", name="Usuário Sem Email Local"
         )
 
@@ -440,9 +438,8 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     def test_post_integrity_error_creating_local_user(
         self, mock_env, mock_update_or_create, mock_informacao_usuario
     ):
-        """
-        Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
-        Deve retornar EmailNaoCadastrado com mensagem amigável.
+        """Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
+        Deve retornar EmailNaoCadastradoError com mensagem amigável.
         """
         mock_env.return_value = "http://localhost:8000"
 
@@ -469,9 +466,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         )
 
     def test_criar_ou_atualizar_usuario_local_sem_nome(self):
-        """
-        Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME.
-        """
+        """Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME."""
         view = EsqueciMinhaSenhaViewSet()
         username = "user_sem_nome"
 
@@ -494,9 +489,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertEqual(user.email, "original@teste.com")
 
     def test_criar_ou_atualizar_usuario_local_success_direct(self):
-        """
-        Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta.
-        """
+        """Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta."""
         view = EsqueciMinhaSenhaViewSet()
         username = "novo_user_direct"
         dados_sme = {
@@ -518,8 +511,7 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
         self.assertTrue(User.objects.filter(username=username).exists())
 
     def test_criar_ou_atualizar_usuario_local_lines_154_155(self):
-        """
-        Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
+        """Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
         Executa o método diretamente e verifica o efeito colateral no banco.
         """
         view = EsqueciMinhaSenhaViewSet()
@@ -551,16 +543,15 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     def test_post_sme_integracao_exception_when_user_not_local(
         self, mock_informacao_usuario
     ):
-        """
-        Testa SmeIntegracaoException na consulta SME quando usuário não existe localmente.
+        """Testa SmeIntegracaoError na consulta SME quando usuário não existe localmente.
         Isso deve acionar a linha 83: raise UserNotFoundError
         """
         # 1. Garante que o usuário NÃO existe localmente
         User.objects.filter(username="8888888").delete()
 
-        # 2. Faz o mock lançar especificamente SmeIntegracaoException
+        # 2. Faz o mock lançar especificamente SmeIntegracaoError
         # Importante: A exception deve ser a mesma classe importada na view
-        mock_informacao_usuario.side_effect = SmeIntegracaoException(
+        mock_informacao_usuario.side_effect = SmeIntegracaoError(
             "Erro de conexão com SME"
         )
 
@@ -586,7 +577,6 @@ class TestRedefinirSenhaViewSet:
     )
     def test_post_success(self, mock_sme, mock_serializer):
         """Verifica que redefinição de senha bem-sucedida retorna status 200."""
-
         factory = APIRequestFactory()
         mock_sme.return_value = None
 
@@ -621,7 +611,7 @@ class TestRedefinirSenhaViewSet:
     def test_post_sme_error(self, mock_sme):
         """Testa erro na SME."""
         factory = APIRequestFactory()
-        mock_sme.side_effect = SmeIntegracaoException("Erro SME")
+        mock_sme.side_effect = SmeIntegracaoError("Erro SME")
 
         data = {
             "uid": "x",
@@ -678,7 +668,7 @@ class TestRedefinirSenhaViewSet:
             username="usuario", password=password
         )
 
-        mock_redefine.side_effect = SmeIntegracaoException("Erro SME")
+        mock_redefine.side_effect = SmeIntegracaoError("Erro SME")
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
@@ -782,7 +772,6 @@ class TestAtualizarSenhaViewSet:
 
     def test_sucesso(self, view, mock_request):
         """Verifica atualização de senha com request válido."""
-
         mock_request.data = {
             "username": "testuser",
             "senha_atual": self.old_password,
@@ -799,12 +788,14 @@ class TestAtualizarSenhaViewSet:
         ) as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
 
-            with patch(
-                "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha"
+            with (
+                patch(
+                    "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha"
+                ),
+                patch.object(mock_request.user, "set_password"),
+                patch.object(mock_request.user, "save"),
             ):
-                with patch.object(mock_request.user, "set_password"):
-                    with patch.object(mock_request.user, "save"):
-                        response = view.post(mock_request)
+                response = view.post(mock_request)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["detail"] == "Senha alterada com sucesso."
@@ -894,7 +885,7 @@ class TestAtualizarSenhaViewSet:
 
             with patch(
                 "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
-                side_effect=SmeIntegracaoException("Erro SME"),
+                side_effect=SmeIntegracaoError("Erro SME"),
             ):
                 response = view.post(mock_request)
 
@@ -919,14 +910,14 @@ class TestAtualizarSenhaViewSet:
         ) as mock_serializer_class:
             mock_serializer_class.return_value = mock_serializer
 
-            with patch(
-                "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
-                side_effect=Exception("Erro inesperado"),
+            with (
+                patch(
+                    "apps.usuarios.services.sme_integracao_service.SmeIntegracaoService.redefine_senha",
+                    side_effect=Exception("Erro inesperado"),
+                ),
+                patch("apps.usuarios.api.views.senha_view.logger.exception"),
             ):
-                with patch(
-                    "apps.usuarios.api.views.senha_view.logger.exception"
-                ):
-                    response = view.post(mock_request)
+                response = view.post(mock_request)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["detail"] == "Erro interno do servidor."

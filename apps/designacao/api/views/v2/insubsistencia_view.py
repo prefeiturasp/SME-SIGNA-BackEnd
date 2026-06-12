@@ -4,8 +4,9 @@ Fornece endpoints para listagem, recuperação, criação e exclusão de
 insubsistências.
 """
 
-from django.db.models import QuerySet
+from typing import Any
 
+from django.db.models import QuerySet
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -55,6 +56,7 @@ class InsubsistenciaV2ViewSet(
         Returns:
             QuerySet: Insubsistências ordenadas por data de criação
             decrescente.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -64,7 +66,7 @@ class InsubsistenciaV2ViewSet(
             .order_by("-criado_em")
         )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova insubsistência a partir dos dados enviados.
 
         Args:
@@ -74,6 +76,7 @@ class InsubsistenciaV2ViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da insubsistência criada.
+
         """
         serializer = InsubsistenciaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -86,7 +89,7 @@ class InsubsistenciaV2ViewSet(
             status=status.HTTP_201_CREATED,
         )
 
-    def destroy(self, request: Request, *args, **kwargs) -> Response:
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Remove a insubsistência e reactiva o ato pai associado.
 
         Args:
@@ -96,6 +99,7 @@ class InsubsistenciaV2ViewSet(
 
         Returns:
             Response: Resposta HTTP vazia com status 204.
+
         """
         instancia = self.get_object()
         ato_pai = instancia.ato_pai

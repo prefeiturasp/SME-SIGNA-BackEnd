@@ -21,6 +21,7 @@ class ImpedimentoSubstituicaoView(APIView):
 
         Returns:
             Response: Lista de impedimentos com value/label.
+
         """
         impedimentos = ImpedimentoSubstituicao.objects.all()
 

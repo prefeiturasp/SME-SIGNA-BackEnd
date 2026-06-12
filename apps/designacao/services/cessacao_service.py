@@ -31,6 +31,7 @@ class CessacaoService:
         Raises:
             ValidationError: Se o ato pai não for válido ou já tiver cessação
             ativa.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
 
