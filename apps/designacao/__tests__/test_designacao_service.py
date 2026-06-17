@@ -67,6 +67,14 @@ class TestDesignacaoService:
 
         assert resultado == []
 
+    def test_create_designacao_v2(self):
+        """Verifica create designação v2."""
+        designacao = criar_ato_designacao()
+        assert (
+            designacao.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+        )
+
     def test_get_cargos_pareados_remove_duplicados(self):
         """Verifica get cargos pareados remove duplicados."""
         criar_ato_designacao(

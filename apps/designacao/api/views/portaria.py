@@ -104,7 +104,8 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             )
 
         updated = AtoAdministrativo.objects.filter(pk__in=ids).update(
-            doc=data_publicacao
+            doc=data_publicacao,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.PUBLICADO,
         )
 
         if not updated:

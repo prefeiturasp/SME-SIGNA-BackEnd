@@ -19,6 +19,10 @@ class AtoAdministrativo(models.Model):
         APOSTILA = "APOSTILA", "Apostila"
         INSUBSISTENCIA = "INSUBSISTENCIA", "Insubsistência"
 
+    class StatusPublicacao(models.TextChoices):
+        PUBLICADO = "PUBLICADO", "Publicado"
+        NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
+
     _TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
@@ -31,7 +35,11 @@ class AtoAdministrativo(models.Model):
     }
 
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
-
+    status_publicacao = models.CharField(
+        max_length=20,
+        choices=StatusPublicacao.choices,
+        default=StatusPublicacao.NAO_PUBLICADO,
+    )
     ato_pai = models.ForeignKey(
         "self",
         null=True,

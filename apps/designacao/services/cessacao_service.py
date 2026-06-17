@@ -57,6 +57,7 @@ class CessacaoService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.CESSACAO,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )

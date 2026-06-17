@@ -174,6 +174,7 @@ class ApostilaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.APOSTILA,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )
