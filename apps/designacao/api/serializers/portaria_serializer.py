@@ -157,7 +157,11 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "titular_rf": detalhe.titular_rf,
                 "titular_cargo_base": detalhe.titular_cargo_base,
                 "titular_vinculo": detalhe.titular_vinculo,
-                "impedimento_substituicao": detalhe.impedimento_substituicao,
+                "impedimento_substituicao": (
+                    detalhe.impedimento_substituicao.descricao
+                    if detalhe.impedimento_substituicao
+                    else None
+                ),
                 "ue": detalhe.ue,
                 "codigo_hierarquico": detalhe.codigo_hierarquico,
                 "data_inicio": detalhe.data_inicio,
