@@ -53,9 +53,14 @@ def test_create_cessacao_v2(auth_client):
     )
 
     assert response.status_code == 201
-    assert AtoAdministrativo.objects.filter(
+    cessacao = AtoAdministrativo.objects.filter(
         tipo=AtoAdministrativo.Tipo.CESSACAO
-    ).exists()
+    )
+    assert cessacao.exists()
+    assert (
+        cessacao.get().status_publicacao
+        == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+    )
 
 
 @pytest.mark.django_db

@@ -453,6 +453,10 @@ class TestAtualizarDataPublicacao:
         )
         designacao.refresh_from_db()
         assert designacao.doc == date(2024, 9, 9)
+        assert (
+            designacao.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.PUBLICADO
+        )
 
     def test_nao_atualiza_inativo(self, auth_client, inativo):
         """Verifica que atos inativos não são atualizados."""
