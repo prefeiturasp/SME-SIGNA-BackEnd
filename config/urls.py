@@ -33,7 +33,7 @@ urlpatterns = [
     ),
     path(
         "api/designacao/v2/",
-        include("apps.designacao.urls_v2", namespace="designacao_v2"),
+        include("apps.designacao.api.urls_v2", namespace="designacao_v2"),
     ),
     # APIs da sua app (apps.unidades)
     path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),

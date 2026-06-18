@@ -1,3 +1,5 @@
+"""Rotas da API v2 do módulo de designação."""
+
 from django.urls import path
 
 from apps.designacao.api.views.designacao import DesignacaoViewSet
@@ -11,6 +13,7 @@ from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
     DesignacaoUnidadeView,
 )
+from apps.designacao.api.views.portaria import PortariaListViewSet
 from apps.designacao.api.views.v2.apostila_view import ApostilaV2ViewSet
 from apps.designacao.api.views.v2.cessacao_view import CessacaoV2ViewSet
 from apps.designacao.api.views.v2.insubsistencia_view import (
@@ -107,5 +110,16 @@ urlpatterns = [
             }
         ),
         name="insubsistencia-detail",
+    ),
+    # Portarias — listagem para publicação no D.O.
+    path(
+        "portarias/",
+        PortariaListViewSet.as_view({"get": "list"}),
+        name="portarias",
+    ),
+    path(
+        "portarias/atualizar-data-publicacao/",
+        PortariaListViewSet.as_view({"post": "atualizar_data_publicacao"}),
+        name="portarias-atualizar-data-publicacao",
     ),
 ]
