@@ -9,6 +9,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
 from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
+from rest_framework.pagination import BasePagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -27,7 +28,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
 
     serializer_class = PortariaListSerializer
-    pagination_class = None
+    pagination_class: type[BasePagination] | None = None
 
     filter_backends = [
         DjangoFilterBackend,
