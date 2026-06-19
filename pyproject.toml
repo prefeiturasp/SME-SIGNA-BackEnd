@@ -98,5 +98,3 @@ directory = "htmlcov"
 "apps/usuarios/models/*.py" = ["D106", "D205"]
 # Utilitários e exceções: __init__, __str__ e magic methods não precisam de docstring
 "apps/helpers/*.py" = ["D205", "D100", "D107", "D105"]
-# urls_v2.py tem nome não-padrão e não é coberto pelo padrão */urls.py
-"apps/designacao/urls_v2.py" = ["D100"]
