@@ -8,9 +8,6 @@ import logging
 from typing import Any
 
 import environ
-from django.contrib.auth import get_user_model
-from django.db import transaction
-from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
@@ -27,7 +24,6 @@ from apps.usuarios.api.serializers.login_serializer import LoginSerializer
 from apps.usuarios.models import User
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
-UserModel = get_user_model()
 logger = logging.getLogger(__name__)
 env = environ.Env()
 
@@ -66,7 +62,7 @@ class LoginView(TokenObtainPairView):
 
             self._valida_perfil_signa(dados_sme)
 
-            user = self._criar_ou_atualizar_user(
+            user = SmeIntegracaoService.sincronizar_usuario_local(
                 login,
                 senha,
                 dados_sme,
@@ -131,32 +127,6 @@ class LoginView(TokenObtainPairView):
 
         if perfil_signa not in perfis_normalizados:
             raise PerfilNaoAutorizadoError()
-
-    def _criar_ou_atualizar_user(
-        self,
-        login: str,
-        senha: str,
-        dados_sme: dict,
-    ) -> User:
-        """Cria ou atualiza o usuário local com dados retornados pela SME."""
-        with transaction.atomic():
-            defaults = {
-                "name": dados_sme.get("nome"),
-                "email": dados_sme.get("email"),
-                "cpf": dados_sme.get("numeroDocumento"),
-                "last_login": timezone.now(),
-            }
-
-            user, created = UserModel.objects.update_or_create(
-                username=login,
-                defaults=defaults,
-            )
-
-            if created or not user.check_password(senha):
-                user.set_password(senha)
-                user.save()
-
-            return user
 
     def _gerar_tokens(self, user: User) -> dict[str, str]:
         """Gera tokens JWT personalizados para o usuário."""

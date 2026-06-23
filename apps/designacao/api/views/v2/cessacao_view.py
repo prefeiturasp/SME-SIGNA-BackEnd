@@ -15,7 +15,6 @@ from apps.designacao.api.serializers.v2.cessacao_serializer import (
     CessacaoV2ReadSerializer,
     CessacaoV2WriteSerializer,
 )
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.cessacao_service import CessacaoService
 
 
@@ -53,13 +52,7 @@ class CessacaoV2ViewSet(
             QuerySet: Cessões ordenadas por data de criação decrescente.
 
         """
-        return (
-            AtoAdministrativo.objects.filter(
-                tipo=AtoAdministrativo.Tipo.CESSACAO
-            )
-            .select_related("cessacao_detalhe")
-            .order_by("-criado_em")
-        )
+        return CessacaoService.listar_v2()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova cessação com os dados recebidos.
@@ -78,8 +71,7 @@ class CessacaoV2ViewSet(
 
         ato = CessacaoService.criar(serializer.validated_data)
 
-        ato_criado = self.get_queryset().filter(pk=ato.pk).first()
         return Response(
-            CessacaoV2ReadSerializer(ato_criado).data,
+            CessacaoV2ReadSerializer(CessacaoService.buscar_v2(ato.pk)).data,
             status=status.HTTP_201_CREATED,
         )

@@ -16,7 +16,6 @@ from apps.designacao.api.serializers.v2.insubsistencia_serializer import (
     InsubsistenciaV2ReadSerializer,
     InsubsistenciaV2WriteSerializer,
 )
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
@@ -58,13 +57,7 @@ class InsubsistenciaV2ViewSet(
             decrescente.
 
         """
-        return (
-            AtoAdministrativo.objects.filter(
-                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
-            )
-            .select_related("insubsistencia_detalhe")
-            .order_by("-criado_em")
-        )
+        return InsubsistenciaService.listar_v2()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova insubsistência a partir dos dados enviados.
@@ -83,14 +76,15 @@ class InsubsistenciaV2ViewSet(
 
         ato = InsubsistenciaService.criar(serializer.validated_data)
 
-        ato_criado = self.get_queryset().filter(pk=ato.pk).first()
         return Response(
-            InsubsistenciaV2ReadSerializer(ato_criado).data,
+            InsubsistenciaV2ReadSerializer(
+                InsubsistenciaService.buscar_v2(ato.pk)
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Remove a insubsistência e reactiva o ato pai associado.
+        """Remove a insubsistência e reativa o ato pai associado.
 
         Args:
             request: Requisição HTTP de exclusão.
@@ -101,10 +95,5 @@ class InsubsistenciaV2ViewSet(
             Response: Resposta HTTP vazia com status 204.
 
         """
-        instancia = self.get_object()
-        ato_pai = instancia.ato_pai
-        if ato_pai:
-            ato_pai.ativo = True
-            ato_pai.save(update_fields=["ativo"])
-        instancia.delete()
+        InsubsistenciaService.excluir(self.get_object())
         return Response(status=status.HTTP_204_NO_CONTENT)
