@@ -11,20 +11,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.db import IntegrityError
 from django.test import TestCase
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers, status
 from rest_framework.test import APIClient, APIRequestFactory
 
-from apps.helpers.exceptions import SmeIntegracaoError
+from apps.helpers.exceptions import EmailNaoCadastradoError, SmeIntegracaoError
 from apps.usuarios.api.views.senha_view import (
     AtualizarSenhaSerializer,
     AtualizarSenhaViewSet,
     EsqueciMinhaSenhaViewSet,
     RedefinirSenhaViewSet,
 )
+from apps.usuarios.services.senha_service import SenhaService
 
 User = get_user_model()
 
@@ -221,10 +221,12 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @patch("apps.usuarios.api.views.senha_view.User.objects.filter")
-    def test_post_unexpected_exception(self, mock_filter):
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.buscar_usuario_local"
+    )
+    def test_post_unexpected_exception(self, mock_buscar):
         """Testa tratamento de exceção inesperada"""
-        mock_filter.side_effect = Exception("Database Error")
+        mock_buscar.side_effect = Exception("Database Error")
 
         response = self.client.post(self.url, self.valid_data, format="json")
 
@@ -433,64 +435,57 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
-    @patch("apps.usuarios.api.views.senha_view.User.objects.update_or_create")
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.sincronizar_usuario_local"
+    )
     @patch("apps.usuarios.api.views.senha_view.env")
     def test_post_integrity_error_creating_local_user(
-        self, mock_env, mock_update_or_create, mock_informacao_usuario
+        self, mock_env, mock_sincronizar, mock_informacao_usuario
     ):
         """Testa IntegrityError ao tentar sincronizar usuário local (ex: email duplicado).
         Deve retornar EmailNaoCadastradoError com mensagem amigável.
         """
         mock_env.return_value = "http://localhost:8000"
 
-        # Simula retorno da SME com dados
         mock_informacao_usuario.return_value = {
             "email": "duplicado@teste.com",
             "nome": "Usuário Duplicado",
             "numeroDocumento": "12345678900",
         }
 
-        # Simula IntegrityError no banco de dados ao tentar salvar
-        mock_update_or_create.side_effect = IntegrityError(
-            "Duplicate entry for key 'email'"
+        mock_sincronizar.side_effect = EmailNaoCadastradoError(
+            "Já existe um usuário com este e-mail. <br/>"
+            "Entre em contato com o administrador do sistema."
         )
 
         response = self.client.post(
-            self.url, {"username": "8888888"}, format="json"  # Username novo
+            self.url, {"username": "8888888"}, format="json"
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # Verifica se a mensagem de erro personalizada foi retornada
         self.assertIn(
             "Já existe um usuário com este e-mail", response.data["detail"]
         )
 
-    def test_criar_ou_atualizar_usuario_local_sem_nome(self):
-        """Testa o método privado _criar_ou_atualizar_usuario_local quando não há nome nos dados SME."""
-        view = EsqueciMinhaSenhaViewSet()
+    def test_sincronizar_usuario_local_sem_nome(self):
+        """Testa SenhaService.sincronizar_usuario_local quando não há nome nos dados SME."""
         username = "user_sem_nome"
 
-        # Cria usuário local para ser retornado
         user = User.objects.create_user(
             username=username, email="original@teste.com", name="Nome Original"
         )
 
-        # Dados simulados da SME sem a chave "nome" ou com valor vazio
         dados_sme = {"email": "novo@teste.com", "nome": ""}
 
-        # Chama o método privado diretamente
-        result = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        result = SenhaService.sincronizar_usuario_local(username, dados_sme)
 
-        # Verifica se retornou o usuário existente sem alterações
         self.assertEqual(result.id, user.id)
 
         user.refresh_from_db()
-        # O email NÃO deve ter sido atualizado para "novo@teste.com"
         self.assertEqual(user.email, "original@teste.com")
 
-    def test_criar_ou_atualizar_usuario_local_success_direct(self):
-        """Testa o método privado _criar_ou_atualizar_usuario_local com sucesso via chamada direta."""
-        view = EsqueciMinhaSenhaViewSet()
+    def test_sincronizar_usuario_local_success(self):
+        """Testa SenhaService.sincronizar_usuario_local com sucesso."""
         username = "novo_user_direct"
         dados_sme = {
             "nome": "Novo Nome",
@@ -498,23 +493,17 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             "numeroDocumento": "11122233344",
         }
 
-        # Garante que o usuário não existe antes do teste
         User.objects.filter(username=username).delete()
 
-        # Chama o método privado diretamente
-        result = view._criar_ou_atualizar_usuario_local(username, dados_sme)
+        result = SenhaService.sincronizar_usuario_local(username, dados_sme)
 
-        # Verificações
         self.assertEqual(result.username, username)
         self.assertEqual(result.name, "Novo Nome")
         self.assertEqual(result.email, "novo@teste.com")
         self.assertTrue(User.objects.filter(username=username).exists())
 
-    def test_criar_ou_atualizar_usuario_local_lines_154_155(self):
-        """Teste focado nas linhas 154-155 (transaction.atomic e update_or_create).
-        Executa o método diretamente e verifica o efeito colateral no banco.
-        """
-        view = EsqueciMinhaSenhaViewSet()
+    def test_sincronizar_usuario_local_cria_via_update_or_create(self):
+        """Testa que sincronizar_usuario_local persiste o usuário no banco."""
         username = "usuario_teste_transacao"
         dados_sme = {
             "nome": "Nome Teste Transação",
@@ -522,19 +511,14 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
             "numeroDocumento": "11122233344",
         }
 
-        # Garante que o usuário não existe antes
         User.objects.filter(username=username).delete()
 
-        # Executa o método que contém o bloco transaction.atomic
-        user_criado = view._criar_ou_atualizar_usuario_local(
+        user_criado = SenhaService.sincronizar_usuario_local(
             username, dados_sme
         )
 
-        # Verificações
         self.assertIsNotNone(user_criado)
         self.assertEqual(user_criado.username, username)
-
-        # Se o usuário existe no banco, o update_or_create (linha 155) funcionou
         self.assertTrue(User.objects.filter(username=username).exists())
 
     @patch(
@@ -690,11 +674,13 @@ class TestRedefinirSenhaViewSet:
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.redefine_senha"
     )
-    @patch("django.contrib.auth.models.AbstractBaseUser.save")
+    @patch(
+        "apps.usuarios.services.senha_service.SenhaService.atualizar_senha_local"
+    )
     def test_post_password_updated_in_sme_but_local_save_fails(
-        self, mock_save, mock_redefine, django_user_model
+        self, mock_atualizar, mock_redefine, django_user_model
     ):
-        """Deve retornar erro quando salvamento local falhar após redefinição no SME."""
+        """Falha ao salvar localmente após redefinição na SME deve retornar sucesso (best-effort)."""
         password = secrets.token_urlsafe(16)
 
         user = django_user_model.objects.create_user(
@@ -702,7 +688,7 @@ class TestRedefinirSenhaViewSet:
         )
 
         mock_redefine.return_value = None
-        mock_save.side_effect = Exception("DB error")
+        mock_atualizar.side_effect = Exception("DB error")
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
@@ -717,8 +703,8 @@ class TestRedefinirSenhaViewSet:
         request = APIRequestFactory().post("/reset/", data, format="json")
         response = RedefinirSenhaViewSet.as_view()(request)
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["status"] == "error"
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["status"] == "success"
 
     @pytest.mark.django_db
     @patch(
