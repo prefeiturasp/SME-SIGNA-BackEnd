@@ -38,6 +38,20 @@ class AtoAdministrativoFilter(PortariaFilter):
     rf = django_filters.CharFilter(method="filter_rf")
 
     periodo = django_filters.DateFromToRangeFilter(field_name="criado_em")
+    TIPO_CHOICES = AtoAdministrativo.Tipo.choices + [
+        ("DESIGNACAO_CESSACAO", "Designação e Cessação"),
+        ("INSUBSISTENCIA_DESIGNACAO", "Insubsistência de Designação"),
+        ("INSUBSISTENCIA_CESSACAO", "Insubsistência de Cessação"),
+        ("APOSTILA_DESIGNACAO", "Apostila de Designação"),
+        ("APOSTILA_CESSACAO", "Apostila de Cessação"),
+    ]
+
+    tipo = django_filters.ChoiceFilter(
+        field_name="tipo",
+        choices=TIPO_CHOICES,
+        label="Tipo de ato",
+        method="filter_tipo",
+    )
 
     def filter_rf(
         self, queryset: models.QuerySet, name: str, value: str
@@ -86,6 +100,28 @@ class AtoAdministrativoFilter(PortariaFilter):
             )
         )
         return queryset
+
+    def filter_tipo(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra portarias pelo tipo de ato.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor do tipo de ato buscado.
+
+        Returns:
+            Queryset filtrado com o tipo de ato selecionado.
+
+        """
+        if value == "DESIGNACAO_CESSACAO":
+            return queryset.filter(tipo__in=["DESIGNACAO", "CESSACAO"])
+        elif "_" in value:
+            tipo, pai = value.split("_")
+            return queryset.filter(tipo=tipo, ato_pai__tipo=pai)
+
+        return queryset.filter(tipo=value)
 
     class Meta:
         model = AtoAdministrativo

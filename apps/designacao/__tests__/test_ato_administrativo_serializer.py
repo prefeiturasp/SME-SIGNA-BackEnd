@@ -293,11 +293,14 @@ class TestPortariaListSerializer:
 
     def test_tipo_de_ato_insubsistencia(self, insubsistencia):
         """Verifica tipo de ato insubsistencia."""
-        assert serialize(insubsistencia)["tipo_de_ato"] == "Insubsistência"
+        assert (
+            serialize(insubsistencia)["tipo_de_ato"]
+            == "Insubsistência de Designação"
+        )
 
     def test_tipo_de_ato_apostila(self, apostila):
         """Verifica tipo de ato apostila."""
-        assert serialize(apostila)["tipo_de_ato"] == "Apostila"
+        assert serialize(apostila)["tipo_de_ato"] == "Apostila de Designação"
 
     # ── tipo_de_ato ──────────────────────────────────────────────────────────
 

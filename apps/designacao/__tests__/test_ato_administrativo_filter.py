@@ -170,6 +170,20 @@ def insubsistencia(db, designacao_1):
     )
 
 
+@pytest.fixture
+def insubsistencia_cessacao(db, cessacao):
+    """Método insubsistencia cessação."""
+    return AtoAdministrativo.objects.create(
+        tipo="INSUBSISTENCIA",
+        numero_portaria="005/2024",
+        ano_vigente="2024",
+        sei_numero="6018.2024/0004567-8",
+        doc=None,
+        ativo=True,
+        ato_pai=cessacao,
+    )
+
+
 # ─── Testes ───────────────────────────────────────────────────────────────────
 
 
@@ -201,6 +215,22 @@ class TestAtoAdministrativoFilter:
         assert qs.count() == 1
         assert qs.first() == insubsistencia
 
+    def test_filtro_tipo_insubsistencia_designacao(
+        self, designacao_1, cessacao, insubsistencia
+    ):
+        """Verifica filtro tipo insubsistencia."""
+        qs = apply_filter({"tipo": "INSUBSISTENCIA_DESIGNACAO"})
+        assert qs.count() == 1
+        assert qs.first() == insubsistencia
+
+    def test_filtro_tipo_insubsistencia_cessacao(
+        self, cessacao, insubsistencia_cessacao
+    ):
+        """Verifica filtro tipo insubsistencia cessação."""
+        qs = apply_filter({"tipo": "INSUBSISTENCIA_CESSACAO"})
+        assert qs.count() == 1
+        assert qs.first() == insubsistencia_cessacao
+
     def test_filtro_portaria(self, designacao_1, designacao_2):
         # Filtra apenas designação no queryset
         """Verifica filtro portaria."""
@@ -208,6 +238,14 @@ class TestAtoAdministrativoFilter:
         f = AtoAdministrativoFilter(data={"portaria": "001/2024"}, queryset=qs)
         assert f.qs.count() == 1
         assert f.qs.first().numero_portaria == "001/2024"
+
+    def test_filtro_rf(self, designacao_1, designacao_2, designacao_3):
+        # Filtra apenas designação no queryset
+        """Verifica filtro rf titulares ou indicados."""
+        qs = AtoAdministrativo.objects.all()
+        f = AtoAdministrativoFilter(data={"rf": "87654321"}, queryset=qs)
+        assert f.qs.count() == 2
+        assert f.qs.first().designacao_detalhe.indicado_rf == "87654321"
 
     def test_filtro_nome_titular_e_indicado(
         self, designacao_1, designacao_2, designacao_3
