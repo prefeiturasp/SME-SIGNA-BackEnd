@@ -414,8 +414,8 @@ class TestPortariaListView:
         assert tipos == {
             "Designação",
             "Cessação",
-            "Insubsistência",
-            "Apostila",
+            "Insubsistência de Designação",
+            "Apostila de Designação",
         }
 
 

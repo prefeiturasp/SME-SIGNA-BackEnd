@@ -71,6 +71,39 @@ def designacao(db):
 
 
 @pytest.fixture
+def designacao_sem_apostila(db):
+    """Método designacao com data fim."""
+    ato = AtoAdministrativo.objects.create(
+        tipo="DESIGNACAO",
+        numero_portaria="005/2024",
+        ano_vigente="2024",
+        sei_numero="6018.2024/0005678-9",
+        doc=None,
+        ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+    )
+    DesignacaoDetalhe.objects.create(
+        ato=ato,
+        dre_nome="DRE LAPA",
+        unidade_proponente="EMEF TESTE 5",
+        codigo_hierarquico="108900",
+        indicado_nome_servidor="CARLOS LIMA",
+        indicado_nome_civil="Carlos Lima",
+        indicado_rf="11223344",
+        indicado_vinculo=1,
+        indicado_cargo_base="PROFESSOR DE EF I",
+        indicado_lotacao="EMEF TESTE 5",
+        indicado_cargo_sobreposto="",
+        indicado_local_exercicio="EMEF TESTE 5",
+        data_inicio=date(2024, 1, 1),
+        data_fim=date(2024, 12, 31),
+        tipo_vaga="VAGO",
+        cargo_vaga=3360,
+    )
+    return ato
+
+
+@pytest.fixture
 def designacao_com_data_fim(db):
     """Método designacao com data fim."""
     ato = AtoAdministrativo.objects.create(
@@ -259,6 +292,9 @@ class TestPortariaListSerializer:
             "status_publicacao",
             "numero_sei",
             "tipo",
+            "cessacao",
+            "apostilas",
+            "insubsistencia",
         }
 
     def test_portaria(self, designacao):
@@ -293,11 +329,14 @@ class TestPortariaListSerializer:
 
     def test_tipo_de_ato_insubsistencia(self, insubsistencia):
         """Verifica tipo de ato insubsistencia."""
-        assert serialize(insubsistencia)["tipo_de_ato"] == "Insubsistência"
+        assert (
+            serialize(insubsistencia)["tipo_de_ato"]
+            == "Insubsistência de Designação"
+        )
 
     def test_tipo_de_ato_apostila(self, apostila):
         """Verifica tipo de ato apostila."""
-        assert serialize(apostila)["tipo_de_ato"] == "Apostila"
+        assert serialize(apostila)["tipo_de_ato"] == "Apostila de Designação"
 
     # ── tipo_de_ato ──────────────────────────────────────────────────────────
 
@@ -402,3 +441,115 @@ class TestPortariaListSerializer:
             serialize(ato)["observacoes"]
             == "Apostila de retificacao de cargo."
         )
+
+    # ── filhos relacionados (cessação, apostilas, insubsistência) ──────────
+
+    def test_cessacao_retorna_dados_quando_existir(self, designacao, cessacao):
+        """Verifica cessacao retorna dados simplificados."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["cessacao"] == {
+            "id": cessacao.id,
+            "sei_numero": "6018.2024/0002345-6",
+            "doc": date(2024, 10, 24),
+        }
+
+    def test_cessacao_retorna_none_quando_nao_existir(self, designacao):
+        """Verifica cessacao retorna none quando não há filho cessacao."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["cessacao"] is None
+
+    def test_apostilas_retorna_lista_de_apostilas(self, designacao, apostila):
+        """Verifica apostilas retorna lista com atos do tipo apostila."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["apostilas"] == [
+            {
+                "id": apostila.id,
+                "sei_numero": "6018.2024/0004567-8",
+                "doc": None,
+            }
+        ]
+
+    def test_apostilas_ignora_filho_apostila_sem_detalhe(
+        self, designacao_sem_apostila
+    ):
+        """Verifica apostila sem detalhe é ignorada no serializer."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao_sem_apostila.pk
+        )
+        assert serialize(ato)["apostilas"] == []
+
+    def test_apostilas_retorna_vazio_quando_nao_existir(self, designacao):
+        """Verifica apostilas retorna lista vazia sem filhos apostila."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["apostilas"] == []
+
+    def test_insubsistencia_retorna_dados_quando_existir(
+        self, designacao, insubsistencia
+    ):
+        """Verifica insubsistencia ativa retorna dados simplificados."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["insubsistencia"] == {
+            "id": insubsistencia.id,
+            "sei_numero": "6018.2024/0003456-7",
+            "doc": None,
+        }
+
+    def test_insubsistencia_retorna_none_sem_filho_valido(self, designacao):
+        """Verifica insubsistencia retorna none quando não há válida."""
+        AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
+            numero_portaria="009/2024",
+            ano_vigente="2024",
+            sei_numero="6018.2024/0001111-1",
+            doc=None,
+            ativo=False,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+            ato_pai=designacao,
+        )
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["insubsistencia"] is None
+
+    def test_metodo_privado_serializar_insubsistencia_retorna_observacoes(
+        self, designacao, insubsistencia
+    ):
+        """Verifica _serializar_insubsistencia retorna observacoes."""
+        serializer = AtoAdministrativoListSerializer()
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serializer._serializar_insubsistencia(ato) == {
+            "id": insubsistencia.id,
+            "observacoes": "Portaria revogada por erro material.",
+        }
+
+    def test_metodo_privado_serializar_insubsistencia_retorna_none_sem_detalhe(
+        self, designacao
+    ):
+        """Verifica _serializar_insubsistencia retorna none sem detalhe."""
+        AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
+            numero_portaria="010/2024",
+            ano_vigente="2024",
+            sei_numero="6018.2024/0002222-2",
+            doc=None,
+            ativo=True,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+            ato_pai=designacao,
+        )
+        serializer = AtoAdministrativoListSerializer()
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serializer._serializar_insubsistencia(ato) is None
