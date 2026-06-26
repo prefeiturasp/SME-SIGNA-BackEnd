@@ -170,6 +170,8 @@ class PortariaListSerializer(serializers.ModelSerializer):
                 "codigo_hierarquico": detalhe.codigo_hierarquico,
                 "data_inicio": detalhe.data_inicio,
                 "data_fim": detalhe.data_fim,
+                "com_afastamento": detalhe.com_afastamento,
+                "motivo_afastamento": detalhe.motivo_afastamento,
             }
         return None
 
