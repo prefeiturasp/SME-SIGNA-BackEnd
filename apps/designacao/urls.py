@@ -1,6 +1,9 @@
 from django.urls import path
 
 from apps.designacao.api.views.apostila_view import ApostilaViewSet
+from apps.designacao.api.views.ato_administrativo_view import (
+    AtoAdministrativoListViewSet,
+)
 from apps.designacao.api.views.cessacao_view import CessacaoViewSet
 from apps.designacao.api.views.designacao_impedimentos_view import (
     ImpedimentoSubstituicaoView,
@@ -103,5 +106,11 @@ urlpatterns = [
         "portarias/atualizar-data-publicacao/",
         PortariaListViewSet.as_view({"post": "atualizar_data_publicacao"}),
         name="portarias-atualizar-data-publicacao",
+    ),
+    # Atos Administrativos — listagem de atos administrativos
+    path(
+        "atos-administrativos/",
+        AtoAdministrativoListViewSet.as_view({"get": "list"}),
+        name="atos-administrativos",
     ),
 ]

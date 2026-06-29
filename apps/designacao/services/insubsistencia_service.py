@@ -7,10 +7,12 @@ consistência dos atos administrativos relacionados.
 from typing import Any
 
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _CAMPOS_ATO = frozenset(
@@ -40,6 +42,47 @@ def _filhos_ativos_ids(
 
 class InsubsistenciaService:
     """Serviço para a criação e reversão de insubsistências."""
+
+    # ── Querysets ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def listar() -> QuerySet:
+        """Retorna queryset de insubsistências ativas (modelo legado)."""
+        return (
+            Insubsistencia.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def listar_v2() -> QuerySet:
+        """Retorna queryset de insubsistências v2 (AtoAdministrativo)."""
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
+            )
+            .select_related("insubsistencia_detalhe")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def buscar_v2(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma insubsistência v2 por pk."""
+        return InsubsistenciaService.listar_v2().filter(pk=pk).first()
+
+    @staticmethod
+    def excluir(instancia: AtoAdministrativo) -> None:
+        """Remove a insubsistência e reativa o ato pai associado.
+
+        Args:
+            instancia: Ato de insubsistência a ser removido.
+
+        """
+        ato_pai = instancia.ato_pai
+        if ato_pai:
+            ato_pai.ativo = True
+            ato_pai.save(update_fields=["ativo"])
+        instancia.delete()
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
@@ -77,6 +120,7 @@ class InsubsistenciaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )

@@ -35,6 +35,7 @@ class DesignacaoService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 **data_ato,
             )
             DesignacaoDetalhe.objects.create(ato=ato, **data_detalhe)

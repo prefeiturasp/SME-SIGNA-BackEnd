@@ -14,7 +14,6 @@ from rest_framework.response import Response
 from apps.designacao.api.serializers.apostila_serializer import (
     ApostilaSerializer,
 )
-from apps.designacao.models.apostila import Apostila
 from apps.designacao.services.apostila_service import ApostilaService
 
 
@@ -39,11 +38,7 @@ class ApostilaViewSet(
             QuerySet: Apostilas não deletadas ordenadas por data de criação.
 
         """
-        return (
-            Apostila.objects.filter(is_deleted=False)
-            .select_related("designacao", "cessacao")
-            .order_by("-criado_em")
-        )
+        return ApostilaService.listar()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova apostila a partir dos dados da requisição.

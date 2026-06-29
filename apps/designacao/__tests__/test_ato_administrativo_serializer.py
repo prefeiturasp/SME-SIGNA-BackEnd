@@ -1,15 +1,15 @@
-"""Testes unitários para o serializer de portaria.
+"""Testes unitários para o serializer de atos administrativos.
 
 Este módulo valida a serialização de portarias de atos administrativos,
-incluindo designações, cess ações, insubsistências e apostilas.
+incluindo designações, cessações, insubsistências e apostilas.
 """
 
 from datetime import date
 
 import pytest
 
-from apps.designacao.api.serializers.portaria_serializer import (
-    PortariaListSerializer,
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoListSerializer,
 )
 from apps.designacao.models.apostila_detalhe import ApostilaDetalhe
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -30,52 +30,7 @@ def serialize(ato):
         dict: Dados serializados do ato administrativo.
 
     """
-    return PortariaListSerializer(ato).data
-
-
-# ─── Constantes ────────────────────────────────────────────────────────────
-
-
-DADOS_CESSACAO = {
-    "portaria": "002/2024",
-    "ano_vigente": "2024",
-    "numero_sei": "6018.2024/0002345-6",
-    "doc": date(2024, 10, 24),
-    "remocao": False,
-    "a_pedido": False,
-    "aposentadoria": False,
-    "data_cessacao": date(2024, 6, 30),
-}
-
-DADOS_DESIGNACAO = {
-    "portaria": "001/2024",
-    "ano_vigente": "2024",
-    "numero_sei": "6018.2024/0001234-5",
-    "doc": date(2024, 10, 23),
-    "dre_nome": "DRE BUTANTA",
-    "indicado_rf": "12345678",
-    "indicado_vinculo": 1,
-    "indicado_nome_civil": "Maria da Silva",
-    "indicado_nome_servidor": "MARIA SILVA",
-    "indicado_lotacao": "EMEF TESTE 1",
-    "indicado_cargo_base": "PROFESSOR DE EF I",
-    "indicado_cargo_sobreposto": "DIRETOR DE ESCOLA",
-    "indicado_local_exercicio": "EMEF TESTE 1",
-    "indicado_categoria": "",
-    "tipo_vaga": "VAGO",
-    "titular_nome_civil": "",
-    "titular_nome_servidor": "",
-    "titular_rf": "",
-    "titular_cargo_base": "",
-    "titular_vinculo": None,
-    "impedimento_substituicao": None,
-    "ue": "",
-    "codigo_hierarquico": "108600",
-    "data_inicio": date(2024, 1, 15),
-    "data_fim": None,
-    "com_afastamento": False,
-    "motivo_afastamento": "",
-}
+    return AtoAdministrativoListSerializer(ato).data
 
 
 # ─── Fixtures base ───────────────────────────────────────────────────────────
@@ -91,6 +46,7 @@ def designacao(db):
         sei_numero="6018.2024/0001234-5",
         doc="2024-10-23",
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
     )
     DesignacaoDetalhe.objects.create(
         ato=ato,
@@ -115,6 +71,39 @@ def designacao(db):
 
 
 @pytest.fixture
+def designacao_sem_apostila(db):
+    """Método designacao com data fim."""
+    ato = AtoAdministrativo.objects.create(
+        tipo="DESIGNACAO",
+        numero_portaria="005/2024",
+        ano_vigente="2024",
+        sei_numero="6018.2024/0005678-9",
+        doc=None,
+        ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+    )
+    DesignacaoDetalhe.objects.create(
+        ato=ato,
+        dre_nome="DRE LAPA",
+        unidade_proponente="EMEF TESTE 5",
+        codigo_hierarquico="108900",
+        indicado_nome_servidor="CARLOS LIMA",
+        indicado_nome_civil="Carlos Lima",
+        indicado_rf="11223344",
+        indicado_vinculo=1,
+        indicado_cargo_base="PROFESSOR DE EF I",
+        indicado_lotacao="EMEF TESTE 5",
+        indicado_cargo_sobreposto="",
+        indicado_local_exercicio="EMEF TESTE 5",
+        data_inicio=date(2024, 1, 1),
+        data_fim=date(2024, 12, 31),
+        tipo_vaga="VAGO",
+        cargo_vaga=3360,
+    )
+    return ato
+
+
+@pytest.fixture
 def designacao_com_data_fim(db):
     """Método designacao com data fim."""
     ato = AtoAdministrativo.objects.create(
@@ -124,6 +113,7 @@ def designacao_com_data_fim(db):
         sei_numero="6018.2024/0005678-9",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
     )
     DesignacaoDetalhe.objects.create(
         ato=ato,
@@ -156,6 +146,7 @@ def designacao_sem_cargo_sobreposto(db):
         sei_numero="6018.2024/0006789-0",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
     )
     DesignacaoDetalhe.objects.create(
         ato=ato,
@@ -187,6 +178,7 @@ def cessacao(db, designacao):
         sei_numero="6018.2024/0002345-6",
         doc="2024-10-24",
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.PUBLICADO,
         ato_pai=designacao,
     )
     CessacaoDetalhe.objects.create(
@@ -206,6 +198,7 @@ def insubsistencia(db, designacao):
         sei_numero="6018.2024/0003456-7",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
         ato_pai=designacao,
     )
     InsubsistenciaDetalhe.objects.create(
@@ -225,6 +218,7 @@ def insubsistencia_sem_observacoes(db, designacao):
         sei_numero="6018.2024/0007890-1",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
         ato_pai=designacao,
     )
     InsubsistenciaDetalhe.objects.create(ato=ato, observacoes="")
@@ -241,6 +235,7 @@ def apostila(db, designacao):
         sei_numero="6018.2024/0004567-8",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
         ato_pai=designacao,
     )
     ApostilaDetalhe.objects.create(
@@ -260,6 +255,7 @@ def apostila_cessacao(db, cessacao):
         sei_numero="6019.2024/0004567-8",
         doc=None,
         ativo=True,
+        status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
         ato_pai=cessacao,
     )
     ApostilaDetalhe.objects.create(
@@ -287,46 +283,31 @@ class TestPortariaListSerializer:
         data = serialize(designacao)
         assert set(data.keys()) == {
             "id",
-            "portaria",
-            "doc",
-            "ano",
             "tipo_de_ato",
-            "nome",
-            "cargo",
-            "data_designacao",
-            "data_cessacao",
-            "numero_sei",
+            "criado_em",
             "observacoes",
-            "designacao",
-            "cessacao",
-            "tipo_insubsistencia",
-            "tipo_apostila",
+            "portaria",
+            "ano_vigente",
+            "nome",
+            "status_publicacao",
+            "numero_sei",
             "tipo",
+            "cessacao",
+            "apostilas",
+            "insubsistencia",
         }
-
-    def test_designacao(self, designacao):
-        """Verifica designacao."""
-        assert serialize(designacao)["designacao"] == DADOS_DESIGNACAO
-
-    def test_cessacao(self, cessacao):
-        """Verifica cessacao."""
-        assert serialize(cessacao)["cessacao"] == DADOS_CESSACAO
-
-    def test_desinacao_de_apostila_designacao(self, apostila):
-        """Verifica tipo de ato apostila."""
-        assert serialize(apostila)["designacao"] == DADOS_DESIGNACAO
-
-    def test_desinacao_de_apostila_cessacao(self, apostila_cessacao):
-        """Verifica tipo de ato apostila_cessacao."""
-        assert serialize(apostila_cessacao)["cessacao"] == DADOS_CESSACAO
 
     def test_portaria(self, designacao):
         """Verifica portaria."""
         assert serialize(designacao)["portaria"] == "001/2024"
 
-    def test_doc(self, designacao):
-        """Verifica data DO."""
-        assert serialize(designacao)["doc"] == "2024-10-23"
+    def test_status_nao_publicado(self, designacao):
+        """Verifica status_publicacao  não publicado."""
+        assert serialize(designacao)["status_publicacao"] == "NAO_PUBLICADO"
+
+    def test_status_publicado(self, cessacao):
+        """Verifica status_publicacao."""
+        assert serialize(cessacao)["status_publicacao"] == "PUBLICADO"
 
     def test_numero_sei(self, designacao):
         """Verifica numero sei."""
@@ -419,68 +400,6 @@ class TestPortariaListSerializer:
         ).get(pk=apostila.pk)
         assert serialize(ato)["nome"] == "MARIA SILVA"
 
-    # ── cargo ────────────────────────────────────────────────────────────────
-
-    def test_cargo_usa_sobreposto(self, designacao):
-        """Verifica cargo usa sobreposto."""
-        assert serialize(designacao)["cargo"] == "DIRETOR DE ESCOLA"
-
-    def test_cargo_usa_base_quando_sobreposto_vazio(
-        self, designacao_sem_cargo_sobreposto
-    ):
-        """Verifica cargo usa base quando sobreposto vazio."""
-        assert (
-            serialize(designacao_sem_cargo_sobreposto)["cargo"]
-            == "PROFESSOR DE EF II"
-        )
-
-    # ── data_designacao ──────────────────────────────────────────────────────
-
-    def test_data_designacao(self, designacao):
-        """Verifica data designacao."""
-        assert serialize(designacao)["data_designacao"] == date(2024, 1, 15)
-
-    def test_data_designacao_cessacao_herda_do_pai(self, cessacao, designacao):
-        """Verifica data designacao cessacao herda do pai."""
-        ato = AtoAdministrativo.objects.select_related(
-            "ato_pai__designacao_detalhe",
-            "ato_raiz__designacao_detalhe",
-        ).get(pk=cessacao.pk)
-        assert serialize(ato)["data_designacao"] == date(2024, 1, 15)
-
-    # ── data_cessacao ────────────────────────────────────────────────────────
-
-    def test_data_cessacao_em_ato_cessacao(self, cessacao):
-        """Verifica data cessacao em ato cessacao."""
-        ato = AtoAdministrativo.objects.select_related("cessacao_detalhe").get(
-            pk=cessacao.pk
-        )
-        assert serialize(ato)["data_cessacao"] == date(2024, 6, 30)
-
-    def test_data_cessacao_designacao_sem_data_fim(self, designacao):
-        """Verifica data cessacao designacao sem data fim."""
-        ato = AtoAdministrativo.objects.select_related(
-            "designacao_detalhe"
-        ).get(pk=designacao.pk)
-        assert serialize(ato)["data_cessacao"] is None
-
-    def test_data_cessacao_designacao_com_data_fim(
-        self, designacao_com_data_fim
-    ):
-        """Verifica data cessacao designacao com data fim."""
-        ato = AtoAdministrativo.objects.select_related(
-            "designacao_detalhe"
-        ).get(pk=designacao_com_data_fim.pk)
-        assert serialize(ato)["data_cessacao"] == date(2024, 12, 31)
-
-    def test_data_cessacao_insubsistencia_retorna_none(self, insubsistencia):
-        """Verifica data cessacao insubsistencia retorna none."""
-        ato = AtoAdministrativo.objects.select_related(
-            "ato_pai__designacao_detalhe",
-            "insubsistencia_detalhe",
-        ).get(pk=insubsistencia.pk)
-        assert serialize(ato)["data_cessacao"] is None
-
     # ── observacoes ──────────────────────────────────────────────────────────
 
     def test_observacoes_designacao_retorna_none(self, designacao):
@@ -523,95 +442,114 @@ class TestPortariaListSerializer:
             == "Apostila de retificacao de cargo."
         )
 
-    # ── motivo_afastamento ───────────────────────────────────────────────────
+    # ── filhos relacionados (cessação, apostilas, insubsistência) ──────────
 
-    def test_motivo_afastamento_vazio_por_padrao(self, designacao):
-        """Verifica motivo_afastamento vazio por padrão."""
-        data = serialize(designacao)
-        assert data["designacao"]["motivo_afastamento"] == ""
-        assert data["designacao"]["com_afastamento"] is False
-
-    def test_motivo_afastamento_preenchido_na_designacao(self, db):
-        """Verifica motivo_afastamento preenchido retorna na portaria de designação."""
-        texto = (
-            "com afastamento total, nos termos do inciso IV do artigo 66 "
-            "da Lei 14.660/07, do cargo Professor Educação Infantil, vínculo 2."
+    def test_cessacao_retorna_dados_quando_existir(self, designacao, cessacao):
+        """Verifica cessacao retorna dados simplificados."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
         )
-        ato = AtoAdministrativo.objects.create(
-            tipo="DESIGNACAO",
+        assert serialize(ato)["cessacao"] == {
+            "id": cessacao.id,
+            "sei_numero": "6018.2024/0002345-6",
+            "doc": date(2024, 10, 24),
+        }
+
+    def test_cessacao_retorna_none_quando_nao_existir(self, designacao):
+        """Verifica cessacao retorna none quando não há filho cessacao."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["cessacao"] is None
+
+    def test_apostilas_retorna_lista_de_apostilas(self, designacao, apostila):
+        """Verifica apostilas retorna lista com atos do tipo apostila."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["apostilas"] == [
+            {
+                "id": apostila.id,
+                "sei_numero": "6018.2024/0004567-8",
+                "doc": None,
+            }
+        ]
+
+    def test_apostilas_ignora_filho_apostila_sem_detalhe(
+        self, designacao_sem_apostila
+    ):
+        """Verifica apostila sem detalhe é ignorada no serializer."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao_sem_apostila.pk
+        )
+        assert serialize(ato)["apostilas"] == []
+
+    def test_apostilas_retorna_vazio_quando_nao_existir(self, designacao):
+        """Verifica apostilas retorna lista vazia sem filhos apostila."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["apostilas"] == []
+
+    def test_insubsistencia_retorna_dados_quando_existir(
+        self, designacao, insubsistencia
+    ):
+        """Verifica insubsistencia ativa retorna dados simplificados."""
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["insubsistencia"] == {
+            "id": insubsistencia.id,
+            "sei_numero": "6018.2024/0003456-7",
+            "doc": None,
+        }
+
+    def test_insubsistencia_retorna_none_sem_filho_valido(self, designacao):
+        """Verifica insubsistencia retorna none quando não há válida."""
+        AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
+            numero_portaria="009/2024",
+            ano_vigente="2024",
+            sei_numero="6018.2024/0001111-1",
+            doc=None,
+            ativo=False,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+            ato_pai=designacao,
+        )
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serialize(ato)["insubsistencia"] is None
+
+    def test_metodo_privado_serializar_insubsistencia_retorna_observacoes(
+        self, designacao, insubsistencia
+    ):
+        """Verifica _serializar_insubsistencia retorna observacoes."""
+        serializer = AtoAdministrativoListSerializer()
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serializer._serializar_insubsistencia(ato) == {
+            "id": insubsistencia.id,
+            "observacoes": "Portaria revogada por erro material.",
+        }
+
+    def test_metodo_privado_serializar_insubsistencia_retorna_none_sem_detalhe(
+        self, designacao
+    ):
+        """Verifica _serializar_insubsistencia retorna none sem detalhe."""
+        AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
             numero_portaria="010/2024",
             ano_vigente="2024",
-            sei_numero="6018.2024/0010000-1",
+            sei_numero="6018.2024/0002222-2",
+            doc=None,
             ativo=True,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+            ato_pai=designacao,
         )
-        DesignacaoDetalhe.objects.create(
-            ato=ato,
-            dre_nome="DRE IPIRANGA",
-            unidade_proponente="EMEF TESTE 10",
-            codigo_hierarquico="109100",
-            indicado_nome_servidor="JOSE SILVA",
-            indicado_nome_civil="José Silva",
-            indicado_rf="99887766",
-            indicado_vinculo=2,
-            indicado_cargo_base="PROFESSOR EDUCACAO INFANTIL",
-            indicado_lotacao="EMEF TESTE 10",
-            indicado_local_exercicio="EMEF TESTE 10",
-            data_inicio=date(2024, 2, 1),
-            tipo_vaga="VAGO",
-            cargo_vaga=3360,
-            com_afastamento=True,
-            motivo_afastamento=texto,
+        serializer = AtoAdministrativoListSerializer()
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
         )
-        data = serialize(ato)
-        assert data["designacao"]["com_afastamento"] is True
-        assert data["designacao"]["motivo_afastamento"] == texto
-
-    def test_motivo_afastamento_disponivel_na_portaria_de_cessacao(self, db):
-        """Verifica motivo_afastamento da designação está disponível na portaria de cessação."""
-        texto = (
-            "com afastamento total, nos termos do art. 66 da Lei 14.660/07."
-        )
-        ato_desig = AtoAdministrativo.objects.create(
-            tipo="DESIGNACAO",
-            numero_portaria="011/2024",
-            ano_vigente="2024",
-            sei_numero="6018.2024/0011000-2",
-            ativo=True,
-        )
-        DesignacaoDetalhe.objects.create(
-            ato=ato_desig,
-            dre_nome="DRE CAMPO LIMPO",
-            unidade_proponente="EMEF TESTE 11",
-            codigo_hierarquico="109200",
-            indicado_nome_servidor="ANA LIMA",
-            indicado_nome_civil="Ana Lima",
-            indicado_rf="11223366",
-            indicado_vinculo=1,
-            indicado_cargo_base="PROFESSOR DE EF I",
-            indicado_lotacao="EMEF TESTE 11",
-            indicado_local_exercicio="EMEF TESTE 11",
-            data_inicio=date(2024, 3, 1),
-            tipo_vaga="VAGO",
-            cargo_vaga=3360,
-            com_afastamento=True,
-            motivo_afastamento=texto,
-        )
-        ato_cess = AtoAdministrativo.objects.create(
-            tipo="CESSACAO",
-            numero_portaria="012/2024",
-            ano_vigente="2024",
-            sei_numero="6018.2024/0012000-3",
-            ativo=True,
-            ato_pai=ato_desig,
-        )
-        CessacaoDetalhe.objects.create(
-            ato=ato_cess,
-            data_cessacao=date(2024, 9, 30),
-        )
-        ato = AtoAdministrativo.objects.select_related(
-            "ato_pai__designacao_detalhe",
-            "cessacao_detalhe",
-        ).get(pk=ato_cess.pk)
-        data = serialize(ato)
-        assert data["designacao"]["com_afastamento"] is True
-        assert data["designacao"]["motivo_afastamento"] == texto
+        assert serializer._serializar_insubsistencia(ato) is None

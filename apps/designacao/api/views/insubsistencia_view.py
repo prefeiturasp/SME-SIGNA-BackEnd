@@ -16,10 +16,7 @@ from apps.designacao.api.serializers.insubsistencia_serializer import (
     InsubsistenciaSerializer,
 )
 from apps.designacao.api.serializers.utils import extrair_mensagem_erro
-from apps.designacao.models.insubsistencia import (
-    Insubsistencia,
-    TipoInsubsistencia,
-)
+from apps.designacao.models.insubsistencia import TipoInsubsistencia
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
@@ -46,11 +43,7 @@ class InsubsistenciaViewSet(
             QuerySet: Insubsistências não deletadas ordenadas por criação.
 
         """
-        return (
-            Insubsistencia.objects.filter(is_deleted=False)
-            .select_related("designacao", "cessacao")
-            .order_by("-criado_em")
-        )
+        return InsubsistenciaService.listar()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova insubsistência.

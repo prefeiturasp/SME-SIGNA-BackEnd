@@ -8,6 +8,7 @@ import datetime
 from typing import Any
 
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila import Apostila
@@ -35,6 +36,38 @@ _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 
 class ApostilaService:
     """Serviço de negócio para manipular apostilas."""
+
+    # ── Querysets ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def listar() -> QuerySet:
+        """Retorna queryset de apostilas ativas (modelo legado)."""
+        return (
+            Apostila.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def listar_v2() -> QuerySet:
+        """Retorna queryset de apostilas v2 (AtoAdministrativo)."""
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.APOSTILA
+            )
+            .select_related("apostila_detalhe")
+            .prefetch_related(
+                "apostila_detalhe__alteracoes",
+                "filhos",
+                "filhos__insubsistencia_detalhe",
+            )
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def buscar_v2(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma apostila v2 por pk com todos os prefetches."""
+        return ApostilaService.listar_v2().filter(pk=pk).first()
 
     # ── Legado (modelo Apostila) ──────────────────────────────────────────────  # noqa: E501
 
@@ -174,6 +207,7 @@ class ApostilaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.APOSTILA,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )

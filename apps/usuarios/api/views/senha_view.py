@@ -8,8 +8,6 @@ import logging
 from typing import Any, cast
 
 import environ
-from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction
 from rest_framework import permissions, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
@@ -33,7 +31,6 @@ from apps.usuarios.services.senha_service import SenhaService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
-UserModel = get_user_model()
 env = environ.Env()
 
 
@@ -66,7 +63,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.info("Fluxo de recuperação iniciado para %s", username)
 
             # 1. Busca usuário local
-            user_local = UserModel.objects.filter(username=username).first()
+            user_local = SenhaService.buscar_usuario_local(username)
 
             # 2. Consulta SME
             dados_sme = self._consultar_sme(username, user_local)
@@ -79,7 +76,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
             # 5. Sincroniza usuário local se necessário
             if dados_sme and dados_sme.get("nome"):
-                user_local = self._criar_ou_atualizar_usuario_local(
+                user_local = SenhaService.sincronizar_usuario_local(
                     username, dados_sme
                 )
 
@@ -192,50 +189,6 @@ class EsqueciMinhaSenhaViewSet(APIView):
             status=200,
         )
 
-    def _criar_ou_atualizar_usuario_local(
-        self, username: str, dados_sme: dict
-    ) -> User:
-        """Cria ou atualiza usuário local com dados da SME.
-
-        Usa update_or_create para evitar duplicação.
-        """
-        logger.info("Sincronizando usuário local para %s", username)
-
-        nome = dados_sme.get("nome")
-        if not nome:
-            logger.warning(
-                "Dados SME sem nome para %s, pulando sincronização", username
-            )
-            return UserModel.objects.get(
-                username=username
-            )  # Retorna usuário existente
-
-        try:
-            with transaction.atomic():
-                user, created = UserModel.objects.update_or_create(
-                    username=username,
-                    defaults={
-                        "name": nome,
-                        "email": dados_sme.get("email", ""),
-                        "cpf": dados_sme.get("numeroDocumento", ""),
-                    },
-                )
-
-            action = "criado" if created else "atualizado"
-            logger.info("Usuário %s %s localmente", username, action)
-            return user
-
-        except IntegrityError as exc:
-            logger.error(
-                "Falha ao sincronizar usuário %s: %s",
-                username,
-                str(exc),
-            )
-            raise EmailNaoCadastradoError(
-                "Já existe um usuário com este e-mail. <br/>"
-                "Entre em contato com o administrador do sistema."
-            ) from exc
-
 
 class RedefinirSenhaViewSet(APIView):
     """View para redefinição de senha via UID e token.
@@ -308,9 +261,7 @@ class RedefinirSenhaViewSet(APIView):
             )
 
         try:
-            with transaction.atomic():
-                user.set_password(new_password)
-                user.save(update_fields=["password"])
+            SenhaService.atualizar_senha_local(user, new_password)
         except Exception:
             logger.exception(
                 "Senha redefinida na SME, mas falha ao atualizar senha local "
@@ -363,20 +314,15 @@ class AtualizarSenhaViewSet(APIView):
         nova_senha = serializer.validated_data["nova_senha"]
 
         try:
-            with transaction.atomic():
-                SmeIntegracaoService.redefine_senha(user.username, nova_senha)
+            SmeIntegracaoService.redefine_senha(user.username, nova_senha)
+            SenhaService.atualizar_senha_local(user, nova_senha)
 
-                user.set_password(nova_senha)
-                user.save(update_fields=["password"])
+            logger.info("Usuário ID %s alterou a senha com sucesso.", user.id)
 
-                logger.info(
-                    "Usuário ID %s alterou a senha com sucesso.", user.id
-                )
-
-                return Response(
-                    {"detail": self.MENSAGEM_SUCESSO},
-                    status=status.HTTP_200_OK,
-                )
+            return Response(
+                {"detail": self.MENSAGEM_SUCESSO},
+                status=status.HTTP_200_OK,
+            )
 
         except SmeIntegracaoError as e:
             logger.error(

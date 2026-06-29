@@ -75,6 +75,19 @@ class TestAtoAdministrativoStatus:
 
 
 @pytest.mark.django_db
+class TestAtoAdministrativoStatusPublicacao:
+    """Testes para ato administrativo status publicação."""
+
+    def test_status_publicacao(self):
+        """Verifica status publicação."""
+        d = criar_ato_designacao()
+        assert (
+            d.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+        )
+
+
+@pytest.mark.django_db
 class TestAtoAdministrativoAtoRaiz:
     """Testes para ato administrativo ato raiz."""
 

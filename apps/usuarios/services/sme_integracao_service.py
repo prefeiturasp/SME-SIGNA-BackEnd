@@ -8,6 +8,9 @@ import logging
 
 import environ
 import requests
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 
 from apps.designacao.constants.cargos_gestao_escolar import (
@@ -18,6 +21,7 @@ from apps.helpers.exceptions import (
     InternalError,
     SmeIntegracaoError,
 )
+from apps.usuarios.models import User
 
 MSG_RF_OBRIGATORIO = "Registro funcional é obrigatório"
 MSG_ERRO_COMUNICACAO_SME = "Erro de comunicação com SME"
@@ -26,6 +30,7 @@ MSG_ERRO_CARGOS = "Erro ao consultar cargos do servidor"
 
 env = environ.Env()
 logger = logging.getLogger(__name__)
+UserModel = get_user_model()
 
 
 class SmeIntegracaoService:
@@ -40,6 +45,43 @@ class SmeIntegracaoService:
         "x-api-eol-key": env("SME_INTEGRACAO_TOKEN", default=""),
     }
     TIMEOUT = 30
+
+    @classmethod
+    def sincronizar_usuario_local(
+        cls,
+        login: str,
+        senha: str,
+        dados_sme: dict,
+    ) -> User:
+        """Cria ou atualiza o usuário local com dados retornados pela SME.
+
+        Args:
+            login (str): Nome de usuário ou RF.
+            senha (str): Senha utilizada no login.
+            dados_sme (dict): Dados do usuário retornados pela SME.
+
+        Returns:
+            User: Instância do usuário criado ou atualizado.
+
+        """
+        with transaction.atomic():
+            defaults = {
+                "name": dados_sme.get("nome"),
+                "email": dados_sme.get("email"),
+                "cpf": dados_sme.get("numeroDocumento"),
+                "last_login": timezone.now(),
+            }
+
+            user, created = UserModel.objects.update_or_create(
+                username=login,
+                defaults=defaults,
+            )
+
+            if created or not user.check_password(senha):
+                user.set_password(senha)
+                user.save()
+
+            return user
 
     @classmethod
     def autentica(cls, login: str, senha: str) -> dict:
