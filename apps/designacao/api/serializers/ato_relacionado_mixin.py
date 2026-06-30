@@ -93,14 +93,8 @@ class AtoRelacionadoMixin:
                 "data_inicio": detalhe.data_inicio,
                 "data_fim": detalhe.data_fim,
                 "com_afastamento": detalhe.com_afastamento,
-                "motivo_afastamento": (
-                    detalhe.motivo_afastamento
-                    if detalhe.motivo_afastamento
-                    else None
-                ),
-                "pendencias": (
-                    detalhe.pendencias if detalhe.pendencias else None
-                ),
+                "motivo_afastamento": detalhe.motivo_afastamento,
+                "pendencias": detalhe.pendencias,
             }
         return None
 

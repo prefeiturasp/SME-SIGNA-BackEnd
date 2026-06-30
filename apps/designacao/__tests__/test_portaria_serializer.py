@@ -48,9 +48,9 @@ DADOS_CESSACAO = {
 }
 
 DADOS_DESIGNACAO = {
-    "portaria": "001/2024",
+    "numero_portaria": "001/2024",
     "ano_vigente": "2024",
-    "numero_sei": "6018.2024/0001234-5",
+    "sei_numero": "6018.2024/0001234-5",
     "doc": date(2024, 10, 23),
     "dre_nome": "DRE BUTANTA",
     "indicado_rf": "12345678",
@@ -75,6 +75,7 @@ DADOS_DESIGNACAO = {
     "data_fim": None,
     "com_afastamento": False,
     "motivo_afastamento": "",
+    "pendencias": "",
 }
 
 
@@ -312,7 +313,7 @@ class TestPortariaListSerializer:
         """Verifica cessacao."""
         assert serialize(cessacao)["cessacao"] == DADOS_CESSACAO
 
-    def test_desinacao_de_apostila_designacao(self, apostila):
+    def test_designacao_de_apostila_designacao(self, apostila):
         """Verifica tipo de ato apostila."""
         assert serialize(apostila)["designacao"] == DADOS_DESIGNACAO
 
