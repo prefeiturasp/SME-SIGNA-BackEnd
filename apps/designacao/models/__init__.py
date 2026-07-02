@@ -5,4 +5,5 @@ from .cessacao import Cessacao
 from .cessacao_detalhe import CessacaoDetalhe
 from .designacao import Designacao, ImpedimentoSubstituicao
 from .designacao_detalhe import DesignacaoDetalhe
+from .insubsistencia_apostila_detalhe import InsubsistenciaApostilaDetalhe
 from .insubsistencia_detalhe import InsubsistenciaDetalhe

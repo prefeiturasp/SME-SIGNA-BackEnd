@@ -26,6 +26,7 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
     observacoes = serializers.CharField(required=False, default="")
+    texto_apostila = serializers.CharField(required=False, default="")
 
     def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
@@ -62,6 +63,7 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
     observacoes = serializers.CharField(
         source="insubsistencia_detalhe.observacoes", read_only=True
     )
+    texto_apostila = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -76,6 +78,7 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
             "doc",
             "criado_em",
             "observacoes",
+            "texto_apostila",
         ]
 
     def get_status(self, obj: AtoAdministrativo) -> str:
@@ -89,3 +92,16 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
 
         """
         return obj.status
+
+    def get_texto_apostila(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o texto da anulação quando a insubsistência é de apostila.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str | None: Texto da anulação ou None se não aplicável.
+
+        """
+        detalhe = getattr(obj, "insubsistencia_apostila_detalhe", None)
+        return detalhe.texto if detalhe else None

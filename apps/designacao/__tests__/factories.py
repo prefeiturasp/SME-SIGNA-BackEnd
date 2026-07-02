@@ -9,6 +9,9 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.designacao.models.insubsistencia_apostila_detalhe import (
+    InsubsistenciaApostilaDetalhe,
+)
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _ATO = frozenset({"numero_portaria", "ano_vigente", "sei_numero", "doc"})
@@ -131,4 +134,10 @@ def criar_ato_insubsistencia(ato_pai, **kwargs):
     InsubsistenciaDetalhe.objects.create(
         ato=ato, observacoes=kwargs.get("observacoes", "")
     )
+
+    if ato_pai.tipo == AtoAdministrativo.Tipo.APOSTILA:
+        InsubsistenciaApostilaDetalhe.objects.create(
+            ato=ato, texto=kwargs.get("texto_apostila", "")
+        )
+
     return ato
