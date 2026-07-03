@@ -13,6 +13,9 @@ from rest_framework.exceptions import ValidationError
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 from apps.designacao.models.insubsistencia import Insubsistencia
+from apps.designacao.models.insubsistencia_apostila_detalhe import (
+    InsubsistenciaApostilaDetalhe,
+)
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _CAMPOS_ATO = frozenset(
@@ -61,7 +64,10 @@ class InsubsistenciaService:
             AtoAdministrativo.objects.filter(
                 tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
             )
-            .select_related("insubsistencia_detalhe")
+            .select_related(
+                "insubsistencia_detalhe",
+                "insubsistencia_apostila_detalhe",
+            )
             .order_by("-criado_em")
         )
 
@@ -117,6 +123,8 @@ class InsubsistenciaService:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         observacoes = data.get("observacoes", "")
 
+        texto_apostila = data.get("texto_apostila", "")
+
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
@@ -127,6 +135,11 @@ class InsubsistenciaService:
             InsubsistenciaDetalhe.objects.create(
                 ato=ato, observacoes=observacoes
             )
+
+            if ato_pai.tipo == AtoAdministrativo.Tipo.APOSTILA:
+                InsubsistenciaApostilaDetalhe.objects.create(
+                    ato=ato, texto=texto_apostila
+                )
 
             ato_pai.ativo = False
             ato_pai.save(update_fields=["ativo"])

@@ -10,11 +10,15 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
     criar_ato_cessacao,
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.insubsistencia_apostila_detalhe import (
+    InsubsistenciaApostilaDetalhe,
+)
 
 User = get_user_model()
 
@@ -145,3 +149,62 @@ def test_destroy_insubsistencia_v2_restaura_pai(auth_client):
     assert not AtoAdministrativo.objects.filter(pk=insub.pk).exists()
     d.refresh_from_db()
     assert d.ativo
+
+
+@pytest.mark.django_db
+def test_create_insubsistencia_v2_de_apostila_cria_detalhe(auth_client):
+    """Insubsistência de apostila cria InsubsistenciaApostilaDetalhe."""
+    d = criar_ato_designacao()
+    apostila = criar_ato_apostila(d)
+    url = reverse("designacao_v2:insubsistencias")
+    payload = _payload(
+        apostila.id, texto_apostila="Texto de anulação da apostila"
+    )
+    response = auth_client.post(url, data=payload, format="json")
+    assert response.status_code == 201
+    insub = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ato_pai=apostila
+    )
+    assert InsubsistenciaApostilaDetalhe.objects.filter(ato=insub).exists()
+    assert (
+        InsubsistenciaApostilaDetalhe.objects.get(ato=insub).texto
+        == "Texto de anulação da apostila"
+    )
+
+
+@pytest.mark.django_db
+def test_create_insubsistencia_v2_de_apostila_retorna_texto(auth_client):
+    """Resposta da insubsistência de apostila inclui texto_apostila."""
+    d = criar_ato_designacao()
+    apostila = criar_ato_apostila(d)
+    url = reverse("designacao_v2:insubsistencias")
+    payload = _payload(apostila.id, texto_apostila="Motivo formal da anulação")
+    response = auth_client.post(url, data=payload, format="json")
+    assert response.status_code == 201
+    assert response.data["texto_apostila"] == "Motivo formal da anulação"
+
+
+@pytest.mark.django_db
+def test_insubsistencia_v2_de_designacao_texto_apostila_nulo(auth_client):
+    """Insubsistência de designação retorna texto_apostila como None."""
+    d = criar_ato_designacao()
+    url = reverse("designacao_v2:insubsistencias")
+    response = auth_client.post(url, data=_payload(d.id), format="json")
+    assert response.status_code == 201
+    assert response.data["texto_apostila"] is None
+
+
+@pytest.mark.django_db
+def test_retrieve_insubsistencia_v2_apostila_exibe_texto(auth_client):
+    """Retrieve de insubsistência de apostila exibe texto_apostila."""
+    d = criar_ato_designacao()
+    apostila = criar_ato_apostila(d)
+    insub = criar_ato_insubsistencia(
+        apostila, texto_apostila="Texto via factory"
+    )
+    apostila.ativo = False
+    apostila.save(update_fields=["ativo"])
+    url = reverse("designacao_v2:insubsistencia-detail", args=[insub.id])
+    response = auth_client.get(url)
+    assert response.status_code == 200
+    assert response.data["texto_apostila"] == "Texto via factory"
