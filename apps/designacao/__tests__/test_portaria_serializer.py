@@ -48,9 +48,9 @@ DADOS_CESSACAO = {
 }
 
 DADOS_DESIGNACAO = {
-    "numero_portaria": "001/2024",
+    "portaria": "001/2024",
     "ano_vigente": "2024",
-    "sei_numero": "6018.2024/0001234-5",
+    "numero_sei": "6018.2024/0001234-5",
     "doc": date(2024, 10, 23),
     "dre_nome": "DRE BUTANTA",
     "indicado_rf": "12345678",
