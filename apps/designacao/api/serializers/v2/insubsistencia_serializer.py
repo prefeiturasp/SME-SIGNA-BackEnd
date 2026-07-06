@@ -28,8 +28,12 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     ano_vigente = serializers.CharField(max_length=6)
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
-    observacoes = serializers.CharField(required=False, default="")
-    texto_apostila = serializers.CharField(required=False, default="")
+    observacoes = serializers.CharField(
+        allow_blank=True, required=False, default=""
+    )
+    texto_apostila = serializers.CharField(
+        allow_blank=True, required=False, default=""
+    )
 
     def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
