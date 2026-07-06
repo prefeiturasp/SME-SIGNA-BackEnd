@@ -206,7 +206,7 @@ class TestAtoAdministrativoListView:
             "ano_vigente",
             "nome",
             "status_publicacao",
-            "numero_sei",
+            "sei_numero",
             "tipo",
             "cessacao",
             "apostilas",
@@ -258,7 +258,7 @@ class TestAtoAdministrativoListView:
         )
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["numero_sei"] == "6018.2024/0002345-6"
+        assert response.data[0]["sei_numero"] == "6018.2024/0002345-6"
 
     def test_ordering_numero_portaria_desc(
         self, auth_client, designacao_1, designacao_2

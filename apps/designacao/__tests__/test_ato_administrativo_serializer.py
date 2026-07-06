@@ -290,7 +290,7 @@ class TestPortariaListSerializer:
             "ano_vigente",
             "nome",
             "status_publicacao",
-            "numero_sei",
+            "sei_numero",
             "tipo",
             "cessacao",
             "apostilas",
@@ -311,7 +311,7 @@ class TestPortariaListSerializer:
 
     def test_numero_sei(self, designacao):
         """Verifica numero sei."""
-        assert serialize(designacao)["numero_sei"] == "6018.2024/0001234-5"
+        assert serialize(designacao)["sei_numero"] == "6018.2024/0001234-5"
 
     def test_id(self, designacao):
         """Verifica id."""

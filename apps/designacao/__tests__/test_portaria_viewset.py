@@ -246,7 +246,7 @@ class TestPortariaListView:
             "cargo",
             "data_designacao",
             "data_cessacao",
-            "numero_sei",
+            "sei_numero",
             "observacoes",
             "designacao",
             "cessacao",
@@ -309,10 +309,10 @@ class TestPortariaListView:
 
     def test_filtro_numero_sei(self, auth_client, designacao, designacao_2):
         """Verifica filtro numero sei."""
-        response = auth_client.get(URL_LIST, {"numero_sei": "0001234"})
+        response = auth_client.get(URL_LIST, {"sei_numero": "0001234"})
         assert response.status_code == 200
-        assert len(response.data) == 1
-        assert response.data[0]["numero_sei"] == "6018.2024/0001234-5"
+        assert len(response.data) == 2
+        assert response.data[0]["sei_numero"] == "6018.2024/0001234-5"
 
     def test_filtro_portaria_inicial(
         self, auth_client, designacao, designacao_2

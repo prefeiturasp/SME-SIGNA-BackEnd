@@ -28,7 +28,6 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
     cargo = serializers.SerializerMethodField()
     data_designacao = serializers.SerializerMethodField()
     data_cessacao = serializers.SerializerMethodField()
-    numero_sei = serializers.CharField(source="sei_numero")
     observacoes = serializers.SerializerMethodField()
 
     ano = serializers.CharField(source="ano_vigente")
@@ -49,7 +48,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "cargo",
             "data_designacao",
             "data_cessacao",
-            "numero_sei",
+            "sei_numero",
             "observacoes",
             "designacao",
             "cessacao",

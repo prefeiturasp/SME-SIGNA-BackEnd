@@ -65,7 +65,7 @@ class AtoRelacionadoMixin:
             return {
                 "portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
-                "numero_sei": ato_designacao.sei_numero,
+                "sei_numero": ato_designacao.sei_numero,
                 "doc": ato_designacao.doc,
                 "dre_nome": detalhe.dre_nome,
                 "indicado_rf": detalhe.indicado_rf,
@@ -107,7 +107,7 @@ class AtoRelacionadoMixin:
             return {
                 "portaria": ato_cessacao.numero_portaria,
                 "ano_vigente": ato_cessacao.ano_vigente,
-                "numero_sei": ato_cessacao.sei_numero,
+                "sei_numero": ato_cessacao.sei_numero,
                 "doc": ato_cessacao.doc,
                 "remocao": detalhe.remocao,
                 "a_pedido": detalhe.a_pedido,

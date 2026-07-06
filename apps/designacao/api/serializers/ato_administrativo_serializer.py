@@ -37,7 +37,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "ano_vigente",
             "nome",
             "status_publicacao",
-            "numero_sei",
+            "sei_numero",
             "tipo",
             "cessacao",
             "apostilas",
