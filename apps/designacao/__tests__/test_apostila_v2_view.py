@@ -59,6 +59,24 @@ def test_create_apostila_v2_em_designacao(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_apostila_v2_registra_criado_por(auth_client):
+    """Verifica que a apostila criada registra o usuario responsavel."""
+    designacao = criar_ato_designacao()
+    user = User.objects.get(username="test_apostila_v2")
+
+    url = reverse("designacao_v2:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    apostila = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=designacao
+    )
+    assert apostila.criado_por_id == user.id
+
+
+@pytest.mark.django_db
 def test_create_apostila_v2_em_cessacao(auth_client):
     """Verifica create apostila v2 em cessacao."""
     designacao = criar_ato_designacao()
