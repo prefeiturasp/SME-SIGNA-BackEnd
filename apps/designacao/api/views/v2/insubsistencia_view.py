@@ -73,6 +73,7 @@ class InsubsistenciaV2ViewSet(
         """
         serializer = InsubsistenciaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = InsubsistenciaService.criar(serializer.validated_data)
 

@@ -147,6 +147,7 @@ class DesignacaoViewSet(
         """
         serializer = DesignacaoWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = DesignacaoService.criar(serializer.validated_data)
 

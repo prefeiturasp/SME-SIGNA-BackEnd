@@ -68,6 +68,7 @@ class CessacaoV2ViewSet(
         """
         serializer = CessacaoV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = CessacaoService.criar(serializer.validated_data)
 

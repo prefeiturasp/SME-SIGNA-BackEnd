@@ -19,7 +19,7 @@ from apps.designacao.models.apostila_detalhe import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 
-_CAMPOS_ATO = frozenset({"sei_numero", "doc"})
+_CAMPOS_ATO = frozenset({"sei_numero", "doc", "criado_por"})
 _CAMPOS_PROTEGIDOS = frozenset(
     {
         "id",

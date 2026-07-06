@@ -25,6 +25,8 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
     cessacao = serializers.SerializerMethodField()
     apostilas = serializers.SerializerMethodField()
     insubsistencia = serializers.SerializerMethodField()
+    criado_por_nome = serializers.SerializerMethodField()
+    rf = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -32,10 +34,12 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "id",
             "tipo_de_ato",
             "criado_em",
+            "criado_por_nome",
             "observacoes",
             "portaria",
             "ano_vigente",
             "nome",
+            "rf",
             "status_publicacao",
             "sei_numero",
             "tipo",
@@ -43,6 +47,38 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "apostilas",
             "insubsistencia",
         ]
+
+    def get_criado_por_nome(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o nome do responsável pela criação do ato.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Nome ou username do responsável, ou None se não
+            houver.
+
+        """
+        responsavel = obj.criado_por
+        if not responsavel:
+            return None
+        return responsavel.name or responsavel.username
+
+    def get_rf(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o RF do servidor indicado relacionado ao ato.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: RF do indicado ou None se não houver detalhe de
+            designação relacionado.
+
+        """
+        detalhe = self._get_designacao_detalhe(obj)
+        if detalhe:
+            return detalhe.indicado_rf
+        return None
 
     def get_cessacao(self, obj: AtoAdministrativo) -> dict | None:
         """Retorna dados da cessação associada à designação.

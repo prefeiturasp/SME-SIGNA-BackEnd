@@ -13,7 +13,7 @@ from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
 )
 
 
