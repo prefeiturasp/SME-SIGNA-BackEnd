@@ -67,6 +67,9 @@ class InsubsistenciaService:
             .select_related(
                 "insubsistencia_detalhe",
                 "insubsistencia_apostila_detalhe",
+                "ato_pai__designacao_detalhe",
+                "ato_raiz__designacao_detalhe",
+                "ato_pai__cessacao_detalhe",
             )
             .order_by("-criado_em")
         )

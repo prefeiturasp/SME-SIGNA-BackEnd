@@ -5,6 +5,9 @@ Inclui definição de payloads para escrita e leitura de insubsistência em atos
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_relacionado_mixin import (
+    AtoRelacionadoMixin,
+)
 from apps.designacao.api.serializers.utils import (
     NullableDateField,
     validar_somente_numeros,
@@ -53,7 +56,9 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
         return validar_somente_numeros(value)
 
 
-class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
+class InsubsistenciaV2ReadSerializer(
+    AtoRelacionadoMixin, serializers.ModelSerializer
+):
     """Serializador de leitura para insubsistência v2.
 
     Expõe status e observações da insubsistência.
@@ -64,6 +69,8 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
         source="insubsistencia_detalhe.observacoes", read_only=True
     )
     texto_apostila = serializers.SerializerMethodField()
+    designacao = serializers.SerializerMethodField()
+    cessacao = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -79,6 +86,8 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
             "criado_em",
             "observacoes",
             "texto_apostila",
+            "designacao",
+            "cessacao",
         ]
 
     def get_status(self, obj: AtoAdministrativo) -> str:
