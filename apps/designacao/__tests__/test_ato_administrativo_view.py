@@ -167,7 +167,10 @@ class TestAtoAdministrativoListView:
             "ano_vigente",
             "numero_portaria",
         ]
-        assert AtoAdministrativoListViewSet.ordering == ["numero_portaria"]
+        assert AtoAdministrativoListViewSet.ordering == [
+            "-criado_em",
+            "numero_portaria",
+        ]
 
     def test_retorna_200_com_estrutura_paginada(
         self, auth_client, designacao_1, designacao_2
@@ -211,6 +214,7 @@ class TestAtoAdministrativoListView:
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         }
 
     def test_filtro_status_publicacao(
