@@ -173,6 +173,16 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
 
         """
         if obj.ato_pai and obj.tipo != AtoAdministrativo.Tipo.CESSACAO:
+            if (
+                obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and obj.ato_pai.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+            ):
+                return "Tornar sem efeito"
+            if (
+                obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA
+                and obj.ato_pai.tipo == AtoAdministrativo.Tipo.APOSTILA
+            ):
+                return "Anulação de Apostila"
             return (
                 f"{obj.get_tipo_display()} de {obj.ato_pai.get_tipo_display()}"
             )

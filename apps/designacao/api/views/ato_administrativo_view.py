@@ -49,4 +49,4 @@ class AtoAdministrativoListViewSet(PortariaListViewSet):
         "numero_portaria",
     ]
 
-    ordering = ["numero_portaria"]
+    ordering = ["-criado_em", "numero_portaria"]
