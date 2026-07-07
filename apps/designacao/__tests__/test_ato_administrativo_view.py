@@ -204,10 +204,12 @@ class TestAtoAdministrativoListView:
             "id",
             "tipo_de_ato",
             "criado_em",
+            "criado_por_nome",
             "observacoes",
             "portaria",
             "ano_vigente",
             "nome",
+            "rf",
             "status_publicacao",
             "sei_numero",
             "tipo",
@@ -216,6 +218,34 @@ class TestAtoAdministrativoListView:
             "insubsistencia",
             "tipo_insubsistencia",
         }
+
+    def test_rf_retorna_rf_do_indicado(self, auth_client, designacao_1):
+        """Verifica que rf retorna o RF do indicado na designação."""
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["rf"] == "12345678"
+
+    def test_criado_por_nome_ausente_quando_sem_responsavel(
+        self, auth_client, designacao_1
+    ):
+        """Verifica que criado_por_nome é None quando o ato não tem responsável."""
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["criado_por_nome"] is None
+
+    def test_criado_por_nome_retorna_nome_do_responsavel(
+        self, auth_client, designacao_1
+    ):
+        """Verifica que criado_por_nome retorna o nome de quem criou o ato."""
+        responsavel = User.objects.create_user(
+            username="responsavel_designacao",
+            password=secrets.token_urlsafe(16),
+            email="responsavel_designacao@example.com",
+            name="Fulano da Silva",
+        )
+        designacao_1.criado_por = responsavel
+        designacao_1.save(update_fields=["criado_por"])
+
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["criado_por_nome"] == "Fulano da Silva"
 
     def test_filtro_status_publicacao(
         self, auth_client, designacao_1, designacao_2

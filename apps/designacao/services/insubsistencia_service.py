@@ -19,7 +19,7 @@ from apps.designacao.models.insubsistencia_apostila_detalhe import (
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
 )
 
 

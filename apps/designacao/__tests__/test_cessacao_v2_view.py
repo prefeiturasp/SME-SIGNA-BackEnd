@@ -64,6 +64,24 @@ def test_create_cessacao_v2(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_cessacao_v2_registra_criado_por(auth_client):
+    """Verifica que a cessacao criada registra o usuario responsavel."""
+    designacao = criar_ato_designacao()
+    user = User.objects.get(username="test_cessacao_v2")
+
+    url = reverse("designacao_v2:cessacoes")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    cessacao = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.CESSACAO
+    )
+    assert cessacao.criado_por_id == user.id
+
+
+@pytest.mark.django_db
 def test_create_cessacao_v2_ato_pai_invalido(auth_client):
     """Verifica create cessacao v2 ato pai invalido."""
     url = reverse("designacao_v2:cessacoes")

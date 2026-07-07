@@ -61,6 +61,22 @@ def test_create_insubsistencia_v2_de_designacao(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_insubsistencia_v2_registra_criado_por(auth_client):
+    """Verifica que a insubsistencia criada registra o usuario responsavel."""
+    d = criar_ato_designacao()
+    user = User.objects.get(username="test_insub_v2")
+
+    url = reverse("designacao_v2:insubsistencias")
+    response = auth_client.post(url, data=_payload(d.id), format="json")
+
+    assert response.status_code == 201
+    insub = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ato_pai=d
+    )
+    assert insub.criado_por_id == user.id
+
+
+@pytest.mark.django_db
 def test_create_insubsistencia_v2_de_cessacao(auth_client):
     """Verifica create insubsistencia v2 de cessacao."""
     d = criar_ato_designacao()

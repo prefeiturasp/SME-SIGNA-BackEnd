@@ -70,6 +70,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             "ato_raiz__designacao_detalhe",
             "ato_pai__cessacao_detalhe",
             "ato_pai__apostila_detalhe",
+            "criado_por",
         ).order_by("numero_portaria")
 
         return resp

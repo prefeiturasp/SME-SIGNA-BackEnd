@@ -550,7 +550,10 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
         """
         resultado = []
         for f in ato.filhos.all():
-            if f.tipo != AtoAdministrativo.Tipo.APOSTILA:
+            if (
+                f.tipo != AtoAdministrativo.Tipo.APOSTILA
+                or f.status == "insubsistente"
+            ):
                 continue
             try:
                 d = f.apostila_detalhe
