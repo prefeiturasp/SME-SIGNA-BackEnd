@@ -167,7 +167,7 @@ class TestAtoAdministrativoListView:
             "ano_vigente",
             "numero_portaria",
         ]
-        assert AtoAdministrativoListViewSet.ordering == ["numero_portaria"]
+        assert AtoAdministrativoListViewSet.ordering == ["-criado_em"]
 
     def test_retorna_200_com_estrutura_paginada(
         self, auth_client, designacao_1, designacao_2
