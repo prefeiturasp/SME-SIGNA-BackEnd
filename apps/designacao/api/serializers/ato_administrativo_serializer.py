@@ -42,6 +42,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         ]
 
     def get_cessacao(self, obj: AtoAdministrativo) -> dict | None:
