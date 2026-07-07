@@ -211,6 +211,7 @@ class TestAtoAdministrativoListView:
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         }
 
     def test_filtro_status_publicacao(

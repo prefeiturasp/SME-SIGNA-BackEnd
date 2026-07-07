@@ -295,6 +295,7 @@ class TestPortariaListSerializer:
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         }
 
     def test_portaria(self, designacao):
