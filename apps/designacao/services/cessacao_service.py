@@ -39,6 +39,11 @@ class CessacaoService:
                 tipo=AtoAdministrativo.Tipo.CESSACAO
             )
             .select_related("cessacao_detalhe")
+            .prefetch_related(
+                "filhos",
+                "filhos__apostila_detalhe",
+                "filhos__insubsistencia_detalhe",
+            )
             .order_by("-criado_em")
         )
 
