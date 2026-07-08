@@ -88,6 +88,7 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
     )
 
     insubsistencia = serializers.SerializerMethodField()
+    apostilas = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -107,6 +108,7 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
             "aposentadoria",
             "data_cessacao",
             "insubsistencia",
+            "apostilas",
         ]
 
     def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
@@ -127,3 +129,33 @@ class CessacaoV2ReadSerializer(serializers.ModelSerializer):
                     "observacoes": detalhe.observacoes if detalhe else "",
                 }
         return None
+
+    def get_apostilas(self, obj: AtoAdministrativo) -> list:
+        """Retorna as apostilas ativas vinculadas à cessação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            list: Apostilas serializadas, excluindo as insubsistentes.
+
+        """
+        resultado = []
+        for filho in obj.filhos.all():
+            if (
+                filho.tipo != AtoAdministrativo.Tipo.APOSTILA
+                or filho.status == "insubsistente"
+            ):
+                continue
+            detalhe = getattr(filho, "apostila_detalhe", None)
+            resultado.append(
+                {
+                    "id": filho.id,
+                    "sei_numero": filho.sei_numero,
+                    "doc": filho.doc,
+                    "status": filho.status,
+                    "observacao": detalhe.observacao if detalhe else "",
+                    "criado_em": filho.criado_em,
+                }
+            )
+        return resultado
