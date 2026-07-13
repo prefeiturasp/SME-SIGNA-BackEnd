@@ -167,7 +167,10 @@ class TestAtoAdministrativoListView:
             "ano_vigente",
             "numero_portaria",
         ]
-        assert AtoAdministrativoListViewSet.ordering == ["numero_portaria"]
+        assert AtoAdministrativoListViewSet.ordering == [
+            "-criado_em",
+            "numero_portaria",
+        ]
 
     def test_retorna_200_com_estrutura_paginada(
         self, auth_client, designacao_1, designacao_2
@@ -201,17 +204,48 @@ class TestAtoAdministrativoListView:
             "id",
             "tipo_de_ato",
             "criado_em",
+            "criado_por_nome",
             "observacoes",
             "portaria",
             "ano_vigente",
             "nome",
+            "rf",
             "status_publicacao",
-            "numero_sei",
+            "sei_numero",
             "tipo",
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         }
+
+    def test_rf_retorna_rf_do_indicado(self, auth_client, designacao_1):
+        """Verifica que rf retorna o RF do indicado na designação."""
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["rf"] == "12345678"
+
+    def test_criado_por_nome_ausente_quando_sem_responsavel(
+        self, auth_client, designacao_1
+    ):
+        """Verifica que criado_por_nome é None quando o ato não tem responsável."""
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["criado_por_nome"] is None
+
+    def test_criado_por_nome_retorna_nome_do_responsavel(
+        self, auth_client, designacao_1
+    ):
+        """Verifica que criado_por_nome retorna o nome de quem criou o ato."""
+        responsavel = User.objects.create_user(
+            username="responsavel_designacao",
+            password=secrets.token_urlsafe(16),
+            email="responsavel_designacao@example.com",
+            name="Fulano da Silva",
+        )
+        designacao_1.criado_por = responsavel
+        designacao_1.save(update_fields=["criado_por"])
+
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        assert response.data[0]["criado_por_nome"] == "Fulano da Silva"
 
     def test_filtro_status_publicacao(
         self, auth_client, designacao_1, designacao_2
@@ -258,7 +292,7 @@ class TestAtoAdministrativoListView:
         )
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["numero_sei"] == "6018.2024/0002345-6"
+        assert response.data[0]["sei_numero"] == "6018.2024/0002345-6"
 
     def test_ordering_numero_portaria_desc(
         self, auth_client, designacao_1, designacao_2

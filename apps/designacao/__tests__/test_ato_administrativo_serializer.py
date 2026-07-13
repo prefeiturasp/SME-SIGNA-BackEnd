@@ -285,16 +285,19 @@ class TestPortariaListSerializer:
             "id",
             "tipo_de_ato",
             "criado_em",
+            "criado_por_nome",
             "observacoes",
             "portaria",
             "ano_vigente",
             "nome",
+            "rf",
             "status_publicacao",
-            "numero_sei",
+            "sei_numero",
             "tipo",
             "cessacao",
             "apostilas",
             "insubsistencia",
+            "tipo_insubsistencia",
         }
 
     def test_portaria(self, designacao):
@@ -311,7 +314,7 @@ class TestPortariaListSerializer:
 
     def test_numero_sei(self, designacao):
         """Verifica numero sei."""
-        assert serialize(designacao)["numero_sei"] == "6018.2024/0001234-5"
+        assert serialize(designacao)["sei_numero"] == "6018.2024/0001234-5"
 
     def test_id(self, designacao):
         """Verifica id."""

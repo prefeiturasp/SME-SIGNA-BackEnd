@@ -19,7 +19,7 @@ from apps.designacao.models.apostila_detalhe import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 
-_CAMPOS_ATO = frozenset({"sei_numero", "doc"})
+_CAMPOS_ATO = frozenset({"sei_numero", "doc", "criado_por"})
 _CAMPOS_PROTEGIDOS = frozenset(
     {
         "id",
@@ -55,7 +55,12 @@ class ApostilaService:
             AtoAdministrativo.objects.filter(
                 tipo=AtoAdministrativo.Tipo.APOSTILA
             )
-            .select_related("apostila_detalhe")
+            .select_related(
+                "apostila_detalhe",
+                "ato_pai__designacao_detalhe",
+                "ato_raiz__designacao_detalhe",
+                "ato_pai__cessacao_detalhe",
+            )
             .prefetch_related(
                 "apostila_detalhe__alteracoes",
                 "filhos",

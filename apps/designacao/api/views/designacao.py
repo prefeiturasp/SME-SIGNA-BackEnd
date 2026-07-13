@@ -147,6 +147,7 @@ class DesignacaoViewSet(
         """
         serializer = DesignacaoWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = DesignacaoService.criar(serializer.validated_data)
 
@@ -180,6 +181,35 @@ class DesignacaoViewSet(
 
         ato_atualizado = self.get_queryset().filter(pk=ato.pk).first()
         return Response(DesignacaoReadSerializer(ato_atualizado).data)
+
+    # ── Busca por portaria ───────────────────────────────────────────────────
+
+    @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
+    def buscar_por_portaria(self, request: Request) -> Response:
+        """Busca uma designação pelo número da portaria.
+
+        Args:
+            request: Requisição HTTP contendo o parâmetro `portaria`.
+
+        Returns:
+            Response: Designação encontrada ou erro 404/400.
+
+        """
+        portaria = (request.query_params.get("portaria") or "").strip()
+        if not portaria:
+            return Response(
+                {"detail": "Parâmetro 'portaria' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ato = self.get_queryset().filter(numero_portaria=portaria).first()
+        if ato is None:
+            return Response(
+                {"detail": "Designação não encontrada para essa portaria."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(DesignacaoReadSerializer(ato).data)
 
     # ── Actions de cargos ────────────────────────────────────────────────────
 

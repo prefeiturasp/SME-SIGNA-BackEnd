@@ -5,6 +5,9 @@ Inclui definição de payloads para escrita e leitura de insubsistência em atos
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_relacionado_mixin import (
+    AtoRelacionadoMixin,
+)
 from apps.designacao.api.serializers.utils import (
     NullableDateField,
     validar_somente_numeros,
@@ -25,7 +28,12 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
     ano_vigente = serializers.CharField(max_length=6)
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
-    observacoes = serializers.CharField(required=False, default="")
+    observacoes = serializers.CharField(
+        allow_blank=True, required=False, default=""
+    )
+    texto_apostila = serializers.CharField(
+        allow_blank=True, required=False, default=""
+    )
 
     def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
@@ -52,7 +60,9 @@ class InsubsistenciaV2WriteSerializer(serializers.Serializer):
         return validar_somente_numeros(value)
 
 
-class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
+class InsubsistenciaV2ReadSerializer(
+    AtoRelacionadoMixin, serializers.ModelSerializer
+):
     """Serializador de leitura para insubsistência v2.
 
     Expõe status e observações da insubsistência.
@@ -62,6 +72,9 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
     observacoes = serializers.CharField(
         source="insubsistencia_detalhe.observacoes", read_only=True
     )
+    texto_apostila = serializers.SerializerMethodField()
+    designacao = serializers.SerializerMethodField()
+    cessacao = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -76,6 +89,9 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
             "doc",
             "criado_em",
             "observacoes",
+            "texto_apostila",
+            "designacao",
+            "cessacao",
         ]
 
     def get_status(self, obj: AtoAdministrativo) -> str:
@@ -89,3 +105,16 @@ class InsubsistenciaV2ReadSerializer(serializers.ModelSerializer):
 
         """
         return obj.status
+
+    def get_texto_apostila(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o texto da anulação quando a insubsistência é de apostila.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str | None: Texto da anulação ou None se não aplicável.
+
+        """
+        detalhe = getattr(obj, "insubsistencia_apostila_detalhe", None)
+        return detalhe.texto if detalhe else None

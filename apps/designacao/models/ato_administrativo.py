@@ -6,6 +6,7 @@ para designação, cessação, apostila e insubsistência.
 
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -63,6 +64,13 @@ class AtoAdministrativo(models.Model):
 
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="atos_administrativos_criados",
+    )
 
     class Meta:
         db_table = "ato_administrativo"

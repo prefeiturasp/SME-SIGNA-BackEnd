@@ -44,6 +44,8 @@ class AtoAdministrativoFilter(PortariaFilter):
         ("INSUBSISTENCIA_CESSACAO", "Insubsistência de Cessação"),
         ("APOSTILA_DESIGNACAO", "Apostila de Designação"),
         ("APOSTILA_CESSACAO", "Apostila de Cessação"),
+        ("INSUBSISTENCIA_APOSTILA", "Insubsistência de Apostila"),
+        ("INSUBSISTENCIA_INSUBSISTENCIA", "Tornar sem efeito"),
     ]
 
     tipo = django_filters.ChoiceFilter(

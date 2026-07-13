@@ -8,6 +8,7 @@ from typing import Any
 
 from django.db.models import QuerySet
 from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -73,6 +74,7 @@ class InsubsistenciaV2ViewSet(
         """
         serializer = InsubsistenciaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = InsubsistenciaService.criar(serializer.validated_data)
 
@@ -97,3 +99,31 @@ class InsubsistenciaV2ViewSet(
         """
         InsubsistenciaService.excluir(self.get_object())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
+    def buscar_por_portaria(self, request: Request) -> Response:
+        """Busca uma insubsistência pelo número da portaria.
+
+        Args:
+            request: Requisição HTTP contendo o parâmetro `portaria`.
+
+        Returns:
+            Response: Insubsistência encontrada ou erro 404/400.
+
+        """
+        portaria = (request.query_params.get("portaria") or "").strip()
+        if not portaria:
+            return Response(
+                {"detail": "Parâmetro 'portaria' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ato = self.get_queryset().filter(numero_portaria=portaria).first()
+        if ato is None:
+            detail = "Insubsistência não encontrada para essa portaria."
+            return Response(
+                {"detail": detail},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(InsubsistenciaV2ReadSerializer(ato).data)

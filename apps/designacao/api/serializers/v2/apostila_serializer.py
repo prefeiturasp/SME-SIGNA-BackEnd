@@ -8,6 +8,9 @@ from typing import Any
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_relacionado_mixin import (
+    AtoRelacionadoMixin,
+)
 from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
@@ -50,7 +53,9 @@ class ApostilaV2AlteracaoReadSerializer(serializers.Serializer):
     valor_novo = serializers.CharField()
 
 
-class ApostilaV2ReadSerializer(serializers.ModelSerializer):
+class ApostilaV2ReadSerializer(
+    AtoRelacionadoMixin, serializers.ModelSerializer
+):
     """Serializador de leitura para apostila v2.
 
     Inclui o status do ato, observação, alterações e eventual insubsistência.
@@ -62,6 +67,9 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
     )
     alteracoes = serializers.SerializerMethodField()
     insubsistencia = serializers.SerializerMethodField()
+
+    designacao = serializers.SerializerMethodField()
+    cessacao = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -76,6 +84,8 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
             "observacao",
             "alteracoes",
             "insubsistencia",
+            "designacao",
+            "cessacao",
         ]
 
     def get_status(self, obj: AtoAdministrativo) -> str:
@@ -138,3 +148,19 @@ class ApostilaV2ReadSerializer(serializers.ModelSerializer):
             }
         except Exception:
             return None
+
+    def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
+        """Retorna o tipo de ato em formato legível.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Nome legível do tipo de ato.
+
+        """
+        if obj.ato_pai and obj.tipo != AtoAdministrativo.Tipo.CESSACAO:
+            return (
+                f"{obj.get_tipo_display()} de {obj.ato_pai.get_tipo_display()}"
+            )
+        return f"{obj.get_tipo_display()}"

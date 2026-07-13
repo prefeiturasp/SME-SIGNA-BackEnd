@@ -63,6 +63,11 @@ urlpatterns = [
         DesignacaoViewSet.as_view({"get": "cargos_sobrepostos_pareados"}),
         name="cargos-sobrepostos-pareados",
     ),
+    path(
+        "designacoes/buscar-por-portaria/",
+        DesignacaoViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="designacao-buscar-por-portaria",
+    ),
     # Cessações (nova modelagem — AtoAdministrativo + CessacaoDetalhe)
     path(
         "cessacoes/",
@@ -78,6 +83,11 @@ urlpatterns = [
             }
         ),
         name="cessacao-detail",
+    ),
+    path(
+        "cessacoes/buscar-por-portaria/",
+        CessacaoV2ViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="cessacao-buscar-por-portaria",
     ),
     # Apostilas (nova modelagem — AtoAdministrativo + ApostilaDetalhe)
     path(
@@ -110,6 +120,11 @@ urlpatterns = [
             }
         ),
         name="insubsistencia-detail",
+    ),
+    path(
+        "insubsistencias/buscar-por-portaria/",
+        InsubsistenciaV2ViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="insubsistencia-buscar-por-portaria",
     ),
     # Portarias — listagem para publicação no D.O.
     path(

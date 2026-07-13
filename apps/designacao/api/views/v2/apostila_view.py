@@ -68,6 +68,7 @@ class ApostilaV2ViewSet(
         """
         serializer = ApostilaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = ApostilaService.criar(serializer.validated_data)
 
