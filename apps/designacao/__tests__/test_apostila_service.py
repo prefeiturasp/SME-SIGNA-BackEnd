@@ -1,6 +1,4 @@
-"""Testes para serviço de apostila.
-
-"""
+"""Testes para serviço de apostila."""
 
 import datetime
 

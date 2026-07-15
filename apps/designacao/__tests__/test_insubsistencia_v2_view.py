@@ -1,6 +1,4 @@
-"""Testes para a view v2 de insubsistência.
-
-"""
+"""Testes para a view v2 de insubsistência."""
 
 import secrets
 

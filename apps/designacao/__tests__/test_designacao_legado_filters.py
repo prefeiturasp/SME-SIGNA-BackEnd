@@ -1,6 +1,4 @@
-"""Testes para filtros de designação legado.
-
-"""
+"""Testes para filtros de designação legado."""
 
 import datetime
 

@@ -1,3 +1,5 @@
+"""Testes do serializer de alteração de e-mail."""
+
 import secrets
 
 import pytest
@@ -42,6 +44,7 @@ def request_factory():
 
 @pytest.mark.django_db
 class TestAlteracaoEmailSerializer:
+    """Testes de validação do AlteracaoEmailSerializer."""
 
     def get_serializer(self, user, email):
         request = APIRequestFactory().get("/")

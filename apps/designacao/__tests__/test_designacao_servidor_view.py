@@ -1,6 +1,4 @@
-"""Testes para a view de designação de servidor.
-
-"""
+"""Testes para a view de designação de servidor."""
 
 from unittest.mock import MagicMock, patch
 

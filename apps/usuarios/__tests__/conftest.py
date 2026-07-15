@@ -20,7 +20,7 @@ SME_POST_PATH = "apps.usuarios.services.sme_integracao_service.requests.post"
 
 @pytest.fixture
 def mock_sme_success():
-    """Mocka resposta de sucesso do CoreSSO"""
+    """Mocka resposta de sucesso do CoreSSO."""
     with patch(SME_POST_PATH) as mock:
         mock.return_value.status_code = 200
         mock.return_value.json.return_value = {
@@ -34,7 +34,7 @@ def mock_sme_success():
 
 @pytest.fixture
 def mock_sme_unauthorized():
-    """Mocka retorno 401"""
+    """Mocka retorno 401."""
     with patch(SME_POST_PATH) as mock:
         mock.return_value.status_code = 401
         yield mock
@@ -42,7 +42,7 @@ def mock_sme_unauthorized():
 
 @pytest.fixture
 def mock_sme_error():
-    """Mocka retorno != 200 e != 401"""
+    """Mocka retorno != 200 e != 401."""
     with patch(SME_POST_PATH) as mock:
         mock.return_value.status_code = 500
         yield mock
@@ -50,17 +50,17 @@ def mock_sme_error():
 
 @pytest.fixture
 def mock_sme_exception():
-    """Mocka erro de comunicação (timeout, conexão etc.)"""
+    """Mocka erro de comunicação (timeout, conexão etc.)."""
     with patch(SME_POST_PATH, side_effect=Exception("Erro")):
         yield
 
 
 @pytest.fixture
 def mock_sme_auth_error(monkeypatch):
-    """Mocka erro de autenticação"""
+    """Mocka erro de autenticação."""
 
     def fake_autentica(login, senha):
-        """Lança erro de autenticação"""
+        """Lança erro de autenticação."""
         raise AuthenticationError()
 
     monkeypatch.setattr(SmeIntegracaoService, "autentica", fake_autentica)

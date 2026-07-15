@@ -1,6 +1,4 @@
-"""Testes para serviço de insubsistência.
-
-"""
+"""Testes para serviço de insubsistência."""
 
 import pytest
 from rest_framework.exceptions import ValidationError
