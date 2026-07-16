@@ -351,8 +351,9 @@ class TestConsultaCargos:
 
     @patch("apps.usuarios.services.sme_integracao_service.requests.get")
     def test_sucesso_com_cd_ue_base_e_sigla(self, mock_get):
-        """Quando cdUeCargoBase está preenchido, deve chamar consulta_informacoes_unidades_escolares
-        e prefixar ueCargoBase com a sigla retornada.
+        """Verifica chamada a consulta_informacoes_unidades_escolares quando cdUeCargoBase está preenchido.
+
+        Também verifica que ueCargoBase é prefixado com a sigla retornada.
         """
         cargos_mock = [
             {

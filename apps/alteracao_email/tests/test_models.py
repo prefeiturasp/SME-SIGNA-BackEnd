@@ -1,3 +1,5 @@
+"""Testes do modelo AlteracaoEmail."""
+
 import secrets
 
 import pytest

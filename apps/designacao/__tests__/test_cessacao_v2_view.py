@@ -1,6 +1,4 @@
-"""Testes para a view v2 de cessação.
-
-"""
+"""Testes para a view v2 de cessação."""
 
 import secrets
 

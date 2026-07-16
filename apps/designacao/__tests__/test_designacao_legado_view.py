@@ -1,6 +1,4 @@
-"""Testes para a view de designação legado.
-
-"""
+"""Testes para a view de designação legado."""
 
 import secrets
 

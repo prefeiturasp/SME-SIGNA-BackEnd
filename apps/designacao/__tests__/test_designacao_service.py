@@ -1,6 +1,4 @@
-"""Testes para serviço de designação.
-
-"""
+"""Testes para serviço de designação."""
 
 import pytest
 

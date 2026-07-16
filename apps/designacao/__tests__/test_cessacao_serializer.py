@@ -1,6 +1,4 @@
-"""Testes para serializer de cessação.
-
-"""
+"""Testes para serializer de cessação."""
 
 import pytest
 

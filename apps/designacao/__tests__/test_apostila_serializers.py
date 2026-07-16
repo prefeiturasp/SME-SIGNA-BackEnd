@@ -1,6 +1,4 @@
-"""Testes para serializers de apostila.
-
-"""
+"""Testes para serializers de apostila."""
 
 import pytest
 from django.utils import timezone

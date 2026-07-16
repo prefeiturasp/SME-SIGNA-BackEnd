@@ -1,6 +1,4 @@
-"""Fábrica de objetos de teste para o app designacao.
-
-"""
+"""Fábrica de objetos de teste para o app designacao."""
 
 import datetime
 

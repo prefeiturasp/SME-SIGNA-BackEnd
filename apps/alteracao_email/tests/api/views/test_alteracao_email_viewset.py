@@ -1,3 +1,5 @@
+"""Testes das views de solicitação e validação de alteração de e-mail."""
+
 import secrets
 from unittest.mock import patch
 
@@ -37,6 +39,7 @@ def user(db, django_user_model):
 
 @pytest.mark.django_db
 class TestSolicitarAlteracaoEmailViewSet:
+    """Testes do endpoint de solicitação de alteração de e-mail."""
 
     endpoint = "/api/alteracao-email/solicitar/"
 
@@ -72,6 +75,7 @@ class TestSolicitarAlteracaoEmailViewSet:
 
 @pytest.mark.django_db
 class TestValidarAlteracaoEmailViewSet:
+    """Testes do endpoint de validação de alteração de e-mail."""
 
     endpoint = "/api/alteracao-email/validar/"
 

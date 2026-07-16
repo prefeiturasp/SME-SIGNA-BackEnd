@@ -1,3 +1,5 @@
+"""Testes dos serializers de unidades e DRE."""
+
 import pytest
 
 from apps.unidades.api.serializers.unidades_serializer import (
@@ -7,10 +9,10 @@ from apps.unidades.api.serializers.unidades_serializer import (
 
 
 class TestDRESerializer:
-    """Testes para o DRESerializer"""
+    """Testes para o DRESerializer."""
 
     def test_serializer_com_dados_validos(self, dados_dre_validos):
-        """Testa serialização com dados válidos"""
+        """Testa serialização com dados válidos."""
         serializer = DRESerializer(data=dados_dre_validos)
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data["codigoDRE"] == "001"
@@ -18,7 +20,7 @@ class TestDRESerializer:
         assert serializer.validated_data["siglaDRE"] == "DRE-CT"
 
     def test_serializer_com_dados_faltando(self):
-        """Testa serialização com campos obrigatórios faltando"""
+        """Testa serialização com campos obrigatórios faltando."""
         data = {"codigo_dre": "001"}
 
         serializer = DRESerializer(data=data)
@@ -27,7 +29,7 @@ class TestDRESerializer:
         assert "sigla_dre" in serializer.errors
 
     def test_output_com_source_mapping(self):
-        """Testa se o output usa os nomes padronizados"""
+        """Testa se o output usa os nomes padronizados."""
         instance = {
             "codigoDRE": "001",
             "nomeDRE": "DRE Centro",
@@ -42,10 +44,10 @@ class TestDRESerializer:
 
 
 class TestUnidadeSerializer:
-    """Testes para o UnidadeSerializer"""
+    """Testes para o UnidadeSerializer."""
 
     def test_serializer_com_dados_completos(self, dados_unidade_completos):
-        """Testa serialização com todos os campos"""
+        """Testa serialização com todos os campos."""
         serializer = UnidadeSerializer(data=dados_unidade_completos)
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data["codigoEol"] == "123456"
@@ -53,14 +55,14 @@ class TestUnidadeSerializer:
         assert serializer.validated_data["cep"] == 12345678
 
     def test_serializer_com_dados_minimos(self, dados_unidade_minimos):
-        """Testa serialização apenas com campos obrigatórios"""
+        """Testa serialização apenas com campos obrigatórios."""
         serializer = UnidadeSerializer(data=dados_unidade_minimos)
         assert serializer.is_valid(), serializer.errors
         assert serializer.validated_data["codigoEol"] == "123456"
         assert serializer.validated_data["nomeOficial"] == "Escola Municipal"
 
     def test_campos_obrigatorios_faltando(self):
-        """Testa validação quando faltam campos obrigatórios"""
+        """Testa validação quando faltam campos obrigatórios."""
         data = {"codigo_eol": "123456"}
 
         serializer = UnidadeSerializer(data=data)
@@ -80,20 +82,20 @@ class TestUnidadeSerializer:
         ],
     )
     def test_email_invalido(self, dados_unidade_minimos, email_invalido):
-        """Testa validação de emails inválidos"""
+        """Testa validação de emails inválidos."""
         dados_unidade_minimos["email"] = email_invalido
         serializer = UnidadeSerializer(data=dados_unidade_minimos)
         assert not serializer.is_valid()
         assert "email" in serializer.errors
 
     def test_email_vazio_permitido(self, dados_unidade_minimos):
-        """Testa que email vazio é permitido"""
+        """Testa que email vazio é permitido."""
         dados_unidade_minimos["email"] = ""
         serializer = UnidadeSerializer(data=dados_unidade_minimos)
         assert serializer.is_valid(), serializer.errors
 
     def test_campos_numericos_null(self, dados_unidade_minimos):
-        """Testa que campos numéricos opcionais aceitam null"""
+        """Testa que campos numéricos opcionais aceitam null."""
         dados_unidade_minimos.update(
             {
                 "cep": None,
@@ -108,7 +110,7 @@ class TestUnidadeSerializer:
     def test_output_com_source_mapping(
         self, dados_unidade_completos_camelcase
     ):
-        """Testa se o output usa os nomes padronizados"""
+        """Testa se o output usa os nomes padronizados."""
         serializer = UnidadeSerializer(dados_unidade_completos_camelcase)
         data = serializer.data
 
@@ -128,7 +130,7 @@ class TestUnidadeSerializer:
     def test_tipo_nome_ue_com_dados_completos(
         self, dados_unidade_completos_camelcase
     ):
-        """Testa o campo customizado tipo_nome_ue"""
+        """Testa o campo customizado tipo_nome_ue."""
         serializer = UnidadeSerializer(dados_unidade_completos_camelcase)
         assert "tipo_nome_ue" in serializer.data
         assert (
@@ -147,13 +149,13 @@ class TestUnidadeSerializer:
     def test_tipo_nome_ue_variantes(
         self, dados_unidade_minimos_camelcase, tipo_ue, esperado
     ):
-        """Testa tipo_nome_ue com diferentes valores de tipoUE"""
+        """Testa tipo_nome_ue com diferentes valores de tipoUE."""
         dados_unidade_minimos_camelcase["tipoUE"] = tipo_ue
         serializer = UnidadeSerializer(dados_unidade_minimos_camelcase)
         assert serializer.data["tipo_nome_ue"] == esperado
 
     def test_campos_string_vazios_permitidos(self, dados_unidade_minimos):
-        """Testa que campos string opcionais aceitam valores vazios"""
+        """Testa que campos string opcionais aceitam valores vazios."""
         dados_unidade_minimos.update(
             {
                 "nome_nao_oficial": "",
@@ -167,7 +169,7 @@ class TestUnidadeSerializer:
         assert serializer.is_valid(), serializer.errors
 
     def test_capacidades_vagas_valores_validos(self, dados_unidade_minimos):
-        """Testa valores válidos para capacidades de vagas"""
+        """Testa valores válidos para capacidades de vagas."""
         dados_unidade_minimos.update(
             {
                 "capacidade_vagas_matutino": 100,
@@ -184,7 +186,7 @@ class TestUnidadeSerializer:
 
     @pytest.mark.parametrize("valor", [True, False])
     def test_organizacao_parceira_boolean(self, dados_unidade_minimos, valor):
-        """Testa campo booleano organizacao_parceira"""
+        """Testa campo booleano organizacao_parceira."""
         dados_unidade_minimos["organizacao_parceira"] = valor
         serializer = UnidadeSerializer(data=dados_unidade_minimos)
         assert serializer.is_valid(), serializer.errors
