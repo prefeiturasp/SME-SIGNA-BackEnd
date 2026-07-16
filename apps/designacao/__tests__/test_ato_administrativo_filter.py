@@ -8,9 +8,11 @@ import pytest
 from apps.designacao.api.filters.ato_administrativo_filter import (
     AtoAdministrativoFilter,
 )
+from apps.designacao.models.apostila_detalhe import ApostilaDetalhe
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -182,6 +184,42 @@ def insubsistencia_cessacao(db, cessacao):
     )
 
 
+@pytest.fixture
+def apostila(db, designacao_1):
+    """Método apostila com observação."""
+    ato = AtoAdministrativo.objects.create(
+        tipo="APOSTILA",
+        numero_portaria="",
+        ano_vigente="",
+        sei_numero="6018.2024/0005678-9",
+        doc=None,
+        ativo=True,
+        ato_pai=designacao_1,
+    )
+    ApostilaDetalhe.objects.create(
+        ato=ato, observacao="Retificacao de dados funcionais"
+    )
+    return ato
+
+
+@pytest.fixture
+def insubsistencia_com_observacao(db, designacao_1):
+    """Método insubsistencia com observação."""
+    ato = AtoAdministrativo.objects.create(
+        tipo="INSUBSISTENCIA",
+        numero_portaria="006/2024",
+        ano_vigente="2024",
+        sei_numero="6018.2024/0006789-0",
+        doc=None,
+        ativo=True,
+        ato_pai=designacao_1,
+    )
+    InsubsistenciaDetalhe.objects.create(
+        ato=ato, observacoes="Ato sem efeito por divergencia documental"
+    )
+    return ato
+
+
 # ─── Testes ───────────────────────────────────────────────────────────────────
 
 
@@ -319,3 +357,35 @@ class TestAtoAdministrativoFilter:
             queryset=qs,
         )
         assert f.qs.count() == 0
+
+    def test_filtro_ato_id_por_ato_pai(
+        self, designacao_1, cessacao, insubsistencia_cessacao
+    ):
+        """Verifica filtro ato_id por relacionamento de ato pai."""
+        qs = apply_filter({"ato_id": cessacao.id})
+        assert qs.count() == 1
+        assert qs.first() == insubsistencia_cessacao
+
+    def test_filtro_ato_id_por_ato_raiz(
+        self, designacao_1, cessacao, insubsistencia_cessacao
+    ):
+        """Verifica filtro ato_id por relacionamento de ato raiz."""
+        qs = apply_filter({"ato_id": designacao_1.id})
+        assert cessacao in qs
+        assert insubsistencia_cessacao in qs
+
+    def test_filtro_observacao_apostila(
+        self, designacao_1, apostila, insubsistencia_com_observacao
+    ):
+        """Verifica filtro observacao em apostila detalhe."""
+        qs = apply_filter({"observacao": "retificacao"})
+        assert qs.count() == 1
+        assert qs.first() == apostila
+
+    def test_filtro_observacao_insubsistencia(
+        self, designacao_1, apostila, insubsistencia_com_observacao
+    ):
+        """Verifica filtro observacao em insubsistencia detalhe."""
+        qs = apply_filter({"observacao": "divergencia documental"})
+        assert qs.count() == 1
+        assert qs.first() == insubsistencia_com_observacao

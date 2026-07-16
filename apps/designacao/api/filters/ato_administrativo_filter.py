@@ -29,6 +29,13 @@ class AtoAdministrativoFilter(PortariaFilter):
         label="Nome do titular e indicado",
         method="filter_nome_titular_e_indicado",
     )
+
+    observacao = django_filters.CharFilter(
+        field_name="observacao",
+        label="Observação",
+        method="filter_observacao",
+    )
+
     status_publicacao = django_filters.ChoiceFilter(
         field_name="status_publicacao",
         choices=AtoAdministrativo.StatusPublicacao.choices,
@@ -53,6 +60,12 @@ class AtoAdministrativoFilter(PortariaFilter):
         choices=TIPO_CHOICES,
         label="Tipo de ato",
         method="filter_tipo",
+    )
+
+    ato_id = django_filters.NumberFilter(
+        field_name="ato_id",
+        label="ID do ato",
+        method="filter_ato_id",
     )
 
     def filter_rf(
@@ -103,6 +116,45 @@ class AtoAdministrativoFilter(PortariaFilter):
         )
         return queryset
 
+    def filter_observacao(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra atos administrativos pela observação.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor da observação buscada.
+
+        Returns:
+            Queryset filtrado com a observação selecionada.
+
+        """
+        queryset = queryset.filter(
+            models.Q(apostila_detalhe__observacao__icontains=value)
+            | models.Q(insubsistencia_detalhe__observacoes__icontains=value)
+        )
+        return queryset
+
+    def filter_ato_id(
+        self, queryset: models.QuerySet, name: str, value: int
+    ) -> models.QuerySet:
+        """Filtra atos administrativos relacionados a um id do ato.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Valor do id do ato buscado.
+
+        Returns:
+            Queryset filtrado com o ato relacionado ao id selecionado.
+
+        """
+        queryset = queryset.filter(
+            models.Q(ato_pai_id=value) | models.Q(ato_raiz_id=value)
+        )
+        return queryset
+
     def filter_tipo(
         self, queryset: models.QuerySet, name: str, value: str
     ) -> models.QuerySet:
@@ -135,4 +187,6 @@ class AtoAdministrativoFilter(PortariaFilter):
             "status_publicacao",
             "rf",
             "numero_sei",
+            "ato_id",
+            "observacao",
         ]
