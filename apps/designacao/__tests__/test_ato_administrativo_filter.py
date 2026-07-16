@@ -1,6 +1,4 @@
-"""Testes para filtro de atos administrativos.
-
-"""
+"""Testes para filtro de atos administrativos."""
 
 import datetime
 from datetime import date

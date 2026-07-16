@@ -1,6 +1,4 @@
-"""Testes para a view de designação por unidade.
-
-"""
+"""Testes para a view de designação por unidade."""
 
 import secrets
 from unittest.mock import patch

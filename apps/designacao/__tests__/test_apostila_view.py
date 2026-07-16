@@ -1,6 +1,4 @@
-"""Testes para a view de apostila.
-
-"""
+"""Testes para a view de apostila."""
 
 import pytest
 from django.contrib.auth import get_user_model

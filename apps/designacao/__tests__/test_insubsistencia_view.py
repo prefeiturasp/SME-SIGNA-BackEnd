@@ -1,6 +1,4 @@
-"""Testes para a view de insubsistência.
-
-"""
+"""Testes para a view de insubsistência."""
 
 import secrets
 from datetime import date

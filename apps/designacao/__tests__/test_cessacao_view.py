@@ -1,6 +1,4 @@
-"""Testes para a view de cessação.
-
-"""
+"""Testes para a view de cessação."""
 
 import secrets
 from datetime import date
@@ -28,7 +26,7 @@ def auth_client(db):
 
 @pytest.fixture
 def designacao(db):
-    """Factory simples de Designacao."""
+    """Cria uma Designacao simples para os testes."""
     return Designacao.objects.create(
         dre_nome="DRE TESTE",
         unidade_proponente="Unidade Teste",
@@ -51,7 +49,7 @@ def designacao(db):
 
 @pytest.fixture
 def cessacao(db, designacao):
-    """Factory simples de Cessacao."""
+    """Cria uma Cessacao simples para os testes."""
     return Cessacao.objects.create(
         designacao=designacao,
         numero_portaria="456",

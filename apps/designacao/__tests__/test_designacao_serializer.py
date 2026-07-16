@@ -1,6 +1,4 @@
-"""Testes para serializer de designação.
-
-"""
+"""Testes para serializer de designação."""
 
 import pytest
 from django.test import TestCase

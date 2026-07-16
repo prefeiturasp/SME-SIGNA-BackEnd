@@ -1,6 +1,4 @@
-"""Testes para filtros de designação.
-
-"""
+"""Testes para filtros de designação."""
 
 import datetime
 

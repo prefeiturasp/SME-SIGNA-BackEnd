@@ -1,6 +1,4 @@
-"""Testes para a view v2 de apostila.
-
-"""
+"""Testes para a view v2 de apostila."""
 
 import secrets
 

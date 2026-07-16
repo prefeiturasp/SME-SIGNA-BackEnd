@@ -190,7 +190,7 @@ def api_factory():
 
 @pytest.fixture
 def create_drf_request(api_factory):
-    """Factory fixture para criar requests DRF válidas."""
+    """Cria uma fixture que gera requests DRF válidas."""
 
     def _create_request(
         method="get",

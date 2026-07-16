@@ -1,6 +1,4 @@
-"""Testes para a view de designação.
-
-"""
+"""Testes para a view de designação."""
 
 import secrets
 
