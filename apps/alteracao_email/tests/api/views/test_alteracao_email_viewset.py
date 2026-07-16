@@ -1,12 +1,16 @@
 """Testes das views de solicitação e validação de alteração de e-mail."""
 
 import secrets
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.alteracao_email.api.views.alteracao_email_viewset import (
+    SolicitarAlteracaoEmailViewSet,
+)
 from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmail,
     AlteracaoEmailService,
@@ -71,6 +75,18 @@ class TestSolicitarAlteracaoEmailViewSet:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["detail"] == "Erro inesperado."
+
+    def test_create_usuario_nao_autenticado_retorna_401(self):
+        """Verifica retorno 401 quando request.user não é um User real."""
+        view = SolicitarAlteracaoEmailViewSet()
+        mock_request = MagicMock()
+        mock_request.user = AnonymousUser()
+        mock_request.data = {"new_email": "novo@sme.prefeitura.sp.gov.br"}
+
+        response = view.create(mock_request)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.data["detail"] == "Usuário não autenticado."
 
 
 @pytest.mark.django_db

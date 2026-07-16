@@ -5,7 +5,7 @@ incluindo validações e aplicação de alterações em atos administrativos.
 """
 
 import datetime
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 from django.db import transaction
 from django.db.models import QuerySet
@@ -32,6 +32,17 @@ _CAMPOS_PROTEGIDOS = frozenset(
     }
 )
 _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
+
+
+class CriarApostilaData(TypedDict):
+    """Payload validado para criação de apostila no modelo legado."""
+
+    designacao: int
+    ato_apostilado: str
+    tipo: str
+    sei_numero: str
+    observacao: str
+    d_o: NotRequired[str]
 
 
 class ApostilaService:
@@ -77,7 +88,7 @@ class ApostilaService:
     # ── Legado (modelo Apostila) ──────────────────────────────────────────────  # noqa: E501
 
     @staticmethod
-    def criar_apostila(data: dict) -> Apostila:
+    def criar_apostila(data: CriarApostilaData) -> Apostila:
         """Cria uma apostila no modelo legado.
 
         Args:
@@ -91,8 +102,8 @@ class ApostilaService:
             ou se já existir uma apostila ativa.
 
         """
-        designacao_id = data.pop("designacao")
-        ato_apostilado = data.pop("ato_apostilado")
+        designacao_id = data["designacao"]
+        ato_apostilado = data["ato_apostilado"]
 
         designacao = (
             Designacao.objects.filter(id=designacao_id, is_deleted=False)
@@ -150,15 +161,13 @@ class ApostilaService:
                 "Já existe uma apostila válida para este ato."
             )
 
-        from typing import cast
-
         return Apostila.objects.create(
-            tipo=cast(str, data.get("tipo")),
+            tipo=data["tipo"],
             designacao=alvo_designacao,
             cessacao=alvo_cessacao,
-            sei_numero=cast(str, data.get("sei_numero")),
-            observacao=cast(str, data.get("observacao")),
-            d_o=cast(str, data.get("d_o", "")),
+            sei_numero=data["sei_numero"],
+            observacao=data["observacao"],
+            d_o=data.get("d_o", ""),
         )
 
     # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────
@@ -212,7 +221,9 @@ class ApostilaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.APOSTILA,
-                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+                status_publicacao=(
+                    AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+                ),
                 ato_pai=ato_pai,
                 **data_ato,
             )

@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.tokens import default_token_generator
 from django.test import TestCase
 from django.utils.encoding import force_bytes
@@ -28,6 +29,8 @@ from apps.usuarios.services.senha_service import SenhaService
 
 User = get_user_model()
 
+SENHA_ATUAL_TESTE = secrets.token_urlsafe(16)
+
 
 @pytest.fixture
 def view():
@@ -36,13 +39,12 @@ def view():
 
 
 @pytest.fixture
-def mock_request():
-    """Cria um request mockado com usuário autenticado falso."""
+def mock_request(db):
+    """Cria um request mockado com usuário autenticado real."""
     request = MagicMock()
-    request.user = MagicMock()
-    request.user.username = "testuser"
-    request.user.check_password.return_value = True
-    request.user.id = 1
+    request.user = User.objects.create_user(
+        username="testuser", password=SENHA_ATUAL_TESTE
+    )
     return request
 
 
@@ -756,7 +758,7 @@ class TestAtualizarSenhaViewSet:
     """Testa a view de atualização de senha do usuário autenticado."""
 
     password = secrets.token_urlsafe(16)
-    old_password = secrets.token_urlsafe(16)
+    old_password = SENHA_ATUAL_TESTE
 
     def test_sucesso(self, view, mock_request):
         """Verifica atualização de senha com request válido."""
@@ -824,8 +826,6 @@ class TestAtualizarSenhaViewSet:
             "nova_senha": self.password,
             "confirmacao_nova_senha": self.password,
         }
-
-        mock_request.user.check_password.return_value = False
 
         response = view.post(mock_request)
 
@@ -909,3 +909,27 @@ class TestAtualizarSenhaViewSet:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["detail"] == "Erro interno do servidor."
+
+    def test_usuario_nao_autenticado_retorna_401(self, view, mock_request):
+        """Verifica retorno 401 quando request.user não é um User real."""
+        mock_request.user = AnonymousUser()
+        mock_request.data = {
+            "username": "testuser",
+            "senha_atual": self.old_password,
+            "nova_senha": self.password,
+            "confirmacao_nova_senha": self.password,
+        }
+
+        mock_serializer = MagicMock()
+        mock_serializer.is_valid.return_value = True
+        mock_serializer.validated_data = {"nova_senha": self.password}
+
+        with patch(
+            "apps.usuarios.api.serializers.senha_serializer.AtualizarSenhaSerializer"
+        ) as mock_serializer_class:
+            mock_serializer_class.return_value = mock_serializer
+
+            response = view.post(mock_request)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.data["detail"] == "Usuário não autenticado."
