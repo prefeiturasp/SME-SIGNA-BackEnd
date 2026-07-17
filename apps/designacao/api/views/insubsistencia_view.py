@@ -1,87 +1,129 @@
-"""Views para insubsistências.
+"""Views para a API de insubsistência.
 
-Fornece endpoints para criação, listagem e recuperação de insubsistências.
+Fornece endpoints para listagem, recuperação, criação e exclusão de
+insubsistências.
 """
 
 from typing import Any
 
 from django.db.models import QuerySet
-from environ import logger
 from rest_framework import mixins, status, viewsets
-from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.serializers.insubsistencia_serializer import (
-    InsubsistenciaSerializer,
+    InsubsistenciaReadSerializer,
+    InsubsistenciaWriteSerializer,
 )
-from apps.designacao.api.serializers.utils import extrair_mensagem_erro
-from apps.designacao.models.insubsistencia import TipoInsubsistencia
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
 
 
+class InsubsistenciaPagination(PageNumberPagination):
+    """Paginação padrão da API de insubsistências.
+
+    Define paginação baseada em número de página com tamanho padrão
+    de 10 registros por página, permitindo customização via parâmetro
+    `page_size` limitado ao máximo de 100 itens.
+    """
+
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class InsubsistenciaViewSet(
-    mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     """ViewSet de insubsistência.
 
-        Expõe create, list e retrieve para insubsistências com validações
-    e montagem de dados apropriadas conforme o tipo.
+    Expõe operações de listagem, recuperação, criação e exclusão de
+    insubsistências.
     """
 
-    serializer_class = InsubsistenciaSerializer
+    serializer_class = InsubsistenciaReadSerializer
+    pagination_class = InsubsistenciaPagination
 
     def get_queryset(self) -> QuerySet:
-        """Retorna o queryset base de insubsistências ativas.
+        """Retorna o queryset de insubsistências para a view.
 
         Returns:
-            QuerySet: Insubsistências não deletadas ordenadas por criação.
+            QuerySet: Insubsistências ordenadas por data de criação
+            decrescente.
 
         """
         return InsubsistenciaService.listar()
 
     def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
-        """Cria uma nova insubsistência.
+        """Cria uma nova insubsistência a partir dos dados enviados.
 
         Args:
-            request: Requisição HTTP contendo os dados da insubsistência.
+            request: Requisição HTTP contendo os dados de criação.
             *args: Argumentos posicionais adicionais.
             **kwargs: Argumentos nomeados adicionais.
 
         Returns:
-            Response: Resposta HTTP com os dados da insubsistência criada ou
-            erro.
+            Response: Resposta HTTP com os dados da insubsistência criada.
 
         """
-        try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+        serializer = InsubsistenciaWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
-            tipo = serializer.validated_data.get("tipo_insubsistencia")
+        ato = InsubsistenciaService.criar(serializer.validated_data)
 
-            if tipo == TipoInsubsistencia.DESIGNACAO:
-                InsubsistenciaService.montar_dados_insubsistencia_designacao(
-                    serializer
-                )
-            else:
-                InsubsistenciaService.montar_dados_insubsistencia_cessacao(
-                    serializer
-                )
+        return Response(
+            InsubsistenciaReadSerializer(
+                InsubsistenciaService.buscar(ato.pk)
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
 
-            serializer.validated_data.pop("tipo_insubsistencia", None)
+    def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:
+        """Remove a insubsistência e reativa o ato pai associado.
 
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        Args:
+            request: Requisição HTTP de exclusão.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
 
-        except ValidationError as e:
+        Returns:
+            Response: Resposta HTTP vazia com status 204.
+
+        """
+        InsubsistenciaService.excluir(self.get_object())
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
+    def buscar_por_portaria(self, request: Request) -> Response:
+        """Busca uma insubsistência pelo número da portaria.
+
+        Args:
+            request: Requisição HTTP contendo o parâmetro `portaria`.
+
+        Returns:
+            Response: Insubsistência encontrada ou erro 404/400.
+
+        """
+        portaria = (request.query_params.get("portaria") or "").strip()
+        if not portaria:
             return Response(
-                {"detail": extrair_mensagem_erro(e.detail)}, status=400
+                {"detail": "Parâmetro 'portaria' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        except Exception as e:
-            logger.error(f"Erro ao criar insubsistência: {e}")
-            return Response({"detail": "Erro interno ao salvar."}, status=500)
+
+        ato = self.get_queryset().filter(numero_portaria=portaria).first()
+        if ato is None:
+            detail = "Insubsistência não encontrada para essa portaria."
+            return Response(
+                {"detail": detail},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(InsubsistenciaReadSerializer(ato).data)

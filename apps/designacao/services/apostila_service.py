@@ -1,7 +1,7 @@
 """Serviço de apostila.
 
-Contém regras para criação de apostilas nos modelos legado e v2,
-incluindo validações e aplicação de alterações em atos administrativos.
+Contém regras para criação de apostilas, incluindo validações e aplicação
+de alterações em atos administrativos.
 """
 
 import datetime
@@ -11,13 +11,11 @@ from django.db import transaction
 from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
-from apps.designacao.models.apostila import Apostila
 from apps.designacao.models.apostila_detalhe import (
     ApostilaAlteracao,
     ApostilaDetalhe,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.designacao import Designacao
 
 _CAMPOS_ATO = frozenset({"sei_numero", "doc", "criado_por"})
 _CAMPOS_PROTEGIDOS = frozenset(
@@ -41,16 +39,7 @@ class ApostilaService:
 
     @staticmethod
     def listar() -> QuerySet:
-        """Retorna queryset de apostilas ativas (modelo legado)."""
-        return (
-            Apostila.objects.filter(is_deleted=False)
-            .select_related("designacao", "cessacao")
-            .order_by("-criado_em")
-        )
-
-    @staticmethod
-    def listar_v2() -> QuerySet:
-        """Retorna queryset de apostilas v2 (AtoAdministrativo)."""
+        """Retorna queryset de apostilas (AtoAdministrativo)."""
         return (
             AtoAdministrativo.objects.filter(
                 tipo=AtoAdministrativo.Tipo.APOSTILA
@@ -70,102 +59,13 @@ class ApostilaService:
         )
 
     @staticmethod
-    def buscar_v2(pk: int) -> AtoAdministrativo | None:
-        """Retorna uma apostila v2 por pk com todos os prefetches."""
-        return ApostilaService.listar_v2().filter(pk=pk).first()
-
-    # ── Legado (modelo Apostila) ──────────────────────────────────────────────  # noqa: E501
-
-    @staticmethod
-    def criar_apostila(data: dict) -> Apostila:
-        """Cria uma apostila no modelo legado.
-
-        Args:
-            data: Dicionário com os dados necessários para criar a apostila.
-
-        Returns:
-            Apostila: Instância de apostila criada.
-
-        Raises:
-            ValidationError: Se a designação ou cessação não for válida
-            ou se já existir uma apostila ativa.
-
-        """
-        designacao_id = data.pop("designacao")
-        ato_apostilado = data.pop("ato_apostilado")
-
-        designacao = (
-            Designacao.objects.filter(id=designacao_id, is_deleted=False)
-            .select_related("cessacao")
-            .first()
-        )
-
-        if not designacao:
-            raise ValidationError("Designação não encontrada.")
-
-        if ato_apostilado == "designacao":
-            alvo_designacao = designacao
-            alvo_cessacao = None
-
-        elif ato_apostilado == "cessacao":
-            cessacao = getattr(designacao, "cessacao", None)
-
-            if not cessacao or cessacao.is_deleted:
-                raise ValidationError(
-                    "Não existe cessação válida para esta designação."
-                )
-
-            alvo_designacao = None
-            alvo_cessacao = cessacao
-
-        else:
-            raise ValidationError("Tipo de ato inválido.")
-
-        alvo = alvo_designacao or alvo_cessacao
-
-        if alvo is None:
-            raise ValidationError("Ato alvo não encontrado para apostila.")
-
-        if getattr(alvo, "is_deleted", False):
-            raise ValidationError("Não é possível apostilar um ato deletado.")
-
-        queryset = Apostila.objects.filter(
-            is_deleted=False, tipo=Apostila.Tipo.APOSTILA
-        )
-
-        if alvo_designacao:
-            queryset = queryset.filter(designacao=alvo_designacao)
-        else:
-            queryset = queryset.filter(cessacao=alvo_cessacao)
-
-        apostilas_ativas = queryset.exclude(
-            id__in=Apostila.objects.filter(
-                tipo=Apostila.Tipo.ANULACAO,
-                apostila_referencia__in=queryset,
-            ).values_list("apostila_referencia_id", flat=True)
-        )
-
-        if apostilas_ativas.exists():
-            raise ValidationError(
-                "Já existe uma apostila válida para este ato."
-            )
-
-        from typing import cast
-
-        return Apostila.objects.create(
-            tipo=cast(str, data.get("tipo")),
-            designacao=alvo_designacao,
-            cessacao=alvo_cessacao,
-            sei_numero=cast(str, data.get("sei_numero")),
-            observacao=cast(str, data.get("observacao")),
-            d_o=cast(str, data.get("d_o", "")),
-        )
-
-    # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────
+    def buscar(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma apostila por pk com todos os prefetches."""
+        return ApostilaService.listar().filter(pk=pk).first()
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
-        """Cria um ato administrativo do tipo apostila (v2).
+        """Cria um ato administrativo do tipo apostila.
 
         Args:
             data: Dicionário com os dados do ato e alterações associadas.

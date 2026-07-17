@@ -1,96 +1,161 @@
-"""Serializador para cessação de designações.
+"""Serializadores para cessação.
 
-Inclui informações de insubsistência e validações específicas de portaria e
+Inclui payloads de criação e leitura de cessação, com validações de número e
 ano.
 """
 
 from rest_framework import serializers
 
-from apps.designacao.api.serializers.insubsistencia_serializer import (
-    InsubsistenciaSerializer,
+from apps.designacao.api.serializers.utils import (
+    NullableDateField,
+    validar_somente_numeros,
 )
-from apps.designacao.api.serializers.utils import validar_somente_numeros
-from apps.designacao.models.cessacao import Cessacao
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
-class CessacaoSerializer(serializers.ModelSerializer):
-    """Serializador de Cessação.
+class CessacaoWriteSerializer(serializers.Serializer):
+    """Serializador de escrita para cessação.
 
-    Recupera dados relacionados à insubsistência e valida campos numéricos.
+    Valida os dados necessários para criar uma cessação vinculada a uma
+    designação.
     """
 
-    insubsistencia = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Cessacao
-        fields = "__all__"
-
-    def get_insubsistencia(self, obj: Cessacao) -> dict | None:
-        """Retorna a insubsistência mais recente associada à cessação.
-
-        Args:
-            obj: Instância de Cessacao.
-
-        Returns:
-            dict|None: Dados serializados da insubsistência, ou None se não
-            existir.
-
-        """
-        insubs_qs = getattr(obj, "insubsistencia", None)
-        if not insubs_qs:
-            return None
-
-        insubsistencia = (
-            insubs_qs.filter(is_deleted=False).order_by("-criado_em").first()
+    # AtoAdministrativo pai (designação à qual esta cessação pertence)
+    ato_pai = serializers.PrimaryKeyRelatedField(
+        queryset=AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO
         )
-        if insubsistencia and not insubsistencia.is_deleted:
-            return InsubsistenciaSerializer(insubsistencia).data
+    )
 
-        return None
+    # Campos de AtoAdministrativo
+    numero_portaria = serializers.CharField(max_length=20)
+    ano_vigente = serializers.CharField(max_length=6)
+    sei_numero = serializers.CharField(max_length=30)
+    doc = NullableDateField(required=False, default=None, allow_null=True)
+
+    # Campos de CessacaoDetalhe
+    a_pedido = serializers.BooleanField(required=False, default=False)
+    remocao = serializers.BooleanField(required=False, default=False)
+    aposentadoria = serializers.BooleanField(required=False, default=False)
+    data_cessacao = serializers.DateField()
 
     def validate_numero_portaria(self, value: str) -> str:
-        """Valida o número da portaria apenas com dígitos.
+        """Valida que o número da portaria contenha apenas dígitos.
 
         Args:
-            value: Número da portaria recebido.
+            value: Valor do número da portaria.
 
         Returns:
-            str: Valor validado contendo apenas números.
+            str: Valor validado com apenas dígitos.
 
         """
         return validar_somente_numeros(value)
 
     def validate_ano_vigente(self, value: str) -> str:
-        """Valida o ano vigente apenas com dígitos.
+        """Valida que o ano vigente contenha apenas dígitos.
 
         Args:
-            value: Ano vigente recebido.
+            value: Valor do ano vigente.
 
         Returns:
-            str: Valor validado contendo apenas números.
+            str: Valor validado com apenas dígitos.
 
         """
         return validar_somente_numeros(value)
 
-    def validate(self, data: dict) -> dict:
-        """Valida a consistência dos dados de cessação.
+
+class CessacaoReadSerializer(serializers.ModelSerializer):
+    """Serializador de leitura para cessação.
+
+    Retorna dados de cessação e eventual insubsistência para exibição de ato.
+    """
+
+    # Campos do ato pai (designação)
+    ato_pai_id = serializers.IntegerField(read_only=True)
+
+    # Campos de CessacaoDetalhe
+    a_pedido = serializers.BooleanField(
+        source="cessacao_detalhe.a_pedido", read_only=True
+    )
+    remocao = serializers.BooleanField(
+        source="cessacao_detalhe.remocao", read_only=True
+    )
+    aposentadoria = serializers.BooleanField(
+        source="cessacao_detalhe.aposentadoria", read_only=True
+    )
+    data_cessacao = serializers.DateField(
+        source="cessacao_detalhe.data_cessacao", read_only=True
+    )
+
+    insubsistencia = serializers.SerializerMethodField()
+    apostilas = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtoAdministrativo
+        fields = [
+            "id",
+            "tipo",
+            "status",
+            "ato_pai_id",
+            "ato_raiz_id",
+            "numero_portaria",
+            "ano_vigente",
+            "sei_numero",
+            "doc",
+            "criado_em",
+            "a_pedido",
+            "remocao",
+            "aposentadoria",
+            "data_cessacao",
+            "insubsistencia",
+            "apostilas",
+        ]
+
+    def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
+        """Retorna a insubsistência associada à cessação.
 
         Args:
-            data: Dicionário com os dados de cessação.
-
-        Raises:
-            serializers.ValidationError: Se a designação já possuir cessação
-            associada.
+            obj: Instância de AtoAdministrativo.
 
         Returns:
-            dict: Dados validados.
+            dict|None: Dados da insubsistência ou None se não houver.
 
         """
-        designacao = data.get("designacao")
+        for filho in obj.filhos.all():
+            if filho.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
+                detalhe = getattr(filho, "insubsistencia_detalhe", None)
+                return {
+                    "id": filho.id,
+                    "observacoes": detalhe.observacoes if detalhe else "",
+                }
+        return None
 
-        if designacao and hasattr(designacao, "cessacao"):
-            raise serializers.ValidationError(
-                "Esta designação já possui uma cessação cadastrada."
+    def get_apostilas(self, obj: AtoAdministrativo) -> list:
+        """Retorna as apostilas ativas vinculadas à cessação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            list: Apostilas serializadas, excluindo as insubsistentes.
+
+        """
+        resultado = []
+        for filho in obj.filhos.all():
+            if (
+                filho.tipo != AtoAdministrativo.Tipo.APOSTILA
+                or filho.status == "insubsistente"
+            ):
+                continue
+            detalhe = getattr(filho, "apostila_detalhe", None)
+            resultado.append(
+                {
+                    "id": filho.id,
+                    "sei_numero": filho.sei_numero,
+                    "doc": filho.doc,
+                    "status": filho.status,
+                    "observacao": detalhe.observacao if detalhe else "",
+                    "criado_em": filho.criado_em,
+                }
             )
-
-        return data
+        return resultado
