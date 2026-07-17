@@ -164,9 +164,7 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
         return resultado
 
 
-class CessacaoV2ReadSerializerById(
-    AtoRelacionadoMixin, CessacaoReadSerializer
-):
+class CessacaoReadSerializerById(AtoRelacionadoMixin, CessacaoReadSerializer):
     """Serializador de leitura para cessação v2.
 
     Retorna dados de cessação, insubsistência e designação para

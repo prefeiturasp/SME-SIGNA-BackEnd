@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from apps.designacao.api.serializers.cessacao_serializer import (
     CessacaoReadSerializer,
-    CessacaoV2ReadSerializerById,
+    CessacaoReadSerializerById,
     CessacaoWriteSerializer,
 )
 from apps.designacao.services.cessacao_service import CessacaoService
@@ -49,7 +49,7 @@ class CessacaoViewSet(
 
     def get_serializer_class(
         self,
-    ) -> type[CessacaoV2ReadSerializerById] | type[CessacaoReadSerializer]:
+    ) -> type[CessacaoReadSerializerById] | type[CessacaoReadSerializer]:
         """Retorna o serializer de cessacões para a view baseada no action.
 
         Returns:
@@ -57,7 +57,7 @@ class CessacaoViewSet(
 
         """
         if self.action == "retrieve":
-            return CessacaoV2ReadSerializerById
+            return CessacaoReadSerializerById
         return CessacaoReadSerializer
 
     def get_queryset(self) -> QuerySet:
