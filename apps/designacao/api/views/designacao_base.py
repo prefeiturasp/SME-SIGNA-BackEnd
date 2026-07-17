@@ -1,7 +1,7 @@
-"""Base compartilhada entre views de designação legada e v2.
+"""Base compartilhada entre views de designação.
 
 Contém a paginação comum e os helpers de controle de paginação/filtros
-usados por DesignacaoViewSet e DesignacaoLegadoViewSet.
+usados por DesignacaoViewSet.
 """
 
 from typing import Any

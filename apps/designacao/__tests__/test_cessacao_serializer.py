@@ -7,15 +7,15 @@ from apps.designacao.__tests__.factories import (
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
-from apps.designacao.api.serializers.v2.cessacao_serializer import (
-    CessacaoV2ReadSerializerList,
-    CessacaoV2WriteSerializer,
+from apps.designacao.api.serializers.cessacao_serializer import (
+    CessacaoReadSerializer,
+    CessacaoWriteSerializer,
 )
 
 
 @pytest.mark.django_db
-class TestCessacaoV2WriteSerializer:
-    """Testes para cessacao v2 write serializer."""
+class TestCessacaoWriteSerializer:
+    """Testes para cessacao write serializer."""
 
     def _payload(self, ato_pai_id):
         """Método auxiliar para payload."""
@@ -31,7 +31,7 @@ class TestCessacaoV2WriteSerializer:
     def test_serializer_valido(self):
         """Verifica serializer valido."""
         d = criar_ato_designacao()
-        s = CessacaoV2WriteSerializer(data=self._payload(d.id))
+        s = CessacaoWriteSerializer(data=self._payload(d.id))
         assert s.is_valid(), s.errors
 
     def test_numero_portaria_invalido(self):
@@ -39,7 +39,7 @@ class TestCessacaoV2WriteSerializer:
         d = criar_ato_designacao()
         payload = self._payload(d.id)
         payload["numero_portaria"] = "12A45"
-        s = CessacaoV2WriteSerializer(data=payload)
+        s = CessacaoWriteSerializer(data=payload)
         assert not s.is_valid()
         assert "numero_portaria" in s.errors
 
@@ -48,21 +48,21 @@ class TestCessacaoV2WriteSerializer:
         d = criar_ato_designacao()
         payload = self._payload(d.id)
         payload["ano_vigente"] = "20A4"
-        s = CessacaoV2WriteSerializer(data=payload)
+        s = CessacaoWriteSerializer(data=payload)
         assert not s.is_valid()
         assert "ano_vigente" in s.errors
 
     def test_ato_pai_invalido_rejeita(self):
         """Verifica ato pai invalido rejeita."""
         payload = self._payload(9999)
-        s = CessacaoV2WriteSerializer(data=payload)
+        s = CessacaoWriteSerializer(data=payload)
         assert not s.is_valid()
         assert "ato_pai" in s.errors
 
 
 @pytest.mark.django_db
-class TestCessacaoV2ReadSerializerList:
-    """Testes para cessacao v2 read serializer."""
+class TestCessacaoReadSerializer:
+    """Testes para cessacao read serializer."""
 
     def test_get_insubsistencia_retorna_dados_quando_existe(self):
         """Verifica get insubsistencia retorna dados quando existe."""
@@ -78,7 +78,7 @@ class TestCessacaoV2ReadSerializerList:
             .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
             .first()
         )
-        data = CessacaoV2ReadSerializerList(c_com_prefetch).data
+        data = CessacaoReadSerializer(c_com_prefetch).data
 
         assert data["insubsistencia"] is not None
         assert data["insubsistencia"]["id"] == insub.id
@@ -95,6 +95,6 @@ class TestCessacaoV2ReadSerializerList:
             .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
             .first()
         )
-        data = CessacaoV2ReadSerializerList(c_com_prefetch).data
+        data = CessacaoReadSerializer(c_com_prefetch).data
 
         assert data["insubsistencia"] is None

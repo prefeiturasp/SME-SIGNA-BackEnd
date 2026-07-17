@@ -1,166 +1,207 @@
-"""Testes para serializer de designação."""
+"""Testes para o serializer de leitura de designação.
+
+Cobre a serialização de atos filhos (cessação, apostilas, insubsistência)
+e os fallbacks de exceção dos campos derivados de designacao_detalhe.
+"""
 
 import pytest
-from django.test import TestCase
 
-from apps.designacao.__tests__.factories import criar_designacao_legado
-from apps.designacao.api.serializers.designacao_legado_serializer import (
-    DesignacaoLegadoSerializer as DesignacaoSerializer,
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+    criar_ato_insubsistencia,
 )
-from apps.designacao.models.designacao import (
-    Designacao,
-    ImpedimentoSubstituicao,
+from apps.designacao.api.serializers.designacao_serializer import (
+    DesignacaoReadSerializer,
 )
-from apps.designacao.models.insubsistencia import Insubsistencia
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
-class DesignacaoSerializerTest(TestCase):
-    """Testes para designacao serializer test."""
+def _buscar(pk: int) -> AtoAdministrativo:
+    """Busca o ato do zero no banco, sem cache de instância em memória."""
+    return AtoAdministrativo.objects.get(pk=pk)
 
-    def test_get_field_names_inclui_campos_extras(self):
-        """Verifica get field names inclui campos extras."""
-        serializer = DesignacaoSerializer()
-        fields = serializer.fields
 
-        self.assertIn("impedimento_substituicao_detail", fields)
-        self.assertIn("tipo_vaga_display", fields)
-        self.assertIn("cargo_vaga_display", fields)
+@pytest.mark.django_db
+class TestDesignacaoReadSerializerCessacao:
+    """Testes do campo derivado `cessacao`."""
 
-    @pytest.mark.django_db
-    def test_get_impedimento_display_com_valor(self):
-        """Verifica get impedimento display com valor."""
-        impedimento = ImpedimentoSubstituicao.objects.get(codigo="LIC_MEDICA")
+    def test_none_quando_nao_existe_cessacao(self):
+        """Verifica none quando nao existe cessacao."""
+        d = criar_ato_designacao()
 
-        designacao = Designacao.objects.create(
-            dre_nome="DRE",
-            unidade_proponente="Unidade",
-            codigo_hierarquico="123",
-            indicado_nome_civil="Nome",
-            indicado_nome_servidor="Nome",
-            indicado_rf="1234567",
-            indicado_vinculo=1,
-            indicado_cargo_base="Cargo",
-            indicado_lotacao="Lotacao",
-            indicado_local_exercicio="Local",
-            numero_portaria="123",
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["cessacao"] is None
+
+    def test_retorna_dados_com_apostilas_e_insubsistencia_da_cessacao(self):
+        """Verifica retorna dados com apostilas e insubsistencia da cessacao."""
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        criar_ato_apostila(c, observacao="Retificação de cessação")
+        insub = criar_ato_insubsistencia(c, observacoes="Motivo cessação")
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["cessacao"]["id"] == c.id
+        assert data["cessacao"]["numero_portaria"] == c.numero_portaria
+        assert data["cessacao"]["ano_vigente"] == c.ano_vigente
+        assert data["cessacao"]["a_pedido"] is False
+        assert data["cessacao"]["remocao"] is False
+        assert data["cessacao"]["aposentadoria"] is False
+        assert len(data["cessacao"]["apostilas"]) == 1
+        assert (
+            data["cessacao"]["apostilas"][0]["observacao"]
+            == "Retificação de cessação"
+        )
+        assert data["cessacao"]["insubsistencia"]["id"] == insub.id
+        assert data["cessacao"]["insubsistencia"]["observacoes"] == (
+            "Motivo cessação"
+        )
+
+    def test_retorna_none_quando_cessacao_sem_detalhe(self):
+        """Verifica none em erro (cessação sem CessacaoDetalhe)."""
+        d = criar_ato_designacao()
+        AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.CESSACAO,
+            ato_pai=d,
+            numero_portaria="456",
             ano_vigente="2024",
-            sei_numero="123",
-            data_inicio="2024-01-01",
-            tipo_vaga=Designacao.TipoVaga.VAGO,
-            impedimento_substituicao=impedimento,
+            sei_numero="SEI-CESSACAO",
         )
 
-        serializer = DesignacaoSerializer(designacao)
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
 
-        assert serializer.data["impedimento_display"] == "Por licença médica"
+        assert data["cessacao"] is None
 
-    @pytest.mark.django_db
-    def test_get_impedimento_display_sem_valor(self):
-        """Verifica get impedimento display sem valor."""
-        designacao = Designacao.objects.create(
-            dre_nome="DRE",
-            unidade_proponente="Unidade",
-            codigo_hierarquico="123",
-            indicado_nome_civil="Nome",
-            indicado_nome_servidor="Nome",
-            indicado_rf="1234567",
-            indicado_vinculo=1,
-            indicado_cargo_base="Cargo",
-            indicado_lotacao="Lotacao",
-            indicado_local_exercicio="Local",
-            numero_portaria="123",
+    def test_cessacao_sem_apostilas_nem_insubsistencia(self):
+        """Verifica cessação sem apostilas nem insubsistência ativas."""
+        d = criar_ato_designacao()
+        criar_ato_cessacao(d)
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["cessacao"]["apostilas"] == []
+        assert data["cessacao"]["insubsistencia"] is None
+
+    def test_cessacao_com_insubsistencia_sem_detalhe(self):
+        """Verifica none quando a insubsistência da cessação não tem detalhe."""
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+            ato_pai=c,
+            numero_portaria="789",
             ano_vigente="2024",
-            sei_numero="123",
-            data_inicio="2024-01-01",
-            tipo_vaga=Designacao.TipoVaga.VAGO,
-            impedimento_substituicao=None,
+            sei_numero="SEI-INSUB-CESSACAO",
         )
 
-        serializer = DesignacaoSerializer(designacao)
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
 
-        assert serializer.data["impedimento_display"] is None
+        assert data["cessacao"]["insubsistencia"] is None
 
-    @pytest.mark.django_db
-    def test_update_nao_permite_alterar_campos_protegidos(self):
-        """Verifica update nao permite alterar campos protegidos."""
-        designacao = Designacao.objects.create(
-            dre_nome="DRE",
-            unidade_proponente="Unidade",
-            codigo_hierarquico="123",
-            indicado_nome_civil="Nome",
-            indicado_nome_servidor="Nome",
-            indicado_rf="1234567",
-            indicado_vinculo=1,
-            indicado_cargo_base="Cargo",
-            indicado_lotacao="Lotacao",
-            indicado_local_exercicio="Local",
-            numero_portaria="123",
+
+@pytest.mark.django_db
+class TestDesignacaoReadSerializerApostilas:
+    """Testes do campo derivado `apostilas`."""
+
+    def test_lista_vazia_quando_sem_apostilas(self):
+        """Verifica lista vazia quando sem apostilas."""
+        d = criar_ato_designacao()
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["apostilas"] == []
+
+    def test_ignora_apostila_insubsistente_e_sem_detalhe(self):
+        """Verifica que apostila insubsistente e sem detalhe são ignoradas."""
+        d = criar_ato_designacao()
+        ativa = criar_ato_apostila(d, observacao="Ativa")
+
+        insubsistente = criar_ato_apostila(d, observacao="Insubsistente")
+        insubsistente.ativo = False
+        insubsistente.save(update_fields=["ativo"])
+
+        AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.APOSTILA,
+            ato_pai=d,
+            sei_numero="SEI-SEM-DETALHE",
+        )
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert [a["id"] for a in data["apostilas"]] == [ativa.id]
+        assert data["apostilas"][0]["observacao"] == "Ativa"
+
+
+@pytest.mark.django_db
+class TestDesignacaoReadSerializerInsubsistencia:
+    """Testes do campo derivado `insubsistencia` (da própria designação)."""
+
+    def test_none_quando_nao_existe_insubsistencia(self):
+        """Verifica none quando nao existe insubsistencia."""
+        d = criar_ato_designacao()
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["insubsistencia"] is None
+
+    def test_none_quando_insubsistencia_inativa(self):
+        """Verifica none quando a insubsistência já foi tornada sem efeito."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d)
+        insub.ativo = False
+        insub.save(update_fields=["ativo"])
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["insubsistencia"] is None
+
+    def test_retorna_dados_da_insubsistencia_ativa(self):
+        """Verifica retorna dados da insubsistência ativa."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d, observacoes="Erro material")
+
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
+
+        assert data["insubsistencia"]["id"] == insub.id
+        assert (
+            data["insubsistencia"]["numero_portaria"] == insub.numero_portaria
+        )
+        assert data["insubsistencia"]["observacoes"] == "Erro material"
+
+    def test_retorna_none_quando_insubsistencia_sem_detalhe(self):
+        """Verifica none em erro (insubsistência sem InsubsistenciaDetalhe)."""
+        d = criar_ato_designacao()
+        AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+            ato_pai=d,
+            numero_portaria="789",
             ano_vigente="2024",
-            sei_numero="123",
-            data_inicio="2024-01-01",
-            tipo_vaga=Designacao.TipoVaga.VAGO,
+            sei_numero="SEI-INSUB",
         )
 
-        serializer = DesignacaoSerializer()
+        data = DesignacaoReadSerializer(_buscar(d.pk)).data
 
-        updated = serializer.update(
-            designacao,
-            {
-                "indicado_nome_servidor": "Novo Nome",
-                "is_deleted": True,
-                "deleted_at": "2025-01-01T00:00:00",
-            },
-        )
+        assert data["insubsistencia"] is None
 
-        assert updated.indicado_nome_servidor == "Novo Nome"
-        assert updated.is_deleted is False
-        assert updated.deleted_at is None
 
-    @pytest.mark.django_db
-    def test_get_insubsistencia_retorna_dados_quando_existe_insubsistencia_ativa(
-        self,
-    ):
-        """Deve retornar os dados da insubsistência ativa vinculada à designação."""
-        designacao = criar_designacao_legado()
-        insubsistencia = Insubsistencia.objects.create(
-            designacao=designacao,
-            numero_portaria="11111",
+@pytest.mark.django_db
+class TestDesignacaoReadSerializerDisplaysSemDetalhe:
+    """Testes dos fallbacks de exceção quando não há designacao_detalhe."""
+
+    def test_displays_retornam_none_sem_designacao_detalhe(self):
+        """Verifica que os campos *_display voltam None sem detalhe."""
+        ato = AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+            numero_portaria="001",
             ano_vigente="2024",
-            sei_numero="888888",
+            sei_numero="SEI-SEM-DETALHE",
         )
 
-        serializer = DesignacaoSerializer(instance=designacao)
+        data = DesignacaoReadSerializer(_buscar(ato.pk)).data
 
-        assert serializer.data["insubsistencia"] is not None
-        assert serializer.data["insubsistencia"]["id"] == insubsistencia.id
-
-    @pytest.mark.django_db
-    def test_update_com_impedimento(self):
-        """Verifica update com impedimento."""
-        impedimento = ImpedimentoSubstituicao.objects.get(codigo="FERIAS")
-
-        designacao = Designacao.objects.create(
-            dre_nome="DRE",
-            unidade_proponente="Unidade",
-            codigo_hierarquico="123",
-            indicado_nome_civil="Nome",
-            indicado_nome_servidor="Nome",
-            indicado_rf="1234567",
-            indicado_vinculo=1,
-            indicado_cargo_base="Cargo",
-            indicado_lotacao="Lotacao",
-            indicado_local_exercicio="Local",
-            numero_portaria="123",
-            ano_vigente="2024",
-            sei_numero="123",
-            data_inicio="2024-01-01",
-            tipo_vaga=Designacao.TipoVaga.VAGO,
-        )
-
-        serializer = DesignacaoSerializer()
-
-        updated = serializer.update(
-            designacao, {"impedimento_substituicao": impedimento}
-        )
-
-        assert updated.impedimento_substituicao == impedimento
+        assert data["impedimento_display"] is None
+        assert data["tipo_vaga_display"] is None
+        assert data["cargo_vaga_display"] is None

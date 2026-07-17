@@ -1,134 +1,120 @@
-"""Serializador de insubsistências para API.
+"""Serializadores para insubsistência.
 
-Contém validações de campos numéricos e regras de negócio para evitar
-insubsistências duplicadas para o mesmo ato.
+Inclui definição de payloads para escrita e leitura de insubsistência em atos.
 """
 
 from rest_framework import serializers
 
-from apps.designacao.api.serializers.utils import validar_somente_numeros
-from apps.designacao.models.insubsistencia import (
-    Insubsistencia,
-    TipoInsubsistencia,
+from apps.designacao.api.serializers.ato_relacionado_mixin import (
+    AtoRelacionadoMixin,
 )
+from apps.designacao.api.serializers.utils import (
+    NullableDateField,
+    validar_somente_numeros,
+)
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
-# ── Legado ───────────────────────────────────────────────────────────────────
 
+class InsubsistenciaWriteSerializer(serializers.Serializer):
+    """Serializador de escrita para insubsistência.
 
-class InsubsistenciaSerializer(serializers.ModelSerializer):
-    """Serializador de Insubsistência.
-
-    Valida campos de portaria e ano, e garante unicidade conforme o tipo
-    de insubsistência informada.
+    Valida os campos obrigatórios para criação de uma insubsistência.
     """
 
-    tipo_insubsistencia = serializers.ChoiceField(
-        choices=TipoInsubsistencia.choices,
-        write_only=True,
-        required=True,
+    ato_pai = serializers.PrimaryKeyRelatedField(
+        queryset=AtoAdministrativo.objects.all()
+    )
+    numero_portaria = serializers.CharField(max_length=20)
+    ano_vigente = serializers.CharField(max_length=6)
+    sei_numero = serializers.CharField(max_length=30)
+    doc = NullableDateField(required=False, default=None, allow_null=True)
+    observacoes = serializers.CharField(
+        allow_blank=True, required=False, default=""
+    )
+    texto_apostila = serializers.CharField(
+        allow_blank=True, required=False, default=""
     )
 
-    class Meta:
-        model = Insubsistencia
-        fields = "__all__"
-
     def validate_numero_portaria(self, value: str) -> str:
-        """Valida o número da portaria como apenas dígitos.
+        """Valida que o número da portaria contenha apenas dígitos.
 
         Args:
             value: Valor do número da portaria.
 
         Returns:
-            str: Valor contendo apenas números.
+            str: Valor validado com apenas dígitos.
 
         """
         return validar_somente_numeros(value)
 
     def validate_ano_vigente(self, value: str) -> str:
-        """Valida o ano vigente como apenas dígitos.
+        """Valida que o ano vigente contenha apenas dígitos.
 
         Args:
             value: Valor do ano vigente.
 
         Returns:
-            str: Valor contendo apenas números.
+            str: Valor validado com apenas dígitos.
 
         """
         return validar_somente_numeros(value)
 
-    def create(self, validated_data: dict) -> Insubsistencia:
-        """Cria a insubsistência removendo dados auxiliares de tipo.
+
+class InsubsistenciaReadSerializer(
+    AtoRelacionadoMixin, serializers.ModelSerializer
+):
+    """Serializador de leitura para insubsistência.
+
+    Expõe status e observações da insubsistência.
+    """
+
+    status = serializers.SerializerMethodField()
+    observacoes = serializers.CharField(
+        source="insubsistencia_detalhe.observacoes", read_only=True
+    )
+    texto_apostila = serializers.SerializerMethodField()
+    designacao = serializers.SerializerMethodField()
+    cessacao = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtoAdministrativo
+        fields = [
+            "id",
+            "tipo",
+            "status",
+            "ato_pai_id",
+            "numero_portaria",
+            "ano_vigente",
+            "sei_numero",
+            "doc",
+            "criado_em",
+            "observacoes",
+            "texto_apostila",
+            "designacao",
+            "cessacao",
+        ]
+
+    def get_status(self, obj: AtoAdministrativo) -> str:
+        """Retorna o status do ato de insubsistência.
 
         Args:
-            validated_data: Dados já validados para criação.
+            obj: Instância de AtoAdministrativo.
 
         Returns:
-            Insubsistencia: Instância criada do modelo.
+            str: Status do ato.
 
         """
-        validated_data.pop("tipo_insubsistencia", None)
-        return super().create(validated_data)
+        return obj.status
 
-    def validate(self, data: dict) -> dict:
-        """Valida regras de negócio para insubsistência.
-
-        Verifica se a designação está informada e garante que não haja
-        insubsistências
-        duplicadas para o mesmo tipo de ato.
+    def get_texto_apostila(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o texto da anulação quando a insubsistência é de apostila.
 
         Args:
-            data: Dicionário com os dados validados.
-
-        Raises:
-            serializers.ValidationError: Se a designação não estiver informada
-            ou se já
-                existir uma insubsistência para o mesmo ato.
+            obj: Instância de AtoAdministrativo.
 
         Returns:
-            dict: Dados validados.
+            str | None: Texto da anulação ou None se não aplicável.
 
         """
-        from apps.designacao.models.designacao import Designacao
-
-        designacao = data.get("designacao")
-        tipo_insubsistencia = data.get("tipo_insubsistencia")
-
-        if not designacao:
-            raise serializers.ValidationError(
-                "Informe uma designação ou cessação para cadastrar a insubsistência."  # noqa: E501
-            )
-
-        if tipo_insubsistencia == TipoInsubsistencia.DESIGNACAO and designacao:
-            queryset = Insubsistencia.objects.filter(
-                designacao_id=designacao,
-                is_deleted=False,
-            )
-            if queryset.exists():
-                raise serializers.ValidationError(
-                    "Esta designação já possui uma insubsistência cadastrada."
-                )
-
-        if tipo_insubsistencia == TipoInsubsistencia.CESSACAO and designacao:
-            designacao_obj = (
-                Designacao.objects.select_related("cessacao")
-                .filter(
-                    id=designacao.id,
-                    is_deleted=False,
-                )
-                .first()
-            )
-            cessacao_relacionada = getattr(designacao_obj, "cessacao", None)
-            queryset = (
-                Insubsistencia.objects.filter(
-                    cessacao_id=cessacao_relacionada.id,
-                    is_deleted=False,
-                )
-                if cessacao_relacionada
-                else Insubsistencia.objects.none()
-            )
-            if queryset.exists():
-                raise serializers.ValidationError(
-                    "Esta cessação já possui uma insubsistência cadastrada."
-                )
-
-        return data
+        detalhe = getattr(obj, "insubsistencia_apostila_detalhe", None)
+        return detalhe.texto if detalhe else None
