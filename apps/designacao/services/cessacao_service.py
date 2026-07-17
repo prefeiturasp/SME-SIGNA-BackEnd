@@ -40,7 +40,21 @@ class CessacaoService:
     @staticmethod
     def buscar(pk: int) -> AtoAdministrativo | None:
         """Retorna uma cessação por pk."""
-        return CessacaoService.listar().filter(pk=pk).first()
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.CESSACAO
+            )
+            .select_related("cessacao_detalhe")
+            .prefetch_related(
+                "filhos",
+                "ato_pai__designacao_detalhe",
+                "filhos__apostila_detalhe",
+                "filhos__insubsistencia_detalhe",
+            )
+            .order_by("-criado_em")
+            .filter(pk=pk)
+            .first()
+        )
 
     @classmethod
     def criar(cls, data: dict) -> AtoAdministrativo:

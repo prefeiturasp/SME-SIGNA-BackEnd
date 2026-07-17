@@ -6,6 +6,9 @@ ano.
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_relacionado_mixin import (
+    AtoRelacionadoMixin,
+)
 from apps.designacao.api.serializers.utils import (
     NullableDateField,
     validar_somente_numeros,
@@ -159,3 +162,35 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
                 }
             )
         return resultado
+
+
+class CessacaoReadSerializerById(AtoRelacionadoMixin, CessacaoReadSerializer):
+    """Serializador de leitura para cessação v2.
+
+    Retorna dados de cessação, insubsistência e designação para
+    exibição dos detalhes de ato.
+    """
+
+    designacao = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtoAdministrativo
+        fields = [
+            "id",
+            "tipo",
+            "status",
+            "ato_pai_id",
+            "ato_raiz_id",
+            "numero_portaria",
+            "ano_vigente",
+            "sei_numero",
+            "doc",
+            "criado_em",
+            "a_pedido",
+            "remocao",
+            "aposentadoria",
+            "data_cessacao",
+            "insubsistencia",
+            "apostilas",
+            "designacao",
+        ]

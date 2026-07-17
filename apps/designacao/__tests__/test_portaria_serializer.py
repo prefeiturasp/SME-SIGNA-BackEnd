@@ -37,6 +37,7 @@ def serialize(ato):
 
 
 DADOS_CESSACAO = {
+    "numero_portaria": "002/2024",
     "portaria": "002/2024",
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0002345-6",
@@ -76,6 +77,8 @@ DADOS_DESIGNACAO = {
     "com_afastamento": False,
     "motivo_afastamento": "",
     "pendencias": "",
+    "unidade_proponente": "EMEF TESTE 1",
+    "numero_portaria": "001/2024",
 }
 
 

@@ -9,6 +9,7 @@ from apps.designacao.__tests__.factories import (
 )
 from apps.designacao.api.serializers.cessacao_serializer import (
     CessacaoReadSerializer,
+    CessacaoReadSerializerById,
     CessacaoWriteSerializer,
 )
 
@@ -98,3 +99,41 @@ class TestCessacaoReadSerializer:
         data = CessacaoReadSerializer(c_com_prefetch).data
 
         assert data["insubsistencia"] is None
+
+
+@pytest.mark.django_db
+class TestCessacaoReadSerializerById:
+    """Testes para cessacao read serializer by id."""
+
+    def test_serializer_retorna_designacao_com_dados_do_ato_pai(self):
+        """Verifica retorno de designacao no serializer by id."""
+        designacao = criar_ato_designacao(
+            numero_portaria="9876",
+            ano_vigente="2025",
+            sei_numero="SEI-DES",
+        )
+        cessacao = criar_ato_cessacao(
+            designacao,
+            a_pedido=True,
+            remocao=True,
+        )
+
+        data = CessacaoReadSerializerById(cessacao).data
+
+        assert "designacao" in data
+        assert data["designacao"] is not None
+        assert (
+            data["designacao"]["numero_portaria"] == designacao.numero_portaria
+        )
+        assert data["designacao"]["ano_vigente"] == designacao.ano_vigente
+        assert data["designacao"]["sei_numero"] == designacao.sei_numero
+        assert data["designacao"]["portaria"] == designacao.numero_portaria
+
+    def test_serializer_by_id_expoe_campo_designacao(self):
+        """Verifica que serializer by id expõe o campo designacao."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao)
+
+        data = CessacaoReadSerializerById(cessacao).data
+
+        assert "designacao" in data
