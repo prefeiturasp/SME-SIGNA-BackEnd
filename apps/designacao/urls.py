@@ -5,10 +5,10 @@ from apps.designacao.api.views.ato_administrativo_view import (
     AtoAdministrativoListViewSet,
 )
 from apps.designacao.api.views.cessacao_view import CessacaoViewSet
+from apps.designacao.api.views.designacao import DesignacaoViewSet
 from apps.designacao.api.views.designacao_impedimentos_view import (
     ImpedimentoSubstituicaoView,
 )
-from apps.designacao.api.views.designacao_legado import DesignacaoLegadoViewSet
 from apps.designacao.api.views.designacao_servidor_view import (
     DesignacaoServidorView,
 )
@@ -16,23 +16,26 @@ from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
     DesignacaoUnidadeView,
 )
-from apps.designacao.api.views.insubsistencia_view import InsubsistenciaViewSet
+from apps.designacao.api.views.insubsistencia_view import (
+    InsubsistenciaViewSet,
+)
 from apps.designacao.api.views.portaria import PortariaListViewSet
 
 app_name = "designacao"
 
 urlpatterns = [
+    # Utilitários
     path("servidor", DesignacaoServidorView.as_view(), name="servidor"),
     path("unidade/", DesignacaoUnidadeView.as_view(), name="unidade"),
     path(
         "unidade/cargos/",
         DesignacaoUnidadeCargosView.as_view(),
-        name="designacao-unidade-cargos",
+        name="unidade-cargos",
     ),
-    # Designações (legado — modelo Designacao)
+    # Designações (AtoAdministrativo + DesignacaoDetalhe)
     path(
         "designacoes/",
-        DesignacaoLegadoViewSet.as_view({"get": "list", "post": "create"}),
+        DesignacaoViewSet.as_view({"get": "list", "post": "create"}),
         name="designacoes",
     ),
     path(
@@ -42,7 +45,7 @@ urlpatterns = [
     ),
     path(
         "designacoes/<int:pk>/",
-        DesignacaoLegadoViewSet.as_view(
+        DesignacaoViewSet.as_view(
             {
                 "get": "retrieve",
                 "delete": "destroy",
@@ -53,17 +56,20 @@ urlpatterns = [
     ),
     path(
         "designacoes/cargos-base-pareados/",
-        DesignacaoLegadoViewSet.as_view({"get": "cargos_base_pareados"}),
+        DesignacaoViewSet.as_view({"get": "cargos_base_pareados"}),
         name="cargos-base-pareados",
     ),
     path(
         "designacoes/cargos-sobrepostos-pareados/",
-        DesignacaoLegadoViewSet.as_view(
-            {"get": "cargos_sobrepostos_pareados"}
-        ),
+        DesignacaoViewSet.as_view({"get": "cargos_sobrepostos_pareados"}),
         name="cargos-sobrepostos-pareados",
     ),
-    # Cessações (legado — modelo Cessacao)
+    path(
+        "designacoes/buscar-por-portaria/",
+        DesignacaoViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="designacao-buscar-por-portaria",
+    ),
+    # Cessações (AtoAdministrativo + CessacaoDetalhe)
     path(
         "cessacoes/",
         CessacaoViewSet.as_view({"get": "list", "post": "create"}),
@@ -71,21 +77,20 @@ urlpatterns = [
     ),
     path(
         "cessacoes/<int:pk>/",
-        CessacaoViewSet.as_view({"get": "retrieve", "delete": "destroy"}),
+        CessacaoViewSet.as_view(
+            {
+                "get": "retrieve",
+                "delete": "destroy",
+            }
+        ),
         name="cessacao-detail",
     ),
-    # Insubsistências (legado — modelo Insubsistencia)
     path(
-        "insubsistencias/",
-        InsubsistenciaViewSet.as_view({"get": "list", "post": "create"}),
-        name="insubsistencias",
+        "cessacoes/buscar-por-portaria/",
+        CessacaoViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="cessacao-buscar-por-portaria",
     ),
-    path(
-        "insubsistencias/<int:pk>/",
-        InsubsistenciaViewSet.as_view({"get": "retrieve"}),
-        name="insubsistencia-detail",
-    ),
-    # Apostilas (legado — modelo Apostila)
+    # Apostilas (AtoAdministrativo + ApostilaDetalhe)
     path(
         "apostilas/",
         ApostilaViewSet.as_view({"get": "list", "post": "create"}),
@@ -93,8 +98,34 @@ urlpatterns = [
     ),
     path(
         "apostilas/<int:pk>/",
-        ApostilaViewSet.as_view({"get": "retrieve"}),
+        ApostilaViewSet.as_view(
+            {
+                "get": "retrieve",
+                "delete": "destroy",
+            }
+        ),
         name="apostila-detail",
+    ),
+    # Insubsistências (AtoAdministrativo + InsubsistenciaDetalhe)
+    path(
+        "insubsistencias/",
+        InsubsistenciaViewSet.as_view({"get": "list", "post": "create"}),
+        name="insubsistencias",
+    ),
+    path(
+        "insubsistencias/<int:pk>/",
+        InsubsistenciaViewSet.as_view(
+            {
+                "get": "retrieve",
+                "delete": "destroy",
+            }
+        ),
+        name="insubsistencia-detail",
+    ),
+    path(
+        "insubsistencias/buscar-por-portaria/",
+        InsubsistenciaViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="insubsistencia-buscar-por-portaria",
     ),
     # Portarias — listagem para publicação no D.O.
     path(

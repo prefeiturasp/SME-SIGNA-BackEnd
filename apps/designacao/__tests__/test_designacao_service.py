@@ -65,8 +65,8 @@ class TestDesignacaoService:
 
         assert resultado == []
 
-    def test_create_designacao_v2(self):
-        """Verifica create designação v2."""
+    def test_create_designacao(self):
+        """Verifica create designação."""
         designacao = criar_ato_designacao()
         assert (
             designacao.status_publicacao

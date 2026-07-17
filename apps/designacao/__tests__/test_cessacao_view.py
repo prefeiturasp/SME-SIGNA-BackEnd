@@ -1,131 +1,197 @@
 """Testes para a view de cessação."""
 
 import secrets
-from datetime import date
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.designacao.models import Cessacao, Designacao
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+)
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 User = get_user_model()
 
 
 @pytest.fixture
 def auth_client(db):
-    """Cria um usuário e retorna um cliente autenticado."""
+    """Método auth client."""
     password = secrets.token_urlsafe(16)
-    user = User.objects.create_user(username="testuser", password=password)
+    user = User.objects.create_user(
+        username="test_cessacao", password=password
+    )
     client = APIClient()
     client.force_authenticate(user=user)
     return client
 
 
-@pytest.fixture
-def designacao(db):
-    """Cria uma Designacao simples para os testes."""
-    return Designacao.objects.create(
-        dre_nome="DRE TESTE",
-        unidade_proponente="Unidade Teste",
-        codigo_hierarquico="123",
-        indicado_nome_civil="João da Silva",
-        indicado_nome_servidor="João da Silva",
-        indicado_rf="1234567",
-        indicado_vinculo=1,
-        indicado_cargo_base="Professor",
-        indicado_lotacao="Escola A",
-        indicado_local_exercicio="Escola A",
-        numero_portaria="123",
-        ano_vigente="2024",
-        sei_numero="123456789",
-        data_inicio=date(2024, 1, 1),
-        tipo_vaga=Designacao.TipoVaga.VAGO,
-        cargo_vaga=Designacao.CargoVaga.DIRETOR,
+def _payload(ato_pai_id):
+    """Método auxiliar para payload."""
+    return {
+        "ato_pai": ato_pai_id,
+        "numero_portaria": "9999",
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-C1",
+        "a_pedido": True,
+        "data_cessacao": "2024-06-01",
+    }
+
+
+@pytest.mark.django_db
+def test_create_cessacao(auth_client):
+    """Verifica create cessacao."""
+    designacao = criar_ato_designacao()
+
+    url = reverse("designacao:cessacoes")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    cessacao = AtoAdministrativo.objects.filter(
+        tipo=AtoAdministrativo.Tipo.CESSACAO
+    )
+    assert cessacao.exists()
+    assert (
+        cessacao.get().status_publicacao
+        == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
     )
 
 
-@pytest.fixture
-def cessacao(db, designacao):
-    """Cria uma Cessacao simples para os testes."""
-    return Cessacao.objects.create(
-        designacao=designacao,
-        numero_portaria="456",
-        ano_vigente="2024",
-        sei_numero="88888",
-        a_pedido=True,
-        data_designacao="2024-02-01",
+@pytest.mark.django_db
+def test_create_cessacao_registra_criado_por(auth_client):
+    """Verifica que a cessacao criada registra o usuario responsavel."""
+    designacao = criar_ato_designacao()
+    user = User.objects.get(username="test_cessacao")
+
+    url = reverse("designacao:cessacoes")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
     )
 
+    assert response.status_code == 201
+    cessacao = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.CESSACAO
+    )
+    assert cessacao.criado_por_id == user.id
 
-class TestCessacaoViewSet:
-    """Testes para cessacao view set."""
 
-    def _payload(self, designacao_id):
-        """Método auxiliar para payload."""
-        return {
-            "designacao": designacao_id,
-            "numero_portaria": "999",
-            "ano_vigente": "2024",
-            "sei_numero": "123456",
-        }
+@pytest.mark.django_db
+def test_create_cessacao_ato_pai_invalido(auth_client):
+    """Verifica create cessacao ato pai invalido."""
+    url = reverse("designacao:cessacoes")
+    response = auth_client.post(url, data=_payload(9999), format="json")
 
-    @pytest.mark.django_db
-    def test_create_cessacao(self, auth_client, designacao):
-        """Verifica create cessacao."""
-        url = reverse("designacao:cessacoes")
-        payload = {
-            "designacao": designacao.id,
-            "numero_portaria": "12345",
-            "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "a_pedido": True,
-            "data_designacao": "2024-03-10",
-        }
-        response = auth_client.post(url, data=payload, format="json")
-        print(response.data)
-        assert response.status_code == 201
+    assert response.status_code == 400
+    assert "ato_pai" in response.data
 
-    def test_list_cessacoes(self, auth_client, cessacao):
-        """Verifica list cessacoes."""
-        url = reverse("designacao:cessacoes")
-        response = auth_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) >= 1
 
-    def test_retrieve_cessacao(self, auth_client, cessacao):
-        """Verifica retrieve cessacao."""
-        url = reverse("designacao:cessacao-detail", args=[cessacao.id])
-        response = auth_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["id"] == cessacao.id
+@pytest.mark.django_db
+def test_create_cessacao_duplicada_rejeita(auth_client):
+    """Verifica create cessacao duplicada rejeita."""
+    designacao = criar_ato_designacao()
+    criar_ato_cessacao(designacao)
 
-    def test_delete_soft_delete(self, auth_client, cessacao):
-        """Verifica delete soft delete."""
-        url = reverse("designacao:cessacao-detail", args=[cessacao.id])
-        response = auth_client.delete(url)
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        # Confirma soft delete
-        cessacao.refresh_from_db()
-        assert cessacao.is_deleted is True
+    url = reverse("designacao:cessacoes")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
-    @pytest.mark.django_db
-    def test_nao_lista_cessacoes_deletadas(self, auth_client, cessacao):
-        """Verifica nao lista cessacoes deletadas."""
-        cessacao.is_deleted = True
-        cessacao.save()
+    assert response.status_code == 400
 
-        url = reverse("designacao:cessacoes")
-        response = auth_client.get(
-            url
-        )  # aqui auth_client é o fixture, funciona
-        assert response.status_code == status.HTTP_200_OK
 
-        data_list = response.data
-        if isinstance(data_list, dict):
-            data_list = [data_list]
+@pytest.mark.django_db
+def test_list_cessacoes(auth_client):
+    """Verifica list cessacoes."""
+    designacao = criar_ato_designacao()
+    criar_ato_cessacao(designacao)
 
-        ids = [c["id"] for c in data_list if "id" in c]
-        assert cessacao.id not in ids
+    url = reverse("designacao:cessacoes")
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert response.data["count"] >= 1
+
+
+@pytest.mark.django_db
+def test_retrieve_cessacao(auth_client):
+    """Verifica retrieve cessacao."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao)
+
+    url = reverse("designacao:cessacao-detail", args=[cessacao.id])
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert response.data["id"] == cessacao.id
+
+
+@pytest.mark.django_db
+def test_destroy_cessacao(auth_client):
+    """Verifica destroy cessacao."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao)
+
+    url = reverse("designacao:cessacao-detail", args=[cessacao.id])
+    response = auth_client.delete(url)
+
+    assert response.status_code == 204
+    assert not AtoAdministrativo.objects.filter(pk=cessacao.pk).exists()
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_encontra_cessacao(auth_client):
+    """Verifica que a busca por portaria encontra a cessação e o ato pai."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(
+        designacao, numero_portaria="777", ano_vigente="2025"
+    )
+
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "777"})
+
+    assert response.status_code == 200
+    assert response.data["id"] == cessacao.id
+    assert response.data["ato_pai_id"] == designacao.id
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_cessacao_retorna_apostilas_ativas(auth_client):
+    """Verifica que apostilas insubsistentes são excluídas da lista."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(
+        designacao, numero_portaria="778", ano_vigente="2025"
+    )
+    apostila_ativa = criar_ato_apostila(cessacao, sei_numero="SEI-ATIVA")
+    apostila_anulada = criar_ato_apostila(cessacao, sei_numero="SEI-ANULADA")
+    apostila_anulada.ativo = False
+    apostila_anulada.save(update_fields=["ativo"])
+
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "778"})
+
+    assert response.status_code == 200
+    ids_retornados = {a["id"] for a in response.data["apostilas"]}
+    assert ids_retornados == {apostila_ativa.id}
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_cessacao_nao_encontrada(auth_client):
+    """Verifica 404 quando a portaria não corresponde a nenhuma cessação."""
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "inexistente"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_cessacao_sem_parametro(auth_client):
+    """Verifica 400 quando o parâmetro portaria não é informado."""
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url)
+
+    assert response.status_code == 400
