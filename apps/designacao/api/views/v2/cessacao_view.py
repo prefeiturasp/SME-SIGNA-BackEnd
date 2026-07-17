@@ -13,7 +13,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.serializers.v2.cessacao_serializer import (
-    CessacaoV2ReadSerializer,
+    CessacaoV2ReadSerializerById,
+    CessacaoV2ReadSerializerList,
     CessacaoV2WriteSerializer,
 )
 from apps.designacao.services.cessacao_service import CessacaoService
@@ -43,8 +44,23 @@ class CessacaoV2ViewSet(
     Expõe operações de listagem, recuperação, criação e exclusão de cessões.
     """
 
-    serializer_class = CessacaoV2ReadSerializer
+    serializer_class = CessacaoV2ReadSerializerList
     pagination_class = CessacaoV2Pagination
+
+    def get_serializer_class(
+        self,
+    ) -> (
+        type[CessacaoV2ReadSerializerById] | type[CessacaoV2ReadSerializerList]
+    ):
+        """Retorna o serializer de cessacões para a view baseada no action.
+
+        Returns:
+            Serializer: Serializer de cessação.
+
+        """
+        if self.action == "retrieve":
+            return CessacaoV2ReadSerializerById
+        return CessacaoV2ReadSerializerList
 
     def get_queryset(self) -> QuerySet:
         """Retorna o queryset de cessões para a view.
@@ -74,7 +90,9 @@ class CessacaoV2ViewSet(
         ato = CessacaoService.criar(serializer.validated_data)
 
         return Response(
-            CessacaoV2ReadSerializer(CessacaoService.buscar_v2(ato.pk)).data,
+            CessacaoV2ReadSerializerList(
+                CessacaoService.buscar_v2(ato.pk)
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -103,4 +121,4 @@ class CessacaoV2ViewSet(
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response(CessacaoV2ReadSerializer(ato).data)
+        return Response(CessacaoV2ReadSerializerList(ato).data)

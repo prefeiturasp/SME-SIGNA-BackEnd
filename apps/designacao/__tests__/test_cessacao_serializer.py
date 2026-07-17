@@ -8,7 +8,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.api.serializers.v2.cessacao_serializer import (
-    CessacaoV2ReadSerializer,
+    CessacaoV2ReadSerializerList,
     CessacaoV2WriteSerializer,
 )
 
@@ -61,7 +61,7 @@ class TestCessacaoV2WriteSerializer:
 
 
 @pytest.mark.django_db
-class TestCessacaoV2ReadSerializer:
+class TestCessacaoV2ReadSerializerList:
     """Testes para cessacao v2 read serializer."""
 
     def test_get_insubsistencia_retorna_dados_quando_existe(self):
@@ -78,7 +78,7 @@ class TestCessacaoV2ReadSerializer:
             .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
             .first()
         )
-        data = CessacaoV2ReadSerializer(c_com_prefetch).data
+        data = CessacaoV2ReadSerializerList(c_com_prefetch).data
 
         assert data["insubsistencia"] is not None
         assert data["insubsistencia"]["id"] == insub.id
@@ -95,6 +95,6 @@ class TestCessacaoV2ReadSerializer:
             .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
             .first()
         )
-        data = CessacaoV2ReadSerializer(c_com_prefetch).data
+        data = CessacaoV2ReadSerializerList(c_com_prefetch).data
 
         assert data["insubsistencia"] is None
