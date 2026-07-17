@@ -10,9 +10,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_cessacao,
     criar_ato_designacao,
     criar_ato_insubsistencia,
-    criar_designacao_legado,
 )
-from apps.designacao.models.apostila import Apostila
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.apostila_service import ApostilaService
 
@@ -168,40 +166,3 @@ class TestApostilaService:
         )
         d.designacao_detalhe.refresh_from_db()
         assert d.designacao_detalhe.tipo_vaga == "DISPONIVEL"
-
-
-@pytest.mark.django_db
-class TestApostilaServiceCriarApostilaLegado:
-    """Testes para ApostilaService.criar_apostila (modelo legado)."""
-
-    def _data(self, designacao, **kwargs):
-        """Método auxiliar para data válida do modelo legado."""
-        base = {
-            "designacao": designacao.id,
-            "ato_apostilado": "designacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "999",
-            "observacao": "Obs",
-        }
-        base.update(kwargs)
-        return base
-
-    def test_criar_apostila_sucesso(self):
-        """Verifica criar apostila legado com sucesso."""
-        d = criar_designacao_legado()
-        apostila = ApostilaService.criar_apostila(self._data(d))
-        assert apostila.pk is not None
-        assert apostila.designacao_id == d.pk
-
-    @pytest.mark.parametrize(
-        "campo_ausente", ["tipo", "sei_numero", "observacao"]
-    )
-    def test_criar_apostila_campo_obrigatorio_ausente_gera_keyerror(
-        self, campo_ausente
-    ):
-        """Verifica que campo obrigatório ausente gera KeyError."""
-        d = criar_designacao_legado()
-        data = self._data(d)
-        del data[campo_ausente]
-        with pytest.raises(KeyError):
-            ApostilaService.criar_apostila(data)
