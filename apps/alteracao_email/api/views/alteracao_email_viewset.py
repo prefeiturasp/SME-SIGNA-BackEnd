@@ -7,7 +7,6 @@ serviço SME.
 """
 
 import logging
-from typing import cast
 
 from django.db import transaction
 from rest_framework import status, viewsets
@@ -54,14 +53,19 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
                 de erro inesperado.
 
         """
+        if not isinstance(request.user, User):
+            return Response(
+                {"detail": "Usuário não autenticado."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        usuario = request.user
+
         serializer = AlteracaoEmailSerializer(
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
 
         try:
-            usuario = cast(User, request.user)
-
             AlteracaoEmailService.solicitar(
                 usuario=usuario,
                 novo_email=serializer.validated_data["new_email"],

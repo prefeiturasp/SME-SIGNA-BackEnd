@@ -5,7 +5,7 @@ de alterações em atos administrativos.
 """
 
 import datetime
-from typing import Any
+from typing import Any, NotRequired, TypedDict
 
 from django.db import transaction
 from django.db.models import QuerySet
@@ -30,6 +30,17 @@ _CAMPOS_PROTEGIDOS = frozenset(
     }
 )
 _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
+
+
+class CriarApostilaData(TypedDict):
+    """Payload validado para criação de apostila no modelo legado."""
+
+    designacao: int
+    ato_apostilado: str
+    tipo: str
+    sei_numero: str
+    observacao: str
+    d_o: NotRequired[str]
 
 
 class ApostilaService:
@@ -112,7 +123,9 @@ class ApostilaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.APOSTILA,
-                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+                status_publicacao=(
+                    AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+                ),
                 ato_pai=ato_pai,
                 **data_ato,
             )

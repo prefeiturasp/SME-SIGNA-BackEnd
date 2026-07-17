@@ -5,7 +5,7 @@ redefinir senha via UID/token e alterar senha de usuário autenticado.
 """
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 import environ
 from rest_framework import permissions, status
@@ -300,6 +300,13 @@ class AtualizarSenhaViewSet(APIView):
 
         Valida a senha atual e atualiza a senha na SME e no banco local.
         """
+        if not isinstance(request.user, User):
+            return Response(
+                {"detail": "Usuário não autenticado."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        user = request.user
+
         serializer = AtualizarSenhaSerializer(
             data=request.data, context={"request": request}
         )
@@ -310,7 +317,6 @@ class AtualizarSenhaViewSet(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = cast(User, request.user)
         nova_senha = serializer.validated_data["nova_senha"]
 
         try:
