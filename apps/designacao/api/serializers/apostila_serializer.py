@@ -189,7 +189,7 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             obj: Instância de AtoAdministrativo.
 
         Returns:
-            str: Tipo de ato apostilado.
+            str | None: Tipo de ato apostilado ou None se não aplicável.
 
         """
         if obj.ato_pai:
