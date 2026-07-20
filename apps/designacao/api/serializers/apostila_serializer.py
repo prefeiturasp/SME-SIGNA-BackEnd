@@ -68,6 +68,8 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
 
     designacao = serializers.SerializerMethodField()
     cessacao = serializers.SerializerMethodField()
+    ato_apostilado = serializers.SerializerMethodField()
+    ato_apostilado_display = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
@@ -84,6 +86,9 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "insubsistencia",
             "designacao",
             "cessacao",
+            "ato_apostilado",
+            "ato_apostilado_display",
+            "numero_portaria",
         ]
 
     def get_status(self, obj: AtoAdministrativo) -> str:
@@ -162,3 +167,31 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
                 f"{obj.get_tipo_display()} de {obj.ato_pai.get_tipo_display()}"
             )
         return f"{obj.get_tipo_display()}"
+
+    def get_ato_apostilado_display(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o ato apostilado em formato legível.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Tipo de ato apostilado.
+
+        """
+        if obj.ato_pai:
+            return f"{obj.ato_pai.get_tipo_display()}"
+        return None
+
+    def get_ato_apostilado(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o ato apostilado.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str: Tipo de ato apostilado.
+
+        """
+        if obj.ato_pai:
+            return f"{obj.ato_pai.tipo}"
+        return None
