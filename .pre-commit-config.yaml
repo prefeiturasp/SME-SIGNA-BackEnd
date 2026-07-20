@@ -1,12 +1,12 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 26.5.1
     hooks:
       - id: black
         exclude: migrations/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12
+    rev: v0.15.22
     hooks:
       - id: ruff-check
         exclude: migrations/
