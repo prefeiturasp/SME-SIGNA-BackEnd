@@ -1,0 +1,138 @@
+"""Testes para serializer de apostila."""
+
+import pytest
+
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+    criar_ato_insubsistencia,
+)
+from apps.designacao.api.serializers.apostila_serializer import (
+    ApostilaReadSerializer,
+    ApostilaWriteSerializer,
+)
+from apps.designacao.models.apostila_detalhe import ApostilaAlteracao
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+
+
+@pytest.mark.django_db
+class TestApostilaWriteSerializer:
+    """Testes para apostila write serializer."""
+
+    def _payload(self, ato_pai_id):
+        """Método auxiliar para payload."""
+        return {
+            "ato_pai": ato_pai_id,
+            "sei_numero": "SEI-AP-123",
+            "observacao": "Texto de observação",
+            "alteracoes": [
+                {
+                    "campo_alterado": "numero_portaria",
+                    "valor_novo": "9999",
+                }
+            ],
+        }
+
+    def test_serializer_valido_com_designacao(self):
+        """Verifica serializer valido com ato pai designacao."""
+        designacao = criar_ato_designacao()
+        serializer = ApostilaWriteSerializer(data=self._payload(designacao.id))
+        assert serializer.is_valid(), serializer.errors
+
+    def test_serializer_valido_com_cessacao(self):
+        """Verifica serializer valido com ato pai cessacao."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao)
+        serializer = ApostilaWriteSerializer(data=self._payload(cessacao.id))
+        assert serializer.is_valid(), serializer.errors
+
+    def test_ato_pai_invalido_rejeita(self):
+        """Verifica ato pai invalido rejeita."""
+        serializer = ApostilaWriteSerializer(data=self._payload(9999))
+        assert not serializer.is_valid()
+        assert "ato_pai" in serializer.errors
+
+    def test_ato_pai_tipo_invalido_rejeita(self):
+        """Verifica ato pai de tipo invalido rejeita."""
+        designacao = criar_ato_designacao()
+        insubsistencia = criar_ato_insubsistencia(designacao)
+
+        serializer = ApostilaWriteSerializer(
+            data=self._payload(insubsistencia.id)
+        )
+        assert not serializer.is_valid()
+        assert "ato_pai" in serializer.errors
+
+    def test_alteracoes_com_item_invalido_rejeita(self):
+        """Verifica alteracoes com item invalido rejeita."""
+        designacao = criar_ato_designacao()
+        payload = self._payload(designacao.id)
+        payload["alteracoes"] = [{"campo_alterado": "numero_portaria"}]
+
+        serializer = ApostilaWriteSerializer(data=payload)
+        assert not serializer.is_valid()
+        assert "alteracoes" in serializer.errors
+
+
+@pytest.mark.django_db
+class TestApostilaReadSerializer:
+    """Testes para apostila read serializer."""
+
+    def test_get_insubsistencia_retorna_dados_quando_existe(self):
+        """Verifica get insubsistencia retorna dados quando existe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        insubsistencia = criar_ato_insubsistencia(
+            apostila, observacoes="Tornada sem efeito"
+        )
+
+        apostila_com_prefetch = (
+            AtoAdministrativo.objects.filter(pk=apostila.pk)
+            .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
+            .first()
+        )
+
+        data = ApostilaReadSerializer(apostila_com_prefetch).data
+
+        assert data["insubsistencia"] is not None
+        assert data["insubsistencia"]["id"] == insubsistencia.id
+        assert data["insubsistencia"]["observacoes"] == "Tornada sem efeito"
+
+    def test_get_insubsistencia_retorna_none_quando_nao_existe(self):
+        """Verifica get insubsistencia retorna none quando nao existe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        data = ApostilaReadSerializer(apostila).data
+        assert data["insubsistencia"] is None
+
+    def test_get_alteracoes_retorna_lista_quando_existem_registros(self):
+        """Verifica get alteracoes retorna lista quando existem registros."""
+        designacao = criar_ato_designacao(numero_portaria="100")
+        apostila = criar_ato_apostila(designacao)
+
+        ApostilaAlteracao.objects.create(
+            apostila=apostila.apostila_detalhe,
+            campo_alterado="numero_portaria",
+            valor_anterior="100",
+            valor_novo="200",
+        )
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert len(data["alteracoes"]) == 1
+        assert data["alteracoes"][0]["campo_alterado"] == "numero_portaria"
+        assert data["alteracoes"][0]["valor_anterior"] == "100"
+        assert data["alteracoes"][0]["valor_novo"] == "200"
+
+    def test_serializer_retorna_dados_do_ato_apostilado_designacao(self):
+        """Verifica serializer retorna dados do ato apostilado designacao."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert data["ato_apostilado"] == AtoAdministrativo.Tipo.DESIGNACAO
+        assert data["ato_apostilado_display"] == "Designação"
+        assert data["designacao"] is not None
+        assert data["cessacao"] is None

@@ -363,8 +363,8 @@ class TestAtoAdministrativoFilter:
     ):
         """Verifica filtro ato_id por relacionamento de ato pai."""
         qs = apply_filter({"ato_id": cessacao.id})
-        assert qs.count() == 1
-        assert qs.first() == insubsistencia_cessacao
+        assert qs.count() == 2
+        assert qs.first() == cessacao
 
     def test_filtro_ato_id_por_ato_raiz(
         self, designacao_1, cessacao, insubsistencia_cessacao
