@@ -9,8 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Dependências do SO (mínimas; ajusta conforme suas libs)
-RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
-    apt-get $APT_OPTS update && \
+RUN apt-get $APT_OPTS update && \
     apt-get $APT_OPTS install -y --no-install-recommends \
     build-essential gcc libpq-dev \
   && rm -rf /var/lib/apt/lists/*

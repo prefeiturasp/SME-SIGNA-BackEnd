@@ -8,8 +8,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Instalar dependências do sistema
 ENV APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
-    apt-get $APT_OPTS update && \
+RUN apt-get $APT_OPTS update && \
     apt-get $APT_OPTS install -y --no-install-recommends \
     build-essential \
     libpq-dev \
@@ -35,8 +34,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Instalar dependências essenciais para Postgres
 ENV APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
-RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources && \
-    apt-get $APT_OPTS update && \
+RUN apt-get $APT_OPTS update && \
     apt-get $APT_OPTS install -y --no-install-recommends \
     libpq5 \
     netcat-openbsd \
