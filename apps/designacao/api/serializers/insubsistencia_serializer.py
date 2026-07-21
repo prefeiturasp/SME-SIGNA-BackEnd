@@ -153,27 +153,18 @@ class InsubsistenciaReadSerializer(
 
         return None
 
-    def get_ato_apostitextolado(self, obj: AtoAdministrativo) -> dict | None:
-        """Retorna o  da anulação quando a insubsistência é de apostila.
+    def get_ato_apostilado(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o ato apostilado.
 
         Args:
             obj: Instância de AtoAdministrativo.
 
         Returns:
-            str | None: Texto da anulação ou None se não aplicável.
+            str | None: Tipo de ato apostilado ou None se não aplicável.
 
         """
-        ato_apostilado = self._get_ato_apostilado(obj)
-
-        detalhe = getattr(obj, "insubsistencia_apostila_detalhe", None)
-        if ato_apostilado is not None:
-            return {
-                "numero_portaria": ato_apostilado.numero_portaria,
-                "ano_vigente": ato_apostilado.ano_vigente,
-                "sei_numero": ato_apostilado.sei_numero,
-                "doc": ato_apostilado.doc,
-                "texto": detalhe.texto if detalhe else None,
-            }
+        if obj.ato_pai and obj.ato_pai.ato_pai:
+            return f"{obj.ato_pai.ato_pai.tipo}"
         return None
 
     def _get_insubsistencia_ato_administrativo(
@@ -186,7 +177,7 @@ class InsubsistenciaReadSerializer(
 
         return None
 
-    def _get_doc_do_ato_insubsistido(
+    def _get_doc_do_ato_insubstituido(
         self, obj: AtoAdministrativo | None
     ) -> date | None:
         """Retorna o doc do ato insubsistido."""
@@ -198,7 +189,7 @@ class InsubsistenciaReadSerializer(
         """Retorna os dados de insubsistência do ato ou do ato relacionado."""
         ato_insubsistencia = self._get_insubsistencia_ato_administrativo(obj)
 
-        doc_do_ato_insubsistido = self._get_doc_do_ato_insubsistido(
+        doc_do_ato_insubstituido = self._get_doc_do_ato_insubstituido(
             ato_insubsistencia
         )
 
@@ -208,6 +199,6 @@ class InsubsistenciaReadSerializer(
                 "ano_vigente": ato_insubsistencia.ano_vigente,
                 "sei_numero": ato_insubsistencia.sei_numero,
                 "doc": ato_insubsistencia.doc,
-                "doc_do_ato_insubsistido": doc_do_ato_insubsistido,
+                "doc_do_ato_insubstituido": doc_do_ato_insubstituido,
             }
         return None
