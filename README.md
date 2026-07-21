@@ -2,11 +2,11 @@
 # Backend - Django + Django Rest Framework SME - SiGNA
 
 ## 🥞 Stack
-- [Python v3.12](https://www.python.org/doc/)
-- [Django v5.1.8](https://www.djangoproject.com/start/)
-- [Django Rest Framework v3.16](https://www.django-rest-framework.org/)
-- [Postgres v16.4](https://www.postgresql.org/docs/)
-- [Pytest v8.3.5](https://docs.pytest.org/en/stable/)
+- [Python v3.14](https://www.python.org/doc/)
+- [Django v5.2](https://www.djangoproject.com/start/)
+- [Django Rest Framework v3.17](https://www.django-rest-framework.org/)
+- [Postgres v15](https://www.postgresql.org/docs/)
+- [Pytest v9.1](https://docs.pytest.org/en/stable/)
 
 ## 🛠️ Configurando o projeto
 
@@ -29,6 +29,31 @@ Primeiro, clone o projeto:
 
 ### 📦 Instalando as dependências do projeto de teste
     $ pip install -r requirements/test.txt  
+
+### 🔄 Apagando e recriando o venv após atualizar o requirements
+
+Sempre que as versões em `requirements/*.txt` forem atualizadas (principalmente
+majors, ou a versão do Python), é recomendado recriar o venv do zero em vez de
+só rodar `pip install...` de novo sobre o existente, para evitar pacotes órfãos
+de versões antigas.
+
+    $ deactivate                     # se o venv atual estiver ativo
+    $ mv venv venv.bak                # opcional: guarda o venv antigo como backup
+    $ python -m venv venv
+    $ source venv/bin/activate       # Linux/macOS
+    $ # ou venv\Scripts\activate no Windows
+    $ pip install --upgrade pip
+    $ pip install -r requirements/local.txt
+    $ pytest                         # valida se tudo ainda funciona
+    $ rm -rf venv.bak                # depois de validar, remove o backup
+
+> **_IMPORTANTE:_** o `pip install` só instala pacotes Python — ele **não**
+> troca a versão do próprio Python. Se a versão do Python também mudou (ex:
+> `Stack` acima), primeiro instale o interpretador da nova versão no seu
+> sistema (ex: `pyenv install 3.14.6`), depois recrie o venv usando esse
+> binário, ex: `python3.14 -m venv venv` (ou
+> `~/.pyenv/versions/3.14.6/bin/python3 -m venv venv`), e só então rode o
+> `pip install` normalmente dentro desse venv novo.
 
 ### 🗃️ Criando um banco do dados PostgreSQL usando createdb ou utilizando seu client preferido (pgAdmin, DBeaver...)
     $ createdb --username=postgres <project_slug>

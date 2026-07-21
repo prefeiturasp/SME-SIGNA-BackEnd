@@ -241,36 +241,30 @@ class TestHintLevel:
     """Testes de _hint_level."""
 
     def test_hint_level_completo(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a: int, b: int) -> int:
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
         assert _hint_level(node) == "completo"
 
     def test_hint_level_parcial(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a, b) -> int:
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
         assert _hint_level(node) == "parcial"
 
     def test_hint_level_sem(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a, b):
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
@@ -454,8 +448,7 @@ class TestWalkSymbols:
     """Testes de _walk_symbols."""
 
     def test_walk_symbols(self):
-        tree = ast.parse(
-            '''
+        tree = ast.parse('''
 class Usuario:
     """doc"""
 
@@ -466,8 +459,7 @@ class Usuario:
 def processar(a: int) -> int:
     """doc"""
     return a
-'''
-        )
+''')
 
         symbols = _walk_symbols(tree)
 
@@ -484,16 +476,14 @@ class TestAnalyzeFile:
     def test_analyze_file(self, tmp_path):
         arquivo = tmp_path / "service.py"
 
-        arquivo.write_text(
-            '''
+        arquivo.write_text('''
 """modulo"""
 
 
 def processar(a: int) -> int:
     """doc"""
     return a
-'''
-        )
+''')
 
         result = analyze_file(
             arquivo,
