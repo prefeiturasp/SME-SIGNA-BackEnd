@@ -13,6 +13,7 @@ from typing import Any
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.modulos import Calculadores
+from apps.designacao.modulos.base import ModuloCalculator
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
@@ -270,7 +271,7 @@ class TurmaService:
         }
 
     @staticmethod
-    def _normalizar_codigo_turma(codigo: Any) -> Any | None:
+    def _normalizar_codigo_turma(codigo: object) -> int | str | None:
         """Normaliza o código da turma aceitando int ou string.
 
         Retorna `int` quando a string for dígito puro,
@@ -381,7 +382,7 @@ class ModuloService:
     ) -> int:
         """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
-        calculator: Any = Calculadores.get(codigo)
+        calculator: ModuloCalculator | None = Calculadores.get(codigo)
 
         if not calculator:
             logger.debug("Cargo %s sem regra de módulo", codigo)

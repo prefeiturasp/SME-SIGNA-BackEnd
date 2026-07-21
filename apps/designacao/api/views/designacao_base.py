@@ -4,14 +4,17 @@ Contém a paginação comum e os helpers de controle de paginação/filtros
 usados por DesignacaoViewSet.
 """
 
-from typing import Any
+from typing import TypeVar
 
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
 _PAGINATION_PARAMS = {"page", "page_size", "format", "no_pagination"}
+
+_ModelT = TypeVar("_ModelT", bound=Model)
+_RowT = TypeVar("_RowT")
 
 
 class DesignacaoBasePagination(PageNumberPagination):
@@ -23,10 +26,10 @@ class DesignacaoBasePagination(PageNumberPagination):
 
     def paginate_queryset(
         self,
-        queryset: QuerySet,
+        queryset: QuerySet[_ModelT, _RowT],
         request: Request,
         view: APIView | None = None,
-    ) -> list | None:
+    ) -> list[_RowT] | None:
         """Decide se a paginação deve ser aplicada.
 
         Args:
@@ -47,8 +50,8 @@ class DesignacaoBasePagination(PageNumberPagination):
 class DesignacaoPaginacaoMixin:
     """Helpers de paginação compartilhados pelas views de designação."""
 
-    # Anotação para que type checkers reconheçam que a view terá `request`
-    request: Any
+    # Anotação para que type checkers reconheçam que a view terá `request`.
+    request: Request
 
     def _is_no_pagination(self) -> bool:
         """Verifica se a paginação deve ser desabilitada.

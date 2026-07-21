@@ -5,10 +5,10 @@ de alterações em atos administrativos.
 """
 
 import datetime
-from typing import Any, NotRequired, TypedDict
+from typing import NotRequired, TypedDict
 
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila_detalhe import (
@@ -145,7 +145,7 @@ class ApostilaService:
     def _encontrar_campo(
         campo: str,
         ato_pai: AtoAdministrativo,
-        detalhe: Any | None,
+        detalhe: Model | None,
     ) -> tuple[str, str]:
         """Encontra o campo a ser alterado no ato pai ou no detalhe.
 
@@ -223,12 +223,13 @@ class ApostilaService:
             ApostilaService._salvar_updates(ato_pai, buckets["ato_pai"])
 
         if buckets["detalhe"]:
+            assert detalhe is not None
             ApostilaService._salvar_updates(detalhe, buckets["detalhe"])
 
         ApostilaAlteracao.objects.bulk_create(registros)
 
     @staticmethod
-    def _salvar_updates(obj: Any, updates: dict) -> None:
+    def _salvar_updates(obj: Model, updates: dict) -> None:
         """Aplica os updates em um objeto e salva em lote.
 
         Args:
@@ -241,7 +242,7 @@ class ApostilaService:
         obj.save(update_fields=list(updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato_pai: AtoAdministrativo) -> Any | None:
+    def _get_detalhe(ato_pai: AtoAdministrativo) -> Model | None:
         """Retorna o detalhe associado a um ato administrativo.
 
         Args:

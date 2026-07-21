@@ -5,10 +5,11 @@ com campos adicionais e comportamento de senha seguro.
 """
 
 import uuid
-from typing import Any
+from collections.abc import Iterable
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.base import ModelBase
 
 
 class User(AbstractUser):
@@ -35,7 +36,14 @@ class User(AbstractUser):
         """
         return self.username or self.email or str(self.uuid)
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
+    def save(
+        self,
+        *,
+        force_insert: bool | tuple[ModelBase, ...] = False,
+        force_update: bool = False,
+        using: str | None = None,
+        update_fields: Iterable[str] | None = None,
+    ) -> None:
         """Sobrescreve o método save para garantir a criptografia da senha.
 
         Se a senha fornecida não estiver em formato hash suportado, ela é
@@ -46,4 +54,9 @@ class User(AbstractUser):
         ):
             self.set_password(self.password)
 
-        super().save(*args, **kwargs)
+        super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+        )

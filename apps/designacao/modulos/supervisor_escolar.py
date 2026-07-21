@@ -5,10 +5,12 @@ Define o módulo de Supervisor Escolar com base no código da DRE da unidade.
 
 import logging
 
+from apps.designacao.modulos.base import ModuloCalculator
+
 logger = logging.getLogger(__name__)
 
 
-class ModuloSupervisorEscolarCalculator:
+class ModuloSupervisorEscolarCalculator(ModuloCalculator):
     """Regra de cálculo de módulo para Supervisor Escolar."""
 
     CARGO_SUPERVISOR_ESCOLAR = "3352"
