@@ -4,7 +4,7 @@ Define payloads de escrita e leitura de apostilas, incluindo alterações e
 referência à insubsistência associada.
 """
 
-from typing import Any
+from typing import Any, cast
 
 from rest_framework import serializers
 
@@ -98,7 +98,7 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
         """
         return obj.status
 
-    def get_alteracoes(self, obj: AtoAdministrativo) -> Any:
+    def get_alteracoes(self, obj: AtoAdministrativo) -> list[dict[str, Any]]:
         """Retorna as alterações registradas na apostila.
 
         Args:
@@ -110,11 +110,18 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
         """
         try:
             qs = obj.apostila_detalhe.alteracoes.all()
-            return ApostilaAlteracaoReadSerializer(qs, many=True).data
+            # many=True faz a DRF retornar um ListSerializer em runtime,
+            # mas os stubs tipam Serializer.data como ReturnDict.
+            return cast(
+                list[dict[str, Any]],
+                ApostilaAlteracaoReadSerializer(qs, many=True).data,
+            )
         except Exception:
             return []
 
-    def get_insubsistencia(self, obj: AtoAdministrativo) -> dict | None:
+    def get_insubsistencia(
+        self, obj: AtoAdministrativo
+    ) -> dict[str, Any] | None:
         """Retorna a insubsistência ativa associada à apostila.
 
         Args:

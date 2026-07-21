@@ -18,10 +18,14 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NotRequired, TypedDict
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import (
+    BaseCommand,
+    CommandError,
+    CommandParser,
+)
 
 COMMAND_NAME = "gerar_relatorio_pep"
 EXCLUDE_DIRS = {"tests", "__tests__", "migrations", "__pycache__"}
@@ -67,10 +71,228 @@ class FileMetrics:
 
 
 # =========================================================================
+# TypedDicts — estruturas de dados do relatório
+# =========================================================================
+class RequirementEntry(TypedDict):
+    """Uma linha de requirements.txt já classificada."""
+
+    file: str
+    line: str
+    type: str
+    name: NotRequired[str]
+
+
+class Pep440Result(TypedDict):
+    """Resultado da análise de conformidade PEP 440 dos requirements."""
+
+    files_analyzed: list[str]
+    total_dependency_lines: int
+    pypi_valid: int
+    git_pins: int
+    pinned_with_eq: int
+    invalid_lines: list[str]
+    entries: list[RequirementEntry]
+
+
+class MissingDocstringEntry(TypedDict):
+    """Referência a um símbolo sem docstring, para o top-N do relatório."""
+
+    path: str
+    lineno: int
+    name: str
+    kind: str
+
+
+class AggregateSummary(TypedDict):
+    """Métricas agregadas de um app, produzidas por `aggregate`."""
+
+    files_count: int
+    loc_total: int
+    lines_over_79: int
+    lines_length_eligible: int
+    modules_with_docstring: int
+    modules_without_docstring: int
+    functions_methods_total: int
+    functions_methods_with_docstring: int
+    functions_methods_without_docstring: int
+    classes_total: int
+    classes_with_docstring: int
+    classes_without_docstring: int
+    symbols_with_docstring: int
+    symbols_without_docstring: int
+    hints_completo: int
+    hints_parcial: int
+    hints_sem: int
+    missing_docstrings_top: list[MissingDocstringEntry]
+
+
+class RunMeta(TypedDict):
+    """Metadados de uma execução do comando (data, comando, commit)."""
+
+    generated_at: str
+    command: str
+    git_commit: str | None
+
+
+class SimpleSummary(TypedDict):
+    """Resumo percentual de conformidade, usado no payload JSON e no TXT."""
+
+    pep8_line_width_compliance_pct: float
+    pep8_lines_over_max: int
+    pep8_flake8_compliance_pct: float
+    pep8_flake8_violations: int
+    pep257_docstring_compliance_pct: float
+    pep484_full_hints_pct: float
+    pep484_full_or_partial_pct: float
+    pep440_requirement_lines_parseable_pct: float
+    mypy_errors: int
+    mypy_warnings: int
+    mypy_compliance_pct: float
+    max_line_length: int
+
+
+class FileSummaryEntry(TypedDict):
+    """Métricas resumidas de um único arquivo, no payload JSON."""
+
+    path: str
+    loc: int
+    lines_over_max: int
+    module_has_docstring: bool
+    functions_count: int
+    functions_with_docstring: int
+    hints_completo: int
+    hints_parcial: int
+    hints_sem: int
+
+
+class Pep8LineBlock(TypedDict):
+    """Bloco de conformidade PEP 8 relativo à largura de linha."""
+
+    compliance_pct: float
+    violations: int
+
+
+class Pep8FlakeBlock(TypedDict):
+    """Bloco de conformidade PEP 8 relativo ao flake8."""
+
+    compliance_pct: float
+    violations: int
+    breakdown: dict[str, int]
+
+
+class Pep8Block(TypedDict):
+    """Agrupa os blocos de conformidade PEP 8 do payload JSON."""
+
+    line_length: Pep8LineBlock
+    flake8: Pep8FlakeBlock
+
+
+class MypyBlock(TypedDict):
+    """Bloco de conformidade do MyPy no payload JSON."""
+
+    compliance_pct: float
+    errors: int
+    warnings: int
+    breakdown: dict[str, int]
+    pep_breakdown: dict[str, int]
+
+
+class JsonPayload(TypedDict):
+    """Payload completo gravado em `relatorio_pep.json`."""
+
+    generated_at: str
+    command: str
+    git_commit: str | None
+    app: str
+    max_line_length: int
+    summary: AggregateSummary
+    simple: SimpleSummary
+    pep8: Pep8Block
+    mypy: MypyBlock
+    flake8: dict[str, int]
+    pep440: Pep440Result
+    by_file: list[FileSummaryEntry]
+
+
+class RenderMdArgs(TypedDict):
+    """Argumentos de `render_markdown`."""
+
+    summary: AggregateSummary
+    file_metrics: list[FileMetrics]
+    flake8_codes: Counter[str]
+    flake8_lines: list[str]
+    mypy_codes: Counter[str]
+    mypy_lines: list[str]
+    mypy_pep_summary: dict[str, int]
+    pep440: Pep440Result
+    meta: RunMeta
+    max_line_length: int
+    app_name: str
+
+
+class RenderSimpleArgs(TypedDict):
+    """Argumentos de `render_simplified_markdown`."""
+
+    summary: AggregateSummary
+    flake8_total: int
+    mypy_codes: Counter[str]
+    mypy_pep_summary: dict[str, int]
+    pep440: Pep440Result
+    meta: RunMeta
+    app_name: str
+
+
+class RenderTxtSimpleArgs(TypedDict):
+    """Argumentos de `render_simplified_txt` (exceto `service_name`)."""
+
+    summary: AggregateSummary
+    flake8_total: int
+    mypy_codes: Counter[str]
+    mypy_pep_summary: dict[str, int]
+    pep440: Pep440Result
+    meta: RunMeta
+    max_line_length: int
+
+
+class JsonArgs(TypedDict):
+    """Argumentos de `build_json_payload`."""
+
+    summary: AggregateSummary
+    file_metrics: list[FileMetrics]
+    flake8_codes: Counter[str]
+    mypy_codes: Counter[str]
+    mypy_pep_summary: dict[str, int]
+    pep440: Pep440Result
+    meta: RunMeta
+    max_line_length: int
+    app_name: str
+
+
+class PayloadArgs(TypedDict):
+    """Agrupa os kwargs de todos os renderizadores de um app."""
+
+    render_md: RenderMdArgs
+    render_md_simple: RenderSimpleArgs
+    render_txt_simple: RenderTxtSimpleArgs
+    json: JsonArgs
+
+
+class AppRunResult(TypedDict):
+    """Resultado da análise completa de um app (`run_for_app`)."""
+
+    app: str
+    paths: dict[str, Path]
+    payload: JsonPayload
+    summary: AggregateSummary
+    flake8_total: int
+    mypy_codes: Counter[str]
+
+
+# =========================================================================
 # Caminhos / descoberta
 # =========================================================================
 def _repo_root() -> Path:
-    return Path(cast(Any, settings).BASE_DIR)
+    return Path(settings.BASE_DIR)
 
 
 def _app_dir(app_name: str) -> Path:
@@ -130,7 +352,7 @@ def _walk_symbols(tree: ast.AST) -> list[SymbolMetrics]:
     symbols: list[SymbolMetrics] = []
 
     class Visitor(ast.NodeVisitor):
-        def visit_FunctionDef(self, node):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
             symbols.append(
                 SymbolMetrics(
                     kind="function",
@@ -142,7 +364,7 @@ def _walk_symbols(tree: ast.AST) -> list[SymbolMetrics]:
             )
             self.generic_visit(node)
 
-        def visit_AsyncFunctionDef(self, node):
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
             symbols.append(
                 SymbolMetrics(
                     kind="async_function",
@@ -154,7 +376,7 @@ def _walk_symbols(tree: ast.AST) -> list[SymbolMetrics]:
             )
             self.generic_visit(node)
 
-        def visit_ClassDef(self, node):
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
             symbols.append(
                 SymbolMetrics(
                     kind="class",
@@ -214,7 +436,9 @@ def analyze_file(
 # =========================================================================
 # flake8
 # =========================================================================
-def run_flake8(app_name: str, repo_root: Path) -> tuple[Counter, list[str]]:
+def run_flake8(
+    app_name: str, repo_root: Path
+) -> tuple[Counter[str], list[str]]:
     app_rel = f"{APPS_PARENT}/{app_name}"
     if not (repo_root / app_rel).exists():
         return Counter(), []
@@ -231,7 +455,7 @@ def run_flake8(app_name: str, repo_root: Path) -> tuple[Counter, list[str]]:
     except FileNotFoundError:
         return Counter(), ["flake8 não disponível no ambiente"]
 
-    codes: Counter = Counter()
+    codes: Counter[str] = Counter()
     raw_lines: list[str] = []
     for line in result.stdout.splitlines():
         raw_lines.append(line)
@@ -313,7 +537,7 @@ def _mypy_code_from_line(line: str) -> str | None:
 
 def run_mypy(
     app_name: str, repo_root: Path
-) -> tuple[Counter, list[str], dict[str, int]]:
+) -> tuple[Counter[str], list[str], dict[str, int]]:
     """Roda mypy no app.
 
     Retorna:
@@ -344,8 +568,8 @@ def run_mypy(
     except FileNotFoundError:
         return Counter(), ["mypy não disponível no ambiente"], {}
 
-    codes: Counter = Counter()
-    pep_counter: Counter = Counter()
+    codes: Counter[str] = Counter()
+    pep_counter: Counter[str] = Counter()
     raw_lines: list[str] = []
     for line in result.stdout.splitlines():
         raw_lines.append(line)
@@ -368,7 +592,7 @@ def run_mypy(
 # =========================================================================
 # PEP 440
 # =========================================================================
-def _empty_pep440_result() -> dict[str, Any]:
+def _empty_pep440_result() -> Pep440Result:
     return {
         "files_analyzed": [],
         "total_dependency_lines": 0,
@@ -382,34 +606,42 @@ def _empty_pep440_result() -> dict[str, Any]:
 
 def _parse_requirement_line(
     line: str, file_name: str, invalid: list[str]
-) -> tuple[dict[str, Any], bool, bool]:
+) -> tuple[RequirementEntry, bool, bool]:
     """Retorna (entry, is_git, is_pinned_eq)."""
     from packaging.requirements import InvalidRequirement, Requirement
 
-    entry: dict[str, Any] = {"file": file_name, "line": line}
-
     if line.startswith("git+"):
-        entry["type"] = "git"
-        return entry, True, False
+        return {"file": file_name, "line": line, "type": "git"}, True, False
 
     try:
         req = Requirement(line)
-        entry["type"] = "pypi"
-        entry["name"] = req.name
+        entry: RequirementEntry = {
+            "file": file_name,
+            "line": line,
+            "type": "pypi",
+            "name": req.name,
+        }
         pinned = any(str(s).startswith("==") for s in req.specifier)
         return entry, False, pinned
     except InvalidRequirement:
         invalid.append(f"{file_name}: {line}")
-        entry["type"] = "invalid"
-        return entry, False, False
+        return (
+            {
+                "file": file_name,
+                "line": line,
+                "type": "invalid",
+            },
+            False,
+            False,
+        )
 
 
-def analyze_pep440(requirements_dir: Path) -> dict[str, Any]:
+def analyze_pep440(requirements_dir: Path) -> Pep440Result:
     if not requirements_dir.exists():
         return _empty_pep440_result()
 
     files = sorted(requirements_dir.glob("*.txt"))
-    entries: list[dict[str, Any]] = []
+    entries: list[RequirementEntry] = []
     invalid: list[str] = []
     git_pins = 0
     pinned_eq = 0
@@ -471,7 +703,7 @@ def _status_emoji(pct: float) -> str:
 
 
 def _estimar_horas_ajuste(
-    summary: dict[str, Any], flake8_total: int, mypy_errors: int = 0
+    summary: AggregateSummary, flake8_total: int, mypy_errors: int = 0
 ) -> int:
     horas = (
         flake8_total * 0.005
@@ -500,7 +732,7 @@ def _get_git_commit(repo_root: Path) -> str | None:
 # =========================================================================
 # Agregação
 # =========================================================================
-def aggregate(file_metrics: list[FileMetrics]) -> dict[str, Any]:
+def aggregate(file_metrics: list[FileMetrics]) -> AggregateSummary:
     funcs: list[SymbolMetrics] = []
     classes: list[SymbolMetrics] = []
     modules_with_doc = 0
@@ -563,14 +795,14 @@ def aggregate(file_metrics: list[FileMetrics]) -> dict[str, Any]:
 # Renderização (por app)
 # =========================================================================
 def render_simplified_markdown(
-    summary,
-    flake8_total,
-    mypy_codes,
-    mypy_pep_summary,
-    pep440,
-    meta,
-    app_name,
-):
+    summary: AggregateSummary,
+    flake8_total: int,
+    mypy_codes: Counter[str],
+    mypy_pep_summary: dict[str, int],
+    pep440: Pep440Result,
+    meta: RunMeta,
+    app_name: str,
+) -> str:
     agg = summary
     elig = agg["lines_length_eligible"]
     over = agg["lines_over_79"]
@@ -624,16 +856,16 @@ def render_simplified_markdown(
 
 
 def render_simplified_txt(
-    summary,
-    flake8_total,
-    mypy_codes,
-    mypy_pep_summary,
-    pep440,
-    meta,
-    max_line_length,
+    summary: AggregateSummary,
+    flake8_total: int,
+    mypy_codes: Counter[str],
+    mypy_pep_summary: dict[str, int],
+    pep440: Pep440Result,
+    meta: RunMeta,
+    max_line_length: int,
     *,
-    service_name,
-):
+    service_name: str,
+) -> str:
     agg = summary
     elig = agg["lines_length_eligible"]
     over = agg["lines_over_79"]
@@ -687,18 +919,18 @@ def render_simplified_txt(
 
 
 def render_markdown(
-    summary,
-    file_metrics,
-    flake8_codes,
-    flake8_lines,
-    mypy_codes,
-    mypy_lines,
-    mypy_pep_summary,
-    pep440,
-    meta,
-    max_line_length,
-    app_name,
-):
+    summary: AggregateSummary,
+    file_metrics: list[FileMetrics],
+    flake8_codes: Counter[str],
+    flake8_lines: list[str],
+    mypy_codes: Counter[str],
+    mypy_lines: list[str],
+    mypy_pep_summary: dict[str, int],
+    pep440: Pep440Result,
+    meta: RunMeta,
+    max_line_length: int,
+    app_name: str,
+) -> str:
     agg = summary
     mypy_errors = mypy_codes.get("error", 0)
     mypy_warnings = mypy_codes.get("warning", 0)
@@ -842,8 +1074,12 @@ def render_markdown(
 
 
 def build_simple_summary(
-    summary, flake8_total, mypy_codes, pep440, max_line_length
-):
+    summary: AggregateSummary,
+    flake8_total: int,
+    mypy_codes: Counter[str],
+    pep440: Pep440Result,
+    max_line_length: int,
+) -> SimpleSummary:
     agg = summary
     elig = agg["lines_length_eligible"]
     over = agg["lines_over_79"]
@@ -881,17 +1117,17 @@ def build_simple_summary(
 
 
 def build_json_payload(
-    summary,
-    file_metrics,
-    flake8_codes,
-    mypy_codes,
-    mypy_pep_summary,
-    pep440,
-    meta,
-    max_line_length,
-    app_name,
-):
-    by_file = []
+    summary: AggregateSummary,
+    file_metrics: list[FileMetrics],
+    flake8_codes: Counter[str],
+    mypy_codes: Counter[str],
+    mypy_pep_summary: dict[str, int],
+    pep440: Pep440Result,
+    meta: RunMeta,
+    max_line_length: int,
+    app_name: str,
+) -> JsonPayload:
+    by_file: list[FileSummaryEntry] = []
 
     for fm in file_metrics:
         funcs = fm.functions_and_methods
@@ -966,7 +1202,7 @@ def build_json_payload(
 # =========================================================================
 # Execução por app
 # =========================================================================
-def _build_meta(repo_root: Path, app_name: str) -> dict[str, Any]:
+def _build_meta(repo_root: Path, app_name: str) -> RunMeta:
     return {
         "generated_at": datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "command": f"python manage.py {COMMAND_NAME} --app {app_name}",
@@ -976,7 +1212,7 @@ def _build_meta(repo_root: Path, app_name: str) -> dict[str, Any]:
 
 def _write_app_outputs(
     output_dir: Path,
-    payload_args: dict[str, Any],
+    payload_args: PayloadArgs,
     service_name: str,
 ) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1017,19 +1253,19 @@ def _write_app_outputs(
 
 
 def _build_payload_args(
-    summary,
-    file_metrics,
-    flake8_codes,
-    flake8_lines,
-    mypy_codes,
-    mypy_lines,
-    mypy_pep_summary,
-    pep440,
-    meta,
-    max_line_length,
-    app_name,
-    flake8_total,
-) -> dict[str, dict[str, Any]]:
+    summary: AggregateSummary,
+    file_metrics: list[FileMetrics],
+    flake8_codes: Counter[str],
+    flake8_lines: list[str],
+    mypy_codes: Counter[str],
+    mypy_lines: list[str],
+    mypy_pep_summary: dict[str, int],
+    pep440: Pep440Result,
+    meta: RunMeta,
+    max_line_length: int,
+    app_name: str,
+    flake8_total: int,
+) -> PayloadArgs:
     return {
         "render_md": {
             "summary": summary,
@@ -1083,7 +1319,7 @@ def run_for_app(
     max_line_length: int,
     output_dir: Path | None,
     service_name: str,
-) -> dict[str, Any]:
+) -> AppRunResult:
     """Executa análise completa de um app e grava arquivos."""
     app_dir = _app_dir(app_name)
     if not app_dir.exists():
@@ -1135,7 +1371,7 @@ def run_for_app(
 # =========================================================================
 # Consolidação (geral)
 # =========================================================================
-def _sum_totals(per_app: list[dict[str, Any]]) -> dict[str, int]:
+def _sum_totals(per_app: list[AppRunResult]) -> dict[str, int]:
     totals = {
         "files": 0,
         "loc": 0,
@@ -1178,7 +1414,7 @@ def _sum_totals(per_app: list[dict[str, Any]]) -> dict[str, int]:
     return totals
 
 
-def _aggregate_flake8_codes(per_app: list[dict[str, Any]]) -> dict[str, int]:
+def _aggregate_flake8_codes(per_app: list[AppRunResult]) -> dict[str, int]:
     agg: dict[str, int] = {}
     for d in per_app:
         for code, n in d["payload"].get("flake8", {}).items():
@@ -1187,7 +1423,7 @@ def _aggregate_flake8_codes(per_app: list[dict[str, Any]]) -> dict[str, int]:
 
 
 def _compute_compliance(
-    totals: dict[str, int], pep440: dict[str, Any]
+    totals: dict[str, int], pep440: Pep440Result
 ) -> dict[str, float]:
     elig = totals["lines_eligible"]
     within = elig - totals["lines_over"]
@@ -1212,7 +1448,7 @@ def _compute_compliance(
 
 
 def _render_consolidated_md(
-    per_app: list[dict[str, Any]],
+    per_app: list[AppRunResult],
     totals: dict[str, int],
     compliance: dict[str, float],
     agg_codes: dict[str, int],
@@ -1338,14 +1574,14 @@ def _render_consolidated_md(
 
 
 def consolidate(
-    per_app: list[dict[str, Any]],
+    per_app: list[AppRunResult],
     out_dir: Path,
     max_len: int,
 ) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     totals = _sum_totals(per_app)
     agg_codes = _aggregate_flake8_codes(per_app)
-    pep440 = per_app[0]["payload"].get("pep440", {})
+    pep440 = per_app[0]["payload"]["pep440"]
     compliance = _compute_compliance(totals, pep440)
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
@@ -1387,7 +1623,7 @@ class Command(BaseCommand):
         "(MD + JSON + TXT). Suporta --all e --only para múltiplos apps."
     )
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument(
             "--app",
             default="core",
@@ -1416,7 +1652,7 @@ class Command(BaseCommand):
         parser.add_argument("--max-line-length", type=int, default=79)
         parser.add_argument("--service-name", default="SME-SIGNA-BACKEND")
 
-    def _resolve_apps(self, options) -> tuple[list[str], bool]:
+    def _resolve_apps(self, options: dict[str, Any]) -> tuple[list[str], bool]:
         """Retorna (lista_de_apps, modo_consolidado)."""
         if options["only"]:
             return list(options["only"]), True
@@ -1424,7 +1660,9 @@ class Command(BaseCommand):
             return discover_django_apps(), True
         return [options["app"]], False
 
-    def _run_single(self, app_name: str, options, repo_root: Path) -> None:
+    def _run_single(
+        self, app_name: str, options: dict[str, Any], repo_root: Path
+    ) -> None:
         output_dir = (
             Path(options["output_dir"]) if options["output_dir"] else None
         )
@@ -1455,7 +1693,9 @@ class Command(BaseCommand):
             f"mypy erros: {mypy.get('error', 0)}"
         )
 
-    def _run_many(self, apps: list[str], options, repo_root: Path) -> None:
+    def _run_many(
+        self, apps: list[str], options: dict[str, Any], repo_root: Path
+    ) -> None:
         if not apps:
             self.stdout.write(
                 self.style.WARNING("Nenhum app encontrado em apps/")
@@ -1466,7 +1706,7 @@ class Command(BaseCommand):
             self.style.NOTICE(f"Apps a analisar: {', '.join(apps)}")
         )
 
-        per_app: list[dict[str, Any]] = []
+        per_app: list[AppRunResult] = []
         for app in apps:
             self.stdout.write(f"\n→ Rodando para: {app}")
             try:
@@ -1498,10 +1738,11 @@ class Command(BaseCommand):
             self.style.SUCCESS(f"JSON consolidado: {paths['json']}")
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> str | None:
         repo_root = _repo_root()
         apps, consolidated = self._resolve_apps(options)
         if consolidated:
             self._run_many(apps, options, repo_root)
         else:
             self._run_single(apps[0], options, repo_root)
+        return None

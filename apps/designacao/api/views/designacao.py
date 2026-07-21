@@ -28,7 +28,7 @@ from apps.designacao.services.designacao_service import DesignacaoService
 DesignacaoPagination = DesignacaoBasePagination
 
 
-class DesignacaoViewSet(
+class DesignacaoViewSet(  # type: ignore[misc]
     DesignacaoPaginacaoMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,

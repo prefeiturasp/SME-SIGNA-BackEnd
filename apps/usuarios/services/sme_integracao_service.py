@@ -534,11 +534,11 @@ class SmeIntegracaoService:
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
-    def buscar_dados_turma(cls, codigo_turma: int) -> dict[str, Any]:
+    def buscar_dados_turma(cls, codigo_turma: int | str) -> dict[str, Any]:
         """Busca dados detalhados de uma turma.
 
         Args:
-            codigo_turma (int): Identificador da turma.
+            codigo_turma (int | str): Identificador da turma.
 
         Returns:
             dict: Dados detalhados da turma.
@@ -627,12 +627,12 @@ class SmeIntegracaoService:
 
     @classmethod
     def buscar_disciplinas_turma(
-        cls, codigo_turma: int
+        cls, codigo_turma: int | str
     ) -> list[dict[str, Any]]:
         """Busca disciplinas vinculadas a uma turma.
 
         Args:
-            codigo_turma (int): Identificador da turma.
+            codigo_turma (int | str): Identificador da turma.
 
         Returns:
             list: Lista de disciplinas vinculadas.

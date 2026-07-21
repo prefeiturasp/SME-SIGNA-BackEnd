@@ -4,10 +4,8 @@ Fornece lógica para criar insubsistências, reverter apostilas e manter a
 consistência dos atos administrativos relacionados.
 """
 
-from typing import Any
-
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -222,7 +220,7 @@ class InsubsistenciaService:
             detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato: AtoAdministrativo) -> Any | None:
+    def _get_detalhe(ato: AtoAdministrativo) -> Model | None:
         """Retorna o detalhe associado a um ato administrativo, se houver."""
         if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato, "designacao_detalhe", None)
@@ -232,8 +230,11 @@ class InsubsistenciaService:
 
     @staticmethod
     def _coerce_valor(
-        ato: AtoAdministrativo, detalhe: Any, campo: str, valor_str: Any
-    ) -> Any:
+        ato: AtoAdministrativo,
+        detalhe: Model | None,
+        campo: str,
+        valor_str: str,
+    ) -> str | bool | int | float | None:
         """Converta o valor de string para o tipo de campo apropriado.
 
         Args:
