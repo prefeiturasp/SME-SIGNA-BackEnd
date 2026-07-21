@@ -1,13 +1,15 @@
 #########################################
 # STAGE 1 — BUILD (instala dependências)
 #########################################
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Instalar dependências do sistema
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ENV APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+RUN apt-get $APT_OPTS update && \
+    apt-get $APT_OPTS install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -25,13 +27,15 @@ RUN pip install --upgrade pip && \
 #########################################
 # STAGE 2 — FINAL IMAGE (produção)
 #########################################
-FROM python:3.11-slim AS final
+FROM python:3.14-slim AS final
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Instalar dependências essenciais para Postgres
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ENV APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+RUN apt-get $APT_OPTS update && \
+    apt-get $APT_OPTS install -y --no-install-recommends \
     libpq5 \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*

@@ -7,6 +7,7 @@ inválidas, git+ pins e pins com `==`.
 
 Sai com código 1 se houver linhas inválidas, 0 caso contrário.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
