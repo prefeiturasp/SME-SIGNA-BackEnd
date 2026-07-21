@@ -151,7 +151,9 @@ class AtoAdministrativoFilter(PortariaFilter):
 
         """
         queryset = queryset.filter(
-            models.Q(ato_pai_id=value) | models.Q(ato_raiz_id=value)
+            models.Q(id=value)
+            | models.Q(ato_pai_id=value)
+            | models.Q(ato_raiz_id=value)
         )
         return queryset
 
