@@ -1,6 +1,7 @@
 """Testes para serializer de insubsistencia."""
 
 import datetime
+from types import SimpleNamespace
 
 import pytest
 
@@ -148,3 +149,32 @@ class TestInsubsistenciaReadSerializer:
         assert data["cessacao"]["numero_portaria"] == cessacao.numero_portaria
         assert data["cessacao"]["a_pedido"] is True
         assert data["cessacao"]["remocao"] is True
+
+    def test_get_tipo_insubsistencia_retorna_none_quando_nao_ha_ato_pai(self):
+        """Verifica get tipo insubsistencia retorna none sem ato pai."""
+        insubsistencia_sem_pai = SimpleNamespace(ato_pai=None)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert (
+            serializer.get_tipo_insubsistencia(insubsistencia_sem_pai) is None
+        )
+
+    def test_get_ato_apostilado_retorna_avo_quando_existe(self):
+        """Verifica retorno do ato apostilado quando hierarquia existe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        insubsistencia = criar_ato_insubsistencia(apostila)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert serializer._get_ato_apostilado(insubsistencia) == designacao
+
+    def test_get_ato_apostilado_retorna_none_quando_nao_existe_avo(self):
+        """Verifica retorno none quando nao existir avo para apostilamento."""
+        designacao = criar_ato_designacao()
+        insubsistencia = criar_ato_insubsistencia(designacao)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert serializer._get_ato_apostilado(insubsistencia) is None
