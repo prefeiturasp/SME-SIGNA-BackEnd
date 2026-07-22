@@ -81,6 +81,9 @@ directory = "htmlcov"
 "*/migrations/*.py" = ["D"]
 # Arquivos declarativos/boilerplate que não precisam de docstring de módulo (D100)
 "config/**/*.py" = ["D100"]
+# production.py usa "from .base import *" para expor todas as settings base
+# ao Django; F403/F405 (star import) são esperados nesse padrão
+"config/settings/production.py" = ["F403", "F405"]
 "*/admin.py" = ["D100"]
 "*/urls.py" = ["D100"]
 "*/apps.py" = ["D100"]
