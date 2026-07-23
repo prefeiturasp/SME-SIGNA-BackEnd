@@ -84,6 +84,22 @@ Feito tudo isso, o projeto estará executando no endereço [localhost:8000](http
     $ open htmlcov/index.html
     $ pytest --cov=apps --cov-report=term-missing
 
+### 📚 Gerando e visualizando a documentação (Sphinx)
+    $ python -m sphinx -b html docs docs/_build/html
+
+O Sphinx gera arquivos HTML estáticos — não roda junto com o
+`manage.py runserver`. Para visualizar, suba um servidor separado apontando
+para a pasta gerada (em outro terminal, deixando o Django na porta 8000):
+
+    $ cd docs/_build/html && python3 -m http.server 8080
+
+Depois acesse [127.0.0.1:8080](http://127.0.0.1:8080/).
+
+Alternativa com rebuild automático a cada alteração nos arquivos `.rst`:
+
+    $ pip install sphinx-autobuild
+    $ sphinx-autobuild docs docs/_build/html --port 8080
+
 ### 📄 Licença
 Este projeto está sob a licença (sua licença) - veja o arquivo [LICENSE](./LICENSE) para detalhes.
 
