@@ -95,6 +95,17 @@ class ApostilaService:
         if not ato_pai.eh_valido:
             raise ValidationError({"ato_pai": "Este ato está insubsistente."})
 
+        if ato_pai.filhos.exists():
+            filhos = ato_pai.filhos.all()
+            for filho in filhos:
+                if (
+                    filho.tipo == AtoAdministrativo.Tipo.APOSTILA
+                    and filho.eh_valido
+                ):
+                    raise ValidationError(
+                        {"ato_pai": "Este ato já foi apostilado."}
+                    )
+
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             tem_cessacao_ativa = ato_pai.filhos.filter(
                 tipo=AtoAdministrativo.Tipo.CESSACAO, ativo=True

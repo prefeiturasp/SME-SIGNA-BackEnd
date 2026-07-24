@@ -120,8 +120,8 @@ def test_create_apostila_ato_pai_invalido(auth_client):
 
 
 @pytest.mark.django_db
-def test_create_apostila_segunda_apostila_permitida(auth_client):
-    """Verifica create apostila segunda apostila permitida."""
+def test_create_apostila_segunda_apostila_nao_permitida(auth_client):
+    """Verifica create apostila segunda apostila nao permitida."""
     designacao = criar_ato_designacao()
     criar_ato_apostila(designacao)
 
@@ -130,7 +130,7 @@ def test_create_apostila_segunda_apostila_permitida(auth_client):
         url, data=_payload(designacao.id), format="json"
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 400
 
 
 @pytest.mark.django_db

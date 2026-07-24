@@ -206,7 +206,7 @@ class TestAtoAdministrativoListView:
             "criado_em",
             "criado_por_nome",
             "observacoes",
-            "portaria",
+            "numero_portaria",
             "ano_vigente",
             "nome",
             "rf",
@@ -271,7 +271,7 @@ class TestAtoAdministrativoListView:
         )
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["portaria"] == "001/2024"
+        assert response.data[0]["numero_portaria"] == "001/2024"
 
     def test_filtro_nome_titular_e_indicado(
         self, auth_client, designacao_1, designacao_2
@@ -302,5 +302,5 @@ class TestAtoAdministrativoListView:
             URL_LIST, {"ordering": "-numero_portaria", "no_pagination": "true"}
         )
         assert response.status_code == 200
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert portarias == ["002/2024", "001/2024"]

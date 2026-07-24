@@ -36,7 +36,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "criado_em",
             "criado_por_nome",
             "observacoes",
-            "portaria",
+            "numero_portaria",
             "ano_vigente",
             "nome",
             "rf",
