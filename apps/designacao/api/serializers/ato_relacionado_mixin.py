@@ -70,7 +70,6 @@ class AtoRelacionadoMixin:
         if detalhe and ato_designacao is not None:
             return {
                 "numero_portaria": ato_designacao.numero_portaria,
-                "portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
                 "sei_numero": ato_designacao.sei_numero,
                 "doc": ato_designacao.doc,
@@ -114,7 +113,6 @@ class AtoRelacionadoMixin:
         if detalhe and ato_cessacao is not None:
             return {
                 "numero_portaria": ato_cessacao.numero_portaria,
-                "portaria": ato_cessacao.numero_portaria,
                 "ano_vigente": ato_cessacao.ano_vigente,
                 "sei_numero": ato_cessacao.sei_numero,
                 "doc": ato_cessacao.doc,
