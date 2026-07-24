@@ -10,7 +10,13 @@ import logging
 
 from django.db import transaction
 from django.http import Http404
-from rest_framework import status, viewsets
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -41,6 +47,23 @@ class SolicitarAlteracaoEmailViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=AlteracaoEmailSerializer,
+        responses={
+            201: inline_serializer(
+                "SolicitarAlteracaoEmailResponse",
+                fields={"message": serializers.CharField()},
+            ),
+            401: inline_serializer(
+                "SolicitarAlteracaoEmailNaoAutenticadoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "SolicitarAlteracaoEmailErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def create(self, request: Request) -> Response:
         """Cria uma solicitação de alteração de e-mail.
 
@@ -94,6 +117,38 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description="Token de alteração de e-mail.",
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                "ValidarAlteracaoEmailResponse",
+                fields={
+                    "message": serializers.CharField(),
+                    "email": serializers.EmailField(),
+                },
+            ),
+            400: inline_serializer(
+                "ValidarAlteracaoEmailErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            404: inline_serializer(
+                "ValidarAlteracaoEmailNaoEncontradoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "ValidarAlteracaoEmailErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def update(self, request: Request, pk: str | None = None) -> Response:
         """Valida um token de alteração de e-mail e aplica a atualização.
 
