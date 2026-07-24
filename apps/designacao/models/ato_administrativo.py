@@ -4,6 +4,9 @@ Define os tipos de ato, hierarquia pai/raiz e regras de validação
 para designação, cessação, apostila e insubsistência.
 """
 
+from typing import Any
+
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -17,6 +20,10 @@ class AtoAdministrativo(models.Model):
         APOSTILA = "APOSTILA", "Apostila"
         INSUBSISTENCIA = "INSUBSISTENCIA", "Insubsistência"
 
+    class StatusPublicacao(models.TextChoices):
+        PUBLICADO = "PUBLICADO", "Publicado"
+        NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
+
     _TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
@@ -29,7 +36,11 @@ class AtoAdministrativo(models.Model):
     }
 
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
-
+    status_publicacao = models.CharField(
+        max_length=20,
+        choices=StatusPublicacao.choices,
+        default=StatusPublicacao.NAO_PUBLICADO,
+    )
     ato_pai = models.ForeignKey(
         "self",
         null=True,
@@ -53,6 +64,13 @@ class AtoAdministrativo(models.Model):
 
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="atos_administrativos_criados",
+    )
 
     class Meta:
         db_table = "ato_administrativo"
@@ -66,8 +84,10 @@ class AtoAdministrativo(models.Model):
         Raises:
             ValidationError: Quando as regras de consistência não forem
             atendidas.
+
         """
         if self.ato_pai_id:
+            assert self.ato_pai is not None
             tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
@@ -92,7 +112,7 @@ class AtoAdministrativo(models.Model):
                     }
                 )
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Salva o ato administrativo aplicando regras automáticas
         de hierarquia.
 
@@ -102,9 +122,11 @@ class AtoAdministrativo(models.Model):
         Args:
             *args: Argumentos posicionais adicionais.
             **kwargs: Argumentos nomeados adicionais.
+
         """
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
+            assert pai is not None
             self.ato_raiz_id = pai.ato_raiz_id if pai.ato_raiz_id else pai.pk
         if not kwargs.get("update_fields"):
             self.full_clean()
@@ -120,6 +142,7 @@ class AtoAdministrativo(models.Model):
         Returns:
             str: Status do ato, podendo ser 'ativo', 'cessada' ou
             'insubsistente'.
+
         """
         if not self.ativo:
             return "insubsistente"
@@ -138,5 +161,6 @@ class AtoAdministrativo(models.Model):
 
         Returns:
             bool: True quando o ato está ativo.
+
         """
         return self.ativo

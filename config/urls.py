@@ -1,14 +1,24 @@
 from django.contrib import admin
 from django.urls import include, path
-from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
-                                   SpectacularSwaggerView)
-from rest_framework_simplejwt.views import (TokenObtainPairView,
-                                            TokenRefreshView)
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 urlpatterns = [
+    path("api/", include("apps.core.urls")),
     # Endpoints JWT (Simple JWT)
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"
+    ),
+    path(
+        "api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"
+    ),
     # APIs da sua app (apps.usuarios)
     path("api/usuario/", include("apps.usuarios.urls")),
     # APIs da sua app (apps.alteracao_email)
@@ -23,7 +33,7 @@ urlpatterns = [
     ),
     path(
         "api/designacao/v2/",
-        include("apps.designacao.urls_v2", namespace="designacao_v2"),
+        include("apps.designacao.api.urls_v2", namespace="designacao_v2"),
     ),
     # APIs da sua app (apps.unidades)
     path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),
@@ -36,5 +46,9 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(url_name="schema"),
         name="swagger-ui",
     ),
-    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    path(
+        "api/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="redoc",
+    ),
 ]

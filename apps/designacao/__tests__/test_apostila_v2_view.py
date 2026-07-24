@@ -5,7 +5,6 @@
 import secrets
 
 import pytest
-
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -57,6 +56,24 @@ def test_create_apostila_v2_em_designacao(auth_client):
     assert AtoAdministrativo.objects.filter(
         tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=designacao
     ).exists()
+
+
+@pytest.mark.django_db
+def test_create_apostila_v2_registra_criado_por(auth_client):
+    """Verifica que a apostila criada registra o usuario responsavel."""
+    designacao = criar_ato_designacao()
+    user = User.objects.get(username="test_apostila_v2")
+
+    url = reverse("designacao_v2:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    apostila = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=designacao
+    )
+    assert apostila.criado_por_id == user.id
 
 
 @pytest.mark.django_db

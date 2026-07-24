@@ -7,14 +7,19 @@ consistência dos atos administrativos relacionados.
 from typing import Any
 
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
+from apps.designacao.models.insubsistencia import Insubsistencia
+from apps.designacao.models.insubsistencia_apostila_detalhe import (
+    InsubsistenciaApostilaDetalhe,
+)
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
 )
 
 
@@ -29,6 +34,7 @@ def _filhos_ativos_ids(
 
     Returns:
         list[int]: Lista de IDs dos atos filhos ativos.
+
     """
     return list(
         ato_pai.filhos.filter(tipo=tipo_filho, ativo=True).values_list(
@@ -39,6 +45,53 @@ def _filhos_ativos_ids(
 
 class InsubsistenciaService:
     """Serviço para a criação e reversão de insubsistências."""
+
+    # ── Querysets ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def listar() -> QuerySet:
+        """Retorna queryset de insubsistências ativas (modelo legado)."""
+        return (
+            Insubsistencia.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def listar_v2() -> QuerySet:
+        """Retorna queryset de insubsistências v2 (AtoAdministrativo)."""
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
+            )
+            .select_related(
+                "insubsistencia_detalhe",
+                "insubsistencia_apostila_detalhe",
+                "ato_pai__designacao_detalhe",
+                "ato_raiz__designacao_detalhe",
+                "ato_pai__cessacao_detalhe",
+            )
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def buscar_v2(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma insubsistência v2 por pk."""
+        return InsubsistenciaService.listar_v2().filter(pk=pk).first()
+
+    @staticmethod
+    def excluir(instancia: AtoAdministrativo) -> None:
+        """Remove a insubsistência e reativa o ato pai associado.
+
+        Args:
+            instancia: Ato de insubsistência a ser removido.
+
+        """
+        ato_pai = instancia.ato_pai
+        if ato_pai:
+            ato_pai.ativo = True
+            ato_pai.save(update_fields=["ativo"])
+        instancia.delete()
 
     @staticmethod
     def criar(data: dict) -> AtoAdministrativo:
@@ -54,6 +107,7 @@ class InsubsistenciaService:
         Raises:
             ValidationError: Se o ato pai já estiver insubsistente ou
             já possuir uma insubsistência ativa.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
 
@@ -72,15 +126,23 @@ class InsubsistenciaService:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         observacoes = data.get("observacoes", "")
 
+        texto_apostila = data.get("texto_apostila", "")
+
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )
             InsubsistenciaDetalhe.objects.create(
                 ato=ato, observacoes=observacoes
             )
+
+            if ato_pai.tipo == AtoAdministrativo.Tipo.APOSTILA:
+                InsubsistenciaApostilaDetalhe.objects.create(
+                    ato=ato, texto=texto_apostila
+                )
 
             ato_pai.ativo = False
             ato_pai.save(update_fields=["ativo"])
@@ -93,8 +155,9 @@ class InsubsistenciaService:
             ):
                 # TSE: insubsistindo uma Insubsistência — restaura o ato original  # noqa: E501
                 avo = ato_pai.ato_pai
-                avo.ativo = True
-                avo.save(update_fields=["ativo"])
+                if avo is not None:
+                    avo.ativo = True
+                    avo.save(update_fields=["ativo"])
 
             elif tipo_pai == AtoAdministrativo.Tipo.APOSTILA:
                 avo = ato_pai.ato_pai
@@ -129,6 +192,7 @@ class InsubsistenciaService:
             apostila_ato: Ato administrativo do tipo apostila que será
             revertido.
             alvo: Ato administrativo que receberá a reversão dos valores.
+
         """
         try:
             alteracoes = list(apostila_ato.apostila_detalhe.alteracoes.all())
@@ -163,7 +227,7 @@ class InsubsistenciaService:
                 setattr(alvo, campo, valor)
             alvo.save(update_fields=list(ato_updates.keys()))
 
-        if detalhe_updates:
+        if detalhe_updates and detalhe_alvo is not None:
             for campo, valor in detalhe_updates.items():
                 setattr(detalhe_alvo, campo, valor)
             detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
@@ -181,7 +245,7 @@ class InsubsistenciaService:
     def _coerce_valor(
         ato: AtoAdministrativo, detalhe: Any, campo: str, valor_str: Any
     ) -> Any:
-        """Converte o valor de string para o tipo de campo apropriado.
+        """Converta o valor de string para o tipo de campo apropriado.
 
         Args:
             ato: Instância do ato administrativo alvo.
@@ -192,6 +256,7 @@ class InsubsistenciaService:
         Returns:
             Valor convertido para o tipo do campo, ou valor original se
             a conversão falhar.
+
         """
         from django.db.models import BooleanField, FloatField, IntegerField
 
@@ -203,7 +268,7 @@ class InsubsistenciaService:
             else:
                 return valor_str
 
-            if valor_str == "" and field.null:
+            if valor_str == "" and getattr(field, "null", False):
                 return None
 
             if isinstance(field, BooleanField):
@@ -225,14 +290,12 @@ class InsubsistenciaService:
 
     @staticmethod
     def montar_dados_insubsistencia_designacao(serializer: Any) -> Any:
-        """Método legado que retorna o serializer de designação sem
-        alteração."""
+        """Retorna o serializer de designação sem alteração."""
         return serializer
 
     @staticmethod
     def montar_dados_insubsistencia_cessacao(serializer: Any) -> Any:
-        """Método legado que ajusta o serializer para insubsistência de
-        cessação."""
+        """Ajusta o serializer de insubsistência de cessação."""
         designacao_obj = serializer.validated_data.get("designacao")
 
         designacao_completa = Designacao.objects.select_related(

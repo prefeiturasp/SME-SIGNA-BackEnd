@@ -5,6 +5,7 @@ ou UEs de uma DRE específica, sem usar banco de dados local.
 """
 
 import logging
+from typing import Any
 
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -29,7 +30,7 @@ class UnidadeViewSet(ViewSet):
 
     permission_classes = [AllowAny]
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista DREs ou UEs conforme os parâmetros da requisição.
 
         Args:
@@ -40,6 +41,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: A resposta com a lista de DREs ou
                 unidades escolares, ou uma mensagem de erro.
+
         """
         tipo = request.query_params.get("tipo")
         codigo_dre = request.query_params.get("dre")
@@ -76,6 +78,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: Resposta com a lista de DREs ou
                 mensagem de erro em caso de falha.
+
         """
         try:
             dres = DREIntegracaoService.get_dres()
@@ -102,6 +105,7 @@ class UnidadeViewSet(ViewSet):
         Returns:
             rest_framework.response.Response: Resposta com a lista de unidades
                 ou mensagem de erro em caso de falha.
+
         """
         if not codigo_dre:
             logger.warning("Parâmetro 'dre' não informado para tipo UE")
@@ -174,5 +178,6 @@ class UnidadeViewSet(ViewSet):
 
         Returns:
             rest_framework.response.Response: A resposta de erro formatada.
+
         """
         return Response({"detail": mensagem}, status=status_code)

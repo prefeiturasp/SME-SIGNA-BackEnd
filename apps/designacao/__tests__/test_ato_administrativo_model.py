@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from django.core.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (
@@ -73,6 +72,19 @@ class TestAtoAdministrativoStatus:
         criar_ato_cessacao(d)
         d.refresh_from_db()
         assert d.eh_valido is True
+
+
+@pytest.mark.django_db
+class TestAtoAdministrativoStatusPublicacao:
+    """Testes para ato administrativo status publicação."""
+
+    def test_status_publicacao(self):
+        """Verifica status publicação."""
+        d = criar_ato_designacao()
+        assert (
+            d.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+        )
 
 
 @pytest.mark.django_db

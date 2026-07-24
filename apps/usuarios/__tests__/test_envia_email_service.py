@@ -8,7 +8,6 @@ tratamento de exceções inesperadas.
 from unittest.mock import patch
 
 import pytest
-
 from django.core import mail
 from django.core.exceptions import ValidationError
 
@@ -70,11 +69,13 @@ class TestEnviaEmailService:
         self, email_data
     ):
         """Verifica que exceções inesperadas são convertidas em RuntimeError."""
-        with patch(
-            "django.core.mail.EmailMessage.send",
-            side_effect=Exception("Erro inesperado"),
-        ):
-            with pytest.raises(
+        with (
+            patch(
+                "django.core.mail.EmailMessage.send",
+                side_effect=Exception("Erro inesperado"),
+            ),
+            pytest.raises(
                 RuntimeError, match="Erro inesperado ao enviar e-mail."
-            ):
-                EnviaEmailService.enviar(**email_data)
+            ),
+        ):
+            EnviaEmailService.enviar(**email_data)

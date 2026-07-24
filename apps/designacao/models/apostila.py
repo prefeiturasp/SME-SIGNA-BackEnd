@@ -64,8 +64,8 @@ class Apostila(models.Model):
         Raises:
             ValidationError: Quando as regras de consistência não forem
             atendidas.
-        """
 
+        """
         if sum([bool(self.designacao), bool(self.cessacao)]) != 1:
             raise ValidationError(
                 "A apostila deve estar vinculada a uma designação OU cessação."

@@ -4,9 +4,10 @@ Fornece endpoints para listagem, recuperação, criação e atualização de
 designações, com suporte a filtros, pesquisa, ordenação e paginação.
 """
 
+from typing import Any
+
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -79,6 +80,7 @@ class DesignacaoViewSet(
         Returns:
             QuerySet: Queryset otimizado de atos administrativos do tipo
             designação.
+
         """
         return (
             AtoAdministrativo.objects.filter(
@@ -101,7 +103,7 @@ class DesignacaoViewSet(
 
     # ── List ─────────────────────────────────────────────────────────────────
 
-    def list(self, request: Request, *args, **kwargs) -> Response:
+    def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista designações conforme filtros e paginação.
 
         Args:
@@ -111,6 +113,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com a lista de designações.
+
         """
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -130,7 +133,7 @@ class DesignacaoViewSet(
 
     # ── Create ───────────────────────────────────────────────────────────────
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova designação.
 
         Args:
@@ -140,9 +143,11 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da designação criada.
+
         """
         serializer = DesignacaoWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = DesignacaoService.criar(serializer.validated_data)
 
@@ -154,7 +159,9 @@ class DesignacaoViewSet(
 
     # ── Partial update ───────────────────────────────────────────────────────
 
-    def partial_update(self, request: Request, *args, **kwargs) -> Response:
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
         """Atualiza parcialmente uma designação existente.
 
         Args:
@@ -164,6 +171,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados atualizados da designação.
+
         """
         ato = self.get_object()
         serializer = DesignacaoWriteSerializer(data=request.data, partial=True)
@@ -173,6 +181,35 @@ class DesignacaoViewSet(
 
         ato_atualizado = self.get_queryset().filter(pk=ato.pk).first()
         return Response(DesignacaoReadSerializer(ato_atualizado).data)
+
+    # ── Busca por portaria ───────────────────────────────────────────────────
+
+    @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
+    def buscar_por_portaria(self, request: Request) -> Response:
+        """Busca uma designação pelo número da portaria.
+
+        Args:
+            request: Requisição HTTP contendo o parâmetro `portaria`.
+
+        Returns:
+            Response: Designação encontrada ou erro 404/400.
+
+        """
+        portaria = (request.query_params.get("portaria") or "").strip()
+        if not portaria:
+            return Response(
+                {"detail": "Parâmetro 'portaria' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ato = self.get_queryset().filter(numero_portaria=portaria).first()
+        if ato is None:
+            return Response(
+                {"detail": "Designação não encontrada para essa portaria."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(DesignacaoReadSerializer(ato).data)
 
     # ── Actions de cargos ────────────────────────────────────────────────────
 
@@ -185,6 +222,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Lista de cargos base pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(
@@ -207,6 +245,7 @@ class DesignacaoViewSet(
 
         Returns:
             Response: Lista de cargos sobrepostos pareados.
+
         """
         queryset = self.filter_queryset(self.get_queryset()).order_by()
         resultado = DesignacaoService.get_cargos_pareados(

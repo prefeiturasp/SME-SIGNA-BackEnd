@@ -34,11 +34,14 @@ class CessacaoSerializer(serializers.ModelSerializer):
         Returns:
             dict|None: Dados serializados da insubsistência, ou None se não
             existir.
+
         """
+        insubs_qs = getattr(obj, "insubsistencia", None)
+        if not insubs_qs:
+            return None
+
         insubsistencia = (
-            obj.insubsistencia.filter(is_deleted=False)
-            .order_by("-criado_em")
-            .first()
+            insubs_qs.filter(is_deleted=False).order_by("-criado_em").first()
         )
         if insubsistencia and not insubsistencia.is_deleted:
             return InsubsistenciaSerializer(insubsistencia).data
@@ -53,6 +56,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Valor validado contendo apenas números.
+
         """
         return validar_somente_numeros(value)
 
@@ -64,6 +68,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
 
         Returns:
             str: Valor validado contendo apenas números.
+
         """
         return validar_somente_numeros(value)
 
@@ -79,6 +84,7 @@ class CessacaoSerializer(serializers.ModelSerializer):
 
         Returns:
             dict: Dados validados.
+
         """
         designacao = data.get("designacao")
 

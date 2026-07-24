@@ -4,14 +4,13 @@ Fornece endpoints para criar, listar, recuperar e excluir cessões.
 """
 
 from django.db.models import QuerySet
-
 from rest_framework import mixins, viewsets
 from rest_framework.pagination import PageNumberPagination
 
 from apps.designacao.api.serializers.cessacao_serializer import (
     CessacaoSerializer,
 )
-from apps.designacao.models.cessacao import Cessacao
+from apps.designacao.services.cessacao_service import CessacaoService
 
 
 class CessacaoPagination(PageNumberPagination):
@@ -47,9 +46,6 @@ class CessacaoViewSet(
 
         Returns:
             QuerySet: Cessões não deletadas ordenadas por data de criação.
+
         """
-        return (
-            Cessacao.objects.filter(is_deleted=False)
-            .select_related("designacao")
-            .order_by("-criado_em")
-        )
+        return CessacaoService.listar()

@@ -1,3 +1,5 @@
+"""Rotas da API v2 do módulo de designação."""
+
 from django.urls import path
 
 from apps.designacao.api.views.designacao import DesignacaoViewSet
@@ -11,6 +13,7 @@ from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
     DesignacaoUnidadeView,
 )
+from apps.designacao.api.views.portaria import PortariaListViewSet
 from apps.designacao.api.views.v2.apostila_view import ApostilaV2ViewSet
 from apps.designacao.api.views.v2.cessacao_view import CessacaoV2ViewSet
 from apps.designacao.api.views.v2.insubsistencia_view import (
@@ -60,6 +63,11 @@ urlpatterns = [
         DesignacaoViewSet.as_view({"get": "cargos_sobrepostos_pareados"}),
         name="cargos-sobrepostos-pareados",
     ),
+    path(
+        "designacoes/buscar-por-portaria/",
+        DesignacaoViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="designacao-buscar-por-portaria",
+    ),
     # Cessações (nova modelagem — AtoAdministrativo + CessacaoDetalhe)
     path(
         "cessacoes/",
@@ -75,6 +83,11 @@ urlpatterns = [
             }
         ),
         name="cessacao-detail",
+    ),
+    path(
+        "cessacoes/buscar-por-portaria/",
+        CessacaoV2ViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="cessacao-buscar-por-portaria",
     ),
     # Apostilas (nova modelagem — AtoAdministrativo + ApostilaDetalhe)
     path(
@@ -107,5 +120,21 @@ urlpatterns = [
             }
         ),
         name="insubsistencia-detail",
+    ),
+    path(
+        "insubsistencias/buscar-por-portaria/",
+        InsubsistenciaV2ViewSet.as_view({"get": "buscar_por_portaria"}),
+        name="insubsistencia-buscar-por-portaria",
+    ),
+    # Portarias — listagem para publicação no D.O.
+    path(
+        "portarias/",
+        PortariaListViewSet.as_view({"get": "list"}),
+        name="portarias",
+    ),
+    path(
+        "portarias/atualizar-data-publicacao/",
+        PortariaListViewSet.as_view({"post": "atualizar_data_publicacao"}),
+        name="portarias-atualizar-data-publicacao",
     ),
 ]

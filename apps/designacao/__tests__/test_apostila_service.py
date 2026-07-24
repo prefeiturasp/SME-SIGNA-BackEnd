@@ -5,7 +5,6 @@
 import datetime
 
 import pytest
-
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (
@@ -14,6 +13,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.apostila_service import ApostilaService
 
 
@@ -40,6 +40,10 @@ class TestApostilaService:
         ato = ApostilaService.criar(self._data(d))
         assert ato.pk is not None
         assert ato.ato_pai_id == d.pk
+        assert (
+            ato.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+        )
 
     def test_criar_apostila_cessacao_sucesso(self):
         """Verifica criar apostila cessacao sucesso."""

@@ -23,6 +23,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             int: Módulo calculado com base no tipo de escola e classes.
+
         """
         sigla_tipo = self._obter_sigla(informacoes_ue)
         dados_turmas = informacoes_ue.get("turmas") or {}
@@ -58,6 +59,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             str: Sigla do tipo de escola em maiúsculas.
+
         """
         return (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
 
@@ -69,6 +71,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             int | None: Módulo fixo ou None se não houver regra fixa.
+
         """
         regras = {
             "CEI": 1,
@@ -84,6 +87,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             int: Valor padrão 0.
+
         """
         logger.warning(
             "Cálculo de módulo para Coordenador Pedagógico requer "
@@ -100,6 +104,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             int: Módulo calculado para EMEI.
+
         """
         return 1 if qtd_classes <= 20 else 2
 
@@ -118,6 +123,7 @@ class ModuloCoordenadorPedagogicoCalculator:
 
         Returns:
             int: Módulo calculado para EMEF/EMEBS.
+
         """
         if qtd_classes <= 14:
             return 1

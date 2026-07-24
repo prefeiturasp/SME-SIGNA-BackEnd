@@ -3,7 +3,6 @@
 """
 
 import pytest
-
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (
@@ -11,6 +10,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
@@ -46,6 +46,10 @@ class TestInsubsistenciaService:
         c = criar_ato_cessacao(d)
         ato = InsubsistenciaService.criar(_data(c))
         assert ato.pk is not None
+        assert (
+            ato.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
+        )
 
     def test_erro_ato_ja_insubsistente(self):
         """Verifica erro ato ja insubsistente."""
@@ -146,7 +150,6 @@ class TestInsubsistenciaService:
 
     def test_insubsistencia_de_cessacao_anula_apostilas_da_cessacao(self):
         """Verifica insubsistencia de cessacao anula apostilas da cessacao."""
-        from apps.designacao.models.ato_administrativo import AtoAdministrativo
         from apps.designacao.services.apostila_service import ApostilaService
 
         d = criar_ato_designacao()

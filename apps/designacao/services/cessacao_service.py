@@ -5,18 +5,52 @@ associados, garantindo validações de estados de designação.
 """
 
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.cessacao import Cessacao
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
 )
 
 
 class CessacaoService:
     """Serviço de negócio para criar cessações."""
+
+    # ── Querysets ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def listar() -> QuerySet:
+        """Retorna queryset de cessações ativas (modelo legado)."""
+        return (
+            Cessacao.objects.filter(is_deleted=False)
+            .select_related("designacao")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def listar_v2() -> QuerySet:
+        """Retorna queryset de cessações v2 (AtoAdministrativo)."""
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.CESSACAO
+            )
+            .select_related("cessacao_detalhe")
+            .prefetch_related(
+                "filhos",
+                "filhos__apostila_detalhe",
+                "filhos__insubsistencia_detalhe",
+            )
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def buscar_v2(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma cessação v2 por pk."""
+        return CessacaoService.listar_v2().filter(pk=pk).first()
 
     @classmethod
     def criar(cls, data: dict) -> AtoAdministrativo:
@@ -31,6 +65,7 @@ class CessacaoService:
         Raises:
             ValidationError: Se o ato pai não for válido ou já tiver cessação
             ativa.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
 
@@ -56,6 +91,7 @@ class CessacaoService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.CESSACAO,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )

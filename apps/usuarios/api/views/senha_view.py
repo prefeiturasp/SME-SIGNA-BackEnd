@@ -5,11 +5,9 @@ redefinir senha via UID/token e alterar senha de usuário autenticado.
 """
 
 import logging
+from typing import Any, cast
 
 import environ
-
-from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction
 from rest_framework import permissions, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
@@ -17,8 +15,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.helpers.exceptions import (
-    EmailNaoCadastrado,
-    SmeIntegracaoException,
+    EmailNaoCadastradoError,
+    SmeIntegracaoError,
     UserNotFoundError,
 )
 from apps.helpers.utils import anonimizar_email
@@ -27,12 +25,12 @@ from apps.usuarios.api.serializers.senha_serializer import (
     EsqueciMinhaSenhaSerializer,
     RedefinirSenhaSerializer,
 )
+from apps.usuarios.models import User
 from apps.usuarios.services.envia_email_service import EnviaEmailService
 from apps.usuarios.services.senha_service import SenhaService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 env = environ.Env()
 
 
@@ -65,7 +63,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
             logger.info("Fluxo de recuperação iniciado para %s", username)
 
             # 1. Busca usuário local
-            user_local = User.objects.filter(username=username).first()
+            user_local = SenhaService.buscar_usuario_local(username)
 
             # 2. Consulta SME
             dados_sme = self._consultar_sme(username, user_local)
@@ -78,14 +76,14 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
             # 5. Sincroniza usuário local se necessário
             if dados_sme and dados_sme.get("nome"):
-                user_local = self._criar_ou_atualizar_usuario_local(
+                user_local = SenhaService.sincronizar_usuario_local(
                     username, dados_sme
                 )
 
             # 6. Gera token e envia email
             return self._processar_envio_email(username, email)
 
-        except EmailNaoCadastrado as e:
+        except EmailNaoCadastradoError as e:
             return Response({"detail": str(e)}, status=400)
 
         except UserNotFoundError as e:
@@ -98,39 +96,48 @@ class EsqueciMinhaSenhaViewSet(APIView):
     def _consultar_sme(
         self, username: str, user_local: User | None
     ) -> dict | None:
-        """
-        Consulta dados do usuário na SME.
+        """Consulta dados do usuário na SME.
+
         Retorna None se houver erro e não existir usuário local.
         """
         try:
             return SmeIntegracaoService.informacao_usuario_sgp(username)
-        except SmeIntegracaoException as e:
-            logger.error("Erro ao consultar SME para %s: %s", username, str(e))
-            if not user_local:
-                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
-            return None
-        except Exception:
-            logger.exception(
-                "Erro inesperado ao consultar SME para %s", username
+
+        except SmeIntegracaoError as exc:
+            logger.error(
+                "Erro ao consultar SME para %s: %s",
+                username,
+                str(exc),
             )
             if not user_local:
-                raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
+                raise UserNotFoundError(
+                    self.MENSAGEM_USUARIO_NAO_ENCONTRADO
+                ) from exc
+            return None
+
+        except Exception as exc:
+            logger.exception(
+                "Erro inesperado ao consultar SME para %s",
+                username,
+            )
+            if not user_local:
+                raise UserNotFoundError(
+                    self.MENSAGEM_USUARIO_NAO_ENCONTRADO
+                ) from exc
             return None
 
     def _validar_usuario_existe(
         self, user_local: User | None, dados_sme: dict | None
     ) -> None:
-        """
-        Valida se o usuário existe localmente ou na SME.
-        """
+        """Valida se o usuário existe localmente ou na SME."""
         if not user_local and not dados_sme:
             raise UserNotFoundError(self.MENSAGEM_USUARIO_NAO_ENCONTRADO)
 
     def _obter_email(
         self, dados_sme: dict | None, user_local: User | None, username: str
     ) -> str:
-        """
-        Determina o email do usuário (prioridade: SME > banco local).
+        """Determina o email do usuário (prioridade: SME > banco local).
+
         Valida se o email existe e não está vazio.
         """
         email = None
@@ -143,7 +150,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
 
         if not email or not email.strip():
             logger.warning("RF %s sem email cadastrado", username)
-            raise EmailNaoCadastrado(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
+            raise EmailNaoCadastradoError(self.MENSAGEM_EMAIL_NAO_CADASTRADO)
 
         return email
 
@@ -153,6 +160,7 @@ class EsqueciMinhaSenhaViewSet(APIView):
         Args:
             username (str): RF ou nome de usuário do usuário.
             email (str): Endereço de e-mail para envio.
+
         """
         logger.info("Gerando token: %s", username)
 
@@ -181,52 +189,9 @@ class EsqueciMinhaSenhaViewSet(APIView):
             status=200,
         )
 
-    def _criar_ou_atualizar_usuario_local(
-        self, username: str, dados_sme: dict
-    ) -> User:
-        """
-        Cria ou atualiza usuário local com dados da SME.
-        Usa update_or_create para evitar duplicação.
-        """
-        logger.info("Sincronizando usuário local para %s", username)
-
-        nome = dados_sme.get("nome")
-        if not nome:
-            logger.warning(
-                "Dados SME sem nome para %s, pulando sincronização", username
-            )
-            return User.objects.get(
-                username=username
-            )  # Retorna usuário existente
-
-        try:
-            with transaction.atomic():
-                user, created = User.objects.update_or_create(
-                    username=username,
-                    defaults={
-                        "name": nome,
-                        "email": dados_sme.get("email", ""),
-                        "cpf": dados_sme.get("numeroDocumento", ""),
-                    },
-                )
-
-            action = "criado" if created else "atualizado"
-            logger.info("Usuário %s %s localmente", username, action)
-            return user
-
-        except IntegrityError as e:
-            logger.error(
-                "Falha ao sincronizar usuário %s: %s", username, str(e)
-            )
-            raise EmailNaoCadastrado(
-                "Já existe um usuário com este e-mail. <br/>"
-                "Entre em contato com o administrador do sistema."
-            )
-
 
 class RedefinirSenhaViewSet(APIView):
-    """
-    View para redefinição de senha via UID e token.
+    """View para redefinição de senha via UID e token.
 
     Fonte da verdade:
     - A autenticação e alteração de senha acontecem na SME.
@@ -246,7 +211,7 @@ class RedefinirSenhaViewSet(APIView):
     STATUS_ERROR = "error"
     STATUS_SUCCESS = "success"
 
-    def post(self, request: Request, *args, **kwargs) -> Response:
+    def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Processa a redefinição de senha usando UID e token.
 
         Valida os dados do formulário e redefine a senha na SME e localmente.
@@ -281,7 +246,7 @@ class RedefinirSenhaViewSet(APIView):
                 user.username,
                 new_password,
             )
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
                 "Falha ao redefinir senha na SME para usuário ID=%s: %s",
                 user.id,
@@ -296,9 +261,7 @@ class RedefinirSenhaViewSet(APIView):
             )
 
         try:
-            with transaction.atomic():
-                user.set_password(new_password)
-                user.save(update_fields=["password"])
+            SenhaService.atualizar_senha_local(user, new_password)
         except Exception:
             logger.exception(
                 "Senha redefinida na SME, mas falha ao atualizar senha local "
@@ -347,26 +310,21 @@ class AtualizarSenhaViewSet(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = request.user
+        user = cast(User, request.user)
         nova_senha = serializer.validated_data["nova_senha"]
 
         try:
-            with transaction.atomic():
-                SmeIntegracaoService.redefine_senha(user.username, nova_senha)
+            SmeIntegracaoService.redefine_senha(user.username, nova_senha)
+            SenhaService.atualizar_senha_local(user, nova_senha)
 
-                user.set_password(nova_senha)
-                user.save(update_fields=["password"])
+            logger.info("Usuário ID %s alterou a senha com sucesso.", user.id)
 
-                logger.info(
-                    "Usuário ID %s alterou a senha com sucesso.", user.id
-                )
+            return Response(
+                {"detail": self.MENSAGEM_SUCESSO},
+                status=status.HTTP_200_OK,
+            )
 
-                return Response(
-                    {"detail": self.MENSAGEM_SUCESSO},
-                    status=status.HTTP_200_OK,
-                )
-
-        except SmeIntegracaoException as e:
+        except SmeIntegracaoError as e:
             logger.error(
                 "Erro na integração SME para alteração de senha do usuário ID %s: %s",  # noqa: E501
                 user.id,

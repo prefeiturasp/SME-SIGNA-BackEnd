@@ -20,5 +20,6 @@ class ModuloCalculator(ABC):
 
         Returns:
             int: Módulo calculado para o cargo.
+
         """
         pass

@@ -1,66 +1,69 @@
 class AuthenticationError(Exception):
-    """Erro de autenticação personalizado"""
+    """Erro de autenticação personalizado."""
 
     pass
 
 
 class CargoNotFoundError(Exception):
-    """Erro quando cargo não é encontrado"""
+    """Erro quando cargo não é encontrado."""
 
     pass
 
 
 class CessacaoNotFoundError(Exception):
-    """Erro quando cessação não é encontrada"""
+    """Erro quando cessação não é encontrada."""
 
     pass
 
 
 class InternalError(Exception):
-    """Erro interno do sistema"""
+    """Erro interno do sistema."""
 
     pass
 
 
-class EmailNaoCadastrado(Exception):
-    """Email não cadastrado"""
+class EmailNaoCadastradoError(Exception):
+    """Email não cadastrado."""
 
     pass
 
 
-class SmeIntegracaoException(Exception):
-    """Problema na integração com a SME"""
+class SmeIntegracaoError(Exception):
+    """Problema na integração com a SME."""
 
     pass
 
 
-class CargaUsuarioException(Exception):
-    """Erro ao cadastrar usuário no CoreSSO"""
+class CargaUsuarioError(Exception):
+    """Erro ao cadastrar usuário no CoreSSO."""
 
     pass
 
 
-class TokenJaUtilizadoException(Exception):
+class TokenJaUtilizadoError(Exception):
     """Token de validação já foi usado."""
 
     pass
 
 
-class TokenExpiradoException(Exception):
+class TokenExpiradoError(Exception):
     """Token de validação expirou."""
 
     pass
 
 
 class UserNotFoundError(Exception):
-    """Erro quando usuário não é encontrado"""
+    """Erro quando usuário não é encontrado."""
 
-    def __init__(self, message, usuario=None):
-        super().__init__(message)
+    def __init__(self, message: str, usuario: object = None) -> None:
+        super().__init__(message, usuario)
         self.usuario = usuario
+
+    def __str__(self) -> str:
+        return str(self.args[0])
 
 
 class PerfilNaoAutorizadoError(Exception):
-    """Não possui perfil signa"""
+    """Não possui perfil signa."""
 
     pass

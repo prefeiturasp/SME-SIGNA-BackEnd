@@ -9,7 +9,6 @@ import secrets
 from datetime import date
 
 import pytest
-
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
@@ -37,6 +36,7 @@ def auth_client(db):
 
     Returns:
         APIClient: Cliente autenticado pronto para uso nos testes.
+
     """
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(
@@ -53,6 +53,7 @@ def designacao(db):
 
     Returns:
         AtoAdministrativo: Ato de designação com detalhes associados.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
@@ -89,6 +90,7 @@ def designacao_2(db):
 
     Returns:
         AtoAdministrativo: Segundo ato de designação usado em filtros e ordenação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
@@ -125,6 +127,7 @@ def cessacao(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de cessação com detalhes de cessação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
@@ -148,6 +151,7 @@ def insubsistencia(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de insubsistência com observações.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
@@ -171,6 +175,7 @@ def apostila(db, designacao):
 
     Returns:
         AtoAdministrativo: Ato de apostila com observação.
+
     """
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
@@ -194,6 +199,7 @@ def inativo(db):
 
     Returns:
         AtoAdministrativo: Ato de designação marcado como inativo.
+
     """
     return AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
@@ -240,7 +246,7 @@ class TestPortariaListView:
             "cargo",
             "data_designacao",
             "data_cessacao",
-            "numero_sei",
+            "sei_numero",
             "observacoes",
             "designacao",
             "cessacao",
@@ -303,10 +309,10 @@ class TestPortariaListView:
 
     def test_filtro_numero_sei(self, auth_client, designacao, designacao_2):
         """Verifica filtro numero sei."""
-        response = auth_client.get(URL_LIST, {"numero_sei": "0001234"})
+        response = auth_client.get(URL_LIST, {"sei_numero": "0001234"})
         assert response.status_code == 200
-        assert len(response.data) == 1
-        assert response.data[0]["numero_sei"] == "6018.2024/0001234-5"
+        assert len(response.data) == 2
+        assert response.data[0]["sei_numero"] == "6018.2024/0001234-5"
 
     def test_filtro_portaria_inicial(
         self, auth_client, designacao, designacao_2
@@ -408,8 +414,8 @@ class TestPortariaListView:
         assert tipos == {
             "Designação",
             "Cessação",
-            "Insubsistência",
-            "Apostila",
+            "Insubsistência de Designação",
+            "Apostila de Designação",
         }
 
 
@@ -447,6 +453,10 @@ class TestAtualizarDataPublicacao:
         )
         designacao.refresh_from_db()
         assert designacao.doc == date(2024, 9, 9)
+        assert (
+            designacao.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.PUBLICADO
+        )
 
     def test_nao_atualiza_inativo(self, auth_client, inativo):
         """Verifica que atos inativos não são atualizados."""

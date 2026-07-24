@@ -10,7 +10,8 @@ from django.utils import timezone
 
 class ServidorDesignacaoMixin(models.Model):
     """Campos de indicado e titular compartilhados entre Designacao
-    e DesignacaoDetalhe."""
+    e DesignacaoDetalhe.
+    """
 
     # --- Indicado ---
     indicado_nome_civil = models.CharField(
@@ -66,7 +67,8 @@ class ServidorDesignacaoMixin(models.Model):
 
 class ImpedimentoSubstituicao(models.Model):
     """Representa um impedimento que pode afetar a substituição de
-    atividade."""
+    atividade.
+    """
 
     codigo = models.CharField(max_length=50, unique=True)
     descricao = models.CharField(max_length=255)
@@ -79,13 +81,15 @@ class ImpedimentoSubstituicao(models.Model):
 
         Returns:
             str: Descrição do impedimento.
+
         """
         return self.descricao
 
 
 class Designacao(ServidorDesignacaoMixin):
     """Representa uma designação de servidor com dados de vaga, portaria e
-    período."""
+    período.
+    """
 
     class TipoVaga(models.TextChoices):
         VAGO = "VAGO", "Cargo Vago"
@@ -148,22 +152,29 @@ class Designacao(ServidorDesignacaoMixin):
 
     @classmethod
     def get_cargos_formatados(cls) -> list:
-        """Substitui a constante CARGOS_GESTAO_ESCOLAR"""
+        """Substitui a constante CARGOS_GESTAO_ESCOLAR."""
         return [
             {"codigoCargo": choice.value, "nomeCargo": choice.label}
             for choice in cls.CargoVaga
         ]
 
-    def delete(self, *args, **kwargs) -> None:
+    def delete(
+        self,
+        using: str | None = None,
+        keep_parents: bool = False,
+    ) -> tuple[int, dict[str, int]]:
         """Realiza exclusão lógica da designação.
 
         Marca o registro como removido sem excluí-lo fisicamente do banco,
         registrando a data e hora da exclusão.
 
         Args:
-            *args: Argumentos posicionais adicionais.
-            **kwargs: Argumentos nomeados adicionais.
+            using: Alias da conexão de banco de dados.
+            keep_parents: Mantém os modelos pai na exclusão.
+
         """
         self.is_deleted = True
         self.deleted_at = timezone.now()
-        self.save()
+        self.save(update_fields=["is_deleted", "deleted_at"])
+
+        return (1, {self._meta.label: 1})

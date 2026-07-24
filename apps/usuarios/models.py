@@ -5,6 +5,7 @@ com campos adicionais e comportamento de senha seguro.
 """
 
 import uuid
+from typing import Any
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -21,7 +22,7 @@ class User(AbstractUser):
     cpf = models.CharField(
         "CPF", max_length=11, unique=True, null=True, blank=True
     )
-    email = models.EmailField("E-mail", unique=True, null=True, blank=True)
+    email = models.EmailField("E-mail", unique=True, blank=True)
 
     class Meta:
         verbose_name = "Usuário"
@@ -34,7 +35,7 @@ class User(AbstractUser):
         """
         return self.username or self.email or str(self.uuid)
 
-    def save(self, *args, **kwargs) -> None:
+    def save(self, *args: Any, **kwargs: Any) -> None:
         """Sobrescreve o método save para garantir a criptografia da senha.
 
         Se a senha fornecida não estiver em formato hash suportado, ela é

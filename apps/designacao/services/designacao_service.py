@@ -11,7 +11,7 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc"}
+    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
 )
 
 
@@ -27,6 +27,7 @@ class DesignacaoService:
 
         Returns:
             AtoAdministrativo: Ato administrativo de designação criado.
+
         """
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
@@ -34,6 +35,7 @@ class DesignacaoService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 **data_ato,
             )
             DesignacaoDetalhe.objects.create(ato=ato, **data_detalhe)
@@ -50,6 +52,7 @@ class DesignacaoService:
 
         Returns:
             AtoAdministrativo: Ato administrativo atualizado.
+
         """
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
@@ -87,6 +90,7 @@ class DesignacaoService:
 
         Returns:
             list: Lista de cargos pareados ordenados por nome.
+
         """
         qs1 = (
             queryset.values(codigo=F(cod1), nome=F(nome1))

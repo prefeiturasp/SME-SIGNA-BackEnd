@@ -5,13 +5,11 @@ D.O.
 """
 
 from django.db.models import QuerySet
-
 from django_filters.rest_framework import DjangoFilterBackend
-
-from rest_framework import filters, mixins
+from rest_framework import filters, mixins, viewsets
 from rest_framework import serializers as drf_serializers
-from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import BasePagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -30,7 +28,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
 
     serializer_class = PortariaListSerializer
-    pagination_class = None
+    pagination_class: type[BasePagination] | None = None
 
     filter_backends = [
         DjangoFilterBackend,
@@ -61,18 +59,20 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Returns:
             QuerySet: Atos administrativos com joins necessários para
             exibição de portarias.
+
         """
-        resp=AtoAdministrativo.objects.select_related(
+        resp = AtoAdministrativo.objects.select_related(
             "designacao_detalhe",
             "cessacao_detalhe",
             "insubsistencia_detalhe",
             "apostila_detalhe",
             "ato_pai__designacao_detalhe",
-            "ato_raiz__designacao_detalhe",            
-            "ato_pai__cessacao_detalhe",     
-            "ato_pai__apostila_detalhe",     
+            "ato_raiz__designacao_detalhe",
+            "ato_pai__cessacao_detalhe",
+            "ato_pai__apostila_detalhe",
+            "criado_por",
         ).order_by("numero_portaria")
-        
+
         return resp
 
     @action(
@@ -91,6 +91,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         Raises:
             ValidationError: Se os campos obrigatórios não estiverem
             presentes ou se nenhum ato for encontrado.
+
         """
         ids = request.data.get("ids", [])
         data_publicacao = request.data.get("data_publicacao", "")
@@ -105,7 +106,8 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             )
 
         updated = AtoAdministrativo.objects.filter(pk__in=ids).update(
-            doc=data_publicacao
+            doc=data_publicacao,
+            status_publicacao=AtoAdministrativo.StatusPublicacao.PUBLICADO,
         )
 
         if not updated:

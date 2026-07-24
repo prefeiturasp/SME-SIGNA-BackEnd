@@ -1,3 +1,5 @@
+"""Constantes de cargos da gestão escolar."""
+
 CARGOS_GESTAO_ESCOLAR = [
     {"codigoCargo": 3085, "nomeCargo": "ASSISTENTE DE DIRETOR DE ESCOLA"},
     {"codigoCargo": 3360, "nomeCargo": "DIRETOR DE ESCOLA"},

@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import pytest
-
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory

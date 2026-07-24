@@ -26,6 +26,7 @@ class EnviaEmailService:
 
         Raises:
             ValidationError: Quando destinatário ou assunto não são fornecidos.
+
         """
         if not destinatario:
             raise ValidationError("Destinatário não pode ser vazio.")
@@ -42,6 +43,7 @@ class EnviaEmailService:
 
         Returns:
             str: Corpo do e-mail renderizado em HTML.
+
         """
         return render_to_string(template_html, contexto)
 
@@ -65,8 +67,8 @@ class EnviaEmailService:
             ValidationError: Se destinatário ou assunto estiverem ausentes.
             BadHeaderError: Se o cabeçalho do e-mail estiver inválido.
             RuntimeError: Em caso de erro inesperado no envio.
-        """
 
+        """
         try:
             cls.validar(destinatario, assunto)
 

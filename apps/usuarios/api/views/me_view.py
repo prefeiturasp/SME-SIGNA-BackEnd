@@ -4,6 +4,8 @@ Fornece um endpoint protegido que retorna as informações do perfil do
 usuário atual usando o serializer de usuário.
 """
 
+from typing import Any
+
 from django.contrib.auth import get_user_model
 from rest_framework import permissions, status
 from rest_framework.request import Request
@@ -16,13 +18,11 @@ User = get_user_model()
 
 
 class MeView(APIView):
-    """
-    Retorna os dados do usuário autenticado (requer Bearer access token).
-    """
+    """Retorna os dados do usuário autenticado (requer Bearer access token)."""
 
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request: Request, *args, **kwargs) -> Response:
+    def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Retorna os dados do usuário autenticado.
 
         Serializa o usuário atual e devolve os campos de perfil.

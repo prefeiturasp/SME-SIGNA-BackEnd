@@ -1,3 +1,5 @@
+"""Mapeamento de códigos de DREs para unidades de supervisão escolar."""
+
 SUPERVISAO_ESCOLAR_DRES_MAP = {
     "109100": 109102,
     "108700": 108702,

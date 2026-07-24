@@ -8,6 +8,7 @@ import datetime
 from typing import Any
 
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila import Apostila
@@ -18,7 +19,7 @@ from apps.designacao.models.apostila_detalhe import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import Designacao
 
-_CAMPOS_ATO = frozenset({"sei_numero", "doc"})
+_CAMPOS_ATO = frozenset({"sei_numero", "doc", "criado_por"})
 _CAMPOS_PROTEGIDOS = frozenset(
     {
         "id",
@@ -36,6 +37,43 @@ _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 class ApostilaService:
     """Serviço de negócio para manipular apostilas."""
 
+    # ── Querysets ────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def listar() -> QuerySet:
+        """Retorna queryset de apostilas ativas (modelo legado)."""
+        return (
+            Apostila.objects.filter(is_deleted=False)
+            .select_related("designacao", "cessacao")
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def listar_v2() -> QuerySet:
+        """Retorna queryset de apostilas v2 (AtoAdministrativo)."""
+        return (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.APOSTILA
+            )
+            .select_related(
+                "apostila_detalhe",
+                "ato_pai__designacao_detalhe",
+                "ato_raiz__designacao_detalhe",
+                "ato_pai__cessacao_detalhe",
+            )
+            .prefetch_related(
+                "apostila_detalhe__alteracoes",
+                "filhos",
+                "filhos__insubsistencia_detalhe",
+            )
+            .order_by("-criado_em")
+        )
+
+    @staticmethod
+    def buscar_v2(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma apostila v2 por pk com todos os prefetches."""
+        return ApostilaService.listar_v2().filter(pk=pk).first()
+
     # ── Legado (modelo Apostila) ──────────────────────────────────────────────  # noqa: E501
 
     @staticmethod
@@ -51,6 +89,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se a designação ou cessação não for válida
             ou se já existir uma apostila ativa.
+
         """
         designacao_id = data.pop("designacao")
         ato_apostilado = data.pop("ato_apostilado")
@@ -84,7 +123,10 @@ class ApostilaService:
 
         alvo = alvo_designacao or alvo_cessacao
 
-        if alvo.is_deleted:
+        if alvo is None:
+            raise ValidationError("Ato alvo não encontrado para apostila.")
+
+        if getattr(alvo, "is_deleted", False):
             raise ValidationError("Não é possível apostilar um ato deletado.")
 
         queryset = Apostila.objects.filter(
@@ -108,13 +150,15 @@ class ApostilaService:
                 "Já existe uma apostila válida para este ato."
             )
 
+        from typing import cast
+
         return Apostila.objects.create(
-            tipo=data.get("tipo"),
+            tipo=cast(str, data.get("tipo")),
             designacao=alvo_designacao,
             cessacao=alvo_cessacao,
-            sei_numero=data.get("sei_numero"),
-            observacao=data.get("observacao"),
-            d_o=data.get("d_o", ""),
+            sei_numero=cast(str, data.get("sei_numero")),
+            observacao=cast(str, data.get("observacao")),
+            d_o=cast(str, data.get("d_o", "")),
         )
 
     # ── V2 (modelo AtoAdministrativo) ────────────────────────────────────────
@@ -132,6 +176,7 @@ class ApostilaService:
         Raises:
             ValidationError: Se o ato pai for inválido ou não puder ser
             apostilado.
+
         """
         ato_pai: AtoAdministrativo = data["ato_pai"]
         alteracoes: list = data.get("alteracoes", [])
@@ -167,6 +212,7 @@ class ApostilaService:
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.APOSTILA,
+                status_publicacao=AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
                 ato_pai=ato_pai,
                 **data_ato,
             )
@@ -201,6 +247,7 @@ class ApostilaService:
 
         Raises:
             ValidationError: Se o campo não existir no ato pai ou detalhe.
+
         """
         if hasattr(ato_pai, campo):
             raw = getattr(ato_pai, campo)
@@ -228,6 +275,7 @@ class ApostilaService:
             ato_pai: Ato administrativo original que está sendo apostilado.
             apostila_detalhe: Registro de detalhe da apostila.
             alteracoes: Lista de alterações a serem aplicadas.
+
         """
         detalhe = ApostilaService._get_detalhe(ato_pai)
         buckets: dict[str, dict] = {"ato_pai": {}, "detalhe": {}}
@@ -273,6 +321,7 @@ class ApostilaService:
         Args:
             obj: Objeto Django cujos campos serão atualizados.
             updates: Dicionário campo-valor com as alterações.
+
         """
         for campo, valor in updates.items():
             setattr(obj, campo, valor)
@@ -287,6 +336,7 @@ class ApostilaService:
 
         Returns:
             object | None: O detalhe associado ou None.
+
         """
         if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato_pai, "designacao_detalhe", None)

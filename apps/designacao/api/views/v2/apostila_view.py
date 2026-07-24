@@ -3,8 +3,9 @@
 Fornece endpoints para listagem, recuperação, criação e exclusão de apostilas.
 """
 
-from django.db.models import QuerySet
+from typing import Any
 
+from django.db.models import QuerySet
 from rest_framework import mixins, status, viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
@@ -14,7 +15,6 @@ from apps.designacao.api.serializers.v2.apostila_serializer import (
     ApostilaV2ReadSerializer,
     ApostilaV2WriteSerializer,
 )
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.apostila_service import ApostilaService
 
 
@@ -50,21 +50,11 @@ class ApostilaV2ViewSet(
 
         Returns:
             QuerySet: Apostilas ordenadas por data de criação decrescente.
-        """
-        return (
-            AtoAdministrativo.objects.filter(
-                tipo=AtoAdministrativo.Tipo.APOSTILA
-            )
-            .select_related("apostila_detalhe")
-            .prefetch_related(
-                "apostila_detalhe__alteracoes",
-                "filhos",
-                "filhos__insubsistencia_detalhe",
-            )
-            .order_by("-criado_em")
-        )
 
-    def create(self, request: Request, *args, **kwargs) -> Response:
+        """
+        return ApostilaService.listar_v2()
+
+    def create(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Cria uma nova apostila a partir dos dados enviados na requisição.
 
         Args:
@@ -74,14 +64,15 @@ class ApostilaV2ViewSet(
 
         Returns:
             Response: Resposta HTTP com os dados da apostila criada.
+
         """
         serializer = ApostilaV2WriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data["criado_por"] = request.user
 
         ato = ApostilaService.criar(serializer.validated_data)
 
-        ato_com_prefetch = self.get_queryset().filter(pk=ato.pk).first()
         return Response(
-            ApostilaV2ReadSerializer(ato_com_prefetch).data,
+            ApostilaV2ReadSerializer(ApostilaService.buscar_v2(ato.pk)).data,
             status=status.HTTP_201_CREATED,
         )
