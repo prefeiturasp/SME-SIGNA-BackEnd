@@ -238,9 +238,9 @@ class TestPortariaListView:
         item = response.data[0]
         assert set(item.keys()) == {
             "id",
-            "portaria",
+            "numero_portaria",
             "doc",
-            "ano",
+            "ano_vigente",
             "tipo_de_ato",
             "nome",
             "cargo",
@@ -260,7 +260,7 @@ class TestPortariaListView:
     ):
         """Verifica ordenacao padrao por numero portaria."""
         response = auth_client.get(URL_LIST)
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert portarias == sorted(portarias)
 
     def test_sem_paginacao(self, auth_client, designacao, designacao_2):
@@ -320,7 +320,7 @@ class TestPortariaListView:
         """Verifica filtro portaria inicial."""
         response = auth_client.get(URL_LIST, {"portaria_inicial": "002/2024"})
         assert response.status_code == 200
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert all(p >= "002/2024" for p in portarias)
 
     def test_filtro_portaria_final(
@@ -329,7 +329,7 @@ class TestPortariaListView:
         """Verifica filtro portaria final."""
         response = auth_client.get(URL_LIST, {"portaria_final": "001/2024"})
         assert response.status_code == 200
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert all(p <= "001/2024" for p in portarias)
 
     def test_filtro_nome(self, auth_client, designacao, designacao_2):
@@ -367,7 +367,7 @@ class TestPortariaListView:
         response = auth_client.get(URL_LIST, {"search": "001/2024"})
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["portaria"] == "001/2024"
+        assert response.data[0]["numero_portaria"] == "001/2024"
 
     def test_search_por_sei(self, auth_client, designacao, designacao_2):
         """Verifica search por sei."""
@@ -391,7 +391,7 @@ class TestPortariaListView:
     ):
         """Verifica ordering por numero portaria asc."""
         response = auth_client.get(URL_LIST, {"ordering": "numero_portaria"})
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert portarias == sorted(portarias)
 
     def test_ordering_por_numero_portaria_desc(
@@ -399,7 +399,7 @@ class TestPortariaListView:
     ):
         """Verifica ordering por numero portaria desc."""
         response = auth_client.get(URL_LIST, {"ordering": "-numero_portaria"})
-        portarias = [item["portaria"] for item in response.data]
+        portarias = [item["numero_portaria"] for item in response.data]
         assert portarias == sorted(portarias, reverse=True)
 
     # ── Todos os tipos retornados ─────────────────────────────────────────────
