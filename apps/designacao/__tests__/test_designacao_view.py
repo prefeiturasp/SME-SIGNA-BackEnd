@@ -186,12 +186,12 @@ def test_cargos_sobrepostos_pareados_endpoint(auth_client):
 
 @pytest.mark.django_db
 def test_buscar_por_portaria_encontra_designacao(auth_client):
-    """Verifica que a busca por portaria encontra a designação correta."""
-    criar_ato_designacao(numero_portaria="321", ano_vigente="2025")
+    """Verifica que a busca por portaria e ano encontra a designação certa."""
+    criar_ato_designacao(numero_portaria="999", ano_vigente="2024")
     ato = criar_ato_designacao(numero_portaria="999", ano_vigente="2025")
 
     url = reverse("designacao:designacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "999"})
+    response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
 
     assert response.status_code == 200
     assert response.data["id"] == ato.id
@@ -202,15 +202,37 @@ def test_buscar_por_portaria_encontra_designacao(auth_client):
 def test_buscar_por_portaria_designacao_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma designação."""
     url = reverse("designacao:designacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente"})
+    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
 
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
-def test_buscar_por_portaria_designacao_sem_parametro(auth_client):
+def test_buscar_por_portaria_designacao_ano_diferente_nao_encontrada(
+    auth_client,
+):
+    """Verifica 404 quando a portaria existe mas em outro ano."""
+    criar_ato_designacao(numero_portaria="999", ano_vigente="2024")
+
+    url = reverse("designacao:designacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_designacao_sem_parametro_portaria(auth_client):
     """Verifica 400 quando o parâmetro portaria não é informado."""
     url = reverse("designacao:designacao-buscar-por-portaria")
-    response = auth_client.get(url)
+    response = auth_client.get(url, {"ano": "2025"})
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_designacao_sem_parametro_ano(auth_client):
+    """Verifica 400 quando o parâmetro ano não é informado."""
+    url = reverse("designacao:designacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "999"})
 
     assert response.status_code == 400

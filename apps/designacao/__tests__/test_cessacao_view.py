@@ -145,14 +145,14 @@ def test_destroy_cessacao(auth_client):
 
 @pytest.mark.django_db
 def test_buscar_por_portaria_encontra_cessacao(auth_client):
-    """Verifica que a busca por portaria encontra a cessação e o ato pai."""
+    """Verifica que a busca por portaria e ano encontra a cessação e o ato pai."""  # noqa: E501
     designacao = criar_ato_designacao()
     cessacao = criar_ato_cessacao(
         designacao, numero_portaria="777", ano_vigente="2025"
     )
 
     url = reverse("designacao:cessacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "777"})
+    response = auth_client.get(url, {"portaria": "777", "ano": "2025"})
 
     assert response.status_code == 200
     assert response.data["id"] == cessacao.id
@@ -172,7 +172,7 @@ def test_buscar_por_portaria_cessacao_retorna_apostilas_ativas(auth_client):
     apostila_anulada.save(update_fields=["ativo"])
 
     url = reverse("designacao:cessacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "778"})
+    response = auth_client.get(url, {"portaria": "778", "ano": "2025"})
 
     assert response.status_code == 200
     ids_retornados = {a["id"] for a in response.data["apostilas"]}
@@ -183,15 +183,38 @@ def test_buscar_por_portaria_cessacao_retorna_apostilas_ativas(auth_client):
 def test_buscar_por_portaria_cessacao_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma cessação."""
     url = reverse("designacao:cessacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente"})
+    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
 
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
-def test_buscar_por_portaria_cessacao_sem_parametro(auth_client):
+def test_buscar_por_portaria_cessacao_ano_diferente_nao_encontrada(
+    auth_client,
+):
+    """Verifica 404 quando a portaria existe mas em outro ano."""
+    designacao = criar_ato_designacao()
+    criar_ato_cessacao(designacao, numero_portaria="777", ano_vigente="2024")
+
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "777", "ano": "2025"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_cessacao_sem_parametro_portaria(auth_client):
     """Verifica 400 quando o parâmetro portaria não é informado."""
     url = reverse("designacao:cessacao-buscar-por-portaria")
-    response = auth_client.get(url)
+    response = auth_client.get(url, {"ano": "2025"})
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_cessacao_sem_parametro_ano(auth_client):
+    """Verifica 400 quando o parâmetro ano não é informado."""
+    url = reverse("designacao:cessacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "777"})
 
     assert response.status_code == 400
