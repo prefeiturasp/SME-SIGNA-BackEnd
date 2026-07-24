@@ -6,7 +6,14 @@ disponíveis.
 
 import logging
 
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -25,6 +32,31 @@ class DesignacaoUnidadeView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="codigo_ue",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Código EOL da unidade escolar.",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Dados escolares da unidade (integração SME).",
+            ),
+            400: inline_serializer(
+                "DesignacaoUnidadeErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "DesignacaoUnidadeErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def get(self, request: Request) -> Response:
         """Recupera informações escolares da unidade especificada.
 
@@ -67,6 +99,18 @@ class DesignacaoUnidadeCargosView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Lista de cargos de vaga disponíveis.",
+            ),
+            500: inline_serializer(
+                "DesignacaoUnidadeCargosErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def get(self, request: Request) -> Response:
         """Retorna a lista de cargos de vaga disponíveis.
 

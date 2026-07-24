@@ -21,6 +21,7 @@ class MeView(APIView):
     """Retorna os dados do usuário autenticado (requer Bearer access token)."""
 
     permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = UserMeSerializer
 
     def get(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Retorna os dados do usuário autenticado.
