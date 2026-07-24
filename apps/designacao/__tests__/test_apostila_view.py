@@ -120,8 +120,8 @@ def test_create_apostila_ato_pai_invalido(auth_client):
 
 
 @pytest.mark.django_db
-def test_create_apostila_segunda_apostila_nao_permitida(auth_client):
-    """Verifica create apostila segunda apostila nao permitida."""
+def test_create_apostila_segunda_apostila_permitida(auth_client):
+    """Verifica create apostila segunda apostila permitida."""
     designacao = criar_ato_designacao()
     criar_ato_apostila(designacao)
 
