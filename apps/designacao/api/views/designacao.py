@@ -21,6 +21,7 @@ from apps.designacao.api.serializers.designacao_serializer import (
 from apps.designacao.api.views.designacao_base import (
     DesignacaoBasePagination,
     DesignacaoPaginacaoMixin,
+    buscar_ato_por_portaria_ano,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.designacao_service import DesignacaoService
@@ -196,32 +197,11 @@ class DesignacaoViewSet(  # type: ignore[misc]
             Response: Designação encontrada ou erro 404/400.
 
         """
-        portaria = (request.query_params.get("portaria") or "").strip()
-        if not portaria:
-            return Response(
-                {"detail": "Parâmetro 'portaria' é obrigatório."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ano = (request.query_params.get("ano") or "").strip()
-        if not ano:
-            return Response(
-                {"detail": "Parâmetro 'ano' é obrigatório."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ato = (
-            self.get_queryset()
-            .filter(numero_portaria=portaria, ano_vigente=ano)
-            .first()
+        ato, erro = buscar_ato_por_portaria_ano(
+            request, self.get_queryset(), entidade="Designação"
         )
-        if ato is None:
-            return Response(
-                {
-                    "detail": "Designação não encontrada para essa portaria e ano."  # noqa: E501
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        if erro is not None:
+            return erro
 
         return Response(DesignacaoReadSerializer(ato).data)
 
