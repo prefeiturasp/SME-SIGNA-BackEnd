@@ -102,10 +102,11 @@ class InsubsistenciaViewSet(
 
     @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
     def buscar_por_portaria(self, request: Request) -> Response:
-        """Busca uma insubsistência pelo número da portaria.
+        """Busca uma insubsistência pelo número da portaria e ano.
 
         Args:
-            request: Requisição HTTP contendo o parâmetro `portaria`.
+            request: Requisição HTTP contendo os parâmetros `portaria` e
+            `ano`.
 
         Returns:
             Response: Insubsistência encontrada ou erro 404/400.
@@ -118,9 +119,20 @@ class InsubsistenciaViewSet(
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        ato = self.get_queryset().filter(numero_portaria=portaria).first()
+        ano = (request.query_params.get("ano") or "").strip()
+        if not ano:
+            return Response(
+                {"detail": "Parâmetro 'ano' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ato = (
+            self.get_queryset()
+            .filter(numero_portaria=portaria, ano_vigente=ano)
+            .first()
+        )
         if ato is None:
-            detail = "Insubsistência não encontrada para essa portaria."
+            detail = "Insubsistência não encontrada para essa portaria e ano."
             return Response(
                 {"detail": detail},
                 status=status.HTTP_404_NOT_FOUND,
