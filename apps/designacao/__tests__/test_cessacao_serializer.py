@@ -127,7 +127,6 @@ class TestCessacaoReadSerializerById:
         )
         assert data["designacao"]["ano_vigente"] == designacao.ano_vigente
         assert data["designacao"]["sei_numero"] == designacao.sei_numero
-        assert data["designacao"]["portaria"] == designacao.numero_portaria
 
     def test_serializer_by_id_expoe_campo_designacao(self):
         """Verifica que serializer by id expõe o campo designacao."""

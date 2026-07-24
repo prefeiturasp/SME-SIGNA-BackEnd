@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.http import Http404
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -156,6 +157,20 @@ class TestValidarAlteracaoEmailViewSet:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Token expirado." in response.data["detail"]
+
+    def test_update_token_inexistente(self, api_client, user):
+        api_client.force_authenticate(user=user)
+        pk = "token-inexistente"
+
+        with patch.object(
+            AlteracaoEmailService,
+            "validar",
+            side_effect=Http404(),
+        ):
+            response = api_client.put(f"{self.endpoint}{pk}/")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "Token não encontrado."
 
     def test_update_erro_inesperado(self, api_client, user):
         api_client.force_authenticate(user=user)

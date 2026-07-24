@@ -9,6 +9,7 @@ serviço SME.
 import logging
 
 from django.db import transaction
+from django.http import Http404
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -104,7 +105,8 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
         Returns:
             rest_framework.response.Response: Uma resposta com status 200 se o
                 e-mail foi alterado com sucesso, 400 em caso de erro de
-                validação ou integração, ou 500 para erros inesperados.
+                validação ou integração, 404 se o token não existir, ou 500
+                para erros inesperados.
 
         """
         if pk is None:
@@ -135,6 +137,12 @@ class ValidarAlteracaoEmailViewSet(viewsets.ViewSet):
                     },
                     status=status.HTTP_200_OK,
                 )
+
+        except Http404:
+            return Response(
+                {"detail": "Token não encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         except TokenJaUtilizadoError as e:
             return Response(
