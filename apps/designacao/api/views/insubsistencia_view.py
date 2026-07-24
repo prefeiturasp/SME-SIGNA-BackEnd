@@ -17,6 +17,9 @@ from apps.designacao.api.serializers.insubsistencia_serializer import (
     InsubsistenciaReadSerializer,
     InsubsistenciaWriteSerializer,
 )
+from apps.designacao.api.views.designacao_base import (
+    buscar_ato_por_portaria_ano,
+)
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
@@ -102,28 +105,20 @@ class InsubsistenciaViewSet(
 
     @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
     def buscar_por_portaria(self, request: Request) -> Response:
-        """Busca uma insubsistência pelo número da portaria.
+        """Busca uma insubsistência pelo número da portaria e ano.
 
         Args:
-            request: Requisição HTTP contendo o parâmetro `portaria`.
+            request: Requisição HTTP contendo os parâmetros `portaria` e
+            `ano`.
 
         Returns:
             Response: Insubsistência encontrada ou erro 404/400.
 
         """
-        portaria = (request.query_params.get("portaria") or "").strip()
-        if not portaria:
-            return Response(
-                {"detail": "Parâmetro 'portaria' é obrigatório."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ato = self.get_queryset().filter(numero_portaria=portaria).first()
-        if ato is None:
-            detail = "Insubsistência não encontrada para essa portaria."
-            return Response(
-                {"detail": detail},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        ato, erro = buscar_ato_por_portaria_ano(
+            request, self.get_queryset(), entidade="Insubsistência"
+        )
+        if erro is not None:
+            return erro
 
         return Response(InsubsistenciaReadSerializer(ato).data)

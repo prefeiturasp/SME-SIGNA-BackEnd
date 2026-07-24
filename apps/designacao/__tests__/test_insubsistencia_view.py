@@ -224,7 +224,7 @@ def test_retrieve_insubsistencia_apostila_exibe_texto(auth_client):
 
 @pytest.mark.django_db
 def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
-    """Verifica que a busca por portaria encontra a insubsistência."""
+    """Verifica que a busca por portaria e ano encontra a insubsistência."""
     d = criar_ato_designacao()
     cessacao = criar_ato_cessacao(d)
     insub = criar_ato_insubsistencia(
@@ -232,7 +232,7 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
     )
 
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "654"})
+    response = auth_client.get(url, {"portaria": "654", "ano": "2025"})
 
     assert response.status_code == 200
     assert response.data["id"] == insub.id
@@ -243,15 +243,43 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
 def test_buscar_por_portaria_insubsistencia_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma insubsistência."""  # noqa: E501
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente"})
+    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
 
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
-def test_buscar_por_portaria_insubsistencia_sem_parametro(auth_client):
+def test_buscar_por_portaria_insubsistencia_ano_diferente_nao_encontrada(
+    auth_client,
+):
+    """Verifica 404 quando a portaria existe mas em outro ano."""
+    d = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(d)
+    criar_ato_insubsistencia(
+        cessacao, numero_portaria="654", ano_vigente="2024"
+    )
+
+    url = reverse("designacao:insubsistencia-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "654", "ano": "2025"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_insubsistencia_sem_parametro_portaria(
+    auth_client,
+):
     """Verifica 400 quando o parâmetro portaria não é informado."""
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
-    response = auth_client.get(url)
+    response = auth_client.get(url, {"ano": "2025"})
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_insubsistencia_sem_parametro_ano(auth_client):
+    """Verifica 400 quando o parâmetro ano não é informado."""
+    url = reverse("designacao:insubsistencia-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "654"})
 
     assert response.status_code == 400
