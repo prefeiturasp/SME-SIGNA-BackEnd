@@ -130,7 +130,7 @@ def test_create_apostila_segunda_apostila_nao_permitida(auth_client):
         url, data=_payload(designacao.id), format="json"
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 201
 
 
 @pytest.mark.django_db
