@@ -287,7 +287,7 @@ class TestPortariaListSerializer:
             "criado_em",
             "criado_por_nome",
             "observacoes",
-            "portaria",
+            "numero_portaria",
             "ano_vigente",
             "nome",
             "rf",
@@ -302,7 +302,7 @@ class TestPortariaListSerializer:
 
     def test_portaria(self, designacao):
         """Verifica portaria."""
-        assert serialize(designacao)["portaria"] == "001/2024"
+        assert serialize(designacao)["numero_portaria"] == "001/2024"
 
     def test_status_nao_publicado(self, designacao):
         """Verifica status_publicacao  não publicado."""
