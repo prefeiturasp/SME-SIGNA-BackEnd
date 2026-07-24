@@ -7,7 +7,14 @@ ou UEs de uma DRE específica, sem usar banco de dados local.
 import logging
 from typing import Any
 
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -30,6 +37,48 @@ class UnidadeViewSet(ViewSet):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="tipo",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                enum=["DRE", "UE"],
+                description="Tipo de unidade a listar.",
+            ),
+            OpenApiParameter(
+                name="dre",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Código EOL da DRE (obrigatório quando tipo=UE).",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Lista de DREs ou de unidades escolares "
+                "(integração SME).",
+            ),
+            400: inline_serializer(
+                "UnidadeErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            401: inline_serializer(
+                "UnidadeNaoAutorizadoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            404: inline_serializer(
+                "UnidadeNaoEncontradaResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "UnidadeErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def list(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Lista DREs ou UEs conforme os parâmetros da requisição.
 
