@@ -6,7 +6,13 @@ servidor.
 
 import logging
 
-from rest_framework import permissions, status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -28,6 +34,24 @@ class DesignacaoServidorView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=DesignacaoServidorRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Dados de designação do servidor "
+                "(integração SME).",
+            ),
+            400: inline_serializer(
+                "DesignacaoServidorErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "DesignacaoServidorErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def post(self, request: Request) -> Response:
         """Processa requisição para buscar designação do servidor.
 

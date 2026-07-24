@@ -1,6 +1,4 @@
-"""Testes para serviço de designação por unidade.
-
-"""
+"""Testes para serviço de designação por unidade."""
 
 from datetime import datetime
 from unittest.mock import Mock, patch

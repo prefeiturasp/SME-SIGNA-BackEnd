@@ -37,7 +37,7 @@ def serialize(ato):
 
 
 DADOS_CESSACAO = {
-    "portaria": "002/2024",
+    "numero_portaria": "002/2024",
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0002345-6",
     "doc": date(2024, 10, 24),
@@ -48,7 +48,7 @@ DADOS_CESSACAO = {
 }
 
 DADOS_DESIGNACAO = {
-    "portaria": "001/2024",
+    "numero_portaria": "001/2024",
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0001234-5",
     "doc": date(2024, 10, 23),
@@ -76,6 +76,7 @@ DADOS_DESIGNACAO = {
     "com_afastamento": False,
     "motivo_afastamento": "",
     "pendencias": "",
+    "unidade_proponente": "EMEF TESTE 1",
 }
 
 
@@ -288,9 +289,9 @@ class TestPortariaListSerializer:
         data = serialize(designacao)
         assert set(data.keys()) == {
             "id",
-            "portaria",
+            "numero_portaria",
             "doc",
-            "ano",
+            "ano_vigente",
             "tipo_de_ato",
             "nome",
             "cargo",
@@ -323,7 +324,7 @@ class TestPortariaListSerializer:
 
     def test_portaria(self, designacao):
         """Verifica portaria."""
-        assert serialize(designacao)["portaria"] == "001/2024"
+        assert serialize(designacao)["numero_portaria"] == "001/2024"
 
     def test_doc(self, designacao):
         """Verifica data DO."""

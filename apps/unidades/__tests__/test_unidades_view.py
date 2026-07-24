@@ -1,3 +1,5 @@
+"""Testes do UnidadeViewSet."""
+
 from unittest.mock import patch
 
 import pytest
@@ -9,21 +11,21 @@ from apps.unidades.api.views.unidades_viewset import UnidadeViewSet
 
 
 class TestUnidadeViewSet:
-    """Testes para o UnidadeViewSet"""
+    """Testes para o UnidadeViewSet."""
 
     @pytest.fixture
     def factory(self):
-        """Fixture para criar requests de teste"""
+        """Fixture para criar requests de teste."""
         return APIRequestFactory()
 
     @pytest.fixture
     def viewset(self):
-        """Fixture para instanciar o ViewSet"""
+        """Fixture para instanciar o ViewSet."""
         return UnidadeViewSet()
 
     @pytest.fixture
     def mock_dres(self):
-        """Fixture com dados mockados de DREs"""
+        """Fixture com dados mockados de DREs."""
         return [
             {
                 "codigo_dre": "108200",
@@ -39,7 +41,7 @@ class TestUnidadeViewSet:
 
     @pytest.fixture
     def mock_ues(self):
-        """Fixture com dados mockados de UEs"""
+        """Fixture com dados mockados de UEs."""
         return [
             {
                 "codigo_eol": "019456",
@@ -58,7 +60,7 @@ class TestUnidadeViewSet:
     def _create_request(
         self, factory, method="get", path="/api/unidades/", data=None
     ):
-        """Helper para criar uma Request DRF válida"""
+        """Cria uma Request DRF válida para uso nos testes."""
         if method == "get":
             wsgi_request = factory.get(path, data or {})
         else:
@@ -73,7 +75,7 @@ class TestUnidadeViewSet:
     def test_listar_dres_sucesso(
         self, mock_get_dres, factory, viewset, mock_dres
     ):
-        """Testa listagem de DREs com sucesso"""
+        """Testa listagem de DREs com sucesso."""
         mock_get_dres.return_value = mock_dres
 
         request = self._create_request(factory, data={"tipo": "DRE"})
@@ -88,7 +90,7 @@ class TestUnidadeViewSet:
         "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
     )
     def test_listar_dres_vazio(self, mock_get_dres, factory, viewset):
-        """Testa listagem de DREs quando não há resultados"""
+        """Testa listagem de DREs quando não há resultados."""
         mock_get_dres.return_value = []
 
         request = self._create_request(factory, data={"tipo": "DRE"})
@@ -101,7 +103,7 @@ class TestUnidadeViewSet:
         "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
     )
     def test_listar_dres_erro_permissao(self, mock_get_dres, factory, viewset):
-        """Testa erro de permissão ao listar DREs"""
+        """Testa erro de permissão ao listar DREs."""
         mock_get_dres.side_effect = PermissionError(
             "Token inválido ou expirado"
         )
@@ -117,7 +119,7 @@ class TestUnidadeViewSet:
         "apps.unidades.api.views.unidades_viewset.DREIntegracaoService.get_dres"
     )
     def test_listar_dres_erro_generico(self, mock_get_dres, factory, viewset):
-        """Testa erro genérico ao listar DREs"""
+        """Testa erro genérico ao listar DREs."""
         mock_get_dres.side_effect = Exception("Erro de conexão")
 
         request = self._create_request(factory, data={"tipo": "DRE"})
@@ -138,7 +140,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_sucesso(
         self, mock_get_ues, mock_get_supervisao, factory, viewset, mock_ues
     ):
-        """Testa listagem de UEs com sucesso"""
+        """Testa listagem de UEs com sucesso."""
         unidade_supervisao = {
             "codigoEscola": 108202,
             "nomeEscola": "SUPERVISAO DRE BUTANTA",
@@ -174,7 +176,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_sem_codigo_dre(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa listagem de UEs sem informar código da DRE"""
+        """Testa listagem de UEs sem informar código da DRE."""
         request = self._create_request(factory, data={"tipo": "UE"})
         response = viewset.list(request)
 
@@ -193,7 +195,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_codigo_dre_vazio(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa listagem de UEs com código da DRE vazio"""
+        """Testa listagem de UEs com código da DRE vazio."""
         request = self._create_request(factory, data={"tipo": "UE", "dre": ""})
         response = viewset.list(request)
 
@@ -211,7 +213,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_valor_invalido(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa listagem de UEs com código da DRE inválido"""
+        """Testa listagem de UEs com código da DRE inválido."""
         mock_get_ues.side_effect = ValueError(
             "Código da DRE deve ser numérico"
         )
@@ -236,7 +238,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_dre_nao_encontrada(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa listagem de UEs quando DRE não existe"""
+        """Testa listagem de UEs quando DRE não existe."""
         mock_get_ues.side_effect = LookupError("DRE não encontrada")
         mock_get_supervisao.return_value = None
 
@@ -259,7 +261,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_erro_permissao(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa erro de permissão ao listar UEs"""
+        """Testa erro de permissão ao listar UEs."""
         mock_get_ues.side_effect = PermissionError("Token inválido")
         mock_get_supervisao.return_value = None
 
@@ -281,7 +283,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_erro_generico(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa erro genérico ao listar UEs"""
+        """Testa erro genérico ao listar UEs."""
         mock_get_ues.side_effect = Exception("Erro de conexão")
         mock_get_supervisao.return_value = None
 
@@ -304,7 +306,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_vazio(
         self, mock_get_ues, mock_get_supervisao, factory, viewset
     ):
-        """Testa listagem de UEs quando não há resultados"""
+        """Testa listagem de UEs quando não há resultados."""
         unidade_supervisao = {
             "codigoEscola": 108202,
             "nomeEscola": "SUPERVISAO DRE BUTANTA",
@@ -337,7 +339,7 @@ class TestUnidadeViewSet:
     def test_listar_ues_sucesso_quando_supervisao_falha(
         self, mock_get_ues, mock_get_supervisao, factory, viewset, mock_ues
     ):
-        """Testa que a listagem de UEs continua mesmo com erro na unidade de supervisão"""
+        """Testa que a listagem de UEs continua mesmo com erro na unidade de supervisão."""
         mock_get_ues.return_value = mock_ues
         mock_get_supervisao.side_effect = Exception("Erro supervisão")
 
@@ -354,7 +356,7 @@ class TestUnidadeViewSet:
     # ==================== TESTES DE VALIDAÇÃO DE PARÂMETROS ====================
 
     def test_sem_parametro_tipo(self, factory, viewset):
-        """Testa requisição sem parâmetro 'tipo'"""
+        """Testa requisição sem parâmetro 'tipo'."""
         request = self._create_request(factory)
         response = viewset.list(request)
 
@@ -363,7 +365,7 @@ class TestUnidadeViewSet:
         assert "necessário informar o parâmetro" in response.data["detail"]
 
     def test_parametro_tipo_invalido(self, factory, viewset):
-        """Testa requisição com parâmetro 'tipo' inválido"""
+        """Testa requisição com parâmetro 'tipo' inválido."""
         request = self._create_request(factory, data={"tipo": "INVALIDO"})
         response = viewset.list(request)
 
@@ -374,7 +376,7 @@ class TestUnidadeViewSet:
         assert "UE" in response.data["detail"]
 
     def test_parametro_tipo_case_sensitive(self, factory, viewset):
-        """Testa que o parâmetro 'tipo' é case-sensitive"""
+        """Testa que o parâmetro 'tipo' é case-sensitive."""
         request = self._create_request(factory, data={"tipo": "dre"})
         response = viewset.list(request)
 
@@ -384,7 +386,7 @@ class TestUnidadeViewSet:
     # ==================== TESTES DE PERMISSÕES ====================
 
     def test_permission_classes(self, viewset):
-        """Testa que o ViewSet permite acesso público"""
+        """Testa que o ViewSet permite acesso público."""
         from rest_framework.permissions import AllowAny
 
         assert viewset.permission_classes == [AllowAny]
@@ -398,7 +400,7 @@ class TestUnidadeViewSet:
     def test_logging_sucesso_dres(
         self, mock_get_dres, mock_logger, factory, viewset, mock_dres
     ):
-        """Testa logging em caso de sucesso ao listar DREs"""
+        """Testa logging em caso de sucesso ao listar DREs."""
         mock_get_dres.return_value = mock_dres
 
         request = self._create_request(factory, data={"tipo": "DRE"})
@@ -414,7 +416,7 @@ class TestUnidadeViewSet:
     def test_logging_erro_dres(
         self, mock_get_dres, mock_logger, factory, viewset
     ):
-        """Testa logging em caso de erro ao listar DREs"""
+        """Testa logging em caso de erro ao listar DREs."""
         mock_get_dres.side_effect = Exception("Erro de teste")
 
         request = self._create_request(factory, data={"tipo": "DRE"})
@@ -425,7 +427,7 @@ class TestUnidadeViewSet:
 
     @patch("apps.unidades.api.views.unidades_viewset.logger")
     def test_logging_parametro_invalido(self, mock_logger, factory, viewset):
-        """Testa logging quando parâmetro é inválido"""
+        """Testa logging quando parâmetro é inválido."""
         request = self._create_request(factory, data={"tipo": "INVALIDO"})
         viewset.list(request)
 

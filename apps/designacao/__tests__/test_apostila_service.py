@@ -1,6 +1,4 @@
-"""Testes para serviço de apostila.
-
-"""
+"""Testes para serviço de apostila."""
 
 import datetime
 
@@ -53,14 +51,15 @@ class TestApostilaService:
         assert ato.pk is not None
         assert ato.ato_pai_id == c.pk
 
-    # ── Cenário 2: múltiplas apostilas permitidas ─────────────────────────────
+    # ── Cenário 2: validação de apostila existente ─────────────────────────────
 
-    def test_permite_criar_segunda_apostila_sem_anular_primeira(self):
-        """Verifica permite criar segunda apostila sem anular primeira."""
+    def test_erro_ao_criar_apostila_quando_ja_existe_apostila_valida(self):
+        """Verifica erro ao criar apostila quando já existe apostila válida."""
         d = criar_ato_designacao()
         criar_ato_apostila(d)
-        ato2 = ApostilaService.criar(self._data(d))
-        assert ato2.pk is not None
+        data = self._data(d)
+        with pytest.raises(ValidationError, match="já foi apostilado"):
+            ApostilaService.criar(data)
 
     def test_permite_criar_apostila_apos_insubsistencia_da_anterior(self):
         """Verifica permite criar apostila apos insubsistencia da anterior."""

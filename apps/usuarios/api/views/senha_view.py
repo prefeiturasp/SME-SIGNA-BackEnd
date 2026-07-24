@@ -5,10 +5,16 @@ redefinir senha via UID/token e alterar senha de usuário autenticado.
 """
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 import environ
-from rest_framework import permissions, status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import permissions, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -49,6 +55,23 @@ class EsqueciMinhaSenhaViewSet(APIView):
     MENSAGEM_USUARIO_NAO_ENCONTRADO = "Usuário não encontrado"
     MENSAGEM_ERRO_INTERNO = "Erro interno no servidor."
 
+    @extend_schema(
+        request=EsqueciMinhaSenhaSerializer,
+        responses={
+            200: inline_serializer(
+                "EsqueciMinhaSenhaResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            400: inline_serializer(
+                "EsqueciMinhaSenhaErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "EsqueciMinhaSenhaErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def post(self, request: Request) -> Response:
         """Inicia o fluxo de recuperação de senha.
 
@@ -211,6 +234,26 @@ class RedefinirSenhaViewSet(APIView):
     STATUS_ERROR = "error"
     STATUS_SUCCESS = "success"
 
+    @extend_schema(
+        request=RedefinirSenhaSerializer,
+        responses={
+            200: inline_serializer(
+                "RedefinirSenhaResponse",
+                fields={
+                    "status": serializers.CharField(),
+                    "detail": serializers.CharField(),
+                },
+            ),
+            400: inline_serializer(
+                "RedefinirSenhaErroResponse",
+                fields={
+                    "status": serializers.CharField(),
+                    "detail": serializers.CharField(),
+                    "errors": serializers.DictField(required=False),
+                },
+            ),
+        },
+    )
     def post(self, request: Request, *args: Any, **kwargs: Any) -> Response:
         """Processa a redefinição de senha usando UID e token.
 
@@ -295,11 +338,39 @@ class AtualizarSenhaViewSet(APIView):
     MENSAGEM_SUCESSO = "Senha alterada com sucesso."
     MENSAGEM_ERRO_INTERNO = "Erro interno do servidor."
 
+    @extend_schema(
+        request=AtualizarSenhaSerializer,
+        responses={
+            200: inline_serializer(
+                "AtualizarSenhaResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Erros de validação por campo.",
+            ),
+            401: inline_serializer(
+                "AtualizarSenhaNaoAutenticadoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "AtualizarSenhaErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
     def post(self, request: Request) -> Response:
         """Processa a alteração de senha do usuário autenticado.
 
         Valida a senha atual e atualiza a senha na SME e no banco local.
         """
+        if not isinstance(request.user, User):
+            return Response(
+                {"detail": "Usuário não autenticado."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        user = request.user
+
         serializer = AtualizarSenhaSerializer(
             data=request.data, context={"request": request}
         )
@@ -310,7 +381,6 @@ class AtualizarSenhaViewSet(APIView):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user = cast(User, request.user)
         nova_senha = serializer.validated_data["nova_senha"]
 
         try:

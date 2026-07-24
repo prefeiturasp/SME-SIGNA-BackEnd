@@ -5,6 +5,7 @@ consulta de cargos, turmas e outras informações relacionadas ao SME.
 """
 
 import logging
+from typing import Any
 
 import environ
 import requests
@@ -194,7 +195,7 @@ class SmeIntegracaoService:
             senha: Nova senha
 
         Returns:
-            Dict[str, Any]: Resposta da API ou confirmação de sucesso
+            str: "OK" em caso de sucesso.
 
         Raises:
             SmeIntegracaoError: Em caso de erro na operação
@@ -240,7 +241,7 @@ class SmeIntegracaoService:
             email: Novo Email
 
         Returns:
-            Dict[str, Any]: Resposta da API ou confirmação de sucesso
+            str: "OK" em caso de sucesso.
 
         Raises:
             SmeIntegracaoError: Em caso de erro na operação
@@ -388,7 +389,9 @@ class SmeIntegracaoService:
         return f"{sigla.upper()} - {nome_ue}"
 
     @classmethod
-    def buscar_funcionarios_escolares(cls, codigo_ue: str) -> list:
+    def buscar_funcionarios_escolares(
+        cls, codigo_ue: str
+    ) -> list[dict[str, Any]]:
         """Busca servidores de gestão escolar para uma UE.
 
         Args:
@@ -485,7 +488,9 @@ class SmeIntegracaoService:
         return funcionarios
 
     @classmethod
-    def buscar_turmas_ue_ano(cls, codigo_ue: str, ano_letivo: int) -> list:
+    def buscar_turmas_ue_ano(
+        cls, codigo_ue: str, ano_letivo: int
+    ) -> list[dict[str, Any]]:
         """Busca todas as turmas de uma UE em um ano letivo.
 
         Args:
@@ -529,11 +534,11 @@ class SmeIntegracaoService:
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
-    def buscar_dados_turma(cls, codigo_turma: int) -> dict:
+    def buscar_dados_turma(cls, codigo_turma: int | str) -> dict[str, Any]:
         """Busca dados detalhados de uma turma.
 
         Args:
-            codigo_turma (int): Identificador da turma.
+            codigo_turma (int | str): Identificador da turma.
 
         Returns:
             dict: Dados detalhados da turma.
@@ -571,7 +576,7 @@ class SmeIntegracaoService:
     def consulta_informacoes_unidades_escolares(
         cls,
         codigo_ue: str,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Consulta informações de uma unidade escolar na SME.
 
         Args:
@@ -621,11 +626,13 @@ class SmeIntegracaoService:
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
     @classmethod
-    def buscar_disciplinas_turma(cls, codigo_turma: int) -> list:
+    def buscar_disciplinas_turma(
+        cls, codigo_turma: int | str
+    ) -> list[dict[str, Any]]:
         """Busca disciplinas vinculadas a uma turma.
 
         Args:
-            codigo_turma (int): Identificador da turma.
+            codigo_turma (int | str): Identificador da turma.
 
         Returns:
             list: Lista de disciplinas vinculadas.

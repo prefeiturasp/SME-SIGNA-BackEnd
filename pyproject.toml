@@ -67,9 +67,12 @@ exclude_lines = [
 directory = "htmlcov"
 
 [tool.ruff.lint.per-file-ignores]
-# Testes: linhas longas e ausência de docstrings são aceitáveis
-"*/__tests__/*.py" = ["E501", "D"]
-"*/tests/*.py" = ["E501", "D"]
+# Testes: linhas longas são aceitáveis (E501). Métodos/funções de teste (D102/D103)
+# não precisam de docstring própria porque o nome do teste já documenta o cenário;
+# módulo e classe de teste continuam exigindo docstring (D100/D101) para dar contexto
+# do que a suíte cobre.
+"*/__tests__/*.py" = ["E501", "D102", "D103"]
+"*/tests/*.py" = ["E501", "D102", "D103"]
 # __init__.py de modelos re-exporta símbolos — F401 (import não usado) é intencional
 "*/models/__init__.py" = ["F401"]
 # Pacotes (__init__.py) não precisam de docstring de módulo (D104)
@@ -78,6 +81,9 @@ directory = "htmlcov"
 "*/migrations/*.py" = ["D"]
 # Arquivos declarativos/boilerplate que não precisam de docstring de módulo (D100)
 "config/**/*.py" = ["D100"]
+# production.py usa "from .base import *" para expor todas as settings base
+# ao Django; F403/F405 (star import) são esperados nesse padrão
+"config/settings/production.py" = ["F403", "F405"]
 "*/admin.py" = ["D100"]
 "*/urls.py" = ["D100"]
 "*/apps.py" = ["D100"]

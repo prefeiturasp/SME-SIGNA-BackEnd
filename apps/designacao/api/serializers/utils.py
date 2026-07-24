@@ -16,20 +16,23 @@ class NullableDateField(serializers.DateField):
     em vez de disparar um erro de validação do DRF.
     """
 
-    def to_internal_value(self, value: Any) -> Any:
-        """Converte o valor de entrada para o valor interno do campo.
+    def validate_empty_values(self, data: Any) -> tuple[bool, Any]:
+        """Trata string vazia como valor nulo antes da validação padrão.
+
+        A assinatura usa `Any` porque reflete o contrato da classe base do
+        DRF (`Field.validate_empty_values`), que também é tipada dessa forma.
 
         Args:
-            value: Valor de entrada que pode ser uma string vazia ou data.
+            data: Valor de entrada, que pode ser uma string vazia ou data.
 
         Returns:
-            datetime.date | None: Data validada ou None quando a string estiver
-            vazia.
+            tuple[bool, Any]: Indicador de valor vazio e o valor resultante
+            (None quando a string estiver vazia).
 
         """
-        if value == "":
-            return None
-        return super().to_internal_value(value)
+        if data == "":
+            return True, None
+        return super().validate_empty_values(data)
 
 
 def validar_somente_numeros(value: str) -> str:

@@ -1,6 +1,4 @@
-"""Testes para filtro de portaria.
-
-"""
+"""Testes para filtro de portaria."""
 
 from datetime import date
 

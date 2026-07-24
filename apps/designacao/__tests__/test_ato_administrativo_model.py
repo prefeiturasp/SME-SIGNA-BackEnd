@@ -1,6 +1,4 @@
-"""Testes para o modelo de ato administrativo.
-
-"""
+"""Testes para o modelo de ato administrativo."""
 
 import pytest
 from django.core.exceptions import ValidationError

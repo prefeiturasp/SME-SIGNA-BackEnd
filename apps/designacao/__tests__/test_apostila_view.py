@@ -1,104 +1,196 @@
-"""Testes para a view de apostila.
+"""Testes para a view de apostila."""
 
-"""
+import secrets
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils import timezone
-from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.designacao.models.apostila import Apostila
-from apps.designacao.models.designacao import Designacao
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+)
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 User = get_user_model()
 
 
 @pytest.fixture
-def api_client(django_user_model):
-    """Método api client."""
-    client = APIClient()
-    user = django_user_model.objects.create_user(
-        username="testuser_apostila", password="password123"
+def auth_client(db):
+    """Método auth client."""
+    password = secrets.token_urlsafe(16)
+    user = User.objects.create_user(
+        username="test_apostila", password=password
     )
+    client = APIClient()
     client.force_authenticate(user=user)
     return client
 
 
-@pytest.fixture
-def designacao(db):
-    """Método designacao."""
-    return Designacao.objects.create(
-        dre_nome="DRE TESTE",
-        unidade_proponente="EMEF",
-        codigo_hierarquico="1",
-        indicado_nome_civil="USER",
-        indicado_nome_servidor="USER",
-        indicado_rf="1234567",
-        indicado_vinculo=1,
-        indicado_cargo_base="PROF",
-        indicado_lotacao="L",
-        indicado_local_exercicio="L",
-        numero_portaria="123",
-        ano_vigente="2026",
-        sei_numero="111",
-        data_inicio=timezone.now().date(),
-        tipo_vaga=Designacao.TipoVaga.DISPONIVEL,
-    )
-
-
-@pytest.fixture
-def apostila(db, designacao):
-    """Método apostila."""
-    return Apostila.objects.create(
-        tipo=Apostila.Tipo.APOSTILA,
-        designacao=designacao,
-        sei_numero="555",
-        observacao="Obs Teste",
-        d_o="2026-01-01",
-    )
+def _payload(ato_pai_id, **kwargs):
+    """Método auxiliar para payload."""
+    base = {
+        "ato_pai": ato_pai_id,
+        "sei_numero": "99999",
+        "observacao": "Apostila via",
+    }
+    base.update(kwargs)
+    return base
 
 
 @pytest.mark.django_db
-class TestApostilaViewSet:
-    """Testes para apostila view set."""
+def test_create_apostila_em_designacao(auth_client):
+    """Verifica create apostila em designacao."""
+    designacao = criar_ato_designacao()
 
-    def test_list_apostilas(self, api_client, apostila):
-        """Verifica list apostilas."""
-        url = reverse("designacao:apostilas")
-        response = api_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
 
-    def test_retrieve_apostila(self, api_client, apostila):
-        """Verifica retrieve apostila."""
-        url = reverse("designacao:apostila-detail", kwargs={"pk": apostila.id})
-        response = api_client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["id"] == apostila.id
+    assert response.status_code == 201
+    assert AtoAdministrativo.objects.filter(
+        tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=designacao
+    ).exists()
 
-    def test_create_apostila_sucesso(self, api_client, designacao):
-        """Verifica create apostila sucesso."""
-        url = reverse("designacao:apostilas")
-        data = {
-            "designacao": designacao.id,
-            "ato_apostilado": "designacao",
-            "tipo": Apostila.Tipo.APOSTILA,
-            "sei_numero": "999",
-            "observacao": "Criado via View",
-        }
-        response = api_client.post(url, data, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-        assert Apostila.objects.filter(designacao=designacao).exists()
 
-    def test_create_apostila_erro_validacao(self, api_client):
-        """Verifica create apostila erro validacao."""
-        url = reverse("designacao:apostilas")
-        response = api_client.post(url, {}, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+@pytest.mark.django_db
+def test_create_apostila_registra_criado_por(auth_client):
+    """Verifica que a apostila criada registra o usuario responsavel."""
+    designacao = criar_ato_designacao()
+    user = User.objects.get(username="test_apostila")
 
-    def test_retrieve_apostila_nao_encontrada(self, api_client):
-        """Verifica retrieve apostila nao encontrada."""
-        url = reverse("designacao:apostila-detail", kwargs={"pk": 9999})
-        response = api_client.get(url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    apostila = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=designacao
+    )
+    assert apostila.criado_por_id == user.id
+
+
+@pytest.mark.django_db
+def test_create_apostila_em_cessacao(auth_client):
+    """Verifica create apostila em cessacao."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao)
+
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(url, data=_payload(cessacao.id), format="json")
+
+    assert response.status_code == 201
+    assert AtoAdministrativo.objects.filter(
+        tipo=AtoAdministrativo.Tipo.APOSTILA, ato_pai=cessacao
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_create_apostila_com_alteracoes(auth_client):
+    """Verifica create apostila com alteracoes."""
+    designacao = criar_ato_designacao(numero_portaria="001")
+
+    payload = _payload(
+        designacao.id,
+        alteracoes=[
+            {"campo_alterado": "numero_portaria", "valor_novo": "999"},
+        ],
+    )
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+    designacao.refresh_from_db()
+    assert designacao.numero_portaria == "999"
+    assert len(response.data["alteracoes"]) == 1
+
+
+@pytest.mark.django_db
+def test_create_apostila_ato_pai_invalido(auth_client):
+    """Verifica create apostila ato pai invalido."""
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(url, data=_payload(9999), format="json")
+
+    assert response.status_code == 400
+    assert "ato_pai" in response.data
+
+
+@pytest.mark.django_db
+def test_create_apostila_segunda_apostila_nao_permitida(auth_client):
+    """Verifica create apostila segunda apostila nao permitida."""
+    designacao = criar_ato_designacao()
+    criar_ato_apostila(designacao)
+
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_create_apostila_rejeita_designacao_cessada(auth_client):
+    """Verifica create apostila rejeita designacao cessada."""
+    designacao = criar_ato_designacao()
+    criar_ato_cessacao(designacao)
+
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 400
+    assert "ato_pai" in response.data
+
+
+@pytest.mark.django_db
+def test_list_apostilas(auth_client):
+    """Verifica list apostilas."""
+    designacao = criar_ato_designacao()
+    criar_ato_apostila(designacao)
+
+    url = reverse("designacao:apostilas")
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert response.data["count"] >= 1
+
+
+@pytest.mark.django_db
+def test_retrieve_apostila(auth_client):
+    """Verifica retrieve apostila."""
+    designacao = criar_ato_designacao()
+    apostila = criar_ato_apostila(designacao)
+
+    url = reverse("designacao:apostila-detail", args=[apostila.id])
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert response.data["id"] == apostila.id
+
+
+@pytest.mark.django_db
+def test_retrieve_apostila_nao_encontrada(auth_client):
+    """Verifica retrieve apostila nao encontrada."""
+    url = reverse("designacao:apostila-detail", args=[9999])
+    response = auth_client.get(url)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_destroy_apostila(auth_client):
+    """Verifica destroy apostila."""
+    designacao = criar_ato_designacao()
+    apostila = criar_ato_apostila(designacao)
+
+    url = reverse("designacao:apostila-detail", args=[apostila.id])
+    response = auth_client.delete(url)
+
+    assert response.status_code == 204
+    assert not AtoAdministrativo.objects.filter(pk=apostila.pk).exists()

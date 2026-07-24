@@ -8,11 +8,12 @@ import logging
 import re
 import unicodedata
 from datetime import datetime
-from typing import Any, cast
+from typing import Any
 
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.modulos import Calculadores
+from apps.designacao.modulos.base import ModuloCalculator
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
@@ -217,10 +218,7 @@ class TurmaService:
 
         """
         ano = datetime.now().year
-        turmas = cast(
-            list[dict[str, Any]],
-            SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano),
-        )
+        turmas = SmeIntegracaoService.buscar_turmas_ue_ano(codigo_ue, ano)
         turnos = cls.estrutura_turnos()
         spi: dict[str, Any] = {
             "tipo": "",
@@ -244,18 +242,14 @@ class TurmaService:
             if codigo_turma is None:
                 continue
 
-            disciplinas = cast(
-                list[dict[str, Any]],
-                SmeIntegracaoService.buscar_disciplinas_turma(codigo_turma),
+            disciplinas = SmeIntegracaoService.buscar_disciplinas_turma(
+                codigo_turma
             )
 
             if cls.turma_tem_spi(disciplinas):
                 cls._registrar_spi(spi, turma)
 
-            dados = cast(
-                dict[str, Any],
-                SmeIntegracaoService.buscar_dados_turma(codigo_turma),
-            )
+            dados = SmeIntegracaoService.buscar_dados_turma(codigo_turma)
             tipo_turno = dados.get("tipoTurno")
 
             if not isinstance(tipo_turno, int):
@@ -277,7 +271,7 @@ class TurmaService:
         }
 
     @staticmethod
-    def _normalizar_codigo_turma(codigo: Any) -> Any | None:
+    def _normalizar_codigo_turma(codigo: object) -> int | str | None:
         """Normaliza o código da turma aceitando int ou string.
 
         Retorna `int` quando a string for dígito puro,
@@ -298,7 +292,7 @@ class TurmaService:
         ciclo = CicloService.definir_ciclo_turma(turma)
         ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
 
-        spi_turno = cast(dict[str, Any], spi["turnos"][0])
+        spi_turno = spi["turnos"][0]
         spi_turno["total"] += 1
         spi["total"] += 1
 
@@ -388,7 +382,7 @@ class ModuloService:
     ) -> int:
         """Define o módulo de um cargo com base nas informações da unidade."""
         codigo = str(cargo_ue.get("codigo_cargo"))
-        calculator: Any = Calculadores.get(codigo)
+        calculator: ModuloCalculator | None = Calculadores.get(codigo)
 
         if not calculator:
             logger.debug("Cargo %s sem regra de módulo", codigo)
@@ -411,15 +405,9 @@ class DesignacaoUnidadeService:
             Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
 
         """
-        cargos = cast(
-            list[dict[str, Any]],
-            SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue),
-        )
-        info_ue = cast(
-            dict[str, Any],
-            SmeIntegracaoService.consulta_informacoes_unidades_escolares(
-                codigo_ue
-            ),
+        cargos = SmeIntegracaoService.buscar_funcionarios_escolares(codigo_ue)
+        info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
+            codigo_ue
         )
 
         codigo_dre = info_ue.get("codigoDRE")

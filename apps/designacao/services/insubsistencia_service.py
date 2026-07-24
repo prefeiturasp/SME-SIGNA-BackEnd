@@ -4,15 +4,11 @@ Fornece lógica para criar insubsistências, reverter apostilas e manter a
 consistência dos atos administrativos relacionados.
 """
 
-from typing import Any
-
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.designacao import Designacao
-from apps.designacao.models.insubsistencia import Insubsistencia
 from apps.designacao.models.insubsistencia_apostila_detalhe import (
     InsubsistenciaApostilaDetalhe,
 )
@@ -50,16 +46,7 @@ class InsubsistenciaService:
 
     @staticmethod
     def listar() -> QuerySet:
-        """Retorna queryset de insubsistências ativas (modelo legado)."""
-        return (
-            Insubsistencia.objects.filter(is_deleted=False)
-            .select_related("designacao", "cessacao")
-            .order_by("-criado_em")
-        )
-
-    @staticmethod
-    def listar_v2() -> QuerySet:
-        """Retorna queryset de insubsistências v2 (AtoAdministrativo)."""
+        """Retorna queryset de insubsistências (AtoAdministrativo)."""
         return (
             AtoAdministrativo.objects.filter(
                 tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA
@@ -75,9 +62,9 @@ class InsubsistenciaService:
         )
 
     @staticmethod
-    def buscar_v2(pk: int) -> AtoAdministrativo | None:
-        """Retorna uma insubsistência v2 por pk."""
-        return InsubsistenciaService.listar_v2().filter(pk=pk).first()
+    def buscar(pk: int) -> AtoAdministrativo | None:
+        """Retorna uma insubsistência por pk."""
+        return InsubsistenciaService.listar().filter(pk=pk).first()
 
     @staticmethod
     def excluir(instancia: AtoAdministrativo) -> None:
@@ -233,7 +220,7 @@ class InsubsistenciaService:
             detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato: AtoAdministrativo) -> Any | None:
+    def _get_detalhe(ato: AtoAdministrativo) -> Model | None:
         """Retorna o detalhe associado a um ato administrativo, se houver."""
         if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(ato, "designacao_detalhe", None)
@@ -243,8 +230,11 @@ class InsubsistenciaService:
 
     @staticmethod
     def _coerce_valor(
-        ato: AtoAdministrativo, detalhe: Any, campo: str, valor_str: Any
-    ) -> Any:
+        ato: AtoAdministrativo,
+        detalhe: Model | None,
+        campo: str,
+        valor_str: str,
+    ) -> str | bool | int | float | None:
         """Converta o valor de string para o tipo de campo apropriado.
 
         Args:
@@ -285,30 +275,3 @@ class InsubsistenciaService:
         except Exception:
             pass
         return valor_str
-
-    # ── Métodos legado ───────────────────────────────────────────────────────
-
-    @staticmethod
-    def montar_dados_insubsistencia_designacao(serializer: Any) -> Any:
-        """Retorna o serializer de designação sem alteração."""
-        return serializer
-
-    @staticmethod
-    def montar_dados_insubsistencia_cessacao(serializer: Any) -> Any:
-        """Ajusta o serializer de insubsistência de cessação."""
-        designacao_obj = serializer.validated_data.get("designacao")
-
-        designacao_completa = Designacao.objects.select_related(
-            "cessacao"
-        ).get(id=designacao_obj.id, is_deleted=False)
-        cessacao_obj = getattr(designacao_completa, "cessacao", None)
-
-        if not cessacao_obj:
-            raise ValidationError(
-                "Cessação não encontrada para esta designação."
-            )
-
-        serializer.validated_data["cessacao"] = cessacao_obj
-        serializer.validated_data["designacao"] = None
-
-        return serializer

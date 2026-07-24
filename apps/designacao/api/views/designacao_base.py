@@ -1,17 +1,69 @@
-"""Base compartilhada entre views de designação legada e v2.
+"""Base compartilhada entre views de designação.
 
 Contém a paginação comum e os helpers de controle de paginação/filtros
-usados por DesignacaoViewSet e DesignacaoLegadoViewSet.
+usados por DesignacaoViewSet.
 """
 
-from typing import Any
+from typing import TypeVar
 
-from django.db.models import QuerySet
+from django.db.models import Model, QuerySet
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+
 _PAGINATION_PARAMS = {"page", "page_size", "format", "no_pagination"}
+
+_ModelT = TypeVar("_ModelT", bound=Model)
+_RowT = TypeVar("_RowT")
+
+
+def buscar_ato_por_portaria_ano(
+    request: Request,
+    queryset: QuerySet[AtoAdministrativo],
+    *,
+    entidade: str,
+) -> tuple[AtoAdministrativo | None, Response | None]:
+    """Busca um ato pelos parâmetros `portaria` e `ano` da query string.
+
+    Args:
+        request: Requisição HTTP contendo os parâmetros `portaria` e `ano`.
+        queryset: Queryset já filtrado pelo tipo de ato (designação,
+            cessação, insubsistência etc.).
+        entidade: Nome da entidade usado nas mensagens de erro (ex.:
+            "Designação", "Cessação").
+
+    Returns:
+        tuple[AtoAdministrativo | None, Response | None]: O ato encontrado e
+        `None` em caso de sucesso, ou `None` e uma `Response` de erro
+        (400 ou 404) caso contrário.
+
+    """
+    portaria = (request.query_params.get("portaria") or "").strip()
+    if not portaria:
+        return None, Response(
+            {"detail": "Parâmetro 'portaria' é obrigatório."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    ano = (request.query_params.get("ano") or "").strip()
+    if not ano:
+        return None, Response(
+            {"detail": "Parâmetro 'ano' é obrigatório."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    ato = queryset.filter(numero_portaria=portaria, ano_vigente=ano).first()
+    if ato is None:
+        return None, Response(
+            {"detail": f"{entidade} não encontrada para essa portaria e ano."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    return ato, None
 
 
 class DesignacaoBasePagination(PageNumberPagination):
@@ -23,10 +75,10 @@ class DesignacaoBasePagination(PageNumberPagination):
 
     def paginate_queryset(
         self,
-        queryset: QuerySet,
+        queryset: QuerySet[_ModelT, _RowT],
         request: Request,
         view: APIView | None = None,
-    ) -> list | None:
+    ) -> list[_RowT] | None:
         """Decide se a paginação deve ser aplicada.
 
         Args:
@@ -47,8 +99,8 @@ class DesignacaoBasePagination(PageNumberPagination):
 class DesignacaoPaginacaoMixin:
     """Helpers de paginação compartilhados pelas views de designação."""
 
-    # Anotação para que type checkers reconheçam que a view terá `request`
-    request: Any
+    # Anotação para que type checkers reconheçam que a view terá `request`.
+    request: Request
 
     def _is_no_pagination(self) -> bool:
         """Verifica se a paginação deve ser desabilitada.

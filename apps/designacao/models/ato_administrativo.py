@@ -4,11 +4,12 @@ Define os tipos de ato, hierarquia pai/raiz e regras de validação
 para designação, cessação, apostila e insubsistência.
 """
 
-from typing import Any
+from collections.abc import Iterable
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.base import ModelBase
 
 
 class AtoAdministrativo(models.Model):
@@ -112,7 +113,14 @@ class AtoAdministrativo(models.Model):
                     }
                 )
 
-    def save(self, *args: Any, **kwargs: Any) -> None:
+    def save(
+        self,
+        *,
+        force_insert: bool | tuple[ModelBase, ...] = False,
+        force_update: bool = False,
+        using: str | None = None,
+        update_fields: Iterable[str] | None = None,
+    ) -> None:
         """Salva o ato administrativo aplicando regras automáticas
         de hierarquia.
 
@@ -120,17 +128,24 @@ class AtoAdministrativo(models.Model):
         e executa validações completas antes da persistência.
 
         Args:
-            *args: Argumentos posicionais adicionais.
-            **kwargs: Argumentos nomeados adicionais.
+            force_insert: Força um INSERT em vez de detectar automaticamente.
+            force_update: Força um UPDATE em vez de detectar automaticamente.
+            using: Alias do banco de dados a ser utilizado.
+            update_fields: Campos que devem ser atualizados, se informado.
 
         """
         if self.ato_pai_id and not self.ato_raiz_id:
             pai = self.ato_pai
             assert pai is not None
             self.ato_raiz_id = pai.ato_raiz_id if pai.ato_raiz_id else pai.pk
-        if not kwargs.get("update_fields"):
+        if not update_fields:
             self.full_clean()
-        super().save(*args, **kwargs)
+        super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+        )
 
     @property
     def status(self) -> str:

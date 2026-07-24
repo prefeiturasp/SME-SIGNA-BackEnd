@@ -1,287 +1,180 @@
-"""Testes para serializer de insubsistência.
+"""Testes para serializer de insubsistencia."""
 
-"""
+import datetime
+from types import SimpleNamespace
 
 import pytest
-from django.test import TestCase
 
-from apps.designacao.__tests__.factories import criar_designacao_legado
-from apps.designacao.api.serializers.insubsistencia_serializer import (
-    InsubsistenciaSerializer,
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+    criar_ato_insubsistencia,
 )
-from apps.designacao.models.cessacao import Cessacao
-from apps.designacao.models.insubsistencia import Insubsistencia
+from apps.designacao.api.serializers.insubsistencia_serializer import (
+    InsubsistenciaReadSerializer,
+    InsubsistenciaWriteSerializer,
+)
 
 
-class InsubsistenciaSerializerTest(TestCase):
-    """Testes para insubsistencia serializer test."""
+@pytest.mark.django_db
+class TestInsubsistenciaWriteSerializer:
+    """Testes para insubsistencia write serializer."""
 
-    def _criar_designacao(self):
-        """Método auxiliar para criar designacao."""
-        return criar_designacao_legado()
-
-    @pytest.mark.django_db
-    def test_serializer_valido_na_designacao(self):
-        """Verifica serializer valido na designacao."""
-        designacao = self._criar_designacao()
-
-        data = {
-            "designacao": designacao.id,
+    def _payload(self, ato_pai_id):
+        """Metodo auxiliar para payload."""
+        return {
+            "ato_pai": ato_pai_id,
             "numero_portaria": "12345",
             "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
+            "sei_numero": "SEI-INSUB-1",
+            "doc": "2024-03-10",
+            "observacoes": "Erro material",
+            "texto_apostila": "",
         }
 
-        serializer = InsubsistenciaSerializer(data=data)
+    def test_serializer_valido(self):
+        """Verifica serializer valido."""
+        d = criar_ato_designacao()
+        s = InsubsistenciaWriteSerializer(data=self._payload(d.id))
+        assert s.is_valid(), s.errors
 
-        assert serializer.is_valid(), serializer.errors
-
-    @pytest.mark.django_db
-    def test_serializer_valido_na_cessacao(self):
-        """Verifica serializer valido na cessacao."""
-        designacao = self._criar_designacao()
-
-        Cessacao.objects.create(
-            designacao=designacao,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            data_designacao="2024-03-10",
-        )
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12345",
-            "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "cessacao",
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert serializer.is_valid(), serializer.errors
-
-    @pytest.mark.django_db
-    def test_serializer_valido_na_designacao_com_cessacao_sem_insubsistencia(
-        self,
-    ):
-        """Verifica serializer valido na designacao com cessacao sem insubsistencia."""
-        designacao = self._criar_designacao()
-
-        Cessacao.objects.create(
-            designacao=designacao,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            data_designacao="2024-03-10",
-        )
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12345",
-            "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert serializer.is_valid(), serializer.errors
-
-    @pytest.mark.django_db
-    def test_serializer_valido_na_designacao_com_cessacao_com_insubsistencia(
-        self,
-    ):
-        """Verifica serializer valido na designacao com cessacao com insubsistencia."""
-        designacao = self._criar_designacao()
-
-        cessacao = Cessacao.objects.create(
-            designacao=designacao,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            data_designacao="2024-03-10",
-        )
-
-        Insubsistencia.objects.create(
-            cessacao_id=cessacao.id,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            observacoes="44444",
-        )
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12345",
-            "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert serializer.is_valid(), serializer.errors
-
-    @pytest.mark.django_db
     def test_numero_portaria_invalido(self):
         """Verifica numero portaria invalido."""
-        designacao = self._criar_designacao()
+        d = criar_ato_designacao()
+        payload = self._payload(d.id)
+        payload["numero_portaria"] = "12A45"
+        s = InsubsistenciaWriteSerializer(data=payload)
+        assert not s.is_valid()
+        assert "numero_portaria" in s.errors
 
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12A45",
-            "ano_vigente": "2024",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert not serializer.is_valid()
-        assert "numero_portaria" in serializer.errors
-
-    @pytest.mark.django_db
     def test_ano_vigente_invalido(self):
         """Verifica ano vigente invalido."""
-        designacao = self._criar_designacao()
+        d = criar_ato_designacao()
+        payload = self._payload(d.id)
+        payload["ano_vigente"] = "20A4"
+        s = InsubsistenciaWriteSerializer(data=payload)
+        assert not s.is_valid()
+        assert "ano_vigente" in s.errors
 
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12A45",
-            "ano_vigente": "20A4",
-            "sei_numero": "999999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
-        }
+    def test_ato_pai_invalido_rejeita(self):
+        """Verifica ato pai invalido rejeita."""
+        s = InsubsistenciaWriteSerializer(data=self._payload(9999))
+        assert not s.is_valid()
+        assert "ato_pai" in s.errors
 
-        serializer = InsubsistenciaSerializer(data=data)
 
-        assert not serializer.is_valid()
-        assert "ano_vigente" in serializer.errors
+@pytest.mark.django_db
+class TestInsubsistenciaReadSerializer:
+    """Testes para insubsistencia read serializer."""
 
-    @pytest.mark.django_db
-    def test_tipo_insubsistencia_invalido(self):
-        """Verifica tipo insubsistencia invalido."""
-        designacao = self._criar_designacao()
-
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "12A45",
-            "ano_vigente": "20A4",
-            "sei_numero": "99999",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "invalido",
-        }
-
-        serializer = InsubsistenciaSerializer(data=data)
-
-        assert not serializer.is_valid()
-        assert "tipo_insubsistencia" in serializer.errors
-        print("serializer.errors", serializer)
-
-    @pytest.mark.django_db
-    def test_nao_permite_insubsistencia_duplicada_na_designacao(self):
-        """Verifica nao permite insubsistencia duplicada na designacao."""
-        designacao = self._criar_designacao()
-
-        # cria primeira insubsistencia
-        Insubsistencia.objects.create(
-            designacao=designacao,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            observacoes="44444",
+    def test_retorna_texto_apostila_quando_insubsistencia_de_apostila(self):
+        """Verifica retorno do texto_apostila quando existir detalhe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        insubsistencia = criar_ato_insubsistencia(
+            apostila,
+            texto_apostila="Tornar sem efeito apostila",
+            observacoes="Anulada",
         )
 
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "54321",
-            "ano_vigente": "2024",
-            "sei_numero": "888888",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "designacao",
-        }
+        data = InsubsistenciaReadSerializer(insubsistencia).data
 
-        serializer = InsubsistenciaSerializer(data=data)
+        assert data["texto_apostila"] == "Tornar sem efeito apostila"
+        assert data["tipo_insubsistencia"] == "APOSTILA"
+        assert data["ato_apostilado"] == "DESIGNACAO"
 
-        assert not serializer.is_valid()
-        assert "non_field_errors" in serializer.errors
+    def test_retorna_none_em_campos_de_apostila_quando_nao_for_apostila(self):
+        """Verifica campos de apostila nulos quando nao aplicavel."""
+        designacao = criar_ato_designacao()
+        insubsistencia = criar_ato_insubsistencia(designacao)
 
-    @pytest.mark.django_db
-    def test_nao_permite_insubsistencia_duplicada_na_cessacao(self):
-        """Verifica nao permite insubsistencia duplicada na cessacao."""
-        designacao = self._criar_designacao()
+        data = InsubsistenciaReadSerializer(insubsistencia).data
 
-        cessacao = Cessacao.objects.create(
-            designacao=designacao,
-            numero_portaria="12345",
+        assert data["texto_apostila"] is None
+        assert data["ato_apostilado"] is None
+        assert data["tipo_insubsistencia"] == "DESIGNACAO"
+
+    def test_get_insubsistencia_retorna_dados_quando_ato_pai_e_insubsistencia(
+        self,
+    ):
+        """Verifica get insubsistencia quando ato pai e insubsistencia."""
+        designacao = criar_ato_designacao(doc=datetime.date(2024, 1, 15))
+        insubsistencia_pai = criar_ato_insubsistencia(
+            designacao,
+            numero_portaria="111",
             ano_vigente="2024",
-            sei_numero="999999",
-            a_pedido=True,
-            remocao=False,
-            aposentadoria=False,
-            doc="DOE",
-            data_designacao="2024-03-10",
+            sei_numero="SEI-INSUB-PAI",
+            doc=datetime.date(2024, 2, 10),
+        )
+        insubsistencia_filha = criar_ato_insubsistencia(
+            insubsistencia_pai,
+            numero_portaria="222",
+            ano_vigente="2025",
+            sei_numero="SEI-INSUB-FILHA",
         )
 
-        # cria primeira insubsistencia
-        Insubsistencia.objects.create(
-            cessacao_id=cessacao.id,
-            numero_portaria="12345",
-            ano_vigente="2024",
-            sei_numero="999999",
-            doc="DOE",
-            observacoes="44444",
+        data = InsubsistenciaReadSerializer(insubsistencia_filha).data
+
+        assert data["insubsistencia"] is not None
+        assert data["insubsistencia"]["numero_portaria"] == "111"
+        assert data["insubsistencia"]["ano_vigente"] == "2024"
+        assert data["insubsistencia"]["sei_numero"] == "SEI-INSUB-PAI"
+        assert data["insubsistencia"]["doc"] == insubsistencia_pai.doc
+        assert (
+            data["insubsistencia"]["doc_do_ato_insubstituido"]
+            == designacao.doc
         )
 
-        data = {
-            "designacao": designacao.id,
-            "numero_portaria": "54321",
-            "ano_vigente": "2024",
-            "sei_numero": "888888",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "cessacao",
-        }
+    def test_get_insubsistencia_retorna_none_quando_ato_pai_nao_insubsistencia(
+        self,
+    ):
+        """Verifica get insubsistencia retorna none quando nao aplicavel."""
+        designacao = criar_ato_designacao()
+        insubsistencia = criar_ato_insubsistencia(designacao)
 
-        serializer = InsubsistenciaSerializer(data=data)
+        data = InsubsistenciaReadSerializer(insubsistencia).data
 
-        assert not serializer.is_valid()
-        assert "non_field_errors" in serializer.errors
+        assert data["insubsistencia"] is None
 
-    @pytest.mark.django_db
-    def test_nao_permite_insubsistencia_sem_cessacao_e_sem_designacao(self):
-        """Verifica nao permite insubsistencia sem cessacao e sem designacao."""
-        data = {
-            "numero_portaria": "54321",
-            "ano_vigente": "2024",
-            "sei_numero": "888888",
-            "doc": "DOE",
-            "observacoes": "44444",
-            "tipo_insubsistencia": "cessacao",
-        }
+    def test_retorna_dados_de_cessacao_quando_ato_pai_e_cessacao(self):
+        """Verifica retorno de dados de cessacao em insubsistencia."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao, a_pedido=True, remocao=True)
+        insubsistencia = criar_ato_insubsistencia(cessacao)
 
-        serializer = InsubsistenciaSerializer(data=data)
+        data = InsubsistenciaReadSerializer(insubsistencia).data
 
-        assert not serializer.is_valid()
-        assert "non_field_errors" in serializer.errors
+        assert data["cessacao"] is not None
+        assert data["cessacao"]["numero_portaria"] == cessacao.numero_portaria
+        assert data["cessacao"]["a_pedido"] is True
+        assert data["cessacao"]["remocao"] is True
+
+    def test_get_tipo_insubsistencia_retorna_none_quando_nao_ha_ato_pai(self):
+        """Verifica get tipo insubsistencia retorna none sem ato pai."""
+        insubsistencia_sem_pai = SimpleNamespace(ato_pai=None)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert (
+            serializer.get_tipo_insubsistencia(insubsistencia_sem_pai) is None
+        )
+
+    def test_get_ato_apostilado_retorna_avo_quando_existe(self):
+        """Verifica retorno do ato apostilado quando hierarquia existe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        insubsistencia = criar_ato_insubsistencia(apostila)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert serializer._get_ato_apostilado(insubsistencia) == designacao
+
+    def test_get_ato_apostilado_retorna_none_quando_nao_existe_avo(self):
+        """Verifica retorno none quando nao existir avo para apostilamento."""
+        designacao = criar_ato_designacao()
+        insubsistencia = criar_ato_insubsistencia(designacao)
+
+        serializer = InsubsistenciaReadSerializer()
+
+        assert serializer._get_ato_apostilado(insubsistencia) is None
