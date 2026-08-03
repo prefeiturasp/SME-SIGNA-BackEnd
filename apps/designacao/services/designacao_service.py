@@ -6,6 +6,7 @@ designação.
 
 from django.db import transaction
 from django.db.models import F, QuerySet
+from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
@@ -70,6 +71,41 @@ class DesignacaoService:
                 detalhe.save(update_fields=list(data_detalhe.keys()))
 
         return ato
+
+    @staticmethod
+    def excluir(ato: AtoAdministrativo) -> None:
+        """Remove um ato administrativo de designação.
+
+        Impede a exclusão quando existirem atos derivados (cessação,
+        apostila ou insubsistência) associados a esta designação, já que
+        essas referências são protegidas contra exclusão em cascata.
+
+        Args:
+            ato: Ato administrativo de designação a ser removido.
+
+        Raises:
+            ValidationError: Se existirem atos derivados associados a
+            esta designação.
+
+        """
+        tipos_dependentes = (
+            ato.descendentes.order_by("tipo")
+            .values_list("tipo", flat=True)
+            .distinct()
+        )
+        if tipos_dependentes:
+            labels = ", ".join(
+                AtoAdministrativo.Tipo(tipo).label
+                for tipo in tipos_dependentes
+            )
+            raise ValidationError(
+                {
+                    "detail": "Não é possível excluir esta designação: "
+                    f"existem atos derivados ({labels}) associados a ela. "
+                    "Exclua-os primeiro."
+                }
+            )
+        ato.delete()
 
     @staticmethod
     def get_cargos_pareados(
