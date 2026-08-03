@@ -8,7 +8,10 @@ from django.urls import reverse
 from rest_framework.request import Request
 from rest_framework.test import APIClient, APIRequestFactory
 
-from apps.designacao.__tests__.factories import criar_ato_designacao
+from apps.designacao.__tests__.factories import (
+    criar_ato_cessacao,
+    criar_ato_designacao,
+)
 from apps.designacao.api.views.designacao import DesignacaoPagination
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
@@ -162,6 +165,19 @@ def test_destroy_designacao(auth_client):
 
     assert response.status_code == 204
     assert not AtoAdministrativo.objects.filter(pk=ato.pk).exists()
+
+
+@pytest.mark.django_db
+def test_destroy_designacao_com_ato_derivado_retorna_erro(auth_client):
+    """Verifica que excluir designação com ato derivado é bloqueado."""
+    ato = criar_ato_designacao()
+    criar_ato_cessacao(ato)
+
+    url = reverse("designacao:designacao-detail", args=[ato.id])
+    response = auth_client.delete(url)
+
+    assert response.status_code == 400
+    assert AtoAdministrativo.objects.filter(pk=ato.pk).exists()
 
 
 @pytest.mark.django_db

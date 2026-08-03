@@ -70,6 +70,15 @@ class DesignacaoViewSet(  # type: ignore[misc]
         "designacao_detalhe__data_fim",
     ]
 
+    def perform_destroy(self, instance: AtoAdministrativo) -> None:
+        """Remove a designação, impedindo exclusão caso tenha descendentes.
+
+        Args:
+            instance: Ato administrativo de designação a ser removido.
+
+        """
+        DesignacaoService.excluir(instance)
+
     def get_queryset(self) -> QuerySet:
         """Retorna o queryset base de designações.
 
