@@ -102,5 +102,6 @@ directory = "htmlcov"
 "apps/designacao/models/*.py" = ["D106", "D205"]
 "apps/unidades/models/*.py" = ["D106", "D205"]
 "apps/usuarios/models/*.py" = ["D106", "D205"]
+"apps/gestao/models/*.py" = ["D106", "D205"]
 # Utilitários e exceções: __init__, __str__ e magic methods não precisam de docstring
 "apps/helpers/*.py" = ["D205", "D100", "D107", "D105"]
