@@ -690,6 +690,43 @@ class SmeIntegracaoService:
             )
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
+    @classmethod
+    def buscar_cargos(cls) -> list[dict[str, Any]]:
+        """Busca a lista de cargos cadastrados no EOL.
+
+        Returns:
+            list[dict[str, Any]]: Lista de cargos retornados pela SME.
+
+        Raises:
+            SmeIntegracaoError: Quando a API retornar erro ou houver falha
+            de comunicação.
+
+        """
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/cargos"
+
+        logger.info("Consultando cargos no EOL")
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return response.json()
+
+            logger.error(
+                "Erro ao consultar cargos no EOL. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoError(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de cargos no EOL")
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
+
     @staticmethod
     def formatar_cargo(texto: str) -> str:
         """Formata o nome de um cargo extraindo a parte principal.

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.usuarios",
     "apps.alteracao_email",
     "apps.designacao",
+    "apps.gestao",
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
