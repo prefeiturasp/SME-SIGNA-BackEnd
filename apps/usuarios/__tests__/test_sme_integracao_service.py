@@ -858,6 +858,60 @@ class TestBuscarDisciplinasTurma:
 
 
 # ---------------------------------------------------------------------------
+# buscar_cargos
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarCargos:
+    """Testa a busca da lista de cargos cadastrados no EOL."""
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_sucesso(self, mock_get):
+        """Verifica que a busca de cargos retorna a lista da API."""
+        cargos_mock = [
+            {"codigoCargo": "3360", "descricaoCargo": "DIRETOR DE ESCOLA"},
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=cargos_mock),
+        )
+
+        resultado = SmeIntegracaoService.buscar_cargos()
+
+        assert resultado == cargos_mock
+        mock_get.assert_called_once()
+        url_chamada = mock_get.call_args[0][0]
+        assert url_chamada.endswith("/cargos")
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_status_invalido_levanta_excecao(self, mock_get):
+        """Verifica que status inválido da API gera exceção."""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_response.text = "Erro interno"
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoError) as exc:
+            SmeIntegracaoService.buscar_cargos()
+
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_request_exception(self, mock_get, mock_logger):
+        """Verifica log e exceção quando há falha de conexão no SME."""
+        mock_get.side_effect = requests.exceptions.RequestException("timeout")
+
+        with pytest.raises(SmeIntegracaoError) as exc:
+            SmeIntegracaoService.buscar_cargos()
+
+        assert "Erro de comunicação com SME" in str(exc.value)
+        mock_logger.exception.assert_called_once_with(
+            "Erro de comunicação com API de cargos no EOL"
+        )
+
+
+# ---------------------------------------------------------------------------
 # formatar_cargo
 # ---------------------------------------------------------------------------
 
