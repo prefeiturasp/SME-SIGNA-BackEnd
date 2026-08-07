@@ -28,3 +28,20 @@ class CargoBaseService:
 
         """
         return CargoBase.objects.create(**data)
+
+    @staticmethod
+    def atualizar(cargo: CargoBase, data: dict) -> CargoBase:
+        """Atualiza os dados de um cargo base existente.
+
+        Args:
+            cargo: Cargo base a ser atualizado.
+            data: Dicionário com os dados validados para atualização.
+
+        Returns:
+            CargoBase: Cargo base atualizado.
+
+        """
+        for campo, valor in data.items():
+            setattr(cargo, campo, valor)
+        cargo.save()
+        return cargo
