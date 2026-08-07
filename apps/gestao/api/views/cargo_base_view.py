@@ -19,6 +19,7 @@ from rest_framework.views import APIView
 from apps.gestao.api.filters.cargo_base_filter import CargoBaseFilter
 from apps.gestao.api.serializers.cargo_base_serializer import (
     CargoBaseReadSerializer,
+    CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
 )
 from apps.gestao.models.cargo_base import CargoBase
@@ -88,6 +89,30 @@ class CargoBaseViewSet(
             CargoBaseReadSerializer(cargo).data,
             status=status.HTTP_201_CREATED,
         )
+
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        """Atualiza parcialmente um cargo base existente.
+
+        Args:
+            request: Requisição HTTP contendo os campos a atualizar.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados atualizados do cargo base.
+
+        """
+        cargo = self.get_object()
+        serializer = CargoBaseUpdateSerializer(
+            cargo, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        cargo = CargoBaseService.atualizar(cargo, serializer.validated_data)
+
+        return Response(CargoBaseReadSerializer(cargo).data)
 
 
 class CargoEolView(APIView):

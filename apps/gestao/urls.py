@@ -14,6 +14,11 @@ urlpatterns = [
         name="cargos-base",
     ),
     path(
+        "cargos-base/<int:pk>/",
+        CargoBaseViewSet.as_view({"patch": "partial_update"}),
+        name="cargos-base-detail",
+    ),
+    path(
         "cargos-eol/",
         CargoEolView.as_view(),
         name="cargos-eol",
