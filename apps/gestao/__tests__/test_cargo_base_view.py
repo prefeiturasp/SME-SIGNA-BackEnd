@@ -197,3 +197,112 @@ def test_cargos_eol_exige_autenticacao():
     response = APIClient().get(url)
 
     assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_retrieve_retorna_cargo_base(auth_client):
+    """Verifica que o detalhe retorna os dados do cargo base."""
+    cargo = criar_cargo_base(codigo_cargo="3360")
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert response.data["id"] == cargo.pk
+    assert response.data["codigo_cargo"] == "3360"
+
+
+@pytest.mark.django_db
+def test_retrieve_inexistente_retorna_404(auth_client):
+    """Verifica 404 ao consultar um cargo base inexistente."""
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": 9999})
+    response = auth_client.get(url)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_retrieve_exige_autenticacao():
+    """Verifica que o detalhe exige autenticação."""
+    cargo = criar_cargo_base(codigo_cargo="3360")
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = APIClient().get(url)
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_partial_update_altera_campos_editaveis(auth_client):
+    """Verifica que o PATCH altera os campos permitidos."""
+    cargo = criar_cargo_base(
+        codigo_cargo="3360",
+        descricao_resumida="Diretor de Escola",
+        grupamento=CargoBase.Grupamento.GESTORES_EDUCACAO,
+        situacao_funcional=CargoBase.SituacaoFuncional.EFETIVO,
+        status=CargoBase.Status.ATIVO,
+    )
+
+    payload = {
+        "descricao_resumida": "Diretor de Escola Municipal",
+        "grupamento": CargoBase.Grupamento.APOIO_EDUCACAO,
+        "situacao_funcional": CargoBase.SituacaoFuncional.COMISSIONADO,
+        "status": CargoBase.Status.INATIVO,
+        "utilizado_para_funcoes": False,
+        "utilizado_para_designacoes": False,
+        "utilizado_para_ste": False,
+        "utilizado_para_permutas": True,
+        "cargo_base_ficticio": True,
+    }
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = auth_client.patch(url, data=payload, format="json")
+
+    assert response.status_code == 200
+    cargo.refresh_from_db()
+    assert cargo.descricao_resumida == "Diretor de Escola Municipal"
+    assert cargo.grupamento == CargoBase.Grupamento.APOIO_EDUCACAO
+    assert cargo.situacao_funcional == CargoBase.SituacaoFuncional.COMISSIONADO
+    assert cargo.status == CargoBase.Status.INATIVO
+    assert cargo.utilizado_para_funcoes is False
+    assert cargo.utilizado_para_designacoes is False
+    assert cargo.utilizado_para_ste is False
+    assert cargo.utilizado_para_permutas is True
+    assert cargo.cargo_base_ficticio is True
+
+
+@pytest.mark.django_db
+def test_partial_update_ignora_codigo_cargo_e_descricao_completa(auth_client):
+    """Verifica que o PATCH não altera código e descrição completa."""
+    cargo = criar_cargo_base(
+        codigo_cargo="3360",
+        descricao_completa="DIRETOR DE ESCOLA MUNICIPAL",
+    )
+
+    payload = {
+        "codigo_cargo": "9999",
+        "descricao_completa": "OUTRO CARGO QUALQUER",
+        "descricao_resumida": "Diretor de Escola Municipal",
+    }
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = auth_client.patch(url, data=payload, format="json")
+
+    assert response.status_code == 200
+    cargo.refresh_from_db()
+    assert cargo.codigo_cargo == "3360"
+    assert cargo.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+    assert cargo.descricao_resumida == "Diretor de Escola Municipal"
+
+
+@pytest.mark.django_db
+def test_partial_update_exige_autenticacao():
+    """Verifica que o PATCH exige autenticação."""
+    cargo = criar_cargo_base(codigo_cargo="3360")
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = APIClient().patch(
+        url, data={"descricao_resumida": "Novo"}, format="json"
+    )
+
+    assert response.status_code == 401
