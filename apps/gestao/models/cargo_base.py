@@ -45,6 +45,23 @@ class CargoBase(models.Model):
         default=Status.ATIVO,
     )
 
+    # --- Utilização do cargo ---
+    utilizado_para_funcoes = models.BooleanField(
+        "Utilizado para funções", default=True
+    )
+    utilizado_para_designacoes = models.BooleanField(
+        "Utilizado para designações", default=True
+    )
+    utilizado_para_ste = models.BooleanField(
+        "Utilizado para STE", default=True
+    )
+    utilizado_para_permutas = models.BooleanField(
+        "Utilizado para permutas", default=False
+    )
+    cargo_base_ficticio = models.BooleanField(
+        "Cargo base fictício", default=False
+    )
+
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

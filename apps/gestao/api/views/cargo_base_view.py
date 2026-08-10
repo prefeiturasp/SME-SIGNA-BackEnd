@@ -45,13 +45,14 @@ class CargoBasePagination(PageNumberPagination):
 
 class CargoBaseViewSet(
     mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
     """ViewSet de cargos base.
 
-    Expõe operações de listagem (com filtros e paginação) e criação de
-    cargos base.
+    Expõe operações de listagem (com filtros e paginação), consulta
+    individual e criação de cargos base.
     """
 
     serializer_class = CargoBaseReadSerializer
