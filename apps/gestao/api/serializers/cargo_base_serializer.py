@@ -35,6 +35,11 @@ class CargoBaseReadSerializer(serializers.ModelSerializer):
             "situacao_funcional_display",
             "status",
             "status_display",
+            "utilizado_para_funcoes",
+            "utilizado_para_designacoes",
+            "utilizado_para_ste",
+            "utilizado_para_permutas",
+            "cargo_base_ficticio",
             "criado_em",
         ]
 
@@ -51,9 +56,19 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
             "grupamento",
             "situacao_funcional",
             "status",
+            "utilizado_para_funcoes",
+            "utilizado_para_designacoes",
+            "utilizado_para_ste",
+            "utilizado_para_permutas",
+            "cargo_base_ficticio",
         ]
         extra_kwargs = {
             "status": {"required": False},
+            "utilizado_para_funcoes": {"required": False},
+            "utilizado_para_designacoes": {"required": False},
+            "utilizado_para_ste": {"required": False},
+            "utilizado_para_permutas": {"required": False},
+            "cargo_base_ficticio": {"required": False},
         }
 
 
@@ -71,4 +86,9 @@ class CargoBaseUpdateSerializer(serializers.ModelSerializer):
             "grupamento",
             "situacao_funcional",
             "status",
+            "utilizado_para_funcoes",
+            "utilizado_para_designacoes",
+            "utilizado_para_ste",
+            "utilizado_para_permutas",
+            "cargo_base_ficticio",
         ]
