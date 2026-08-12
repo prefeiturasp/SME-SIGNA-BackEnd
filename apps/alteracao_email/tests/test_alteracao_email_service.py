@@ -1,3 +1,5 @@
+"""Testes do serviço de solicitação e validação de alteração de e-mail."""
+
 import secrets
 import uuid
 from datetime import timedelta
@@ -34,6 +36,7 @@ def user(db):
 
 @pytest.mark.django_db
 class TestSolicitar:
+    """Testes de AlteracaoEmailService.solicitar."""
 
     def test_solicitar_sucesso(self, user):
 
@@ -56,6 +59,7 @@ class TestSolicitar:
 
 @pytest.mark.django_db
 class TestValidar:
+    """Testes de AlteracaoEmailService.validar."""
 
     def test_validar_sucesso(self, user):
         email_request = AlteracaoEmail.objects.create(

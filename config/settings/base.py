@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from typing import Any
 
 import environ
 
@@ -175,7 +176,7 @@ LOGGING = {
     },
 }
 
-SPECTACULAR_SETTINGS = {
+SPECTACULAR_SETTINGS: dict[str, Any] = {
     "TITLE": "Django-DRF SIGNA API",
     "DESCRIPTION": "Documentação de API endpoints da aplicação SIGNA",
     "VERSION": "0.0.0",

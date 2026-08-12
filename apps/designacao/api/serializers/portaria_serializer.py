@@ -21,7 +21,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
     observações, cessacao e designacao.
     """
 
-    portaria = serializers.CharField(source="numero_portaria")
+    numero_portaria = serializers.CharField()
     doc = serializers.DateField(allow_null=True)
     tipo_de_ato = serializers.SerializerMethodField()
     nome = serializers.SerializerMethodField()
@@ -30,7 +30,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
     data_cessacao = serializers.SerializerMethodField()
     observacoes = serializers.SerializerMethodField()
 
-    ano = serializers.CharField(source="ano_vigente")
+    ano_vigente = serializers.CharField()
     designacao = serializers.SerializerMethodField()
     cessacao = serializers.SerializerMethodField()
     tipo_insubsistencia = serializers.SerializerMethodField()
@@ -40,9 +40,9 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
         model = AtoAdministrativo
         fields = [
             "id",
-            "portaria",
+            "numero_portaria",
             "doc",
-            "ano",
+            "ano_vigente",
             "tipo_de_ato",
             "nome",
             "cargo",

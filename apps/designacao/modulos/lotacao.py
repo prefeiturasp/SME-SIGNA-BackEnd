@@ -6,10 +6,12 @@ conforme o tipo de escola e quantidade de classes.
 
 import logging
 
+from apps.designacao.modulos.base import ModuloCalculator
+
 logger = logging.getLogger(__name__)
 
 
-class ModuloLotacaoCalculator:
+class ModuloLotacaoCalculator(ModuloCalculator):
     """Calcula o módulo de lotação para cargos de direção escolar."""
 
     CARGO_DIRETOR = "3360"

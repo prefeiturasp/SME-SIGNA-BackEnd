@@ -1,6 +1,4 @@
-"""Testes para impedimentos de designação.
-
-"""
+"""Testes para impedimentos de designação."""
 
 from unittest.mock import MagicMock
 

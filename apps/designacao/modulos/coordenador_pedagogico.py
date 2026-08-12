@@ -6,10 +6,12 @@ nas informações da unidade escolar.
 
 import logging
 
+from apps.designacao.modulos.base import ModuloCalculator
+
 logger = logging.getLogger(__name__)
 
 
-class ModuloCoordenadorPedagogicoCalculator:
+class ModuloCoordenadorPedagogicoCalculator(ModuloCalculator):
     """Regra de cálculo de módulo para Coordenador Pedagógico."""
 
     CARGO_COORDENADOR_PEDAGOGICO = "3379"

@@ -3,12 +3,16 @@
 from typing import Any
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
 
 class AtoRelacionadoMixin:
     """Compartilha helpers de serializacao de atos relacionados."""
 
-    def _get_cessacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
+    def _get_cessacao_detalhe(
+        self, obj: AtoAdministrativo
+    ) -> CessacaoDetalhe | None:
         """Retorna o CessacaoDetalhe do ato raiz (cessacao original)."""
         if obj.tipo == AtoAdministrativo.Tipo.CESSACAO:
             return getattr(obj, "cessacao_detalhe", None)
@@ -19,7 +23,9 @@ class AtoRelacionadoMixin:
 
         return None
 
-    def _get_designacao_detalhe(self, obj: AtoAdministrativo) -> Any | None:
+    def _get_designacao_detalhe(
+        self, obj: AtoAdministrativo
+    ) -> DesignacaoDetalhe | None:
         """Retorna o DesignacaoDetalhe do ato raiz (designacao original)."""
         if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
             return getattr(obj, "designacao_detalhe", None)
@@ -56,14 +62,14 @@ class AtoRelacionadoMixin:
             return raiz
         return None
 
-    def get_designacao(self, obj: AtoAdministrativo) -> Any | None:
+    def get_designacao(self, obj: AtoAdministrativo) -> dict[str, Any] | None:
         """Retorna os dados de designacao do ato ou do ato relacionado."""
         detalhe = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
 
         if detalhe and ato_designacao is not None:
             return {
-                "portaria": ato_designacao.numero_portaria,
+                "numero_portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
                 "sei_numero": ato_designacao.sei_numero,
                 "doc": ato_designacao.doc,
@@ -95,17 +101,18 @@ class AtoRelacionadoMixin:
                 "com_afastamento": detalhe.com_afastamento,
                 "motivo_afastamento": detalhe.motivo_afastamento,
                 "pendencias": detalhe.pendencias,
+                "unidade_proponente": detalhe.unidade_proponente,
             }
         return None
 
-    def get_cessacao(self, obj: AtoAdministrativo) -> Any | None:
+    def get_cessacao(self, obj: AtoAdministrativo) -> dict[str, Any] | None:
         """Retorna os dados de cessacao do ato ou do ato relacionado."""
         detalhe = self._get_cessacao_detalhe(obj)
         ato_cessacao = self._get_cessacao_ato_administrativo(obj)
 
         if detalhe and ato_cessacao is not None:
             return {
-                "portaria": ato_cessacao.numero_portaria,
+                "numero_portaria": ato_cessacao.numero_portaria,
                 "ano_vigente": ato_cessacao.ano_vigente,
                 "sei_numero": ato_cessacao.sei_numero,
                 "doc": ato_cessacao.doc,

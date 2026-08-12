@@ -1,10 +1,17 @@
+"""Testes das views de solicitação e validação de alteração de e-mail."""
+
 import secrets
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.http import Http404
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.alteracao_email.api.views.alteracao_email_viewset import (
+    SolicitarAlteracaoEmailViewSet,
+)
 from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmail,
     AlteracaoEmailService,
@@ -37,6 +44,7 @@ def user(db, django_user_model):
 
 @pytest.mark.django_db
 class TestSolicitarAlteracaoEmailViewSet:
+    """Testes do endpoint de solicitação de alteração de e-mail."""
 
     endpoint = "/api/alteracao-email/solicitar/"
 
@@ -69,9 +77,22 @@ class TestSolicitarAlteracaoEmailViewSet:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.data["detail"] == "Erro inesperado."
 
+    def test_create_usuario_nao_autenticado_retorna_401(self):
+        """Verifica retorno 401 quando request.user não é um User real."""
+        view = SolicitarAlteracaoEmailViewSet()
+        mock_request = MagicMock()
+        mock_request.user = AnonymousUser()
+        mock_request.data = {"new_email": "novo@sme.prefeitura.sp.gov.br"}
+
+        response = view.create(mock_request)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.data["detail"] == "Usuário não autenticado."
+
 
 @pytest.mark.django_db
 class TestValidarAlteracaoEmailViewSet:
+    """Testes do endpoint de validação de alteração de e-mail."""
 
     endpoint = "/api/alteracao-email/validar/"
 
@@ -136,6 +157,20 @@ class TestValidarAlteracaoEmailViewSet:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Token expirado." in response.data["detail"]
+
+    def test_update_token_inexistente(self, api_client, user):
+        api_client.force_authenticate(user=user)
+        pk = "token-inexistente"
+
+        with patch.object(
+            AlteracaoEmailService,
+            "validar",
+            side_effect=Http404(),
+        ):
+            response = api_client.put(f"{self.endpoint}{pk}/")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.data["detail"] == "Token não encontrado."
 
     def test_update_erro_inesperado(self, api_client, user):
         api_client.force_authenticate(user=user)

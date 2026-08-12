@@ -1,3 +1,5 @@
+"""Testes do management command gerar_relatorio_pep."""
+
 import ast
 from collections import Counter
 from pathlib import Path
@@ -33,6 +35,7 @@ from apps.core.management.commands.gerar_relatorio_pep import (
 
 
 class TestResolveApps:
+    """Testes de Command._resolve_apps."""
 
     def test_deve_retornar_app_unico(self):
         command = Command()
@@ -64,6 +67,7 @@ class TestResolveApps:
 
 
 class TestHandle:
+    """Testes do fluxo Command.handle para um único app."""
 
     @patch(
         "apps.core.management.commands.gerar_relatorio_pep.Command._run_single"
@@ -84,6 +88,7 @@ class TestHandle:
 
 
 class TestHandleConsolidado:
+    """Testes do fluxo Command.handle consolidado (--all)."""
 
     @patch(
         "apps.core.management.commands.gerar_relatorio_pep.Command._run_many"
@@ -104,6 +109,7 @@ class TestHandleConsolidado:
 
 
 class TestRunForApp:
+    """Testes de run_for_app."""
 
     @patch("apps.core.management.commands.gerar_relatorio_pep._app_dir")
     def test_deve_lancar_erro_quando_app_nao_existe(
@@ -202,6 +208,7 @@ class TestRunForApp:
 
 
 class TestRunMany:
+    """Testes de Command._run_many."""
 
     @patch("apps.core.management.commands.gerar_relatorio_pep.consolidate")
     @patch("apps.core.management.commands.gerar_relatorio_pep.run_for_app")
@@ -231,38 +238,33 @@ class TestRunMany:
 
 
 class TestHintLevel:
+    """Testes de _hint_level."""
 
     def test_hint_level_completo(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a: int, b: int) -> int:
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
         assert _hint_level(node) == "completo"
 
     def test_hint_level_parcial(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a, b) -> int:
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
         assert _hint_level(node) == "parcial"
 
     def test_hint_level_sem(self):
-        tree = ast.parse(
-            """
+        tree = ast.parse("""
 def soma(a, b):
     return a + b
-"""
-        )
+""")
 
         node = tree.body[0]
 
@@ -270,6 +272,7 @@ def soma(a, b):
 
 
 class TestMypyCode:
+    """Testes de _mypy_code_from_line."""
 
     def test_deve_extrair_codigo(self):
         line = "arquivo.py:10: error: incompatibilidade [arg-type]"
@@ -281,6 +284,7 @@ class TestMypyCode:
 
 
 class TestParseRequirementLine:
+    """Testes de _parse_requirement_line."""
 
     def test_git_dependency(self):
         invalid = []
@@ -325,6 +329,7 @@ class TestParseRequirementLine:
 
 
 class TestAnalyzePep440:
+    """Testes de analyze_pep440."""
 
     def test_analyze_pep440(self, tmp_path):
         requirements = tmp_path / "requirements"
@@ -353,6 +358,7 @@ class TestAnalyzePep440:
 
 
 class TestPercentuais:
+    """Testes de _pct_float."""
 
     def test_pct_float_zero(self):
         assert _pct_float(0, 0) == pytest.approx(100.0)
@@ -362,6 +368,7 @@ class TestPercentuais:
 
 
 class TestStatus:
+    """Testes de _status_palavra e _status_emoji."""
 
     def test_status_palavra_bom(self):
         assert _status_palavra(90) == "Bom"
@@ -383,6 +390,7 @@ class TestStatus:
 
 
 class TestEstimativaHoras:
+    """Testes de _estimar_horas_ajuste."""
 
     def test_estimar_horas(self):
         summary = {
@@ -401,6 +409,7 @@ class TestEstimativaHoras:
 
 
 class TestAggregate:
+    """Testes de aggregate."""
 
     def test_aggregate(self):
         file_metric = FileMetrics(
@@ -436,10 +445,10 @@ class TestAggregate:
 
 
 class TestWalkSymbols:
+    """Testes de _walk_symbols."""
 
     def test_walk_symbols(self):
-        tree = ast.parse(
-            '''
+        tree = ast.parse('''
 class Usuario:
     """doc"""
 
@@ -450,8 +459,7 @@ class Usuario:
 def processar(a: int) -> int:
     """doc"""
     return a
-'''
-        )
+''')
 
         symbols = _walk_symbols(tree)
 
@@ -463,20 +471,19 @@ def processar(a: int) -> int:
 
 
 class TestAnalyzeFile:
+    """Testes de analyze_file."""
 
     def test_analyze_file(self, tmp_path):
         arquivo = tmp_path / "service.py"
 
-        arquivo.write_text(
-            '''
+        arquivo.write_text('''
 """modulo"""
 
 
 def processar(a: int) -> int:
     """doc"""
     return a
-'''
-        )
+''')
 
         result = analyze_file(
             arquivo,
@@ -490,6 +497,7 @@ def processar(a: int) -> int:
 
 
 class TestRenderizadores:
+    """Testes dos renderizadores e da montagem do payload JSON."""
 
     def test_renderizadores_e_payload(self):
         summary = {
@@ -605,6 +613,7 @@ class TestRenderizadores:
 
 
 class TestConsolidate:
+    """Testes de consolidate."""
 
     def test_consolidate(self, tmp_path):
 
@@ -659,6 +668,7 @@ class TestConsolidate:
 
 
 class TestRunFlake8:
+    """Testes de run_flake8."""
 
     @patch("apps.core.management.commands.gerar_relatorio_pep.subprocess.run")
     def test_run_flake8(self, mock_run, tmp_path):
@@ -704,6 +714,7 @@ class TestRunFlake8:
 
 
 class TestRunMypy:
+    """Testes de run_mypy."""
 
     @patch("apps.core.management.commands.gerar_relatorio_pep.subprocess.run")
     def test_run_mypy(
@@ -736,6 +747,7 @@ class TestRunMypy:
 
 
 class TestRunSingle:
+    """Testes de Command._run_single."""
 
     @patch("apps.core.management.commands.gerar_relatorio_pep.run_for_app")
     def test_run_single(
@@ -775,6 +787,7 @@ class TestRunSingle:
 
 
 class TestHandleExtra:
+    """Testes adicionais de Command.handle cobrindo os dois fluxos."""
 
     @patch.object(Command, "_run_single")
     def test_handle_single(
