@@ -714,7 +714,16 @@ class SmeIntegracaoService:
             )
 
             if response.status_code == status.HTTP_200_OK:
-                return response.json()
+                cargos = response.json()
+
+                if cls._cargos_eol_invalidos(cargos):
+                    logger.warning(
+                        "API de cargos do EOL retornou dados inválidos, "
+                        "usando lista de cargos mapeada como fallback"
+                    )
+                    return CARGOS_GESTAO_ESCOLAR
+
+                return cargos
 
             logger.error(
                 "Erro ao consultar cargos no EOL. Status: %s | Body: %s",
@@ -726,6 +735,26 @@ class SmeIntegracaoService:
         except requests.exceptions.RequestException as e:
             logger.exception("Erro de comunicação com API de cargos no EOL")
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
+
+    @staticmethod
+    def _cargos_eol_invalidos(cargos: list[dict[str, Any]]) -> bool:
+        """Verifica se a lista de cargos retornada pelo EOL está degradada.
+
+        A API do EOL, esporadicamente, retorna uma lista não vazia em que
+        todos os itens vêm com ``codigoCargo=0`` e ``nomeCargo=null``.
+
+        Args:
+            cargos: Lista de cargos retornada pela API do EOL.
+
+        Returns:
+            bool: True quando a lista não está vazia e nenhum item possui
+            código ou nome de cargo válido.
+
+        """
+        return bool(cargos) and all(
+            not cargo.get("codigoCargo") and not cargo.get("nomeCargo")
+            for cargo in cargos
+        )
 
     @staticmethod
     def formatar_cargo(texto: str) -> str:
