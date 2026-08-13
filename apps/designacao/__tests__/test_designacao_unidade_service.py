@@ -10,6 +10,7 @@ from apps.designacao.services.designacao_unidades_service import (
     CicloService,
     DesignacaoUnidadeService,
     ModuloService,
+    ServidorService,
     TurmaService,
 )
 from apps.helpers.exceptions import SmeIntegracaoError
@@ -226,6 +227,129 @@ class TestDesignacaoUnidadeService:
 
         assert resultado["total"] == 0
 
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre"
+    )
+    @patch("apps.designacao.services.designacao_unidades_service.datetime")
+    @patch("apps.designacao.services.designacao_unidades_service.Calculadores")
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_cargos_funcionario"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.informacao_usuario_sgp"
+    )
+    def test_obter_informacoes_escolares_sem_codigo_dre_valido(
+        self,
+        mock_usuario,
+        mock_buscar_funcs,
+        mock_consulta_cargos,
+        mock_info_ue,
+        mock_buscar_turmas,
+        mock_buscar_disciplinas,
+        mock_dados_turma,
+        mock_calculadores,
+        mock_datetime,
+        mock_unidades,
+    ):
+        """Verifica que sem codigoDRE válido, a lista de unidades fica vazia."""
+        mock_datetime.now.return_value = datetime(2024, 1, 1)
+
+        mock_buscar_funcs.return_value = []
+        mock_info_ue.return_value = {}
+        mock_buscar_turmas.return_value = []
+        mock_buscar_disciplinas.return_value = []
+        mock_dados_turma.return_value = {"tipoTurno": 1}
+        mock_calculadores.get.return_value = None
+
+        resultado = DesignacaoUnidadeService.obter_informacoes_escolares(
+            "UE123"
+        )
+
+        assert resultado["codigo_hierarquico"] is None
+        mock_unidades.assert_not_called()
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_codigo_turma_invalido_ignora_turma(
+        self, mock_buscar_turmas, mock_buscar_disciplinas
+    ):
+        """Verifica que turma com código inválido é ignorada."""
+        mock_buscar_turmas.return_value = [{"codigoTurma": None}]
+        mock_buscar_disciplinas.return_value = []
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["total"] == 0
+        mock_buscar_disciplinas.assert_not_called()
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_codigo_turma_inteiro(
+        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
+    ):
+        """Verifica que código de turma inteiro é aceito normalmente."""
+        mock_buscar_turmas.return_value = [
+            {
+                "codigoTurma": 999,
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
+        ]
+        mock_buscar_disciplinas.return_value = []
+        mock_dados_turma.return_value = {"tipoTurno": 1}
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["total"] == 1
+        mock_dados_turma.assert_called_once_with(999)
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_tipo_turno_nao_inteiro_ignora_turma(
+        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
+    ):
+        """Verifica que turma com tipoTurno não inteiro é ignorada."""
+        mock_buscar_turmas.return_value = [{"codigoTurma": "T1"}]
+        mock_buscar_disciplinas.return_value = []
+        mock_dados_turma.return_value = {"tipoTurno": None}
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["total"] == 0
+
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
         resultado = DesignacaoUnidadeService.listar_cargos_vaga()
@@ -434,6 +558,11 @@ class TestCicloService:
         turma = {"siglaModalidade": "EJA", "nomeTurmaEOL": "5º termo"}
         assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
 
+    def test_ciclo_eja_sem_numero(self):
+        """Verifica ciclo eja sem numero no nome da turma."""
+        turma = {"siglaModalidade": "EJA", "nomeTurmaEOL": "termo indefinido"}
+        assert CicloService.definir_ciclo_turma(turma) == "sem_ciclo"
+
     def test_ciclo_em(self):
         """Verifica ciclo em."""
         turma = {"siglaModalidade": "EM", "nomeTurmaEOL": "2ª série"}
@@ -502,6 +631,18 @@ class TestCicloService:
     def test_mapear_nome_ciclo_default(self):
         """Verifica mapear nome ciclo default."""
         assert CicloService.mapear_nome_ciclo("inexistente") == "semCiclo"
+
+
+class TestServidorService:
+    """Testes para servidor service."""
+
+    def test_enriquecer_com_rf_invalido_retorna_dados_vazios(self):
+        """Verifica que rf não string retorna dados vazios sem chamar SME."""
+        resultado = ServidorService.enriquecer({"rf": 12345})
+
+        assert resultado["rf"] == 12345
+        assert resultado["nome_servidor"] is None
+        assert resultado["nome_civil"] is None
 
 
 class TestFuncaoNormalizar:

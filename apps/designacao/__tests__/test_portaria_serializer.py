@@ -5,6 +5,7 @@ incluindo designações, cess ações, insubsistências e apostilas.
 """
 
 from datetime import date
+from unittest.mock import Mock
 
 import pytest
 
@@ -359,6 +360,34 @@ class TestPortariaListSerializer:
         """Verifica tipo de ato apostila."""
         assert serialize(apostila)["tipo_de_ato"] == "Apostila de Designação"
 
+    def test_tipo_de_ato_tornar_sem_efeito(self, insubsistencia):
+        """Verifica tipo de ato ao insubsistir uma insubsistência (TSE)."""
+        tse = AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
+            numero_portaria="008/2024",
+            ano_vigente="2024",
+            sei_numero="6018.2024/0008901-2",
+            ativo=True,
+            ato_pai=insubsistencia,
+        )
+        InsubsistenciaDetalhe.objects.create(ato=tse, observacoes="")
+
+        assert serialize(tse)["tipo_de_ato"] == "Tornar sem efeito"
+
+    def test_tipo_de_ato_anulacao_de_apostila(self, apostila):
+        """Verifica tipo de ato ao insubsistir uma apostila."""
+        anulacao = AtoAdministrativo.objects.create(
+            tipo="INSUBSISTENCIA",
+            numero_portaria="009/2024",
+            ano_vigente="2024",
+            sei_numero="6018.2024/0009012-3",
+            ativo=True,
+            ato_pai=apostila,
+        )
+        InsubsistenciaDetalhe.objects.create(ato=anulacao, observacoes="")
+
+        assert serialize(anulacao)["tipo_de_ato"] == "Anulação de Apostila"
+
     # ── tipo_de_ato ──────────────────────────────────────────────────────────
 
     def test_tipo_de_designacao(self, designacao):
@@ -421,6 +450,15 @@ class TestPortariaListSerializer:
         ).get(pk=apostila.pk)
         assert serialize(ato)["nome"] == "MARIA SILVA"
 
+    def test_nome_retorna_none_sem_designacao_na_cadeia(self):
+        """Verifica nome retorna None quando não há designação na cadeia."""
+        serializer = PortariaListSerializer()
+        obj = Mock(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, ato_raiz=None, ato_pai=None
+        )
+
+        assert serializer.get_nome(obj) is None
+
     # ── cargo ────────────────────────────────────────────────────────────────
 
     def test_cargo_usa_sobreposto(self, designacao):
@@ -436,6 +474,15 @@ class TestPortariaListSerializer:
             == "PROFESSOR DE EF II"
         )
 
+    def test_cargo_retorna_none_sem_designacao_na_cadeia(self):
+        """Verifica cargo retorna None quando não há designação na cadeia."""
+        serializer = PortariaListSerializer()
+        obj = Mock(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, ato_raiz=None, ato_pai=None
+        )
+
+        assert serializer.get_cargo(obj) is None
+
     # ── data_designacao ──────────────────────────────────────────────────────
 
     def test_data_designacao(self, designacao):
@@ -449,6 +496,15 @@ class TestPortariaListSerializer:
             "ato_raiz__designacao_detalhe",
         ).get(pk=cessacao.pk)
         assert serialize(ato)["data_designacao"] == date(2024, 1, 15)
+
+    def test_data_designacao_retorna_none_sem_designacao_na_cadeia(self):
+        """Verifica data_designacao retorna None sem designação na cadeia."""
+        serializer = PortariaListSerializer()
+        obj = Mock(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, ato_raiz=None, ato_pai=None
+        )
+
+        assert serializer.get_data_designacao(obj) is None
 
     # ── data_cessacao ────────────────────────────────────────────────────────
 

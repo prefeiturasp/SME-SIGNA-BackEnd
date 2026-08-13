@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from rest_framework.exceptions import ValidationError
 
 from apps.usuarios.api.serializers.senha_serializer import (
     RedefinirSenhaSerializer,
@@ -135,6 +136,27 @@ class TestRedefinirSenhaSerializer:
             serializer.errors["non_field_errors"][0]
             == "UID inválido ou malformado."
         )
+
+    def test_validate_uid_none_gera_uid_invalid(self):
+        """Verifica que uid None no dict de atributos gera uid_invalid.
+
+        O campo `uid` é obrigatório e não aceita None via `is_valid()`, mas o
+        branch defensivo em `validate()` é exercitado chamando o método
+        diretamente com atributos já validados individualmente.
+        """
+        serializer = RedefinirSenhaSerializer()
+
+        with pytest.raises(ValidationError) as exc_info:
+            serializer.validate(
+                {
+                    "uid": None,
+                    "token": "token",
+                    "new_pass": "Senha@123",
+                    "new_pass_confirm": "Senha@123",
+                }
+            )
+
+        assert exc_info.value.get_codes() == ["uid_invalid"]
 
     def test_serializer_uid_not_numeric(self, django_user_model):
         """UID decodificado não numérico deve retornar uid_invalid."""
