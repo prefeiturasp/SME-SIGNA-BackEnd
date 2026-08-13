@@ -156,6 +156,22 @@ def test_create_designacao_registra_criado_por(auth_client):
 
 
 @pytest.mark.django_db
+def test_partial_update_designacao(auth_client):
+    """Verifica que partial_update atualiza campos da designação."""
+    ato = criar_ato_designacao(numero_portaria="111")
+
+    url = reverse("designacao:designacao-detail", args=[ato.id])
+    response = auth_client.patch(
+        url, data={"numero_portaria": "222"}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert response.data["numero_portaria"] == "222"
+    ato.refresh_from_db()
+    assert ato.numero_portaria == "222"
+
+
+@pytest.mark.django_db
 def test_destroy_designacao(auth_client):
     """Verifica destroy designacao."""
     ato = criar_ato_designacao()
