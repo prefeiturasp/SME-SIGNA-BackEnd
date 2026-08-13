@@ -690,6 +690,72 @@ class SmeIntegracaoService:
             )
             raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
 
+    @classmethod
+    def buscar_cargos(cls) -> list[dict[str, Any]]:
+        """Busca a lista de cargos cadastrados no EOL.
+
+        Returns:
+            list[dict[str, Any]]: Lista de cargos retornados pela SME.
+
+        Raises:
+            SmeIntegracaoError: Quando a API retornar erro ou houver falha
+            de comunicação.
+
+        """
+        url = f"{env('SME_INTEGRACAO_URL', default='')}/cargos"
+
+        logger.info("Consultando cargos no EOL")
+
+        try:
+            response = requests.get(
+                url,
+                headers=cls.DEFAULT_HEADERS,
+                timeout=cls.TIMEOUT,
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                cargos = response.json()
+
+                if cls._cargos_eol_invalidos(cargos):
+                    logger.warning(
+                        "API de cargos do EOL retornou dados inválidos, "
+                        "usando lista de cargos mapeada como fallback"
+                    )
+                    return CARGOS_GESTAO_ESCOLAR
+
+                return cargos
+
+            logger.error(
+                "Erro ao consultar cargos no EOL. Status: %s | Body: %s",
+                response.status_code,
+                response.text,
+            )
+            raise SmeIntegracaoError(MSG_ERRO_CARGOS)
+
+        except requests.exceptions.RequestException as e:
+            logger.exception("Erro de comunicação com API de cargos no EOL")
+            raise SmeIntegracaoError(MSG_ERRO_COMUNICACAO_SME) from e
+
+    @staticmethod
+    def _cargos_eol_invalidos(cargos: list[dict[str, Any]]) -> bool:
+        """Verifica se a lista de cargos retornada pelo EOL está degradada.
+
+        A API do EOL, esporadicamente, retorna uma lista não vazia em que
+        todos os itens vêm com ``codigoCargo=0`` e ``nomeCargo=null``.
+
+        Args:
+            cargos: Lista de cargos retornada pela API do EOL.
+
+        Returns:
+            bool: True quando a lista não está vazia e nenhum item possui
+            código ou nome de cargo válido.
+
+        """
+        return bool(cargos) and all(
+            not cargo.get("codigoCargo") and not cargo.get("nomeCargo")
+            for cargo in cargos
+        )
+
     @staticmethod
     def formatar_cargo(texto: str) -> str:
         """Formata o nome de um cargo extraindo a parte principal.

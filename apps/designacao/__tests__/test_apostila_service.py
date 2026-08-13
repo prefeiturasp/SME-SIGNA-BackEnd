@@ -167,3 +167,39 @@ class TestApostilaService:
         )
         d.designacao_detalhe.refresh_from_db()
         assert d.designacao_detalhe.tipo_vaga == "DISPONIVEL"
+
+    def test_erro_alteracao_em_campo_inexistente(self):
+        """Verifica erro ao alterar campo inexistente no ato pai/detalhe."""
+        d = criar_ato_designacao()
+        with pytest.raises(ValidationError, match="não encontrado"):
+            ApostilaService.criar(
+                self._data(
+                    d,
+                    alteracoes=[
+                        {
+                            "campo_alterado": "campo_inexistente",
+                            "valor_novo": "x",
+                        },
+                    ],
+                )
+            )
+
+    def test_erro_alteracao_em_campo_protegido(self):
+        """Verifica erro ao alterar campo protegido via apostila."""
+        d = criar_ato_designacao()
+        with pytest.raises(ValidationError, match="não pode ser alterado"):
+            ApostilaService.criar(
+                self._data(
+                    d,
+                    alteracoes=[
+                        {"campo_alterado": "tipo", "valor_novo": "CESSACAO"},
+                    ],
+                )
+            )
+
+    def test_get_detalhe_retorna_none_para_tipo_sem_detalhe(self):
+        """Verifica que _get_detalhe retorna None para tipos sem detalhe."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+
+        assert ApostilaService._get_detalhe(apostila) is None

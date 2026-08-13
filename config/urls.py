@@ -33,6 +33,8 @@ urlpatterns = [
     ),
     # APIs da sua app (apps.unidades)
     path("api/unidades/", include("apps.unidades.urls", namespace="unidades")),
+    # APIs da sua app (apps.gestao)
+    path("api/gestao/", include("apps.gestao.urls", namespace="gestao")),
     # não enviar para produção
     path("admin/", admin.site.urls),
     # Documentação da API

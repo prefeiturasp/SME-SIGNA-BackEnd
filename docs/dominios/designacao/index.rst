@@ -348,7 +348,9 @@ Designações
      - Atualiza parcialmente uma designação.
    * - ``DELETE``
      - ``designacoes/<id>/``
-     - Remove uma designação (exclusão física do ato).
+     - Remove uma designação (exclusão física do ato). Bloqueada com
+       ``400`` quando existirem atos derivados (cessação, apostila ou
+       insubsistência) associados — estes devem ser excluídos primeiro.
    * - ``GET``
      - ``designacoes/cargos-base-pareados/``
      - Cargos base combinados (indicado + titular), sem repetição.
