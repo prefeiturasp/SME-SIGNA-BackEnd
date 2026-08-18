@@ -61,6 +61,16 @@ class CargoBase(models.Model):
     cargo_base_ficticio = models.BooleanField(
         "Cargo base fictício", default=False
     )
+    testar_laudo = models.BooleanField("Testar laudo", default=False)
+    pesquisar_licencas_no_sigpec = models.BooleanField(
+        "Pesquisar Licenças no SIGPEC", default=False
+    )
+    quantidade_maxima_de_dias_de_licenca = models.IntegerField(
+        "Quantidade máxima de dias de licença",
+        default=0,
+        null=True,
+        blank=True,
+    )
 
     criado_em = models.DateTimeField(auto_now_add=True)
 
