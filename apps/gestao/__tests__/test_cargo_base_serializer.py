@@ -1,14 +1,62 @@
 """Testes para os serializadores de CargoBase."""
 
 import pytest
+from rest_framework import serializers
 
 from apps.gestao.__tests__.factories import criar_cargo_base
 from apps.gestao.api.serializers.cargo_base_serializer import (
+    MSG_LICENCA_OBRIGATORIO,
+    MSG_LICENCA_ZERADA,
     CargoBaseReadSerializer,
     CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
+    validate_quantidade_maxima_de_dias_de_licenca,
 )
 from apps.gestao.models.cargo_base import CargoBase
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_ignora_quantidade_sem_pesquisa():
+    """Verifica que a quantidade não é exigida quando a pesquisa está desligada."""
+    attrs = {"pesquisar_licencas_no_sigpec": False}
+
+    resultado = validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_aceita_quantidade_positiva():
+    """Verifica que a pesquisa aceita uma quantidade positiva."""
+    attrs = {
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 30,
+    }
+
+    resultado = validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_ausente():
+    """Verifica que a pesquisa exige uma quantidade máxima de dias."""
+    attrs = {"pesquisar_licencas_no_sigpec": True}
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert MSG_LICENCA_OBRIGATORIO in str(exc_info.value)
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_zero():
+    """Verifica que a pesquisa rejeita quantidade máxima zerada."""
+    attrs = {
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 0,
+    }
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert MSG_LICENCA_ZERADA in str(exc_info.value)
 
 
 @pytest.mark.django_db
