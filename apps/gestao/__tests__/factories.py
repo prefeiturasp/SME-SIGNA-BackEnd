@@ -3,6 +3,7 @@
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.cargo_base import CargoBase
 from apps.gestao.models.modelo_portaria import ModeloPortaria
+from apps.gestao.models.regra_portaria import RegraPortaria
 
 
 def criar_cargo_base(**kwargs) -> CargoBase:
@@ -35,3 +36,25 @@ def criar_modelo_portaria(**kwargs) -> ModeloPortaria:
     }
     defaults.update(kwargs)
     return ModeloPortaria.objects.create(**defaults)
+
+
+def criar_regra_portaria(**kwargs) -> RegraPortaria:
+    """Cria uma regra de portaria com valores padrão para uso em testes."""
+    defaults = {
+        "descricao_resumida_cargo": "Diretor",
+        "descricao_completa_cargo": "Diretor de escola",
+        "codigo_cargo_eol": "3360",
+        "tipo_modulo": RegraPortaria.TipoModulo.TURMAS,
+        "status": RegraPortaria.Status.ATIVO,
+        "texto_publicacao": (
+            "Designar o(a) servidor(a) para exercer a função de Diretor de "
+            "Escola, na unidade educacional informada, nos termos da "
+            "legislação vigente."
+        ),
+        "emitente": RegraPortaria.Emitente.SECRETARIO_MUNICIPAL_EDUCACAO,
+        "normas": "",
+        "observacoes": "",
+        "utilizar_numero_sei": False,
+    }
+    defaults.update(kwargs)
+    return RegraPortaria.objects.create(**defaults)

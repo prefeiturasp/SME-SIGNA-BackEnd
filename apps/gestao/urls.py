@@ -8,6 +8,7 @@ from apps.gestao.api.views.modelo_portaria_view import (
     ModeloPortariaVariaveisView,
     ModeloPortariaViewSet,
 )
+from apps.gestao.api.views.regra_portaria_view import RegraPortariaViewSet
 
 app_name = "gestao"
 
@@ -43,5 +44,17 @@ urlpatterns = [
         "modelos-portaria/<int:pk>/",
         ModeloPortariaViewSet.as_view({"get": "retrieve"}),
         name="modelos-portaria-detail",
+    ),
+    path(
+        "regras-portaria/",
+        RegraPortariaViewSet.as_view({"get": "list", "post": "create"}),
+        name="regras-portaria",
+    ),
+    path(
+        "regras-portaria/<int:pk>/",
+        RegraPortariaViewSet.as_view(
+            {"get": "retrieve", "patch": "partial_update"}
+        ),
+        name="regras-portaria-detail",
     ),
 ]
