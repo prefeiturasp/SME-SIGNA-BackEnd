@@ -1,14 +1,62 @@
 """Testes para os serializadores de CargoBase."""
 
 import pytest
+from rest_framework import serializers
 
 from apps.gestao.__tests__.factories import criar_cargo_base
 from apps.gestao.api.serializers.cargo_base_serializer import (
+    MSG_LICENCA_OBRIGATORIO,
+    MSG_LICENCA_ZERADA,
     CargoBaseReadSerializer,
     CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
+    validate_quantidade_maxima_de_dias_de_licenca,
 )
 from apps.gestao.models.cargo_base import CargoBase
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_ignora_quantidade_sem_pesquisa():
+    """Verifica que a quantidade não é exigida quando a pesquisa está desligada."""
+    attrs = {"pesquisar_licencas_no_sigpec": False}
+
+    resultado = validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_aceita_quantidade_positiva():
+    """Verifica que a pesquisa aceita uma quantidade positiva."""
+    attrs = {
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 30,
+    }
+
+    resultado = validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_ausente():
+    """Verifica que a pesquisa exige uma quantidade máxima de dias."""
+    attrs = {"pesquisar_licencas_no_sigpec": True}
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert MSG_LICENCA_OBRIGATORIO in str(exc_info.value)
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_zero():
+    """Verifica que a pesquisa rejeita quantidade máxima zerada."""
+    attrs = {
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 0,
+    }
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert MSG_LICENCA_ZERADA in str(exc_info.value)
 
 
 @pytest.mark.django_db
@@ -31,6 +79,15 @@ def test_read_serializer_expoe_todos_os_campos():
     assert data["utilizado_para_ste"] == cargo.utilizado_para_ste
     assert data["utilizado_para_permutas"] == cargo.utilizado_para_permutas
     assert data["cargo_base_ficticio"] == cargo.cargo_base_ficticio
+    assert data["testar_laudo"] == cargo.testar_laudo
+    assert (
+        data["pesquisar_licencas_no_sigpec"]
+        == cargo.pesquisar_licencas_no_sigpec
+    )
+    assert (
+        data["quantidade_maxima_de_dias_de_licenca"]
+        == cargo.quantidade_maxima_de_dias_de_licenca
+    )
     assert "criado_em" in data
 
 
@@ -69,6 +126,29 @@ def test_write_serializer_valido_cria_cargo_base():
 
 
 @pytest.mark.django_db
+def test_write_serializer_valido_cria_cargo_base_com_campos_opcionais():
+    """Verifica que o serializer de escrita valida e cria um cargo base."""
+    payload = {
+        "codigo_cargo": "3085",
+        "descricao_completa": "ASSISTENTE DE DIRETOR DE ESCOLA",
+        "descricao_resumida": "Assistente de Diretor",
+        "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+        "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+        "testar_laudo": True,
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 30,
+    }
+
+    serializer = CargoBaseWriteSerializer(data=payload)
+
+    assert serializer.is_valid(), serializer.errors
+    cargo = serializer.save()
+    assert cargo.pesquisar_licencas_no_sigpec
+    assert cargo.quantidade_maxima_de_dias_de_licenca == 30
+    assert cargo.testar_laudo
+
+
+@pytest.mark.django_db
 def test_write_serializer_rejeita_codigo_cargo_duplicado():
     """Verifica que o serializer rejeita código de cargo já cadastrado."""
     criar_cargo_base(codigo_cargo="3360")
@@ -85,6 +165,43 @@ def test_write_serializer_rejeita_codigo_cargo_duplicado():
 
     assert not serializer.is_valid()
     assert "codigo_cargo" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_invalida():
+    """Verifica que campos vindos do EOL não são editáveis via atualização."""
+    payload = {
+        "codigo_cargo": "10000",
+        "descricao_completa": "CARGO QUALQUER",
+        "descricao_resumida": "Cargo Qualquer",
+        "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+        "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+        "pesquisar_licencas_no_sigpec": True,
+    }
+
+    serializer = CargoBaseWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_zero():
+    """Verifica que campos vindos do EOL não são editáveis via atualização."""
+    payload = {
+        "codigo_cargo": "10000",
+        "descricao_completa": "CARGO QUALQUER",
+        "descricao_resumida": "Cargo Qualquer",
+        "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+        "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 0,
+    }
+
+    serializer = CargoBaseWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
 
 
 @pytest.mark.django_db
@@ -143,3 +260,43 @@ def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
     cargo_atualizado = serializer.save()
     assert cargo_atualizado.codigo_cargo == "3360"
     assert cargo_atualizado.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+
+
+@pytest.mark.django_db
+def test_update_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_invalida():
+    """Verifica que campos vindos do EOL não são editáveis via atualização."""
+    cargo = criar_cargo_base(
+        codigo_cargo="3360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
+    )
+
+    payload = {"pesquisar_licencas_no_sigpec": True}
+
+    serializer = CargoBaseUpdateSerializer(cargo, data=payload, partial=True)
+
+    assert not serializer.is_valid()
+    assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_update_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_zero():
+    """Verifica que campos vindos do EOL não são editáveis via atualização."""
+    cargo = criar_cargo_base(
+        codigo_cargo="3361", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
+    )
+
+    payload = {
+        "pesquisar_licencas_no_sigpec": True,
+        "quantidade_maxima_de_dias_de_licenca": 0,
+    }
+
+    serializer = CargoBaseUpdateSerializer(cargo, data=payload, partial=True)
+    resposta_esperada = (
+        "Quantidade máxima de dias de licença deve ser maior que zero"
+    )
+
+    assert not serializer.is_valid()
+    assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
+    assert (
+        resposta_esperada
+        in serializer.errors["quantidade_maxima_de_dias_de_licenca"][0]
+    )

@@ -156,6 +156,21 @@ def test_create_designacao_registra_criado_por(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_designacao_payload_invalido_retorna_detail_especifico(
+    auth_client,
+):
+    """Verifica que erros de validação retornam detail com os campos."""
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data={}, format="json")
+
+    assert response.status_code == 400
+    assert "numero_portaria" in response.data
+    assert "detail" in response.data
+    assert response.data["detail"] not in ("", None)
+    assert "numero_portaria" in response.data["detail"]
+
+
+@pytest.mark.django_db
 def test_partial_update_designacao(auth_client):
     """Verifica que partial_update atualiza campos da designação."""
     ato = criar_ato_designacao(numero_portaria="111")
