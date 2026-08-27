@@ -1,7 +1,7 @@
 """Filtros para consulta de modelos de portaria.
 
-Permite localizar modelos de portaria por tipo de portaria, status,
-tipo de cargo e nome do modelo.
+Permite localizar modelos de portaria por tipo de portaria, tipo de
+ato pai, status, tipo de cargo, nome do modelo e data de criação.
 """
 
 import django_filters
@@ -23,6 +23,11 @@ class ModeloPortariaFilter(django_filters.FilterSet):
         choices=AtoAdministrativo.Tipo.choices,
         label="Tipo de portaria",
     )
+    tipo_ato_pai = django_filters.ChoiceFilter(
+        field_name="tipo_ato_pai",
+        choices=AtoAdministrativo.Tipo.choices,
+        label="Tipo do ato pai",
+    )
     status = django_filters.ChoiceFilter(
         field_name="status",
         choices=ModeloPortaria.Status.choices,
@@ -33,12 +38,18 @@ class ModeloPortariaFilter(django_filters.FilterSet):
         choices=ModeloPortaria.TipoCargo.choices,
         label="Tipo de cargo",
     )
+    criado_em = django_filters.DateFromToRangeFilter(
+        field_name="criado_em",
+        label="Data de criação",
+    )
 
     class Meta:
         model = ModeloPortaria
         fields = [
             "nome_modelo",
             "tipo_portaria",
+            "tipo_ato_pai",
             "status",
             "tipo_cargo",
+            "criado_em",
         ]
