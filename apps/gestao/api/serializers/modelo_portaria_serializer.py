@@ -25,6 +25,7 @@ class ModeloPortariaReadSerializer(serializers.ModelSerializer):
     tipo_cargo_display = serializers.CharField(
         source="get_tipo_cargo_display", read_only=True
     )
+    tipo_de_ato = serializers.SerializerMethodField()
 
     class Meta:
         model = ModeloPortaria
@@ -34,6 +35,7 @@ class ModeloPortariaReadSerializer(serializers.ModelSerializer):
             "tipo_portaria_display",
             "tipo_ato_pai",
             "tipo_ato_pai_display",
+            "tipo_de_ato",
             "status",
             "status_display",
             "nome_modelo",
@@ -45,6 +47,22 @@ class ModeloPortariaReadSerializer(serializers.ModelSerializer):
             "criado_em",
             "atualizado_em",
         ]
+
+    def get_tipo_de_ato(self, obj: ModeloPortaria) -> str:
+        """Retorna o tipo do ato concatenado com o tipo do ato pai.
+
+        Args:
+            obj: Instância de ModeloPortaria.
+
+        Returns:
+            str: Nome legível do tipo de ato, ex.: "Apostila de Cessação".
+
+        """
+        tipo_portaria_display = obj.get_tipo_portaria_display()
+        if obj.tipo_ato_pai:
+            tipo_ato_pai_display = obj.get_tipo_ato_pai_display()
+            return f"{tipo_portaria_display} de {tipo_ato_pai_display}"
+        return tipo_portaria_display
 
 
 class ModeloPortariaWriteSerializer(serializers.ModelSerializer):

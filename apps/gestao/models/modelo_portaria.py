@@ -72,7 +72,7 @@ class ModeloPortaria(models.Model):
 
     class Meta:
         db_table = "modelo_portaria"
-        ordering = ["nome_modelo"]
+        ordering = ["-criado_em"]
 
     def __str__(self) -> str:
         """Retorna a representação textual do modelo de portaria.

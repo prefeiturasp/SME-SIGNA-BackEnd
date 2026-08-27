@@ -28,6 +28,7 @@ def test_read_serializer_expoe_todos_os_campos():
     assert data["texto_portaria"] == modelo.texto_portaria
     assert "criado_em" in data
     assert "atualizado_em" in data
+    assert "tipo_de_ato" in data
 
 
 @pytest.mark.django_db
@@ -44,6 +45,48 @@ def test_read_serializer_expoe_displays_legiveis():
     assert data["tipo_portaria_display"] == "Designação"
     assert data["status_display"] == "Ativo"
     assert data["tipo_cargo_display"] == "Cargo vago"
+
+
+@pytest.mark.django_db
+def test_read_serializer_expoe_tipo_ato_pai_de_apostila():
+    """Verifica que o serializer de leitura expõe o tipo do ato pai."""
+    modelo = criar_modelo_portaria(
+        nome_modelo="Apostila de cessação",
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.CESSACAO,
+    )
+
+    data = ModeloPortariaReadSerializer(modelo).data
+
+    assert data["tipo_ato_pai"] == AtoAdministrativo.Tipo.CESSACAO
+    assert data["tipo_ato_pai_display"] == "Cessação"
+
+
+@pytest.mark.django_db
+def test_read_serializer_expoe_tipo_de_ato_concatenado_quando_ha_pai():
+    """Verifica a concatenação de tipo_portaria com tipo_ato_pai."""
+    modelo = criar_modelo_portaria(
+        nome_modelo="Apostila de cessação",
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.CESSACAO,
+    )
+
+    data = ModeloPortariaReadSerializer(modelo).data
+
+    assert data["tipo_de_ato"] == "Apostila de Cessação"
+
+
+@pytest.mark.django_db
+def test_read_serializer_expoe_tipo_de_ato_sem_concatenar_quando_nao_ha_pai():
+    """Verifica que tipo_de_ato não concatena quando não há ato pai."""
+    modelo = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_ato_pai="",
+    )
+
+    data = ModeloPortariaReadSerializer(modelo).data
+
+    assert data["tipo_de_ato"] == "Designação"
 
 
 @pytest.mark.django_db

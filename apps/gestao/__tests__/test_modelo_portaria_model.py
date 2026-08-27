@@ -1,6 +1,9 @@
 """Testes para o model ModeloPortaria."""
 
+from datetime import timedelta
+
 import pytest
+from django.utils import timezone
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.__tests__.factories import criar_modelo_portaria
@@ -75,3 +78,20 @@ def test_tipo_ato_pai_persiste_valor():
 
     modelo.refresh_from_db()
     assert modelo.tipo_ato_pai == AtoAdministrativo.Tipo.CESSACAO
+
+
+@pytest.mark.django_db
+def test_ordering_padrao_e_por_criado_em_decrescente():
+    """Verifica que a listagem padrão traz os modelos mais recentes primeiro."""
+    mais_antigo = criar_modelo_portaria(nome_modelo="Modelo A")
+    mais_novo = criar_modelo_portaria(nome_modelo="Modelo B")
+
+    agora = timezone.now()
+    ModeloPortaria.objects.filter(pk=mais_antigo.pk).update(
+        criado_em=agora - timedelta(days=1)
+    )
+    ModeloPortaria.objects.filter(pk=mais_novo.pk).update(criado_em=agora)
+
+    resultado = list(ModeloPortaria.objects.all())
+
+    assert resultado == [mais_novo, mais_antigo]
