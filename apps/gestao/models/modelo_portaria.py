@@ -49,8 +49,8 @@ class ModeloPortaria(models.Model):
         "Tipo do ato pai",
         max_length=20,
         choices=AtoAdministrativo.Tipo.choices,
-        null=True,
         blank=True,
+        default="",
     )
     status = models.CharField(
         max_length=10,

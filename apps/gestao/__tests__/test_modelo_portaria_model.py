@@ -57,11 +57,11 @@ def test_variaveis_persiste_lista_de_chaves():
 
 
 @pytest.mark.django_db
-def test_tipo_ato_pai_default_e_none():
-    """Verifica que tipo_ato_pai é None por padrão."""
+def test_tipo_ato_pai_default_e_vazio():
+    """Verifica que tipo_ato_pai é string vazia por padrão."""
     modelo = criar_modelo_portaria()
 
-    assert modelo.tipo_ato_pai is None
+    assert modelo.tipo_ato_pai == ""
 
 
 @pytest.mark.django_db

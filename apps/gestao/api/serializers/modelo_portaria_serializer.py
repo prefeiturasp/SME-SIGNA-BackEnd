@@ -57,7 +57,7 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
     tipo_ato_pai = serializers.ChoiceField(
         choices=AtoAdministrativo.Tipo.choices,
         required=False,
-        allow_null=True,
+        allow_blank=True,
     )
 
     class Meta:
@@ -100,7 +100,7 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
             "tipo_portaria", getattr(self.instance, "tipo_portaria", "")
         )
         tipo_ato_pai = attrs.get(
-            "tipo_ato_pai", getattr(self.instance, "tipo_ato_pai", None)
+            "tipo_ato_pai", getattr(self.instance, "tipo_ato_pai", "")
         )
         tipos_validos = AtoAdministrativo.TIPOS_PAI_VALIDOS.get(
             tipo_portaria, set()
