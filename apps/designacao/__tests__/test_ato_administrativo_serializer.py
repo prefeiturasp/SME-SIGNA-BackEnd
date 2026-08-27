@@ -299,6 +299,7 @@ class TestPortariaListSerializer:
             "apostilas",
             "insubsistencia",
             "tipo_insubsistencia",
+            "ato_pai_id",
         }
 
     def test_portaria(self, designacao):

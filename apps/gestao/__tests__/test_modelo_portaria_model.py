@@ -54,3 +54,24 @@ def test_variaveis_persiste_lista_de_chaves():
 
     modelo.refresh_from_db()
     assert modelo.variaveis == ["NOME_SERVIDOR", "NUMERO_RF", "UNIDADE"]
+
+
+@pytest.mark.django_db
+def test_tipo_ato_pai_default_e_vazio():
+    """Verifica que tipo_ato_pai é string vazia por padrão."""
+    modelo = criar_modelo_portaria()
+
+    assert modelo.tipo_ato_pai == ""
+
+
+@pytest.mark.django_db
+def test_tipo_ato_pai_persiste_valor():
+    """Verifica que tipo_ato_pai é persistido para apostila/insubsistência."""
+    modelo = criar_modelo_portaria(
+        nome_modelo="Apostila de cessação",
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.CESSACAO,
+    )
+
+    modelo.refresh_from_db()
+    assert modelo.tipo_ato_pai == AtoAdministrativo.Tipo.CESSACAO

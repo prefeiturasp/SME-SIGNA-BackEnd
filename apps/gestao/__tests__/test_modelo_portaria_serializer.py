@@ -19,6 +19,7 @@ def test_read_serializer_expoe_todos_os_campos():
     data = ModeloPortariaReadSerializer(modelo).data
 
     assert data["tipo_portaria"] == modelo.tipo_portaria
+    assert data["tipo_ato_pai"] == modelo.tipo_ato_pai
     assert data["status"] == modelo.status
     assert data["nome_modelo"] == modelo.nome_modelo
     assert data["tipo_cargo"] == modelo.tipo_cargo
@@ -97,3 +98,93 @@ def test_write_serializer_rejeita_variavel_invalida():
 
     assert not serializer.is_valid()
     assert "variaveis" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_valido_cria_apostila_com_tipo_ato_pai():
+    """Verifica que apostila é criada com tipo_ato_pai compatível."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.APOSTILA,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.CESSACAO,
+        "nome_modelo": "Apostila de cessação",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert serializer.is_valid(), serializer.errors
+    modelo = serializer.save()
+    assert modelo.tipo_ato_pai == AtoAdministrativo.Tipo.CESSACAO
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_tipo_ato_pai_ausente_para_apostila():
+    """Verifica que apostila sem tipo_ato_pai é rejeitada."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.APOSTILA,
+        "nome_modelo": "Apostila sem pai",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "tipo_ato_pai" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_tipo_ato_pai_invalido_para_apostila():
+    """Verifica que apostila só aceita DESIGNACAO/CESSACAO como ato pai."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.APOSTILA,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.INSUBSISTENCIA,
+        "nome_modelo": "Apostila inválida",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "tipo_ato_pai" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_tipo_ato_pai_para_designacao():
+    """Verifica que designação não aceita tipo_ato_pai."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.CESSACAO,
+        "nome_modelo": "Designação com pai indevido",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "tipo_ato_pai" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_write_serializer_valido_cria_insubsistencia_para_cada_tipo_pai():
+    """Verifica que insubsistência aceita qualquer um dos 4 tipos pai."""
+    for tipo_pai in [
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        AtoAdministrativo.Tipo.CESSACAO,
+        AtoAdministrativo.Tipo.APOSTILA,
+        AtoAdministrativo.Tipo.INSUBSISTENCIA,
+    ]:
+        payload = {
+            "tipo_portaria": AtoAdministrativo.Tipo.INSUBSISTENCIA,
+            "tipo_ato_pai": tipo_pai,
+            "nome_modelo": f"Insubsistência de {tipo_pai}",
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+            "texto_portaria": "Texto qualquer",
+        }
+
+        serializer = ModeloPortariaWriteSerializer(data=payload)
+
+        assert serializer.is_valid(), serializer.errors

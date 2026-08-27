@@ -2,7 +2,10 @@
 
 Define o cadastro de modelos de texto usados na emissão de portarias,
 com variáveis (placeholders) que são substituídas pelos dados reais no
-momento da emissão.
+momento da emissão. Apostilas e insubsistências têm um modelo por
+combinação de `tipo_portaria` e `tipo_ato_pai`, já que seu texto varia
+conforme o tipo do ato de origem (ex.: apostila de designação x apostila
+de cessação).
 """
 
 from django.db import models
@@ -41,6 +44,13 @@ class ModeloPortaria(models.Model):
         "Tipo de portaria",
         max_length=20,
         choices=AtoAdministrativo.Tipo.choices,
+    )
+    tipo_ato_pai = models.CharField(
+        "Tipo do ato pai",
+        max_length=20,
+        choices=AtoAdministrativo.Tipo.choices,
+        blank=True,
+        default="",
     )
     status = models.CharField(
         max_length=10,
