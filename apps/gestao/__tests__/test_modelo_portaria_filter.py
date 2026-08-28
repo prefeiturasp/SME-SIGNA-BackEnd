@@ -1,6 +1,9 @@
 """Testes para o ModeloPortariaFilter."""
 
+import datetime
+
 import pytest
+from django.utils import timezone
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.__tests__.factories import criar_modelo_portaria
@@ -42,6 +45,32 @@ def test_filtra_por_tipo_portaria():
 
     assert resultado.count() == 1
     assert resultado.first().nome_modelo == "Cessação diretor de escola"
+
+
+@pytest.mark.django_db
+def test_filtra_por_tipo_ato_pai():
+    """Verifica que o filtro por tipo_ato_pai distingue apostilas."""
+    criar_modelo_portaria(
+        nome_modelo="Apostila de designação",
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.DESIGNACAO,
+    )
+    criar_modelo_portaria(
+        nome_modelo="Apostila de cessação",
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.CESSACAO,
+    )
+
+    resultado = ModeloPortariaFilter(
+        {
+            "tipo_portaria": AtoAdministrativo.Tipo.APOSTILA,
+            "tipo_ato_pai": AtoAdministrativo.Tipo.CESSACAO,
+        },
+        queryset=ModeloPortaria.objects.all(),
+    ).qs
+
+    assert resultado.count() == 1
+    assert resultado.first().nome_modelo == "Apostila de cessação"
 
 
 @pytest.mark.django_db
@@ -108,6 +137,31 @@ def test_combina_multiplos_filtros():
 
     assert resultado.count() == 1
     assert resultado.first().nome_modelo == "Designação diretor de escola"
+
+
+@pytest.mark.django_db
+def test_filtra_por_criado_em_intervalo():
+    """Verifica que o filtro por criado_em retorna os no intervalo."""
+    antigo = criar_modelo_portaria(nome_modelo="Modelo antigo")
+    recente = criar_modelo_portaria(nome_modelo="Modelo recente")
+
+    ModeloPortaria.objects.filter(id=antigo.id).update(
+        criado_em=timezone.make_aware(datetime.datetime(2026, 1, 1))
+    )
+    ModeloPortaria.objects.filter(id=recente.id).update(
+        criado_em=timezone.make_aware(datetime.datetime(2026, 6, 1))
+    )
+
+    resultado = ModeloPortariaFilter(
+        {
+            "criado_em_after": "2026-05-01",
+            "criado_em_before": "2026-07-01",
+        },
+        queryset=ModeloPortaria.objects.all(),
+    ).qs
+
+    assert resultado.count() == 1
+    assert resultado.first().nome_modelo == "Modelo recente"
 
 
 @pytest.mark.django_db

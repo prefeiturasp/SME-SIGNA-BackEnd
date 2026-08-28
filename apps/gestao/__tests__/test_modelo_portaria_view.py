@@ -1,10 +1,12 @@
 """Testes para a view de modelos de portaria."""
 
 import secrets
+from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -45,6 +47,55 @@ def test_list_retorna_modelos_paginados(auth_client):
     assert response.status_code == 200
     assert response.data["count"] == 2
     assert len(response.data["results"]) == 2
+
+
+@pytest.mark.django_db
+def test_list_retorna_modelos_ordenados_por_criado_em_decrescente(auth_client):
+    """Verifica que a listagem retorna os modelos mais recentes primeiro."""
+    mais_antigo = criar_modelo_portaria(nome_modelo="Modelo A")
+    mais_novo = criar_modelo_portaria(nome_modelo="Modelo B")
+
+    agora = timezone.now()
+    ModeloPortaria.objects.filter(pk=mais_antigo.pk).update(
+        criado_em=agora - timedelta(days=1)
+    )
+    ModeloPortaria.objects.filter(pk=mais_novo.pk).update(criado_em=agora)
+
+    url = reverse("gestao:modelos-portaria")
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    nomes = [item["nome_modelo"] for item in response.data["results"]]
+    assert nomes == ["Modelo B", "Modelo A"]
+
+
+@pytest.mark.django_db
+def test_list_retorna_tipo_de_ato_concatenado_com_tipo_ato_pai(auth_client):
+    """Verifica que a listagem retorna tipo_de_ato concatenado com o pai."""
+    criar_modelo_portaria(
+        nome_modelo="Insubsistência de apostila",
+        tipo_portaria=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.APOSTILA,
+    )
+    criar_modelo_portaria(
+        nome_modelo="Designação diretor de escola",
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_ato_pai="",
+    )
+
+    url = reverse("gestao:modelos-portaria")
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    tipos_de_ato = {
+        item["nome_modelo"]: item["tipo_de_ato"]
+        for item in response.data["results"]
+    }
+    assert (
+        tipos_de_ato["Insubsistência de apostila"]
+        == "Insubsistência de Apostila"
+    )
+    assert tipos_de_ato["Designação diretor de escola"] == "Designação"
 
 
 @pytest.mark.django_db

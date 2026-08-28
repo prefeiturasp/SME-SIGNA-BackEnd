@@ -47,6 +47,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "apostilas",
             "insubsistencia",
             "tipo_insubsistencia",
+            "ato_pai_id",
         ]
 
     def get_criado_por_nome(self, obj: AtoAdministrativo) -> str | None:
