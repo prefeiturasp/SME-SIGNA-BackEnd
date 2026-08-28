@@ -39,7 +39,9 @@ class ApostilaWriteSerializer(serializers.Serializer):
     )
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
-    observacao = serializers.CharField()
+    observacao = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
     alteracoes = ApostilaAlteracaoWriteSerializer(
         many=True, required=False, default=list
     )

@@ -541,9 +541,22 @@ class TestPortariaListSerializer:
 
     # ── observacoes ──────────────────────────────────────────────────────────
 
-    def test_observacoes_designacao_retorna_none(self, designacao):
-        """Verifica observacoes designacao retorna none."""
-        assert serialize(designacao)["observacoes"] is None
+    def test_observacoes_designacao_vazia(self, designacao):
+        """Verifica observacoes designacao sem informacoes_adicionais."""
+        assert serialize(designacao)["observacoes"] == ""
+
+    def test_observacoes_designacao(self, designacao):
+        """Verifica observacoes designacao retorna informacoes_adicionais."""
+        designacao.designacao_detalhe.informacoes_adicionais = (
+            "Designação com acúmulo de cargo."
+        )
+        designacao.designacao_detalhe.save()
+        ato = AtoAdministrativo.objects.select_related(
+            "designacao_detalhe"
+        ).get(pk=designacao.pk)
+        assert (
+            serialize(ato)["observacoes"] == "Designação com acúmulo de cargo."
+        )
 
     def test_observacoes_cessacao_retorna_none(self, cessacao):
         """Verifica observacoes cessacao retorna none."""
