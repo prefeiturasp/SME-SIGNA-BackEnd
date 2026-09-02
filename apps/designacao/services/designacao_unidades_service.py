@@ -239,13 +239,6 @@ class TurmaService:
             if codigo_turma is None:
                 continue
 
-            disciplinas = SmeIntegracaoService.buscar_disciplinas_turma(
-                codigo_turma
-            )
-
-            if cls.turma_tem_spi(disciplinas):
-                cls._registrar_spi(spi, turma)
-
             dados = SmeIntegracaoService.buscar_dados_turma(codigo_turma)
             tipo_turno = dados.get("tipoTurno")
 
@@ -255,6 +248,13 @@ class TurmaService:
             turno_key = TURNOS_MAP.get(tipo_turno)
             if not turno_key:
                 continue
+
+            disciplinas = SmeIntegracaoService.buscar_disciplinas_turma(
+                codigo_turma
+            )
+
+            if cls.turma_tem_spi(disciplinas):
+                cls._registrar_spi(spi, turma)
 
             ciclo = CicloService.definir_ciclo_turma(turma)
             ciclo_key = CicloService.mapear_nome_ciclo(ciclo)
@@ -316,7 +316,7 @@ class TurmaService:
     def turma_tem_spi(disciplinas: list[dict[str, Any]]) -> bool:
         """Verifica se a turma tem a disciplina São Paulo Integral."""
         for d in disciplinas:
-            nome = d.get("disciplina", "")
+            nome = d.get("disciplina") or ""
             if "SP INTEGRAL" in nome.upper():
                 return True
         return False

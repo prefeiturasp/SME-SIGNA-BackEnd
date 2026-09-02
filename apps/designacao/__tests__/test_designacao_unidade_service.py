@@ -542,7 +542,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_disciplinas.return_value = [
             {"disciplina": "SP INTEGRAL - Atividade"}
         ]
-        mock_dados_turma.return_value = {"tipoTurno": 99}
+        mock_dados_turma.return_value = {"tipoTurno": 1}
         mock_mapear_ciclo.return_value = "cicloInexistenteNoSpi"
 
         resultado = TurmaService.calcular_turmas("UE123")
@@ -552,6 +552,56 @@ class TestDesignacaoUnidadeService:
 
         assert spi_turno.get("cicloInexistenteNoSpi") == 1
         assert spi["total"] == 1
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_spi_ignora_turma_com_tipo_turno_invalido(
+        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
+    ):
+        """Verifica que turma SPI com tipoTurno inválido não é contada.
+
+        Regressão: uma turma com disciplina SP INTEGRAL, mas com
+        `tipoTurno` ausente ou fora do TURNOS_MAP, não deve incrementar
+        `spi.total` — do contrário o SPI mostraria uma turma que não
+        aparece em nenhum dos turnos exibidos.
+        """
+        mock_buscar_turmas.return_value = [
+            {
+                "codigoTurma": "T1",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1º ano",
+            }
+        ]
+        mock_buscar_disciplinas.return_value = [
+            {"disciplina": "SP INTEGRAL - Atividade"}
+        ]
+        mock_dados_turma.return_value = {"tipoTurno": 99}  # fora do mapa
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["spi"]["tipo"] == ""
+        assert resultado["spi"]["total"] == 0
+        assert resultado["spi"]["turnos"][0]["total"] == 0
+        assert resultado["total"] == 0
+        mock_buscar_disciplinas.assert_not_called()
+
+    def test_turma_tem_spi_com_disciplina_none_nao_quebra(self):
+        """Verifica que disciplina com valor None não gera crash.
+
+        A API da SME pode retornar `"disciplina": null` para uma
+        disciplina; `turma_tem_spi` deve tratar isso como "não é SPI"
+        em vez de lançar AttributeError ao chamar `.upper()` em None.
+        """
+        disciplinas = [{"disciplina": None}, {"disciplina": "Matemática"}]
+
+        assert TurmaService.turma_tem_spi(disciplinas) is False
 
 
 class TestCicloService:
