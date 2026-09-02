@@ -226,11 +226,8 @@ class TurmaService:
             "turnos": [
                 {
                     "turno": "SPI",
-                    "cicloAlfabetizacao": 0,
-                    "cicloInterdisciplinar": 0,
-                    "cicloAutoral": 0,
-                    "semCiclo": 0,
                     "total": 0,
+                    **dict.fromkeys(CicloService.listar_ciclos_saida(), 0),
                 }
             ],
         }
