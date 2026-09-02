@@ -24,11 +24,11 @@ from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 logger = logging.getLogger(__name__)
 
 
-def normalizar(texto: str) -> str:
+def normalizar(texto: str | None) -> str:
     """Normaliza uma string removendo acentuação e convertendo para minúsculas.
 
     Args:
-        texto: Texto a ser normalizado.
+        texto: Texto a ser normalizado (aceita None, retornando "").
 
     Returns:
         str: Texto normalizado em ASCII sem acentos.
