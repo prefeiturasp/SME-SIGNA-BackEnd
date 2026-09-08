@@ -218,6 +218,7 @@ class TestAtoAdministrativoListView:
             "insubsistencia",
             "tipo_insubsistencia",
             "ato_pai_id",
+            "texto_sei",
         }
 
     def test_rf_retorna_rf_do_indicado(self, auth_client, designacao_1):

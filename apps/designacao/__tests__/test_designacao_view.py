@@ -156,6 +156,52 @@ def test_create_designacao_registra_criado_por(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_designacao_persiste_texto_sei_e_modelo_usado(auth_client):
+    """Verifica que o texto SEI e o modelo usado são salvos e lidos de volta."""
+    from apps.gestao.__tests__.factories import criar_modelo_portaria
+
+    modelo = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO
+    )
+
+    payload = {
+        "numero_portaria": "555",
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-D1",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "data_inicio": "2024-01-01",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+        "texto_sei": "Texto literal já gerado a partir do modelo vigente.",
+        "modelo_portaria": modelo.pk,
+    }
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+
+    ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+    assert ato.texto_sei == payload["texto_sei"]
+    assert ato.modelo_portaria_id == modelo.pk
+
+    detalhe_url = reverse(
+        "designacao:designacao-detail", kwargs={"pk": ato.pk}
+    )
+    detalhe_response = auth_client.get(detalhe_url)
+    assert detalhe_response.data["texto_sei"] == payload["texto_sei"]
+    assert detalhe_response.data["modelo_portaria"] == modelo.pk
+
+
+@pytest.mark.django_db
 def test_create_designacao_payload_invalido_retorna_detail_especifico(
     auth_client,
 ):

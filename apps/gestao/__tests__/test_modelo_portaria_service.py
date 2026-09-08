@@ -36,3 +36,66 @@ def test_criar_cria_modelo_portaria_com_os_dados_informados():
     assert ModeloPortaria.objects.filter(
         nome_modelo="Designação diretor de escola"
     ).exists()
+
+
+@pytest.mark.django_db
+def test_resolver_ativo_retorna_modelo_ativo_da_combinacao_informada():
+    """Verifica que resolver_ativo encontra o modelo ativo pelo tipo."""
+    esperado = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.DESIGNACAO,
+    )
+
+    resultado = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.APOSTILA, AtoAdministrativo.Tipo.DESIGNACAO
+    )
+
+    assert resultado == esperado
+
+
+@pytest.mark.django_db
+def test_resolver_ativo_ignora_modelo_inativo():
+    """Verifica que resolver_ativo não retorna modelo com status inativo."""
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        status=ModeloPortaria.Status.INATIVO,
+    )
+
+    resultado = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.DESIGNACAO
+    )
+
+    assert resultado is None
+
+
+@pytest.mark.django_db
+def test_resolver_ativo_retorna_none_quando_nao_ha_modelo():
+    """Verifica que resolver_ativo retorna None sem modelo cadastrado."""
+    resultado = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.CESSACAO
+    )
+
+    assert resultado is None
+
+
+@pytest.mark.django_db
+def test_resolver_ativo_retorna_o_mais_recente_quando_ha_mais_de_um():
+    """Verifica que, sem constraint de unicidade, prevalece o mais recente.
+
+    Hoje não há garantia de um único modelo ativo por combinação de
+    tipos — enquanto essa regra não existir, o mais recente é usado.
+    """
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        nome_modelo="Modelo antigo",
+    )
+    mais_recente = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        nome_modelo="Modelo recente",
+    )
+
+    resultado = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.DESIGNACAO
+    )
+
+    assert resultado == mais_recente
