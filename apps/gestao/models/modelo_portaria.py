@@ -40,6 +40,21 @@ class ModeloPortaria(models.Model):
         DIPLOMA = "DIPLOMA", "Diploma"
         PERIODO = "PERIODO", "Período"
 
+    # Apenas apostila e insubsistência têm texto que varia conforme o
+    # tipo do ato pai (ex.: "apostila de designação" x "apostila de
+    # cessação"). Designação não tem pai e cessação sempre descende de
+    # designação — nenhuma das duas precisa dessa distinção, então não
+    # entram aqui.
+    TIPOS_QUE_VARIAM_POR_ATO_PAI = {
+        "APOSTILA": {"DESIGNACAO", "CESSACAO"},
+        "INSUBSISTENCIA": {
+            "DESIGNACAO",
+            "CESSACAO",
+            "APOSTILA",
+            "INSUBSISTENCIA",
+        },
+    }
+
     tipo_portaria = models.CharField(
         "Tipo de portaria",
         max_length=20,

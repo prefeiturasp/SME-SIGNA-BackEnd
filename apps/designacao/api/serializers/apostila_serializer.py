@@ -13,6 +13,7 @@ from apps.designacao.api.serializers.ato_relacionado_mixin import (
 )
 from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
@@ -44,6 +45,18 @@ class ApostilaWriteSerializer(serializers.Serializer):
     )
     alteracoes = ApostilaAlteracaoWriteSerializer(
         many=True, required=False, default=list
+    )
+
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento do apostilamento (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
     )
 
 
@@ -84,6 +97,8 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "doc",
             "criado_em",
             "observacao",
+            "texto_sei",
+            "modelo_portaria",
             "alteracoes",
             "insubsistencia",
             "designacao",

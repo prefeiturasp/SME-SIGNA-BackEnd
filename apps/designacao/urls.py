@@ -20,12 +20,18 @@ from apps.designacao.api.views.insubsistencia_view import (
     InsubsistenciaViewSet,
 )
 from apps.designacao.api.views.portaria import PortariaListViewSet
+from apps.designacao.api.views.texto_sei_view import TextoSeiPreviewView
 
 app_name = "designacao"
 
 urlpatterns = [
     # Utilitários
     path("servidor", DesignacaoServidorView.as_view(), name="servidor"),
+    path(
+        "textos-sei/preview/",
+        TextoSeiPreviewView.as_view(),
+        name="textos-sei-preview",
+    ),
     path("unidade/", DesignacaoUnidadeView.as_view(), name="unidade"),
     path(
         "unidade/cargos/",

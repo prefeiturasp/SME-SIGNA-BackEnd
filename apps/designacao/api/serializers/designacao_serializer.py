@@ -10,6 +10,7 @@ from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
@@ -154,6 +155,18 @@ class DesignacaoWriteSerializer(serializers.Serializer):
         choices=DesignacaoDetalhe.CargoVaga.choices,
         required=False,
         allow_null=True,
+    )
+
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento da criação/atualização (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
     )
 
 
@@ -398,6 +411,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "cargo_vaga",
             "tipo_vaga_display",
             "cargo_vaga_display",
+            # Texto SEI
+            "texto_sei",
+            "modelo_portaria",
             # Filhos
             "cessacao",
             "apostilas",
