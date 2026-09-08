@@ -37,7 +37,7 @@ def test_preview_retorna_texto_gerado_e_modelo_usado(auth_client):
     """Verifica que a prévia retorna o texto renderizado e o id do modelo."""
     modelo = criar_modelo_portaria(
         tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
-        texto_portaria="Designa {{NOME_SERVIDOR}}.",
+        texto_portaria="Designa [[NOME_SERVIDOR]].",
     )
 
     response = auth_client.post(

@@ -15,7 +15,7 @@ from apps.gestao.services.modelo_portaria_service import (
     ModeloPortariaService,
 )
 
-_PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
+_PLACEHOLDER = re.compile(r"\[\[(\w+)\]\]")
 
 
 class TextoSeiService:
@@ -63,11 +63,11 @@ class TextoSeiService:
 
     @staticmethod
     def _renderizar(texto_portaria: str, dados: dict[str, str]) -> str:
-        """Substitui as variáveis `{{CHAVE}}` do texto pelos dados.
+        """Substitui as variáveis `[[CHAVE]]` do texto pelos dados.
 
         Args:
             texto_portaria: Texto do modelo, com placeholders no
-                formato `{{CHAVE}}`.
+                formato `[[CHAVE]]`.
             dados: Valores a substituir, indexados pela mesma chave
                 usada no placeholder. Placeholders sem valor
                 correspondente são substituídos por string vazia.

@@ -15,7 +15,7 @@ def test_gerar_preview_substitui_variaveis_do_modelo():
     modelo = criar_modelo_portaria(
         tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
         texto_portaria=(
-            "Designa {{NOME_SERVIDOR}}, RF {{NUMERO_RF}}, para {{CARGO}}."
+            "Designa [[NOME_SERVIDOR]], RF [[NUMERO_RF]], para [[CARGO]]."
         ),
     )
 
@@ -41,7 +41,7 @@ def test_gerar_preview_substitui_placeholder_sem_dado_por_vazio():
     """Verifica que uma variável sem valor correspondente vira string vazia."""
     criar_modelo_portaria(
         tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
-        texto_portaria="Cargo: {{CARGO}}.",
+        texto_portaria="Cargo: [[CARGO]].",
     )
 
     _, texto = TextoSeiService.gerar_preview(

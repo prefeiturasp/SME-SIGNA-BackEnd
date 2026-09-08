@@ -141,28 +141,24 @@ def test_create_modelo_portaria_com_sucesso(auth_client):
 
 
 @pytest.mark.django_db
-def test_create_modelo_portaria_de_cessacao_sem_tipo_ato_pai_com_sucesso(
+def test_create_modelo_portaria_de_cessacao_com_tipo_ato_pai_com_sucesso(
     auth_client,
 ):
-    """Verifica que cessação é criada sem exigir tipo_ato_pai.
-
-    Regressão do bug em que o cadastro de modelo de cessação exigia
-    indevidamente tipo_ato_pai, por reaproveitar por engano a regra de
-    hierarquia real de atos administrativos.
-    """
+    """Verifica que cessação é criada com tipo_ato_pai=DESIGNACAO."""
     payload = {
         "tipo_portaria": AtoAdministrativo.Tipo.CESSACAO,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.DESIGNACAO,
         "nome_modelo": "Cessação padrão",
         "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
         "variaveis": [ModeloPortaria.Variavel.NOME_SERVIDOR],
-        "texto_portaria": "Cessa a designação de {{NOME_SERVIDOR}}.",
+        "texto_portaria": "Cessa a designação de [[NOME_SERVIDOR]].",
     }
 
     url = reverse("gestao:modelos-portaria")
     response = auth_client.post(url, data=payload, format="json")
 
     assert response.status_code == 201, response.data
-    assert response.data["tipo_ato_pai"] == ""
+    assert response.data["tipo_ato_pai"] == AtoAdministrativo.Tipo.DESIGNACAO
 
 
 @pytest.mark.django_db

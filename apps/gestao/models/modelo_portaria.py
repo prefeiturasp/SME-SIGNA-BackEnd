@@ -40,12 +40,13 @@ class ModeloPortaria(models.Model):
         DIPLOMA = "DIPLOMA", "Diploma"
         PERIODO = "PERIODO", "Período"
 
-    # Apenas apostila e insubsistência têm texto que varia conforme o
-    # tipo do ato pai (ex.: "apostila de designação" x "apostila de
-    # cessação"). Designação não tem pai e cessação sempre descende de
-    # designação — nenhuma das duas precisa dessa distinção, então não
-    # entram aqui.
+    # Designação não tem ato pai, então nunca leva tipo_ato_pai. Os
+    # demais tipos sempre levam — mesmo cessação, que só tem um pai
+    # possível (designação): a tela de cadastro usa isso para exibir
+    # "Cessação de Designação" de forma consistente com "Apostila de
+    # Designação/Cessação" e "Insubsistência de X" na listagem.
     TIPOS_QUE_VARIAM_POR_ATO_PAI = {
+        "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
         "INSUBSISTENCIA": {
             "DESIGNACAO",
