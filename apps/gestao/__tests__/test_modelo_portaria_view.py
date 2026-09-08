@@ -141,6 +141,27 @@ def test_create_modelo_portaria_com_sucesso(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_modelo_portaria_de_cessacao_com_tipo_ato_pai_com_sucesso(
+    auth_client,
+):
+    """Verifica que cessação é criada com tipo_ato_pai=DESIGNACAO."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.CESSACAO,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.DESIGNACAO,
+        "nome_modelo": "Cessação padrão",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "variaveis": [ModeloPortaria.Variavel.NOME_SERVIDOR],
+        "texto_portaria": "Cessa a designação de [[NOME_SERVIDOR]].",
+    }
+
+    url = reverse("gestao:modelos-portaria")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201, response.data
+    assert response.data["tipo_ato_pai"] == AtoAdministrativo.Tipo.DESIGNACAO
+
+
+@pytest.mark.django_db
 def test_create_modelo_portaria_sem_campo_obrigatorio_retorna_400(auth_client):
     """Verifica 400 quando falta um campo obrigatório no cadastro."""
     payload = {

@@ -12,7 +12,15 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
+    {
+        "numero_portaria",
+        "ano_vigente",
+        "sei_numero",
+        "doc",
+        "criado_por",
+        "texto_sei",
+        "modelo_portaria",
+    }
 )
 
 

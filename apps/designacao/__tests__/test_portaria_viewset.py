@@ -248,6 +248,7 @@ class TestPortariaListView:
             "data_cessacao",
             "sei_numero",
             "observacoes",
+            "texto_sei",
             "designacao",
             "cessacao",
             "tipo_insubsistencia",

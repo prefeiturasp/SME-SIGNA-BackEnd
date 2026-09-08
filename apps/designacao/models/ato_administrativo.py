@@ -25,7 +25,7 @@ class AtoAdministrativo(models.Model):
         PUBLICADO = "PUBLICADO", "Publicado"
         NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
 
-    TIPOS_PAI_VALIDOS = {
+    _TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
         "INSUBSISTENCIA": {
@@ -73,6 +73,17 @@ class AtoAdministrativo(models.Model):
         related_name="atos_administrativos_criados",
     )
 
+    # Texto SEI congelado no momento da criação/apostilamento, conforme o
+    # modelo de portaria vigente na época — nunca é regerado depois.
+    texto_sei = models.TextField(blank=True, default="")
+    modelo_portaria = models.ForeignKey(
+        "gestao.ModeloPortaria",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="atos_gerados",
+    )
+
     class Meta:
         db_table = "ato_administrativo"
 
@@ -89,7 +100,7 @@ class AtoAdministrativo(models.Model):
         """
         if self.ato_pai_id:
             assert self.ato_pai is not None
-            tipos_validos = self.TIPOS_PAI_VALIDOS.get(self.tipo, set())
+            tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
                     f"{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai."  # noqa: E501

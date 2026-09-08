@@ -50,6 +50,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "data_cessacao",
             "sei_numero",
             "observacoes",
+            "texto_sei",
             "designacao",
             "cessacao",
             "tipo_insubsistencia",

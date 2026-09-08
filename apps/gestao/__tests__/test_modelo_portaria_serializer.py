@@ -212,6 +212,46 @@ def test_write_serializer_rejeita_tipo_ato_pai_para_designacao():
 
 
 @pytest.mark.django_db
+def test_write_serializer_valido_para_cessacao_com_tipo_ato_pai_designacao():
+    """Verifica que cessação exige tipo_ato_pai=DESIGNACAO.
+
+    Cessação só tem um pai possível (designação), mas o cadastro exige
+    o campo preenchido mesmo assim, para exibir "Cessação de
+    Designação" de forma consistente com os demais tipos na listagem.
+    """
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.CESSACAO,
+        "tipo_ato_pai": AtoAdministrativo.Tipo.DESIGNACAO,
+        "nome_modelo": "Cessação padrão",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.validated_data["tipo_ato_pai"] == (
+        AtoAdministrativo.Tipo.DESIGNACAO
+    )
+
+
+@pytest.mark.django_db
+def test_write_serializer_rejeita_cessacao_sem_tipo_ato_pai():
+    """Verifica que cessação sem tipo_ato_pai é rejeitada."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.CESSACAO,
+        "nome_modelo": "Cessação sem pai",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "tipo_ato_pai" in serializer.errors
+
+
+@pytest.mark.django_db
 def test_write_serializer_valido_cria_insubsistencia_para_cada_tipo_pai():
     """Verifica que insubsistência aceita qualquer um dos 4 tipos pai."""
     for tipo_pai in [

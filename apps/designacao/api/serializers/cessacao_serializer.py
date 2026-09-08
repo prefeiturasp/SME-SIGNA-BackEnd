@@ -14,6 +14,7 @@ from apps.designacao.api.serializers.utils import (
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class CessacaoWriteSerializer(serializers.Serializer):
@@ -41,6 +42,18 @@ class CessacaoWriteSerializer(serializers.Serializer):
     remocao = serializers.BooleanField(required=False, default=False)
     aposentadoria = serializers.BooleanField(required=False, default=False)
     data_cessacao = serializers.DateField()
+
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento da criação (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate_numero_portaria(self, value: str) -> str:
         """Valida que o número da portaria contenha apenas dígitos.
@@ -110,6 +123,8 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
             "remocao",
             "aposentadoria",
             "data_cessacao",
+            "texto_sei",
+            "modelo_portaria",
             "insubsistencia",
             "apostilas",
         ]
@@ -190,6 +205,8 @@ class CessacaoReadSerializerById(AtoRelacionadoMixin, CessacaoReadSerializer):
             "remocao",
             "aposentadoria",
             "data_cessacao",
+            "texto_sei",
+            "modelo_portaria",
             "insubsistencia",
             "apostilas",
             "designacao",

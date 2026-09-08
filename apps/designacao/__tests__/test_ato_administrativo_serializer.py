@@ -300,6 +300,7 @@ class TestPortariaListSerializer:
             "insubsistencia",
             "tipo_insubsistencia",
             "ato_pai_id",
+            "texto_sei",
         }
 
     def test_portaria(self, designacao):

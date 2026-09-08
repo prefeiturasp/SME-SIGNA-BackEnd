@@ -40,6 +40,22 @@ class ModeloPortaria(models.Model):
         DIPLOMA = "DIPLOMA", "Diploma"
         PERIODO = "PERIODO", "Período"
 
+    # Designação não tem ato pai, então nunca leva tipo_ato_pai. Os
+    # demais tipos sempre levam — mesmo cessação, que só tem um pai
+    # possível (designação): a tela de cadastro usa isso para exibir
+    # "Cessação de Designação" de forma consistente com "Apostila de
+    # Designação/Cessação" e "Insubsistência de X" na listagem.
+    TIPOS_QUE_VARIAM_POR_ATO_PAI = {
+        "CESSACAO": {"DESIGNACAO"},
+        "APOSTILA": {"DESIGNACAO", "CESSACAO"},
+        "INSUBSISTENCIA": {
+            "DESIGNACAO",
+            "CESSACAO",
+            "APOSTILA",
+            "INSUBSISTENCIA",
+        },
+    }
+
     tipo_portaria = models.CharField(
         "Tipo de portaria",
         max_length=20,
