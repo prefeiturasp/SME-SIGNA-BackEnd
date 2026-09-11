@@ -46,7 +46,7 @@ def _descrever(registros):
     return amostra
 
 
-def _recusar_se_houver_valor_inconvertivel(AtoAdministrativo):
+def _recusar_se_houver_valor_inconvertivel(ato_model):
     """Aborta a migration se algum valor não puder virar inteiro.
 
     A checagem roda antes de qualquer escrita para que a migration falhe
@@ -59,7 +59,7 @@ def _recusar_se_houver_valor_inconvertivel(AtoAdministrativo):
       perderia a informação.
 
     Args:
-        AtoAdministrativo: Modelo histórico usado pela migration.
+        ato_model: Modelo histórico usado pela migration.
 
     Raises:
         ValueError: Quando houver valor fora da faixa ou não numérico.
@@ -68,7 +68,7 @@ def _recusar_se_houver_valor_inconvertivel(AtoAdministrativo):
     grandes = []
     invalidos = []
 
-    for ato in AtoAdministrativo.objects.all().iterator(chunk_size=2000):
+    for ato in ato_model.objects.all().iterator(chunk_size=2000):
         bruto = (ato.numero_portaria or "").strip()
         if not bruto:
             continue
@@ -115,12 +115,12 @@ def normalizar(apps, schema_editor):
         schema_editor: Editor de schema da conexão em uso.
 
     """
-    AtoAdministrativo = apps.get_model("designacao", "AtoAdministrativo")
+    ato_model = apps.get_model("designacao", "AtoAdministrativo")
 
-    _recusar_se_houver_valor_inconvertivel(AtoAdministrativo)
+    _recusar_se_houver_valor_inconvertivel(ato_model)
 
     lote = []
-    for ato in AtoAdministrativo.objects.all().iterator(chunk_size=2000):
+    for ato in ato_model.objects.all().iterator(chunk_size=2000):
         bruto = (ato.numero_portaria or "").strip()
         numero, _, ano = bruto.partition("/")
         numero = numero.strip()
@@ -141,15 +141,13 @@ def normalizar(apps, schema_editor):
         lote.append(ato)
 
         if len(lote) >= 2000:
-            AtoAdministrativo.objects.bulk_update(
+            ato_model.objects.bulk_update(
                 lote, ["numero_portaria", "ano_vigente"]
             )
             lote.clear()
 
     if lote:
-        AtoAdministrativo.objects.bulk_update(
-            lote, ["numero_portaria", "ano_vigente"]
-        )
+        ato_model.objects.bulk_update(lote, ["numero_portaria", "ano_vigente"])
 
 
 def reverter(apps, schema_editor):
@@ -163,10 +161,8 @@ def reverter(apps, schema_editor):
         schema_editor: Editor de schema da conexão em uso.
 
     """
-    AtoAdministrativo = apps.get_model("designacao", "AtoAdministrativo")
-    AtoAdministrativo.objects.filter(numero_portaria=None).update(
-        numero_portaria=""
-    )
+    ato_model = apps.get_model("designacao", "AtoAdministrativo")
+    ato_model.objects.filter(numero_portaria=None).update(numero_portaria="")
 
 
 class Migration(migrations.Migration):
