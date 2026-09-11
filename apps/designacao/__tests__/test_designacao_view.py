@@ -35,7 +35,7 @@ def _bulk_criar_designacoes(n):
         [
             AtoAdministrativo(
                 tipo=AtoAdministrativo.Tipo.DESIGNACAO,
-                numero_portaria="123",
+                numero_portaria=123,
                 ano_vigente="2024",
                 sei_numero=f"SEI-{i}",
             )
@@ -130,7 +130,7 @@ def test_create_designacao_registra_criado_por(auth_client):
     user = User.objects.get(username="test")
 
     payload = {
-        "numero_portaria": "555",
+        "numero_portaria": 555,
         "ano_vigente": "2024",
         "sei_numero": "SEI-D1",
         "dre_nome": "DRE Teste",
@@ -165,7 +165,7 @@ def test_create_designacao_persiste_texto_sei_e_modelo_usado(auth_client):
     )
 
     payload = {
-        "numero_portaria": "555",
+        "numero_portaria": 555,
         "ano_vigente": "2024",
         "sei_numero": "SEI-D1",
         "dre_nome": "DRE Teste",
@@ -219,17 +219,17 @@ def test_create_designacao_payload_invalido_retorna_detail_especifico(
 @pytest.mark.django_db
 def test_partial_update_designacao(auth_client):
     """Verifica que partial_update atualiza campos da designação."""
-    ato = criar_ato_designacao(numero_portaria="111")
+    ato = criar_ato_designacao(numero_portaria=111)
 
     url = reverse("designacao:designacao-detail", args=[ato.id])
     response = auth_client.patch(
-        url, data={"numero_portaria": "222"}, format="json"
+        url, data={"numero_portaria": 222}, format="json"
     )
 
     assert response.status_code == 200
-    assert response.data["numero_portaria"] == "222"
+    assert response.data["numero_portaria"] == 222
     ato.refresh_from_db()
-    assert ato.numero_portaria == "222"
+    assert ato.numero_portaria == 222
 
 
 @pytest.mark.django_db
@@ -280,24 +280,53 @@ def test_cargos_sobrepostos_pareados_endpoint(auth_client):
 @pytest.mark.django_db
 def test_buscar_por_portaria_encontra_designacao(auth_client):
     """Verifica que a busca por portaria e ano encontra a designação certa."""
-    criar_ato_designacao(numero_portaria="999", ano_vigente="2024")
-    ato = criar_ato_designacao(numero_portaria="999", ano_vigente="2025")
+    criar_ato_designacao(numero_portaria=999, ano_vigente="2024")
+    ato = criar_ato_designacao(numero_portaria=999, ano_vigente="2025")
 
     url = reverse("designacao:designacao-buscar-por-portaria")
     response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
 
     assert response.status_code == 200
     assert response.data["id"] == ato.id
-    assert response.data["numero_portaria"] == "999"
+    assert response.data["numero_portaria"] == 999
 
 
 @pytest.mark.django_db
 def test_buscar_por_portaria_designacao_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma designação."""
     url = reverse("designacao:designacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
+    response = auth_client.get(url, {"portaria": "888", "ano": "2025"})
 
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_designacao_nao_numerica(auth_client):
+    """Verifica 400 quando a portaria informada não é numérica.
+
+    numero_portaria é inteiro no banco, então um valor não numérico é
+    requisição malformada — e não pode chegar ao filter, que levantaria
+    ValueError.
+    """
+    url = reverse("designacao:designacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
+
+    assert response.status_code == 400
+    assert "números" in response.data["detail"]
+
+
+@pytest.mark.django_db
+def test_buscar_por_portaria_designacao_digito_nao_decimal(auth_client):
+    """Verifica 400 para dígito unicode que int() não converte.
+
+    "²" passa em str.isdigit() mas quebra em int(), então uma guarda
+    baseada em isdigit deixaria o valor chegar ao filter e virar 500.
+    """
+    url = reverse("designacao:designacao-buscar-por-portaria")
+    response = auth_client.get(url, {"portaria": "²", "ano": "2025"})
+
+    assert response.status_code == 400
+    assert "números" in response.data["detail"]
 
 
 @pytest.mark.django_db
@@ -305,7 +334,7 @@ def test_buscar_por_portaria_designacao_ano_diferente_nao_encontrada(
     auth_client,
 ):
     """Verifica 404 quando a portaria existe mas em outro ano."""
-    criar_ato_designacao(numero_portaria="999", ano_vigente="2024")
+    criar_ato_designacao(numero_portaria=999, ano_vigente="2024")
 
     url = reverse("designacao:designacao-buscar-por-portaria")
     response = auth_client.get(url, {"portaria": "999", "ano": "2025"})

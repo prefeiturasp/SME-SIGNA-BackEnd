@@ -92,7 +92,7 @@ def test_create_apostila_em_cessacao(auth_client):
 @pytest.mark.django_db
 def test_create_apostila_com_alteracoes(auth_client):
     """Verifica create apostila com alteracoes."""
-    designacao = criar_ato_designacao(numero_portaria="001")
+    designacao = criar_ato_designacao(numero_portaria=1)
 
     payload = _payload(
         designacao.id,
@@ -105,7 +105,7 @@ def test_create_apostila_com_alteracoes(auth_client):
 
     assert response.status_code == 201
     designacao.refresh_from_db()
-    assert designacao.numero_portaria == "999"
+    assert designacao.numero_portaria == 999
     assert len(response.data["alteracoes"]) == 1
 
 

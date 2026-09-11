@@ -108,7 +108,7 @@ class TestApostilaReadSerializer:
 
     def test_get_alteracoes_retorna_lista_quando_existem_registros(self):
         """Verifica get alteracoes retorna lista quando existem registros."""
-        designacao = criar_ato_designacao(numero_portaria="100")
+        designacao = criar_ato_designacao(numero_portaria=100)
         apostila = criar_ato_apostila(designacao)
 
         ApostilaAlteracao.objects.create(

@@ -21,7 +21,7 @@ class TestDesignacaoService:
     def test_criar_designacao(self):
         """Verifica criação de designação via service."""
         data = {
-            "numero_portaria": "555",
+            "numero_portaria": 555,
             "ano_vigente": "2024",
             "sei_numero": "SEI-555",
             "dre_nome": "DRE Teste",
@@ -45,7 +45,7 @@ class TestDesignacaoService:
             ato.status_publicacao
             == AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO
         )
-        assert ato.numero_portaria == "555"
+        assert ato.numero_portaria == 555
         assert ato.designacao_detalhe.indicado_nome_civil == "Nome Civil"
 
     def test_excluir_sem_dependentes(self):
@@ -130,14 +130,14 @@ class TestDesignacaoService:
 
     def test_atualizar_campos_do_ato(self):
         """Verifica atualização de campos pertencentes ao ato."""
-        designacao = criar_ato_designacao(numero_portaria="111")
+        designacao = criar_ato_designacao(numero_portaria=111)
 
         atualizado = DesignacaoService.atualizar(
-            designacao, {"numero_portaria": "999"}
+            designacao, {"numero_portaria": 999}
         )
 
         atualizado.refresh_from_db()
-        assert atualizado.numero_portaria == "999"
+        assert atualizado.numero_portaria == 999
 
     def test_atualizar_campos_do_detalhe(self):
         """Verifica atualização de campos pertencentes ao detalhe."""
@@ -153,17 +153,17 @@ class TestDesignacaoService:
     def test_atualizar_campos_do_ato_e_do_detalhe(self):
         """Verifica atualização simultânea de campos do ato e do detalhe."""
         designacao = criar_ato_designacao(
-            numero_portaria="111", indicado_nome_civil="Antigo"
+            numero_portaria=111, indicado_nome_civil="Antigo"
         )
 
         atualizado = DesignacaoService.atualizar(
             designacao,
-            {"numero_portaria": "222", "indicado_nome_civil": "Novo Nome"},
+            {"numero_portaria": 222, "indicado_nome_civil": "Novo Nome"},
         )
 
         atualizado.refresh_from_db()
         atualizado.designacao_detalhe.refresh_from_db()
-        assert atualizado.numero_portaria == "222"
+        assert atualizado.numero_portaria == 222
         assert atualizado.designacao_detalhe.indicado_nome_civil == "Novo Nome"
 
     def test_get_cargos_pareados_remove_duplicados(self):

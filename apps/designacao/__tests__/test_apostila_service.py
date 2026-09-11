@@ -122,7 +122,7 @@ class TestApostilaService:
 
     def test_criar_com_alteracao_em_campo_do_ato(self):
         """Verifica criar com alteracao em campo do ato."""
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         ApostilaService.criar(
             self._data(
                 d,
@@ -132,7 +132,7 @@ class TestApostilaService:
             )
         )
         d.refresh_from_db()
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
     def test_criar_com_alteracao_em_campo_do_detalhe(self):
         """Verifica criar com alteracao em campo do detalhe."""

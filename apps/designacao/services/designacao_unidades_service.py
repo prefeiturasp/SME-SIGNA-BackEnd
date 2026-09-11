@@ -278,7 +278,7 @@ class TurmaService:
         if isinstance(codigo, int):
             return codigo
         if isinstance(codigo, str):
-            return int(codigo) if codigo.isdigit() else codigo
+            return int(codigo) if codigo.isdecimal() else codigo
         return None
 
     @staticmethod

@@ -38,7 +38,7 @@ def serialize(ato):
 
 
 DADOS_CESSACAO = {
-    "numero_portaria": "002/2024",
+    "numero_portaria": 2,
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0002345-6",
     "doc": date(2024, 10, 24),
@@ -49,7 +49,7 @@ DADOS_CESSACAO = {
 }
 
 DADOS_DESIGNACAO = {
-    "numero_portaria": "001/2024",
+    "numero_portaria": 1,
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0001234-5",
     "doc": date(2024, 10, 23),
@@ -89,7 +89,7 @@ def designacao(db):
     """Método designacao."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="001/2024",
+        numero_portaria=1,
         ano_vigente="2024",
         sei_numero="6018.2024/0001234-5",
         doc="2024-10-23",
@@ -122,7 +122,7 @@ def designacao_com_data_fim(db):
     """Método designacao com data fim."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="005/2024",
+        numero_portaria=5,
         ano_vigente="2024",
         sei_numero="6018.2024/0005678-9",
         doc=None,
@@ -154,7 +154,7 @@ def designacao_sem_cargo_sobreposto(db):
     """Método designacao sem cargo sobreposto."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="006/2024",
+        numero_portaria=6,
         ano_vigente="2024",
         sei_numero="6018.2024/0006789-0",
         doc=None,
@@ -185,7 +185,7 @@ def cessacao(db, designacao):
     """Método cessacao."""
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
-        numero_portaria="002/2024",
+        numero_portaria=2,
         ano_vigente="2024",
         sei_numero="6018.2024/0002345-6",
         doc="2024-10-24",
@@ -204,7 +204,7 @@ def insubsistencia(db, designacao):
     """Método insubsistencia."""
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="003/2024",
+        numero_portaria=3,
         ano_vigente="2024",
         sei_numero="6018.2024/0003456-7",
         doc=None,
@@ -223,7 +223,7 @@ def insubsistencia_sem_observacoes(db, designacao):
     """Método insubsistencia sem observacoes."""
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="007/2024",
+        numero_portaria=7,
         ano_vigente="2024",
         sei_numero="6018.2024/0007890-1",
         doc=None,
@@ -239,7 +239,7 @@ def apostila(db, designacao):
     """Método apostila."""
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
-        numero_portaria="004/2024",
+        numero_portaria=4,
         ano_vigente="2024",
         sei_numero="6018.2024/0004567-8",
         doc=None,
@@ -258,7 +258,7 @@ def apostila_cessacao(db, cessacao):
     """Método apostila."""
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
-        numero_portaria="005/2024",
+        numero_portaria=5,
         ano_vigente="2024",
         sei_numero="6019.2024/0004567-8",
         doc=None,
@@ -326,7 +326,7 @@ class TestPortariaListSerializer:
 
     def test_portaria(self, designacao):
         """Verifica portaria."""
-        assert serialize(designacao)["numero_portaria"] == "001/2024"
+        assert serialize(designacao)["numero_portaria"] == 1
 
     def test_doc(self, designacao):
         """Verifica data DO."""
@@ -365,7 +365,7 @@ class TestPortariaListSerializer:
         """Verifica tipo de ato ao insubsistir uma insubsistência (TSE)."""
         tse = AtoAdministrativo.objects.create(
             tipo="INSUBSISTENCIA",
-            numero_portaria="008/2024",
+            numero_portaria=8,
             ano_vigente="2024",
             sei_numero="6018.2024/0008901-2",
             ativo=True,
@@ -379,7 +379,7 @@ class TestPortariaListSerializer:
         """Verifica tipo de ato ao insubsistir uma apostila."""
         anulacao = AtoAdministrativo.objects.create(
             tipo="INSUBSISTENCIA",
-            numero_portaria="009/2024",
+            numero_portaria=9,
             ano_vigente="2024",
             sei_numero="6018.2024/0009012-3",
             ativo=True,
@@ -611,7 +611,7 @@ class TestPortariaListSerializer:
         )
         ato = AtoAdministrativo.objects.create(
             tipo="DESIGNACAO",
-            numero_portaria="010/2024",
+            numero_portaria=10,
             ano_vigente="2024",
             sei_numero="6018.2024/0010000-1",
             ativo=True,
@@ -645,7 +645,7 @@ class TestPortariaListSerializer:
         )
         ato_desig = AtoAdministrativo.objects.create(
             tipo="DESIGNACAO",
-            numero_portaria="011/2024",
+            numero_portaria=11,
             ano_vigente="2024",
             sei_numero="6018.2024/0011000-2",
             ativo=True,
@@ -670,7 +670,7 @@ class TestPortariaListSerializer:
         )
         ato_cess = AtoAdministrativo.objects.create(
             tipo="CESSACAO",
-            numero_portaria="012/2024",
+            numero_portaria=12,
             ano_vigente="2024",
             sei_numero="6018.2024/0012000-3",
             ativo=True,
