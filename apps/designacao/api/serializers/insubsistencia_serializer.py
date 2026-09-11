@@ -16,6 +16,7 @@ from apps.designacao.api.serializers.utils import (
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class InsubsistenciaWriteSerializer(serializers.Serializer):
@@ -38,6 +39,18 @@ class InsubsistenciaWriteSerializer(serializers.Serializer):
     )
     texto_apostila = serializers.CharField(
         allow_blank=True, required=False, default=""
+    )
+
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento da insubsistência (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
     )
 
     def validate_ano_vigente(self, value: str) -> str:
@@ -86,6 +99,8 @@ class InsubsistenciaReadSerializer(
             "criado_em",
             "observacoes",
             "texto_apostila",
+            "texto_sei",
+            "modelo_portaria",
             "designacao",
             "cessacao",
             "insubsistencia",

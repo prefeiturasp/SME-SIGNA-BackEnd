@@ -27,7 +27,8 @@ class TextoSeiPreviewView(APIView):
 
         Args:
             request: Requisição HTTP com `tipo_portaria`,
-                `tipo_ato_pai` (quando aplicável) e `dados`.
+                `tipo_ato_pai` (quando aplicável), `tipo_cargo` e
+                `dados`.
 
         Returns:
             Response: Modelo usado e texto gerado.
@@ -42,6 +43,7 @@ class TextoSeiPreviewView(APIView):
         modelo, texto = TextoSeiService.gerar_preview(
             tipo_portaria=validated["tipo_portaria"],
             tipo_ato_pai=validated["tipo_ato_pai"],
+            tipo_cargo=validated["tipo_cargo"],
             dados=validated["dados"],
         )
 

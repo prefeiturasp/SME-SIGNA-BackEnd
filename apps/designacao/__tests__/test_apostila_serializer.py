@@ -74,6 +74,40 @@ class TestApostilaWriteSerializer:
         assert not serializer.is_valid()
         assert "alteracoes" in serializer.errors
 
+    def test_alteracoes_aceita_tipo_ato_alvo_opcional(self):
+        """Verifica que tipo_ato_alvo é aceito e tem default vazio."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao)
+        payload = self._payload(cessacao.id)
+        payload["alteracoes"][0]["tipo_ato_alvo"] = "DESIGNACAO"
+
+        serializer = ApostilaWriteSerializer(data=payload)
+        assert serializer.is_valid(), serializer.errors
+        assert (
+            serializer.validated_data["alteracoes"][0]["tipo_ato_alvo"]
+            == "DESIGNACAO"
+        )
+
+        payload_sem_alvo = self._payload(cessacao.id)
+        serializer_sem_alvo = ApostilaWriteSerializer(data=payload_sem_alvo)
+        assert serializer_sem_alvo.is_valid(), serializer_sem_alvo.errors
+        assert (
+            serializer_sem_alvo.validated_data["alteracoes"][0][
+                "tipo_ato_alvo"
+            ]
+            == ""
+        )
+
+    def test_alteracoes_rejeita_tipo_ato_alvo_invalido(self):
+        """Verifica que um tipo_ato_alvo fora do enum é rejeitado."""
+        designacao = criar_ato_designacao()
+        payload = self._payload(designacao.id)
+        payload["alteracoes"][0]["tipo_ato_alvo"] = "NAO_EXISTE"
+
+        serializer = ApostilaWriteSerializer(data=payload)
+        assert not serializer.is_valid()
+        assert "alteracoes" in serializer.errors
+
 
 @pytest.mark.django_db
 class TestApostilaReadSerializer:
@@ -113,6 +147,7 @@ class TestApostilaReadSerializer:
 
         ApostilaAlteracao.objects.create(
             apostila=apostila.apostila_detalhe,
+            ato_alterado=designacao,
             campo_alterado="numero_portaria",
             valor_anterior="100",
             valor_novo="200",
@@ -124,6 +159,11 @@ class TestApostilaReadSerializer:
         assert data["alteracoes"][0]["campo_alterado"] == "numero_portaria"
         assert data["alteracoes"][0]["valor_anterior"] == "100"
         assert data["alteracoes"][0]["valor_novo"] == "200"
+        assert data["alteracoes"][0]["ato_alterado_id"] == designacao.id
+        assert (
+            data["alteracoes"][0]["ato_alterado_tipo"]
+            == AtoAdministrativo.Tipo.DESIGNACAO
+        )
 
     def test_serializer_retorna_dados_do_ato_apostilado_designacao(self):
         """Verifica serializer retorna dados do ato apostilado designacao."""

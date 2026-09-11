@@ -166,6 +166,34 @@ class TestDesignacaoService:
         assert atualizado.numero_portaria == 222
         assert atualizado.designacao_detalhe.indicado_nome_civil == "Novo Nome"
 
+    def test_erro_atualizar_texto_sei_quando_ja_publicado(self):
+        """Verifica que texto_sei não pode ser reescrito após publicação."""
+        designacao = criar_ato_designacao(doc=datetime.date(2024, 5, 1))
+
+        with pytest.raises(ValidationError, match="já publicado"):
+            DesignacaoService.atualizar(
+                designacao, {"texto_sei": "Texto reescrito"}
+            )
+
+    def test_erro_atualizar_modelo_portaria_quando_ja_publicado(self):
+        """Verifica que modelo_portaria também fica congelado após publicação."""
+        designacao = criar_ato_designacao(doc=datetime.date(2024, 5, 1))
+
+        with pytest.raises(ValidationError, match="já publicado"):
+            DesignacaoService.atualizar(designacao, {"modelo_portaria": 1})
+
+    def test_permite_atualizar_texto_sei_quando_nao_publicado(self):
+        """Verifica que texto_sei pode ser corrigido antes da publicação."""
+        designacao = criar_ato_designacao()
+        assert designacao.doc is None
+
+        atualizado = DesignacaoService.atualizar(
+            designacao, {"texto_sei": "Texto corrigido"}
+        )
+
+        atualizado.refresh_from_db()
+        assert atualizado.texto_sei == "Texto corrigido"
+
     def test_get_cargos_pareados_remove_duplicados(self):
         """Verifica get cargos pareados remove duplicados."""
         criar_ato_designacao(

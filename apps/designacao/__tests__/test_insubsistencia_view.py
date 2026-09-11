@@ -57,6 +57,39 @@ def test_create_insubsistencia_de_designacao(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_insubsistencia_persiste_texto_sei_e_modelo_usado(auth_client):
+    """Verifica que o texto SEI e o modelo usado são salvos e lidos de volta."""
+    from apps.gestao.__tests__.factories import criar_modelo_portaria
+
+    d = criar_ato_designacao()
+    modelo = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.DESIGNACAO,
+    )
+
+    url = reverse("designacao:insubsistencias")
+    payload = _payload(
+        d.id,
+        texto_sei="Texto literal já gerado a partir do modelo vigente.",
+        modelo_portaria=modelo.pk,
+    )
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+
+    insub = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ato_pai=d
+    )
+    assert insub.texto_sei == payload["texto_sei"]
+    assert insub.modelo_portaria_id == modelo.pk
+
+    detalhe_url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    detalhe_response = auth_client.get(detalhe_url)
+    assert detalhe_response.data["texto_sei"] == payload["texto_sei"]
+    assert detalhe_response.data["modelo_portaria"] == modelo.pk
+
+
+@pytest.mark.django_db
 def test_create_insubsistencia_registra_criado_por(auth_client):
     """Verifica que a insubsistencia criada registra o usuario responsavel."""
     d = criar_ato_designacao()

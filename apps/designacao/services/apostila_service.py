@@ -33,6 +33,11 @@ _CAMPOS_PROTEGIDOS = frozenset(
 )
 _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 
+# Campos que representam o texto congelado da portaria — quando
+# ato alvo é publicado no Diário Oficial , esse texto
+# passa a ser um registro histórico e nao pode mais ser editado via apostila.
+_CAMPOS_TEXTO_PORTARIA = frozenset({"texto_sei", "modelo_portaria"})
+
 
 class CriarApostilaData(TypedDict):
     """Payload validado para criação de apostila no modelo legado."""
@@ -155,29 +160,75 @@ class ApostilaService:
         return ato
 
     @staticmethod
+    def _resolver_ato_alvo(
+        alt: dict, ato_pai: AtoAdministrativo
+    ) -> AtoAdministrativo:
+        """Resolve a qual ato administrativo uma alteração se aplica.
+
+        Por padrão, uma alteração afeta o próprio `ato_pai` da apostila
+        — mesmo comportamento de sempre. Quando a apostila é feita sobre
+        uma cessação, também é possível corrigir campos da designação de
+        origem dessa cessação, informando `tipo_ato_alvo="DESIGNACAO"`
+        na alteração.
+
+        Args:
+            alt: Item da lista de alterações, já validado pelo serializer.
+            ato_pai: Ato administrativo sobre o qual a apostila é criada.
+
+        Returns:
+            AtoAdministrativo: O ato que efetivamente receberá a alteração.
+
+        Raises:
+            ValidationError: Se `tipo_ato_alvo` não corresponder ao
+            próprio `ato_pai` nem à sua designação de origem.
+
+        """
+        tipo_alvo = alt.get("tipo_ato_alvo") or ato_pai.tipo
+
+        if tipo_alvo == ato_pai.tipo:
+            return ato_pai
+
+        if (
+            tipo_alvo == AtoAdministrativo.Tipo.DESIGNACAO
+            and ato_pai.tipo == AtoAdministrativo.Tipo.CESSACAO
+        ):
+            designacao_origem = ato_pai.ato_pai
+            assert designacao_origem is not None
+            return designacao_origem
+
+        raise ValidationError(
+            {
+                "alteracoes": (
+                    f"Não é possível alterar um ato do tipo '{tipo_alvo}' "
+                    "a partir desta apostila."
+                )
+            }
+        )
+
+    @staticmethod
     def _encontrar_campo(
         campo: str,
-        ato_pai: AtoAdministrativo,
+        ato: AtoAdministrativo,
         detalhe: Model | None,
     ) -> tuple[str, str]:
-        """Encontra o campo a ser alterado no ato pai ou no detalhe.
+        """Encontra o campo a ser alterado no ato ou no detalhe.
 
         Args:
             campo: Nome do campo a ser alterado.
-            ato_pai: Ato administrativo pai sobre o qual a apostila é aplicada.
-            detalhe: Detalhe associado ao ato pai, se existir.
+            ato: Ato administrativo alvo da alteração.
+            detalhe: Detalhe associado ao ato, se existir.
 
         Returns:
-            tuple[str, str]: Tupla com destino ('ato_pai' ou
-            'detalhe') e valor anterior.
+            tuple[str, str]: Tupla com destino ('ato' ou 'detalhe') e
+            valor anterior.
 
         Raises:
-            ValidationError: Se o campo não existir no ato pai ou detalhe.
+            ValidationError: Se o campo não existir no ato ou no detalhe.
 
         """
-        if hasattr(ato_pai, campo):
-            raw = getattr(ato_pai, campo)
-            return "ato_pai", ("" if raw is None else str(raw))
+        if hasattr(ato, campo):
+            raw = getattr(ato, campo)
+            return "ato", ("" if raw is None else str(raw))
         if (
             detalhe
             and hasattr(detalhe, campo)
@@ -186,7 +237,7 @@ class ApostilaService:
             raw = getattr(detalhe, campo)
             return "detalhe", ("" if raw is None else str(raw))
         raise ValidationError(
-            {"alteracoes": f"Campo '{campo}' não encontrado no ato pai."}
+            {"alteracoes": f"Campo '{campo}' não encontrado no ato alvo."}
         )
 
     @staticmethod
@@ -195,7 +246,12 @@ class ApostilaService:
         apostila_detalhe: ApostilaDetalhe,
         alteracoes: list,
     ) -> None:
-        """Aplica as alterações de uma apostila ao ato pai e ao detalhe.
+        """Aplica as alterações de uma apostila aos atos alvo.
+
+        Cada alteração é resolvida individualmente contra seu ato alvo
+        (o `ato_pai` da apostila, ou — quando indicado — a designação de
+        origem dele), permitindo que uma mesma apostila corrija campos
+        de mais de um ato na cadeia.
 
         Args:
             ato_pai: Ato administrativo original que está sendo apostilado.
@@ -203,8 +259,9 @@ class ApostilaService:
             alteracoes: Lista de alterações a serem aplicadas.
 
         """
-        detalhe = ApostilaService._get_detalhe(ato_pai)
-        buckets: dict[str, dict] = {"ato_pai": {}, "detalhe": {}}
+        detalhes_por_ato: dict[int, Model | None] = {}
+        buckets: dict[tuple[int, str], dict] = {}
+        atos_por_pk: dict[int, AtoAdministrativo] = {}
         registros = []
 
         for alt in alteracoes:
@@ -218,26 +275,49 @@ class ApostilaService:
                     }
                 )
 
+            ato_alvo = ApostilaService._resolver_ato_alvo(alt, ato_pai)
+            atos_por_pk[ato_alvo.pk] = ato_alvo
+
+            if campo in _CAMPOS_TEXTO_PORTARIA and ato_alvo.esta_publicado:
+                raise ValidationError(
+                    {
+                        "alteracoes": (
+                            "Não é possível alterar o texto da portaria de "
+                            "um ato já publicado no Diário Oficial."
+                        )
+                    }
+                )
+
+            if ato_alvo.pk not in detalhes_por_ato:
+                detalhes_por_ato[ato_alvo.pk] = ApostilaService._get_detalhe(
+                    ato_alvo
+                )
+            detalhe_alvo = detalhes_por_ato[ato_alvo.pk]
+
             destino, valor_anterior = ApostilaService._encontrar_campo(
-                campo, ato_pai, detalhe
+                campo, ato_alvo, detalhe_alvo
             )
-            buckets[destino][campo] = valor_novo
+            buckets.setdefault((ato_alvo.pk, destino), {})[campo] = valor_novo
 
             registros.append(
                 ApostilaAlteracao(
                     apostila=apostila_detalhe,
+                    ato_alterado=ato_alvo,
                     campo_alterado=campo,
                     valor_anterior=valor_anterior,
                     valor_novo=valor_novo,
                 )
             )
 
-        if buckets["ato_pai"]:
-            ApostilaService._salvar_updates(ato_pai, buckets["ato_pai"])
-
-        if buckets["detalhe"]:
-            assert detalhe is not None
-            ApostilaService._salvar_updates(detalhe, buckets["detalhe"])
+        for (ato_pk, destino), updates in buckets.items():
+            alvo: Model
+            if destino == "ato":
+                alvo = atos_por_pk[ato_pk]
+            else:
+                detalhe_para_update = detalhes_por_ato[ato_pk]
+                assert detalhe_para_update is not None
+                alvo = detalhe_para_update
+            ApostilaService._salvar_updates(alvo, updates)
 
         ApostilaAlteracao.objects.bulk_create(registros)
 
@@ -255,18 +335,18 @@ class ApostilaService:
         obj.save(update_fields=list(updates.keys()))
 
     @staticmethod
-    def _get_detalhe(ato_pai: AtoAdministrativo) -> Model | None:
+    def _get_detalhe(ato: AtoAdministrativo) -> Model | None:
         """Retorna o detalhe associado a um ato administrativo.
 
         Args:
-            ato_pai: Ato administrativo cujo detalhe será buscado.
+            ato: Ato administrativo cujo detalhe será buscado.
 
         Returns:
             object | None: O detalhe associado ou None.
 
         """
-        if ato_pai.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
-            return getattr(ato_pai, "designacao_detalhe", None)
-        if ato_pai.tipo == AtoAdministrativo.Tipo.CESSACAO:
-            return getattr(ato_pai, "cessacao_detalhe", None)
+        if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+            return getattr(ato, "designacao_detalhe", None)
+        if ato.tipo == AtoAdministrativo.Tipo.CESSACAO:
+            return getattr(ato, "cessacao_detalhe", None)
         return None

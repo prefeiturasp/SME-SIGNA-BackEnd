@@ -22,6 +22,7 @@ def test_gerar_preview_substitui_variaveis_do_modelo():
     modelo_usado, texto = TextoSeiService.gerar_preview(
         tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
         tipo_ato_pai="",
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
         dados={
             "NOME_SERVIDOR": "Maria Antônia Herrera",
             "NUMERO_RF": "1234567",
@@ -47,6 +48,7 @@ def test_gerar_preview_substitui_placeholder_sem_dado_por_vazio():
     _, texto = TextoSeiService.gerar_preview(
         tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
         tipo_ato_pai="",
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
         dados={},
     )
 
@@ -70,10 +72,35 @@ def test_gerar_preview_resolve_modelo_por_tipo_ato_pai():
     _, texto = TextoSeiService.gerar_preview(
         tipo_portaria=AtoAdministrativo.Tipo.APOSTILA,
         tipo_ato_pai=AtoAdministrativo.Tipo.CESSACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
         dados={},
     )
 
     assert texto == "Apostila de cessação."
+
+
+@pytest.mark.django_db
+def test_gerar_preview_resolve_modelo_por_tipo_cargo():
+    """Verifica que designação de cargo vago e disponível usam modelos distintos."""  # noqa: E501
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+        texto_portaria="Designação para cargo vago.",
+    )
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        texto_portaria="Designação para cargo disponível.",
+    )
+
+    _, texto = TextoSeiService.gerar_preview(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_ato_pai="",
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        dados={},
+    )
+
+    assert texto == "Designação para cargo disponível."
 
 
 @pytest.mark.django_db
@@ -83,6 +110,24 @@ def test_gerar_preview_levanta_erro_sem_modelo_ativo():
         TextoSeiService.gerar_preview(
             tipo_portaria=AtoAdministrativo.Tipo.CESSACAO,
             tipo_ato_pai="",
+            tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+            dados={},
+        )
+
+
+@pytest.mark.django_db
+def test_gerar_preview_levanta_erro_quando_tipo_cargo_nao_bate():
+    """Verifica que um modelo cadastrado para outro tipo_cargo não é usado."""
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+    )
+
+    with pytest.raises(ValidationError):
+        TextoSeiService.gerar_preview(
+            tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+            tipo_ato_pai="",
+            tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
             dados={},
         )
 
@@ -99,5 +144,6 @@ def test_gerar_preview_ignora_modelo_inativo():
         TextoSeiService.gerar_preview(
             tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
             tipo_ato_pai="",
+            tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
             dados={},
         )

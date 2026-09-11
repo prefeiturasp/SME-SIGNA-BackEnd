@@ -25,7 +25,10 @@ class AtoAdministrativo(models.Model):
         PUBLICADO = "PUBLICADO", "Publicado"
         NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
 
-    _TIPOS_PAI_VALIDOS = {
+    # Única fonte de verdade para quais tipos de ato podem ser pai de quais.
+    # Reaproveitado por `ModeloPortaria.TIPOS_QUE_VARIAM_POR_ATO_PAI`, já que
+    # ambos expressam a mesma regra de hierarquia de negócio.
+    TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
         "INSUBSISTENCIA": {
@@ -101,7 +104,7 @@ class AtoAdministrativo(models.Model):
         """
         if self.ato_pai_id:
             assert self.ato_pai is not None
-            tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
+            tipos_validos = self.TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
                     f"{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai."  # noqa: E501
@@ -191,3 +194,20 @@ class AtoAdministrativo(models.Model):
 
         """
         return self.ativo
+
+    @property
+    def esta_publicado(self) -> bool:
+        """Indica se o ato já foi publicado no Diário Oficial.
+
+        A data de publicação (`doc`) só é preenchida pela tela de
+        publicação (`atualizar-data-publicacao`), junto com
+        `status_publicacao`. A partir desse momento o texto da portaria
+        (`texto_sei`) deixa de poder ser alterado, pois passa a
+        representar um registro histórico do que foi efetivamente
+        publicado.
+
+        Returns:
+            bool: True quando `doc` está preenchido.
+
+        """
+        return self.doc is not None
