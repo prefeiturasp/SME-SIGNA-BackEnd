@@ -25,10 +25,21 @@ class ApostilaDetalhe(models.Model):
 
 
 class ApostilaAlteracao(models.Model):
-    """Registra alterações feitas em campos de uma apostila."""
+    """Registra alterações feitas em campos de uma apostila.
+
+    `ato_alterado` identifica em qual ato administrativo a alteração foi
+    de fato aplicada: normalmente o próprio ato apostilado (`ato_pai` da
+    apostila), mas — no caso de uma apostila sobre uma cessação — pode
+    também ser a designação de origem dessa cessação.
+    """
 
     apostila = models.ForeignKey(
         ApostilaDetalhe, on_delete=models.CASCADE, related_name="alteracoes"
+    )
+    ato_alterado = models.ForeignKey(
+        AtoAdministrativo,
+        on_delete=models.PROTECT,
+        related_name="alteracoes_recebidas",
     )
     campo_alterado = models.CharField(max_length=100)
     valor_anterior = models.TextField()
@@ -38,7 +49,7 @@ class ApostilaAlteracao(models.Model):
         db_table = "apostila_alteracao"
         constraints = [
             models.UniqueConstraint(
-                fields=["apostila", "campo_alterado"],
-                name="unique_campo_por_apostila",
+                fields=["apostila", "ato_alterado", "campo_alterado"],
+                name="unique_campo_por_apostila_e_ato",
             )
         ]

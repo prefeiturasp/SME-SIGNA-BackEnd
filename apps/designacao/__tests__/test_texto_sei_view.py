@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.__tests__.factories import criar_modelo_portaria
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 User = get_user_model()
 
@@ -44,6 +45,7 @@ def test_preview_retorna_texto_gerado_e_modelo_usado(auth_client):
         URL,
         {
             "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
             "dados": {"NOME_SERVIDOR": "João da Silva"},
         },
         format="json",
@@ -68,6 +70,7 @@ def test_preview_considera_tipo_ato_pai_para_apostila(auth_client):
         {
             "tipo_portaria": AtoAdministrativo.Tipo.APOSTILA,
             "tipo_ato_pai": AtoAdministrativo.Tipo.CESSACAO,
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
             "dados": {},
         },
         format="json",
@@ -78,11 +81,55 @@ def test_preview_considera_tipo_ato_pai_para_apostila(auth_client):
 
 
 @pytest.mark.django_db
+def test_preview_considera_tipo_cargo(auth_client):
+    """Verifica que designação vago e disponível usam modelos distintos."""
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+        texto_portaria="Designação para cargo vago.",
+    )
+    criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        texto_portaria="Designação para cargo disponível.",
+    )
+
+    response = auth_client.post(
+        URL,
+        {
+            "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+            "dados": {},
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["texto"] == "Designação para cargo disponível."
+
+
+@pytest.mark.django_db
 def test_preview_retorna_400_sem_modelo_ativo(auth_client):
     """Verifica erro 400 quando não há modelo ativo para o tipo informado."""
     response = auth_client.post(
         URL,
-        {"tipo_portaria": AtoAdministrativo.Tipo.CESSACAO, "dados": {}},
+        {
+            "tipo_portaria": AtoAdministrativo.Tipo.CESSACAO,
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+            "dados": {},
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_preview_retorna_400_sem_tipo_cargo(auth_client):
+    """Verifica erro 400 quando tipo_cargo não é informado."""
+    response = auth_client.post(
+        URL,
+        {"tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO, "dados": {}},
         format="json",
     )
 
@@ -94,7 +141,11 @@ def test_preview_retorna_400_para_tipo_portaria_invalido(auth_client):
     """Verifica erro 400 quando tipo_portaria não é um tipo de ato válido."""
     response = auth_client.post(
         URL,
-        {"tipo_portaria": "TIPO_INEXISTENTE", "dados": {}},
+        {
+            "tipo_portaria": "TIPO_INEXISTENTE",
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+            "dados": {},
+        },
         format="json",
     )
 
@@ -105,7 +156,11 @@ def test_preview_exige_autenticacao(client, db):
     """Verifica que a rota exige usuário autenticado."""
     response = client.post(
         URL,
-        {"tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO, "dados": {}},
+        {
+            "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+            "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+            "dados": {},
+        },
         format="json",
     )
 

@@ -203,3 +203,192 @@ class TestApostilaService:
         apostila = criar_ato_apostila(d)
 
         assert ApostilaService._get_detalhe(apostila) is None
+
+    # ── Cenário 4: alterações que cruzam para a designação de origem ─────────
+
+    def test_criar_com_alteracao_na_designacao_de_origem_de_uma_cessacao(self):
+        """Verifica que uma apostila de cessação pode alterar a designação."""
+        d = criar_ato_designacao(unidade_proponente="Escola Antiga")
+        c = criar_ato_cessacao(d)
+
+        ApostilaService.criar(
+            self._data(
+                c,
+                alteracoes=[
+                    {
+                        "campo_alterado": "unidade_proponente",
+                        "valor_novo": "Escola Nova",
+                        "tipo_ato_alvo": "DESIGNACAO",
+                    },
+                ],
+            )
+        )
+
+        d.designacao_detalhe.refresh_from_db()
+        assert d.designacao_detalhe.unidade_proponente == "Escola Nova"
+
+    def test_permite_alterar_mesmo_nome_de_campo_na_cessacao_e_na_designacao(
+        self,
+    ):
+        """Verifica que o mesmo nome de campo não colide entre alvos."""
+        d = criar_ato_designacao(numero_portaria="001")
+        c = criar_ato_cessacao(d, numero_portaria="050")
+
+        ApostilaService.criar(
+            self._data(
+                c,
+                alteracoes=[
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "051",
+                    },
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "002",
+                        "tipo_ato_alvo": "DESIGNACAO",
+                    },
+                ],
+            )
+        )
+
+        c.refresh_from_db()
+        d.refresh_from_db()
+        assert c.numero_portaria == "051"
+        assert d.numero_portaria == "002"
+
+    def test_registra_ato_alterado_em_cada_alteracao(self):
+        """Verifica que cada alteração grava o ato que foi de fato afetado."""
+        d = criar_ato_designacao(unidade_proponente="Escola Antiga")
+        c = criar_ato_cessacao(d, numero_portaria="050")
+
+        ato = ApostilaService.criar(
+            self._data(
+                c,
+                alteracoes=[
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "051",
+                    },
+                    {
+                        "campo_alterado": "unidade_proponente",
+                        "valor_novo": "Escola Nova",
+                        "tipo_ato_alvo": "DESIGNACAO",
+                    },
+                ],
+            )
+        )
+
+        alteracoes = {
+            alt.campo_alterado: alt.ato_alterado_id
+            for alt in ato.apostila_detalhe.alteracoes.all()
+        }
+        assert alteracoes["numero_portaria"] == c.pk
+        assert alteracoes["unidade_proponente"] == d.pk
+
+    def test_alvo_designacao_explicito_e_redundante_mas_valido_no_ato_pai(
+        self,
+    ):
+        """Verifica que DESIGNACAO como alvo redundante resolve pro ato_pai."""
+        d = criar_ato_designacao(numero_portaria="001")
+        ApostilaService.criar(
+            self._data(
+                d,
+                alteracoes=[
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "999",
+                        "tipo_ato_alvo": "DESIGNACAO",
+                    },
+                ],
+            )
+        )
+        d.refresh_from_db()
+        assert d.numero_portaria == "999"
+
+    def test_erro_tipo_ato_alvo_cessacao_quando_ato_pai_e_designacao(self):
+        """Verifica erro ao pedir CESSACAO como alvo a partir de uma designação."""
+        d = criar_ato_designacao()
+        with pytest.raises(ValidationError, match="Não é possível alterar"):
+            ApostilaService.criar(
+                self._data(
+                    d,
+                    alteracoes=[
+                        {
+                            "campo_alterado": "numero_portaria",
+                            "valor_novo": "999",
+                            "tipo_ato_alvo": "CESSACAO",
+                        },
+                    ],
+                )
+            )
+
+    def test_erro_tipo_ato_alvo_apostila_nao_suportado(self):
+        """Verifica erro ao pedir um alvo fora da cadeia ato_pai/designação."""
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+        with pytest.raises(ValidationError, match="Não é possível alterar"):
+            ApostilaService.criar(
+                self._data(
+                    c,
+                    alteracoes=[
+                        {
+                            "campo_alterado": "numero_portaria",
+                            "valor_novo": "999",
+                            "tipo_ato_alvo": "APOSTILA",
+                        },
+                    ],
+                )
+            )
+
+    # ── Cenário 5: texto da portaria fica congelado após publicação ──────────
+
+    def test_erro_ao_alterar_texto_sei_de_ato_ja_publicado(self):
+        """Verifica que não é possível reescrever texto_sei já publicado."""
+        d = criar_ato_designacao(doc=datetime.date(2024, 5, 1))
+        with pytest.raises(ValidationError, match="já publicado"):
+            ApostilaService.criar(
+                self._data(
+                    d,
+                    alteracoes=[
+                        {
+                            "campo_alterado": "texto_sei",
+                            "valor_novo": "Novo texto",
+                        },
+                    ],
+                )
+            )
+
+    def test_permite_alterar_texto_sei_quando_ato_nao_publicado(self):
+        """Verifica que texto_sei pode ser corrigido antes da publicação."""
+        d = criar_ato_designacao()
+        assert d.doc is None
+        ApostilaService.criar(
+            self._data(
+                d,
+                alteracoes=[
+                    {"campo_alterado": "texto_sei", "valor_novo": "Corrigido"},
+                ],
+            )
+        )
+        d.refresh_from_db()
+        assert d.texto_sei == "Corrigido"
+
+    def test_erro_ao_alterar_texto_sei_da_designacao_ja_publicada_via_cessacao(
+        self,
+    ):
+        """Verifica o congelamento também quando o alvo é a designação."""
+        d = criar_ato_designacao(doc=datetime.date(2024, 5, 1))
+        c = criar_ato_cessacao(d)
+        with pytest.raises(ValidationError, match="já publicado"):
+            ApostilaService.criar(
+                self._data(
+                    c,
+                    alteracoes=[
+                        {
+                            "campo_alterado": "texto_sei",
+                            "valor_novo": "Novo texto",
+                            "tipo_ato_alvo": "DESIGNACAO",
+                        },
+                    ],
+                )
+            )

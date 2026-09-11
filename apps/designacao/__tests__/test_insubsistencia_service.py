@@ -232,10 +232,84 @@ class TestInsubsistenciaService:
         """Verifica que _reverter_apostila ignora ato sem apostila_detalhe."""
         d = criar_ato_designacao()
 
-        InsubsistenciaService._reverter_apostila(d, d)
+        InsubsistenciaService._reverter_apostila(d)
 
         d.refresh_from_db()
         assert d.numero_portaria
+
+    def test_insubsistencia_de_apostila_reverte_campos_da_cessacao_e_da_designacao_origem(  # noqa: E501
+        self,
+    ):
+        """Apostila sobre cessação com alterações mistas reverte os dois atos."""  # noqa: E501
+        from apps.designacao.services.apostila_service import ApostilaService
+
+        d = criar_ato_designacao(numero_portaria="001")
+        c = criar_ato_cessacao(d)
+        assert not c.cessacao_detalhe.a_pedido
+
+        ApostilaService.criar(
+            {
+                "ato_pai": c,
+                "sei_numero": "SEI-A",
+                "observacao": "X",
+                "alteracoes": [
+                    {"campo_alterado": "a_pedido", "valor_novo": "True"},
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "999",
+                        "tipo_ato_alvo": AtoAdministrativo.Tipo.DESIGNACAO,
+                    },
+                ],
+            }
+        )
+        c.cessacao_detalhe.refresh_from_db()
+        d.refresh_from_db()
+        assert c.cessacao_detalhe.a_pedido
+        assert d.numero_portaria == "999"
+
+        ap = c.filhos.filter(tipo="APOSTILA").first()
+        InsubsistenciaService.criar(_data(ap))
+
+        c.cessacao_detalhe.refresh_from_db()
+        d.refresh_from_db()
+        assert not c.cessacao_detalhe.a_pedido
+        assert d.numero_portaria == "001"
+
+    def test_insubsistencia_de_cessacao_reverte_apostila_mista_nos_dois_atos(
+        self,
+    ):
+        """Insubsistir a cessação reverte campos que a apostila mudou nela e na designação."""  # noqa: E501
+        from apps.designacao.services.apostila_service import ApostilaService
+
+        d = criar_ato_designacao(numero_portaria="001")
+        c = criar_ato_cessacao(d)
+
+        ApostilaService.criar(
+            {
+                "ato_pai": c,
+                "sei_numero": "SEI-A",
+                "observacao": "X",
+                "alteracoes": [
+                    {"campo_alterado": "a_pedido", "valor_novo": "True"},
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "999",
+                        "tipo_ato_alvo": AtoAdministrativo.Tipo.DESIGNACAO,
+                    },
+                ],
+            }
+        )
+        c.cessacao_detalhe.refresh_from_db()
+        d.refresh_from_db()
+        assert c.cessacao_detalhe.a_pedido
+        assert d.numero_portaria == "999"
+
+        InsubsistenciaService.criar(_data(c))
+
+        c.cessacao_detalhe.refresh_from_db()
+        d.refresh_from_db()
+        assert not c.cessacao_detalhe.a_pedido
+        assert d.numero_portaria == "001"
 
     def test_get_detalhe_retorna_none_para_apostila(self):
         """Verifica que _get_detalhe retorna None para tipos sem detalhe."""

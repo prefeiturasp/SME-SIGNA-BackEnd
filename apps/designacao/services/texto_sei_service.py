@@ -23,7 +23,10 @@ class TextoSeiService:
 
     @staticmethod
     def gerar_preview(
-        tipo_portaria: str, tipo_ato_pai: str, dados: dict[str, str]
+        tipo_portaria: str,
+        tipo_ato_pai: str,
+        tipo_cargo: str,
+        dados: dict[str, str],
     ) -> tuple[ModeloPortaria, str]:
         """Resolve o modelo vigente e monta o texto final.
 
@@ -32,6 +35,9 @@ class TextoSeiService:
                 gerado (designação, cessação, apostila ou
                 insubsistência).
             tipo_ato_pai: Tipo do ato pai, quando aplicável.
+            tipo_cargo: Se o cargo do ato é vago ou disponível —
+                designação e cessação têm textos diferentes para
+                cada caso.
             dados: Dicionário de variáveis (mesmas chaves de
                 `ModeloPortaria.Variavel`) já resolvidas pelo
                 requisitante, para substituição no texto do modelo.
@@ -46,7 +52,7 @@ class TextoSeiService:
 
         """
         modelo = ModeloPortariaService.resolver_ativo(
-            tipo_portaria, tipo_ato_pai
+            tipo_portaria, tipo_ato_pai, tipo_cargo
         )
         if modelo is None:
             raise ValidationError(

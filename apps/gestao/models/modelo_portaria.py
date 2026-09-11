@@ -45,16 +45,10 @@ class ModeloPortaria(models.Model):
     # possível (designação): a tela de cadastro usa isso para exibir
     # "Cessação de Designação" de forma consistente com "Apostila de
     # Designação/Cessação" e "Insubsistência de X" na listagem.
-    TIPOS_QUE_VARIAM_POR_ATO_PAI = {
-        "CESSACAO": {"DESIGNACAO"},
-        "APOSTILA": {"DESIGNACAO", "CESSACAO"},
-        "INSUBSISTENCIA": {
-            "DESIGNACAO",
-            "CESSACAO",
-            "APOSTILA",
-            "INSUBSISTENCIA",
-        },
-    }
+    #
+    # Mesma regra de hierarquia usada por `AtoAdministrativo.clean()` —
+    # reaproveitada daqui para não duplicar a definição.
+    TIPOS_QUE_VARIAM_POR_ATO_PAI = AtoAdministrativo.TIPOS_PAI_VALIDOS
 
     tipo_portaria = models.CharField(
         "Tipo de portaria",

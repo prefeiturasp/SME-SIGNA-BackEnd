@@ -15,7 +15,15 @@ from apps.designacao.models.insubsistencia_apostila_detalhe import (
 from apps.designacao.models.insubsistencia_detalhe import InsubsistenciaDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
+    {
+        "numero_portaria",
+        "ano_vigente",
+        "sei_numero",
+        "doc",
+        "criado_por",
+        "texto_sei",
+        "modelo_portaria",
+    }
 )
 
 
@@ -147,9 +155,7 @@ class InsubsistenciaService:
                     avo.save(update_fields=["ativo"])
 
             elif tipo_pai == AtoAdministrativo.Tipo.APOSTILA:
-                avo = ato_pai.ato_pai
-                if avo:
-                    InsubsistenciaService._reverter_apostila(ato_pai, avo)
+                InsubsistenciaService._reverter_apostila(ato_pai)
 
             elif tipo_pai in (
                 AtoAdministrativo.Tipo.DESIGNACAO,
@@ -163,61 +169,83 @@ class InsubsistenciaService:
                 ).prefetch_related("apostila_detalhe__alteracoes")
 
                 for apostila in apostilas_validas:
-                    InsubsistenciaService._reverter_apostila(apostila, ato_pai)
+                    InsubsistenciaService._reverter_apostila(apostila)
                     apostila.ativo = False
                     apostila.save(update_fields=["ativo"])
 
         return ato
 
     @staticmethod
-    def _reverter_apostila(
-        apostila_ato: AtoAdministrativo, alvo: AtoAdministrativo
-    ) -> None:
-        """Reverte as alterações de uma apostila sobre o ato alvo.
+    def _reverter_apostila(apostila_ato: AtoAdministrativo) -> None:
+        """Reverte as alterações de uma apostila nos atos que ela afetou.
+
+        Cada `ApostilaAlteracao` registra o ato administrativo em que foi
+        de fato aplicada (`ato_alterado`) — normalmente o próprio ato
+        apostilado, mas, no caso de uma apostila sobre uma cessação, pode
+        também ser a designação de origem dela (`tipo_ato_alvo="DESIGNACAO"`
+        na criação). A reversão precisa respeitar o `ato_alterado` de cada
+        alteração individualmente, em vez de assumir um único ato de
+        destino — do contrário, alterações aplicadas num ato diferente do
+        destino assumido são silenciosamente descartadas.
 
         Args:
             apostila_ato: Ato administrativo do tipo apostila que será
             revertido.
-            alvo: Ato administrativo que receberá a reversão dos valores.
 
         """
         try:
-            alteracoes = list(apostila_ato.apostila_detalhe.alteracoes.all())
+            alteracoes = list(
+                apostila_ato.apostila_detalhe.alteracoes.select_related(
+                    "ato_alterado"
+                )
+            )
         except Exception:
             return
 
         if not alteracoes:
             return
 
-        detalhe_alvo = InsubsistenciaService._get_detalhe(alvo)
-
-        ato_updates = {}
-        detalhe_updates = {}
+        atos_por_pk: dict[int, AtoAdministrativo] = {}
+        detalhes_por_pk: dict[int, Model | None] = {}
+        ato_updates_por_pk: dict[int, dict] = {}
+        detalhe_updates_por_pk: dict[int, dict] = {}
 
         for alt in alteracoes:
+            alvo = alt.ato_alterado
+            atos_por_pk[alvo.pk] = alvo
+
+            if alvo.pk not in detalhes_por_pk:
+                detalhes_por_pk[alvo.pk] = InsubsistenciaService._get_detalhe(
+                    alvo
+                )
+            detalhe_alvo = detalhes_por_pk[alvo.pk]
+
             campo = alt.campo_alterado
             valor = InsubsistenciaService._coerce_valor(
                 alvo, detalhe_alvo, campo, alt.valor_anterior
             )
 
             if hasattr(alvo, campo):
-                ato_updates[campo] = valor
+                ato_updates_por_pk.setdefault(alvo.pk, {})[campo] = valor
             elif (
                 detalhe_alvo
                 and hasattr(detalhe_alvo, campo)
                 and campo not in ("ato_id", "ato")
             ):
-                detalhe_updates[campo] = valor
+                detalhe_updates_por_pk.setdefault(alvo.pk, {})[campo] = valor
 
-        if ato_updates:
-            for campo, valor in ato_updates.items():
+        for pk, updates in ato_updates_por_pk.items():
+            alvo = atos_por_pk[pk]
+            for campo, valor in updates.items():
                 setattr(alvo, campo, valor)
-            alvo.save(update_fields=list(ato_updates.keys()))
+            alvo.save(update_fields=list(updates.keys()))
 
-        if detalhe_updates and detalhe_alvo is not None:
-            for campo, valor in detalhe_updates.items():
+        for pk, updates in detalhe_updates_por_pk.items():
+            detalhe_alvo = detalhes_por_pk[pk]
+            assert detalhe_alvo is not None
+            for campo, valor in updates.items():
                 setattr(detalhe_alvo, campo, valor)
-            detalhe_alvo.save(update_fields=list(detalhe_updates.keys()))
+            detalhe_alvo.save(update_fields=list(updates.keys()))
 
     @staticmethod
     def _get_detalhe(ato: AtoAdministrativo) -> Model | None:

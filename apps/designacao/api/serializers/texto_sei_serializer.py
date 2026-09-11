@@ -7,6 +7,7 @@ modelo de portaria vigente, e o payload de saída com o texto gerado.
 from rest_framework import serializers
 
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class TextoSeiPreviewRequestSerializer(serializers.Serializer):
@@ -20,6 +21,9 @@ class TextoSeiPreviewRequestSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
         default="",
+    )
+    tipo_cargo = serializers.ChoiceField(
+        choices=ModeloPortaria.TipoCargo.choices
     )
     dados = serializers.DictField(
         child=serializers.CharField(allow_blank=True, allow_null=True),
