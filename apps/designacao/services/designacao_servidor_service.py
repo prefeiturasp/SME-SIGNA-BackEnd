@@ -11,6 +11,8 @@ from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
 logger = logging.getLogger(__name__)
 
+INDISPONIVEL_NO_EOL = "Indisponível no EOL"
+
 
 class DesignacaoServidorService:
     """Serviço responsável por montar a designação do servidor."""
@@ -78,7 +80,7 @@ class DesignacaoServidorService:
             cargo.get("ueCargoSobreposto")
             if possui_cargo_sobreposto
             else cargo.get("ueFuncaoAtividade")
-        )
+        ) or INDISPONIVEL_NO_EOL
 
         return {
             "nome_servidor": usuario.get("nome"),
@@ -91,6 +93,6 @@ class DesignacaoServidorService:
             "cd_cargo_sobreposto_funcao_atividade": cd_cargo_sobreposto_funcao_atividade,  # noqa: E501
             "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,  # noqa: E501
             "local_de_exercicio": local_exercicio,
-            "laudo_medico": "Indisponível",
-            "local_de_servico": "Indisponível",
+            "laudo_medico": INDISPONIVEL_NO_EOL,
+            "local_de_servico": INDISPONIVEL_NO_EOL,
         }

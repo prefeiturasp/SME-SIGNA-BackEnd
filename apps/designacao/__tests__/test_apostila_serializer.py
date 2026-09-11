@@ -136,3 +136,62 @@ class TestApostilaReadSerializer:
         assert data["ato_apostilado_display"] == "Designação"
         assert data["designacao"] is not None
         assert data["cessacao"] is None
+
+    def test_get_alteracoes_retorna_lista_vazia_quando_sem_detalhe(self):
+        """Verifica get alteracoes retorna lista vazia em erro inesperado."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        apostila.apostila_detalhe.delete()
+        apostila = AtoAdministrativo.objects.get(pk=apostila.pk)
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert data["alteracoes"] == []
+
+    def test_get_insubsistencia_retorna_none_quando_erro_inesperado(self):
+        """Verifica get insubsistencia retorna none quando falha ao acessar detalhe."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        AtoAdministrativo.objects.create(
+            tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+            ato_pai=apostila,
+            sei_numero="SEI-INS-SEM-DETALHE",
+        )
+
+        apostila_com_prefetch = (
+            AtoAdministrativo.objects.filter(pk=apostila.pk)
+            .prefetch_related("filhos", "filhos__insubsistencia_detalhe")
+            .first()
+        )
+
+        data = ApostilaReadSerializer(apostila_com_prefetch).data
+
+        assert data["insubsistencia"] is None
+
+    def test_get_ato_apostilado_retorna_none_sem_ato_pai(self):
+        """Verifica ato_apostilado e display retornam None sem ato pai.
+
+        Usa instância não salva, já que o model exige ato_pai para
+        APOSTILA na persistência — o branch defensivo do serializer
+        continua existindo e precisa ser exercitado diretamente.
+        """
+        apostila_sem_pai = AtoAdministrativo(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, sei_numero="SEI-SEM-PAI"
+        )
+        serializer = ApostilaReadSerializer()
+
+        assert serializer.get_ato_apostilado(apostila_sem_pai) is None
+        assert serializer.get_ato_apostilado_display(apostila_sem_pai) is None
+
+    def test_get_tipo_de_ato(self):
+        """Verifica get_tipo_de_ato com e sem ato pai."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        apostila_sem_pai = AtoAdministrativo(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, sei_numero="SEI-SEM-PAI-2"
+        )
+
+        serializer = ApostilaReadSerializer()
+
+        assert serializer.get_tipo_de_ato(apostila) == "Apostila de Designação"
+        assert serializer.get_tipo_de_ato(apostila_sem_pai) == "Apostila"
