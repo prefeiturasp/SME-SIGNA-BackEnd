@@ -19,21 +19,24 @@ class ModeloPortariaService:
 
     @staticmethod
     def resolver_ativo(
-        tipo_portaria: str, tipo_ato_pai: str = ""
+        tipo_portaria: str, tipo_ato_pai: str = "", tipo_cargo: str = ""
     ) -> ModeloPortaria | None:
         """Resolve o modelo de portaria ativo para um tipo de ato.
 
-        Por enquanto não existe nada que impeça dois modelos ativos
-        para a mesma combinação de tipo — se acontecer, pega o mais
-        recente. Também não diferencia por ato específico (ex.: por
-        cargo) dentro do mesmo tipo ainda; isso fica para uma evolução
-        futura deste serviço.
+        `tipo_cargo` é obrigatório em todo `ModeloPortaria` (cargo vago
+        x cargo disponível têm textos diferentes), então normalmente
+        há um modelo ativo por combinação de tipo_portaria/tipo_ato_pai
+        para cada um dos dois. Por enquanto não existe nada que impeça
+        dois modelos ativos para a mesma combinação completa — se
+        acontecer, pega o mais recente.
 
         Args:
             tipo_portaria: Tipo do ato ao qual o texto se refere
                 (designação, cessação, apostila ou insubsistência).
             tipo_ato_pai: Tipo do ato pai, aplicável apenas quando o
                 texto varia conforme a origem (apostila/insubsistência).
+            tipo_cargo: Se o cargo do ato é vago ou disponível
+                (`ModeloPortaria.TipoCargo`).
 
         Returns:
             ModeloPortaria | None: Modelo ativo mais recente para a
@@ -44,6 +47,7 @@ class ModeloPortariaService:
             ModeloPortaria.objects.filter(
                 tipo_portaria=tipo_portaria,
                 tipo_ato_pai=tipo_ato_pai,
+                tipo_cargo=tipo_cargo,
                 status=ModeloPortaria.Status.ATIVO,
             )
             .order_by("-criado_em")
