@@ -19,8 +19,8 @@ from django.db import migrations, models
 
 def preencher_ato_alterado(apps, schema_editor):
     """Backfill: ato_alterado = ato_pai da apostila, para linhas antigas."""
-    ApostilaAlteracao = apps.get_model("designacao", "ApostilaAlteracao")
-    alteracoes = ApostilaAlteracao.objects.select_related(
+    apostila_alteracao_model = apps.get_model("designacao", "ApostilaAlteracao")
+    alteracoes = apostila_alteracao_model.objects.select_related(
         "apostila__ato"
     ).iterator()
     for alteracao in alteracoes:
