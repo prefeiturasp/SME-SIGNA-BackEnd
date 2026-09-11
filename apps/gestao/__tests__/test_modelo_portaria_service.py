@@ -47,10 +47,39 @@ def test_resolver_ativo_retorna_modelo_ativo_da_combinacao_informada():
     )
 
     resultado = ModeloPortariaService.resolver_ativo(
-        AtoAdministrativo.Tipo.APOSTILA, AtoAdministrativo.Tipo.DESIGNACAO
+        AtoAdministrativo.Tipo.APOSTILA,
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        ModeloPortaria.TipoCargo.CARGO_VAGO,
     )
 
     assert resultado == esperado
+
+
+@pytest.mark.django_db
+def test_resolver_ativo_distingue_por_tipo_cargo():
+    """Verifica que cargo vago e cargo disponível resolvem modelos distintos."""
+    vago = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+        nome_modelo="Designação cargo vago",
+    )
+    disponivel = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        nome_modelo="Designação cargo disponível",
+    )
+
+    resultado_vago = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
+    )
+    resultado_disponivel = ModeloPortariaService.resolver_ativo(
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+    )
+
+    assert resultado_vago == vago
+    assert resultado_disponivel == disponivel
 
 
 @pytest.mark.django_db
@@ -62,7 +91,8 @@ def test_resolver_ativo_ignora_modelo_inativo():
     )
 
     resultado = ModeloPortariaService.resolver_ativo(
-        AtoAdministrativo.Tipo.DESIGNACAO
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
     )
 
     assert resultado is None
@@ -95,7 +125,8 @@ def test_resolver_ativo_retorna_o_mais_recente_quando_ha_mais_de_um():
     )
 
     resultado = ModeloPortariaService.resolver_ativo(
-        AtoAdministrativo.Tipo.DESIGNACAO
+        AtoAdministrativo.Tipo.DESIGNACAO,
+        tipo_cargo=ModeloPortaria.TipoCargo.CARGO_VAGO,
     )
 
     assert resultado == mais_recente
