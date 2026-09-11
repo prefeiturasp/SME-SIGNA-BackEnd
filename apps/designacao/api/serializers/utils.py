@@ -8,6 +8,11 @@ from typing import Any
 
 from rest_framework import serializers
 
+# Teto do tipo integer (int4) do Postgres, que respalda
+# AtoAdministrativo.numero_portaria. Sem esse limite no serializer, um
+# número maior só falharia no banco, virando erro 500 em vez de 400.
+NUMERO_PORTARIA_MAX = 2_147_483_647
+
 
 class NullableDateField(serializers.DateField):
     """Campo de data que aceita string vazia como valor nulo.
@@ -49,7 +54,7 @@ def validar_somente_numeros(value: str) -> str:
         str: Valor original se for composto apenas por dígitos.
 
     """
-    if not value.isdigit():
+    if not value.isdecimal():
         raise serializers.ValidationError("Deve conter apenas números.")
     return value
 

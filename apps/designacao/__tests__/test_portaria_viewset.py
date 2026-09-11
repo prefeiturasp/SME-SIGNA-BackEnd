@@ -57,7 +57,7 @@ def designacao(db):
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="001/2024",
+        numero_portaria=1,
         ano_vigente="2024",
         sei_numero="6018.2024/0001234-5",
         doc=None,
@@ -94,7 +94,7 @@ def designacao_2(db):
     """
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="002/2024",
+        numero_portaria=2,
         ano_vigente="2024",
         sei_numero="6018.2024/0002345-6",
         doc=None,
@@ -131,7 +131,7 @@ def cessacao(db, designacao):
     """
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
-        numero_portaria="003/2024",
+        numero_portaria=3,
         ano_vigente="2024",
         sei_numero="6018.2024/0003456-7",
         doc=None,
@@ -155,7 +155,7 @@ def insubsistencia(db, designacao):
     """
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="004/2024",
+        numero_portaria=4,
         ano_vigente="2024",
         sei_numero="6018.2024/0004567-8",
         doc=None,
@@ -179,7 +179,7 @@ def apostila(db, designacao):
     """
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
-        numero_portaria="005/2024",
+        numero_portaria=5,
         ano_vigente="2024",
         sei_numero="6018.2024/0005678-9",
         doc=None,
@@ -203,7 +203,7 @@ def inativo(db):
     """
     return AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="099/2024",
+        numero_portaria=99,
         ano_vigente="2024",
         sei_numero="6018.2024/0099999-9",
         doc=None,
@@ -319,19 +319,19 @@ class TestPortariaListView:
         self, auth_client, designacao, designacao_2
     ):
         """Verifica filtro portaria inicial."""
-        response = auth_client.get(URL_LIST, {"portaria_inicial": "002/2024"})
+        response = auth_client.get(URL_LIST, {"portaria_inicial": "002"})
         assert response.status_code == 200
         portarias = [item["numero_portaria"] for item in response.data]
-        assert all(p >= "002/2024" for p in portarias)
+        assert all(p >= 2 for p in portarias)
 
     def test_filtro_portaria_final(
         self, auth_client, designacao, designacao_2
     ):
         """Verifica filtro portaria final."""
-        response = auth_client.get(URL_LIST, {"portaria_final": "001/2024"})
+        response = auth_client.get(URL_LIST, {"portaria_final": "001"})
         assert response.status_code == 200
         portarias = [item["numero_portaria"] for item in response.data]
-        assert all(p <= "001/2024" for p in portarias)
+        assert all(p <= 1 for p in portarias)
 
     def test_filtro_nome(self, auth_client, designacao, designacao_2):
         """Verifica filtro nome."""
@@ -365,10 +365,10 @@ class TestPortariaListView:
         self, auth_client, designacao, designacao_2
     ):
         """Verifica search por numero portaria."""
-        response = auth_client.get(URL_LIST, {"search": "001/2024"})
+        response = auth_client.get(URL_LIST, {"search": "001"})
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["numero_portaria"] == "001/2024"
+        assert response.data[0]["numero_portaria"] == 1
 
     def test_search_por_sei(self, auth_client, designacao, designacao_2):
         """Verifica search por sei."""

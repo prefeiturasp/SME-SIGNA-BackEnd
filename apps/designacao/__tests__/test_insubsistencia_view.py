@@ -35,7 +35,7 @@ def _payload(ato_pai_id, **kwargs):
     """Método auxiliar para payload."""
     base = {
         "ato_pai": ato_pai_id,
-        "numero_portaria": "12345",
+        "numero_portaria": 12345,
         "ano_vigente": "2024",
         "sei_numero": "999999",
         "observacoes": "Criada via teste",
@@ -261,7 +261,7 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
     d = criar_ato_designacao()
     cessacao = criar_ato_cessacao(d)
     insub = criar_ato_insubsistencia(
-        cessacao, numero_portaria="654", ano_vigente="2025"
+        cessacao, numero_portaria=654, ano_vigente="2025"
     )
 
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
@@ -276,7 +276,7 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
 def test_buscar_por_portaria_insubsistencia_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma insubsistência."""  # noqa: E501
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
+    response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
 
     assert response.status_code == 404
 
@@ -288,9 +288,7 @@ def test_buscar_por_portaria_insubsistencia_ano_diferente_nao_encontrada(
     """Verifica 404 quando a portaria existe mas em outro ano."""
     d = criar_ato_designacao()
     cessacao = criar_ato_cessacao(d)
-    criar_ato_insubsistencia(
-        cessacao, numero_portaria="654", ano_vigente="2024"
-    )
+    criar_ato_insubsistencia(cessacao, numero_portaria=654, ano_vigente="2024")
 
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
     response = auth_client.get(url, {"portaria": "654", "ano": "2025"})

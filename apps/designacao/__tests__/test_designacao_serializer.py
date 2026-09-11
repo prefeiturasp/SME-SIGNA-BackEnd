@@ -66,7 +66,7 @@ class TestDesignacaoReadSerializerCessacao:
         AtoAdministrativo.objects.create(
             tipo=AtoAdministrativo.Tipo.CESSACAO,
             ato_pai=d,
-            numero_portaria="456",
+            numero_portaria=456,
             ano_vigente="2024",
             sei_numero="SEI-CESSACAO",
         )
@@ -92,7 +92,7 @@ class TestDesignacaoReadSerializerCessacao:
         AtoAdministrativo.objects.create(
             tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
             ato_pai=c,
-            numero_portaria="789",
+            numero_portaria=789,
             ano_vigente="2024",
             sei_numero="SEI-INSUB-CESSACAO",
         )
@@ -177,7 +177,7 @@ class TestDesignacaoReadSerializerInsubsistencia:
         AtoAdministrativo.objects.create(
             tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA,
             ato_pai=d,
-            numero_portaria="789",
+            numero_portaria=789,
             ano_vigente="2024",
             sei_numero="SEI-INSUB",
         )
@@ -195,7 +195,7 @@ class TestDesignacaoReadSerializerDisplaysSemDetalhe:
         """Verifica que os campos *_display voltam None sem detalhe."""
         ato = AtoAdministrativo.objects.create(
             tipo=AtoAdministrativo.Tipo.DESIGNACAO,
-            numero_portaria="001",
+            numero_portaria=1,
             ano_vigente="2024",
             sei_numero="SEI-SEM-DETALHE",
         )

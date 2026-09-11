@@ -49,6 +49,14 @@ def buscar_ato_por_portaria_ano(
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # numero_portaria é inteiro no banco: sem esta guarda um valor não
+    # numérico levantaria ValueError no filter, virando erro 500.
+    if not portaria.isdecimal():
+        return None, Response(
+            {"detail": "Parâmetro 'portaria' deve conter apenas números."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     ano = (request.query_params.get("ano") or "").strip()
     if not ano:
         return None, Response(

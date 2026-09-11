@@ -22,7 +22,7 @@ def _data(ato_pai, **kwargs):
     """Método auxiliar para data."""
     base = {
         "ato_pai": ato_pai,
-        "numero_portaria": "111",
+        "numero_portaria": 111,
         "ano_vigente": "2024",
         "sei_numero": "SEI-I",
         "observacoes": "",
@@ -81,7 +81,7 @@ class TestInsubsistenciaService:
 
     def test_insubsistencia_de_apostila_reverte_campos(self):
         """Verifica insubsistencia de apostila reverte campos."""
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         from apps.designacao.services.apostila_service import ApostilaService
 
         ApostilaService.criar(
@@ -95,17 +95,17 @@ class TestInsubsistenciaService:
             }
         )
         d.refresh_from_db()
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
         ap = d.filhos.filter(tipo="APOSTILA").first()
         InsubsistenciaService.criar(_data(ap))
 
         d.refresh_from_db()
-        assert d.numero_portaria == "001"
+        assert d.numero_portaria == 1
 
     def test_insubsistencia_de_designacao_reverte_apostilas_filhas(self):
         """Verifica insubsistencia de designacao reverte apostilas filhas."""
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         from apps.designacao.services.apostila_service import ApostilaService
 
         ApostilaService.criar(
@@ -119,12 +119,12 @@ class TestInsubsistenciaService:
             }
         )
         d.refresh_from_db()
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
         InsubsistenciaService.criar(_data(d))
 
         d.refresh_from_db()
-        assert d.numero_portaria == "001"
+        assert d.numero_portaria == 1
 
     def test_insubsistencia_de_designacao_anula_apostilas_ativas(self):
         """Verifica insubsistencia de designacao anula apostilas ativas."""
@@ -243,7 +243,7 @@ class TestInsubsistenciaService:
         """Apostila sobre cessação com alterações mistas reverte os dois atos."""  # noqa: E501
         from apps.designacao.services.apostila_service import ApostilaService
 
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         c = criar_ato_cessacao(d)
         assert not c.cessacao_detalhe.a_pedido
 
@@ -265,7 +265,7 @@ class TestInsubsistenciaService:
         c.cessacao_detalhe.refresh_from_db()
         d.refresh_from_db()
         assert c.cessacao_detalhe.a_pedido
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
         ap = c.filhos.filter(tipo="APOSTILA").first()
         InsubsistenciaService.criar(_data(ap))
@@ -273,7 +273,7 @@ class TestInsubsistenciaService:
         c.cessacao_detalhe.refresh_from_db()
         d.refresh_from_db()
         assert not c.cessacao_detalhe.a_pedido
-        assert d.numero_portaria == "001"
+        assert d.numero_portaria == 1
 
     def test_insubsistencia_de_cessacao_reverte_apostila_mista_nos_dois_atos(
         self,
@@ -281,7 +281,7 @@ class TestInsubsistenciaService:
         """Insubsistir a cessação reverte campos que a apostila mudou nela e na designação."""  # noqa: E501
         from apps.designacao.services.apostila_service import ApostilaService
 
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         c = criar_ato_cessacao(d)
 
         ApostilaService.criar(
@@ -302,14 +302,14 @@ class TestInsubsistenciaService:
         c.cessacao_detalhe.refresh_from_db()
         d.refresh_from_db()
         assert c.cessacao_detalhe.a_pedido
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
         InsubsistenciaService.criar(_data(c))
 
         c.cessacao_detalhe.refresh_from_db()
         d.refresh_from_db()
         assert not c.cessacao_detalhe.a_pedido
-        assert d.numero_portaria == "001"
+        assert d.numero_portaria == 1
 
     def test_get_detalhe_retorna_none_para_apostila(self):
         """Verifica que _get_detalhe retorna None para tipos sem detalhe."""

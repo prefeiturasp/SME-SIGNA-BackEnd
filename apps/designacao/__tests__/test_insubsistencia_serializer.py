@@ -25,7 +25,7 @@ class TestInsubsistenciaWriteSerializer:
         """Metodo auxiliar para payload."""
         return {
             "ato_pai": ato_pai_id,
-            "numero_portaria": "12345",
+            "numero_portaria": 12345,
             "ano_vigente": "2024",
             "sei_numero": "SEI-INSUB-1",
             "doc": "2024-03-10",
@@ -102,14 +102,14 @@ class TestInsubsistenciaReadSerializer:
         designacao = criar_ato_designacao(doc=datetime.date(2024, 1, 15))
         insubsistencia_pai = criar_ato_insubsistencia(
             designacao,
-            numero_portaria="111",
+            numero_portaria=111,
             ano_vigente="2024",
             sei_numero="SEI-INSUB-PAI",
             doc=datetime.date(2024, 2, 10),
         )
         insubsistencia_filha = criar_ato_insubsistencia(
             insubsistencia_pai,
-            numero_portaria="222",
+            numero_portaria=222,
             ano_vigente="2025",
             sei_numero="SEI-INSUB-FILHA",
         )
@@ -117,7 +117,7 @@ class TestInsubsistenciaReadSerializer:
         data = InsubsistenciaReadSerializer(insubsistencia_filha).data
 
         assert data["insubsistencia"] is not None
-        assert data["insubsistencia"]["numero_portaria"] == "111"
+        assert data["insubsistencia"]["numero_portaria"] == 111
         assert data["insubsistencia"]["ano_vigente"] == "2024"
         assert data["insubsistencia"]["sei_numero"] == "SEI-INSUB-PAI"
         assert data["insubsistencia"]["doc"] == insubsistencia_pai.doc

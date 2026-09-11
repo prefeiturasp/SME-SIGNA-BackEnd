@@ -122,7 +122,7 @@ class TestApostilaService:
 
     def test_criar_com_alteracao_em_campo_do_ato(self):
         """Verifica criar com alteracao em campo do ato."""
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         ApostilaService.criar(
             self._data(
                 d,
@@ -132,7 +132,7 @@ class TestApostilaService:
             )
         )
         d.refresh_from_db()
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
     def test_criar_com_alteracao_em_campo_do_detalhe(self):
         """Verifica criar com alteracao em campo do detalhe."""
@@ -231,8 +231,8 @@ class TestApostilaService:
         self,
     ):
         """Verifica que o mesmo nome de campo não colide entre alvos."""
-        d = criar_ato_designacao(numero_portaria="001")
-        c = criar_ato_cessacao(d, numero_portaria="050")
+        d = criar_ato_designacao(numero_portaria=1)
+        c = criar_ato_cessacao(d, numero_portaria=50)
 
         ApostilaService.criar(
             self._data(
@@ -253,13 +253,13 @@ class TestApostilaService:
 
         c.refresh_from_db()
         d.refresh_from_db()
-        assert c.numero_portaria == "051"
-        assert d.numero_portaria == "002"
+        assert c.numero_portaria == 51
+        assert d.numero_portaria == 2
 
     def test_registra_ato_alterado_em_cada_alteracao(self):
         """Verifica que cada alteração grava o ato que foi de fato afetado."""
         d = criar_ato_designacao(unidade_proponente="Escola Antiga")
-        c = criar_ato_cessacao(d, numero_portaria="050")
+        c = criar_ato_cessacao(d, numero_portaria=50)
 
         ato = ApostilaService.criar(
             self._data(
@@ -289,7 +289,7 @@ class TestApostilaService:
         self,
     ):
         """Verifica que DESIGNACAO como alvo redundante resolve pro ato_pai."""
-        d = criar_ato_designacao(numero_portaria="001")
+        d = criar_ato_designacao(numero_portaria=1)
         ApostilaService.criar(
             self._data(
                 d,
@@ -303,7 +303,7 @@ class TestApostilaService:
             )
         )
         d.refresh_from_db()
-        assert d.numero_portaria == "999"
+        assert d.numero_portaria == 999
 
     def test_erro_tipo_ato_alvo_cessacao_quando_ato_pai_e_designacao(self):
         """Verifica erro ao pedir CESSACAO como alvo a partir de uma designação."""
