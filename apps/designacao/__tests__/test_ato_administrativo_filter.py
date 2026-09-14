@@ -243,6 +243,14 @@ class TestAtoAdministrativoFilter:
         assert qs.count() == 1
         assert qs.first() == cessacao
 
+    def test_filtro_tipo_designacao_e_cessacao(
+        self, designacao_1, designacao_2, cessacao, insubsistencia
+    ):
+        """Verifica filtro combinado de designação e cessação."""
+        qs = apply_filter({"tipo": "DESIGNACAO_CESSACAO"})
+        assert qs.count() == 3
+        assert all(a.tipo in ("DESIGNACAO", "CESSACAO") for a in qs)
+
     def test_filtro_tipo_insubsistencia(
         self, designacao_1, cessacao, insubsistencia
     ):

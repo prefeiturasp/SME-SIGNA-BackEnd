@@ -5,6 +5,7 @@ incluindo designações, cessações, insubsistências e apostilas.
 """
 
 from datetime import date
+from unittest.mock import Mock
 
 import pytest
 
@@ -298,6 +299,7 @@ class TestPortariaListSerializer:
             "apostilas",
             "insubsistencia",
             "tipo_insubsistencia",
+            "ato_pai_id",
         }
 
     def test_portaria(self, designacao):
@@ -405,9 +407,22 @@ class TestPortariaListSerializer:
 
     # ── observacoes ──────────────────────────────────────────────────────────
 
-    def test_observacoes_designacao_retorna_none(self, designacao):
-        """Verifica observacoes designacao retorna none."""
-        assert serialize(designacao)["observacoes"] is None
+    def test_observacoes_designacao_vazia(self, designacao):
+        """Verifica observacoes designacao sem informacoes_adicionais."""
+        assert serialize(designacao)["observacoes"] == ""
+
+    def test_observacoes_designacao(self, designacao):
+        """Verifica observacoes designacao retorna informacoes_adicionais."""
+        designacao.designacao_detalhe.informacoes_adicionais = (
+            "Designação com acúmulo de cargo."
+        )
+        designacao.designacao_detalhe.save()
+        ato = AtoAdministrativo.objects.select_related(
+            "designacao_detalhe"
+        ).get(pk=designacao.pk)
+        assert (
+            serialize(ato)["observacoes"] == "Designação com acúmulo de cargo."
+        )
 
     def test_observacoes_cessacao_retorna_none(self, cessacao):
         """Verifica observacoes cessacao retorna none."""
@@ -556,3 +571,81 @@ class TestPortariaListSerializer:
             pk=designacao.pk
         )
         assert serializer._serializar_insubsistencia(ato) is None
+
+    def test_metodo_privado_serializar_insubsistencia_retorna_none_sem_filho(
+        self, designacao
+    ):
+        """Verifica _serializar_insubsistencia retorna none sem filhos."""
+        serializer = AtoAdministrativoListSerializer()
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert serializer._serializar_insubsistencia(ato) is None
+
+    def test_get_criado_por_nome_retorna_name_quando_responsavel_existe(self):
+        """Verifica get_criado_por_nome retorna o nome do responsável."""
+        serializer = AtoAdministrativoListSerializer()
+        obj = Mock(criado_por=Mock(username="fulano"))
+        obj.criado_por.name = "Fulano da Silva"
+
+        assert serializer.get_criado_por_nome(obj) == "Fulano da Silva"
+
+    def test_get_rf_retorna_none_sem_designacao_detalhe(self):
+        """Verifica get_rf retorna none quando não há designação na cadeia."""
+        serializer = AtoAdministrativoListSerializer()
+        obj = Mock(
+            tipo=AtoAdministrativo.Tipo.APOSTILA, ato_raiz=None, ato_pai=None
+        )
+
+        assert serializer.get_rf(obj) is None
+
+    def test_get_cessacao_retorna_none_em_erro_inesperado(self):
+        """Verifica get_cessacao retorna none em erro inesperado."""
+
+        class _FilhoQuebrado:
+            tipo = AtoAdministrativo.Tipo.CESSACAO
+
+            @property
+            def sei_numero(self):
+                raise RuntimeError("falha ao acessar sei_numero")
+
+        serializer = AtoAdministrativoListSerializer()
+        obj = Mock()
+        obj.filhos.all.return_value = [_FilhoQuebrado()]
+
+        assert serializer.get_cessacao(obj) is None
+
+    def test_serializar_apostilas_ignora_apostila_com_erro(self, capsys):
+        """Verifica _serializar_apostilas ignora apostila com erro."""
+
+        class _ApostilaQuebrada:
+            id = 999
+            tipo = AtoAdministrativo.Tipo.APOSTILA
+
+            @property
+            def sei_numero(self):
+                raise RuntimeError("falha ao acessar sei_numero")
+
+        serializer = AtoAdministrativoListSerializer()
+        obj = Mock()
+        obj.filhos.all.return_value = [_ApostilaQuebrada()]
+
+        assert serializer._serializar_apostilas(obj) == []
+        assert "Erro ao serializar apostila: 999" in capsys.readouterr().out
+
+    def test_get_insubsistencia_retorna_none_em_erro_inesperado(self):
+        """Verifica get_insubsistencia retorna none em erro inesperado."""
+
+        class _InsubsistenciaQuebrada:
+            tipo = AtoAdministrativo.Tipo.INSUBSISTENCIA
+            eh_valido = True
+
+            @property
+            def sei_numero(self):
+                raise RuntimeError("falha ao acessar sei_numero")
+
+        serializer = AtoAdministrativoListSerializer()
+        obj = Mock()
+        obj.filhos.all.return_value = [_InsubsistenciaQuebrada()]
+
+        assert serializer.get_insubsistencia(obj) is None

@@ -858,6 +858,156 @@ class TestBuscarDisciplinasTurma:
 
 
 # ---------------------------------------------------------------------------
+# buscar_cargos
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarCargos:
+    """Testa a busca da lista de cargos cadastrados no EOL."""
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_sucesso(self, mock_get):
+        """Verifica que a busca de cargos retorna a lista da API."""
+        cargos_mock = [
+            {"codigoCargo": "3360", "descricaoCargo": "DIRETOR DE ESCOLA"},
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=cargos_mock),
+        )
+
+        resultado = SmeIntegracaoService.buscar_cargos()
+
+        assert resultado == cargos_mock
+        mock_get.assert_called_once()
+        url_chamada = mock_get.call_args[0][0]
+        assert url_chamada.endswith("/cargos")
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_status_invalido_levanta_excecao(self, mock_get):
+        """Verifica que status inválido da API gera exceção."""
+        mock_response = MagicMock()
+        mock_response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        mock_response.text = "Erro interno"
+        mock_get.return_value = mock_response
+
+        with pytest.raises(SmeIntegracaoError) as exc:
+            SmeIntegracaoService.buscar_cargos()
+
+        assert "Erro ao consultar cargos do servidor" in str(exc.value)
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_request_exception(self, mock_get, mock_logger):
+        """Verifica log e exceção quando há falha de conexão no SME."""
+        mock_get.side_effect = requests.exceptions.RequestException("timeout")
+
+        with pytest.raises(SmeIntegracaoError) as exc:
+            SmeIntegracaoService.buscar_cargos()
+
+        assert "Erro de comunicação com SME" in str(exc.value)
+        mock_logger.exception.assert_called_once_with(
+            "Erro de comunicação com API de cargos no EOL"
+        )
+
+    @patch("apps.usuarios.services.sme_integracao_service.logger")
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_fallback_quando_cargos_invalidos(self, mock_get, mock_logger):
+        """Verifica o fallback para a lista mapeada de cargos.
+
+        Ocorre quando o EOL responde cargos degradados (codigoCargo=0 e
+        nomeCargo=None em todos os itens).
+        """
+        cargos_mock = [
+            {"codigoCargo": 0, "nomeCargo": None},
+            {"codigoCargo": 0, "nomeCargo": None},
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=cargos_mock),
+        )
+
+        resultado = SmeIntegracaoService.buscar_cargos()
+
+        assert resultado == CARGOS_GESTAO_ESCOLAR
+        mock_logger.warning.assert_called_once_with(
+            "API de cargos do EOL retornou dados inválidos, "
+            "usando lista de cargos mapeada como fallback"
+        )
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_nao_usa_fallback_quando_cargos_parcialmente_validos(
+        self, mock_get
+    ):
+        """Verifica que a lista original é mantida sem o fallback.
+
+        Ocorre quando ao menos um cargo possui código ou nome válido.
+        """
+        cargos_mock = [
+            {"codigoCargo": 0, "nomeCargo": None},
+            {"codigoCargo": "3360", "nomeCargo": "DIRETOR DE ESCOLA"},
+        ]
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=cargos_mock),
+        )
+
+        resultado = SmeIntegracaoService.buscar_cargos()
+
+        assert resultado == cargos_mock
+
+    @patch("apps.usuarios.services.sme_integracao_service.requests.get")
+    def test_nao_usa_fallback_quando_lista_vazia(self, mock_get):
+        """Verifica que uma lista vazia é retornada sem acionar o fallback.
+
+        Não há itens degradados a detectar em uma lista vazia.
+        """
+        mock_get.return_value = MagicMock(
+            status_code=status.HTTP_200_OK,
+            json=MagicMock(return_value=[]),
+        )
+
+        resultado = SmeIntegracaoService.buscar_cargos()
+
+        assert resultado == []
+
+
+class TestCargosEolInvalidos:
+    """Testa a detecção de listas de cargos degradadas do EOL."""
+
+    def test_lista_vazia_retorna_false(self):
+        """Verifica que lista vazia não é considerada inválida."""
+        assert SmeIntegracaoService._cargos_eol_invalidos([]) is False
+
+    def test_lista_valida_retorna_false(self):
+        """Verifica que lista com cargos válidos não é considerada inválida."""
+        cargos = [{"codigoCargo": "3360", "nomeCargo": "DIRETOR DE ESCOLA"}]
+        assert SmeIntegracaoService._cargos_eol_invalidos(cargos) is False
+
+    def test_lista_totalmente_degradada_retorna_true(self):
+        """Verifica que lista totalmente degradada é considerada inválida.
+
+        Ocorre quando todos os itens estão sem código e nome de cargo.
+        """
+        cargos = [
+            {"codigoCargo": 0, "nomeCargo": None},
+            {"codigoCargo": 0, "nomeCargo": None},
+        ]
+        assert SmeIntegracaoService._cargos_eol_invalidos(cargos) is True
+
+    def test_lista_parcialmente_degradada_retorna_false(self):
+        """Verifica que lista parcialmente degradada não é inválida.
+
+        Basta um item com código ou nome válido para a lista ser aceita.
+        """
+        cargos = [
+            {"codigoCargo": 0, "nomeCargo": None},
+            {"codigoCargo": "3360", "nomeCargo": "DIRETOR DE ESCOLA"},
+        ]
+        assert SmeIntegracaoService._cargos_eol_invalidos(cargos) is False
+
+
+# ---------------------------------------------------------------------------
 # formatar_cargo
 # ---------------------------------------------------------------------------
 

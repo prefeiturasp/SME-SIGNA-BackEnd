@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from apps.alteracao_email.api.views.alteracao_email_viewset import (
     SolicitarAlteracaoEmailViewSet,
+    ValidarAlteracaoEmailViewSet,
 )
 from apps.alteracao_email.services.alteracao_email_service import (
     AlteracaoEmail,
@@ -157,6 +158,16 @@ class TestValidarAlteracaoEmailViewSet:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Token expirado." in response.data["detail"]
+
+    def test_update_sem_pk_retorna_400(self):
+        """Verifica retorno 400 quando o token não é informado na URL."""
+        view = ValidarAlteracaoEmailViewSet()
+        mock_request = MagicMock()
+
+        response = view.update(mock_request, pk=None)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["detail"] == "Token não informado."
 
     def test_update_token_inexistente(self, api_client, user):
         api_client.force_authenticate(user=user)

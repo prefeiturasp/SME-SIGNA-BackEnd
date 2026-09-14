@@ -142,6 +142,9 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
         if obj.tipo == AtoAdministrativo.Tipo.APOSTILA:
             apostila = getattr(obj, "apostila_detalhe", None)
             return getattr(apostila, "observacao", None)
+        if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+            designacao = getattr(obj, "designacao_detalhe", None)
+            return getattr(designacao, "informacoes_adicionais", None)
         return None
 
     def get_tipo_insubsistencia(self, obj: AtoAdministrativo) -> str | None:

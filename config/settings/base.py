@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.usuarios",
     "apps.alteracao_email",
     "apps.designacao",
+    "apps.gestao",
 ]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
@@ -142,6 +143,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "apps.helpers.exception_handler.exception_handler",
 }
 
 SIMPLE_JWT = {

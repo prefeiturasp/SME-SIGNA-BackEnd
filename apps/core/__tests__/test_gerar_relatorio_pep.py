@@ -12,26 +12,76 @@ from apps.core.management.commands.gerar_relatorio_pep import (
     Command,
     FileMetrics,
     SymbolMetrics,
+    _aggregate_flake8_codes,
+    _app_dir,
+    _build_meta,
     _build_payload_args,
     _estimar_horas_ajuste,
+    _get_git_commit,
     _hint_level,
     _mypy_code_from_line,
     _parse_requirement_line,
+    _pct,
     _pct_float,
+    _repo_root,
     _status_emoji,
     _status_palavra,
     _walk_symbols,
+    _write_app_outputs,
     aggregate,
     analyze_file,
     analyze_pep440,
     build_json_payload,
     consolidate,
+    discover_app_python_files,
+    discover_django_apps,
+    render_markdown,
     render_simplified_markdown,
     render_simplified_txt,
     run_flake8,
     run_for_app,
     run_mypy,
 )
+
+
+class TestAddArguments:
+    """Testes de Command.add_arguments."""
+
+    def test_deve_definir_argumentos_padrao(self):
+        command = Command()
+        parser = command.create_parser("manage.py", "gerar_relatorio_pep")
+
+        options = parser.parse_args([])
+
+        assert options.app == "core"
+        assert options.all is False
+        assert options.only is None
+        assert options.output_dir is None
+        assert options.max_line_length == 79
+        assert options.service_name == "SME-SIGNA-BACKEND"
+
+    def test_deve_aceitar_argumentos_customizados(self):
+        command = Command()
+        parser = command.create_parser("manage.py", "gerar_relatorio_pep")
+
+        options = parser.parse_args(
+            [
+                "--only",
+                "core",
+                "usuarios",
+                "--output-dir",
+                "saida",
+                "--max-line-length",
+                "100",
+                "--service-name",
+                "MEU-SERVICO",
+            ]
+        )
+
+        assert options.only == ["core", "usuarios"]
+        assert options.output_dir == "saida"
+        assert options.max_line_length == 100
+        assert options.service_name == "MEU-SERVICO"
 
 
 class TestResolveApps:
@@ -206,6 +256,70 @@ class TestRunForApp:
         mock_mypy.assert_called_once()
         mock_write.assert_called_once()
 
+    @patch(
+        "apps.core.management.commands.gerar_relatorio_pep._write_app_outputs"
+    )
+    @patch(
+        "apps.core.management.commands.gerar_relatorio_pep.build_json_payload"
+    )
+    @patch("apps.core.management.commands.gerar_relatorio_pep._build_meta")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.analyze_pep440")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.run_mypy")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.run_flake8")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.aggregate")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.analyze_file")
+    @patch(
+        "apps.core.management.commands.gerar_relatorio_pep.discover_app_python_files"
+    )
+    @patch("apps.core.management.commands.gerar_relatorio_pep._app_dir")
+    def test_deve_resolver_output_dir_relativo(
+        self,
+        mock_app_dir,
+        mock_discover,
+        mock_analyze_file,
+        mock_aggregate,
+        mock_flake8,
+        mock_mypy,
+        mock_pep440,
+        mock_meta,
+        mock_json,
+        mock_write,
+        tmp_path,
+    ):
+        app_dir = tmp_path / "usuarios"
+        app_dir.mkdir()
+
+        mock_app_dir.return_value = app_dir
+        mock_discover.return_value = []
+        mock_aggregate.return_value = {
+            "files_count": 0,
+            "functions_methods_total": 0,
+            "functions_methods_without_docstring": 0,
+            "lines_over_79": 0,
+            "lines_length_eligible": 0,
+        }
+        mock_flake8.return_value = ({}, [])
+        mock_mypy.return_value = ({}, [], {})
+        mock_pep440.return_value = {}
+        mock_meta.return_value = {"generated_at": "agora"}
+        mock_write.return_value = {
+            "md": Path("relatorio.md"),
+            "json": Path("relatorio.json"),
+        }
+        mock_json.return_value = {"summary": {}}
+
+        run_for_app(
+            "usuarios",
+            repo_root=tmp_path,
+            max_line_length=79,
+            output_dir=Path("saida_relativa"),
+            service_name="TESTE",
+        )
+
+        out_dir_usado = mock_write.call_args[0][0]
+
+        assert out_dir_usado == tmp_path / "saida_relativa"
+
 
 class TestRunMany:
     """Testes de Command._run_many."""
@@ -236,6 +350,51 @@ class TestRunMany:
 
         mock_consolidate.assert_called_once()
 
+    @patch("apps.core.management.commands.gerar_relatorio_pep.consolidate")
+    def test_deve_avisar_quando_nenhum_app_encontrado(
+        self,
+        mock_consolidate,
+    ):
+        command = Command()
+
+        command._run_many(
+            [],
+            {
+                "output_dir": None,
+                "max_line_length": 79,
+                "service_name": "TESTE",
+            },
+            Path("/tmp"),
+        )
+
+        mock_consolidate.assert_not_called()
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep.consolidate")
+    @patch("apps.core.management.commands.gerar_relatorio_pep.run_for_app")
+    def test_deve_avisar_quando_nenhum_dado_coletado(
+        self,
+        mock_run_for_app,
+        mock_consolidate,
+    ):
+        command = Command()
+
+        mock_run_for_app.side_effect = [
+            Exception("erro1"),
+            Exception("erro2"),
+        ]
+
+        command._run_many(
+            ["app1", "app2"],
+            {
+                "output_dir": None,
+                "max_line_length": 79,
+                "service_name": "TESTE",
+            },
+            Path("/tmp"),
+        )
+
+        mock_consolidate.assert_not_called()
+
 
 class TestHintLevel:
     """Testes de _hint_level."""
@@ -265,6 +424,13 @@ def soma(a, b) -> int:
 def soma(a, b):
     return a + b
 """)
+
+        node = tree.body[0]
+
+        assert _hint_level(node) == "sem"
+
+    def test_hint_level_no_funcao(self):
+        tree = ast.parse("x = 1")
 
         node = tree.body[0]
 
@@ -328,6 +494,64 @@ class TestParseRequirementLine:
         assert len(invalid) == 1
 
 
+class TestAppDir:
+    """Testes de _app_dir."""
+
+    def test_deve_montar_caminho_do_app(self):
+        result = _app_dir("core")
+
+        assert result == _repo_root() / "apps" / "core"
+
+
+class TestDiscoverDjangoApps:
+    """Testes de discover_django_apps."""
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep._repo_root")
+    def test_deve_retornar_lista_vazia_sem_diretorio_apps(
+        self, mock_repo_root, tmp_path
+    ):
+        mock_repo_root.return_value = tmp_path
+
+        assert discover_django_apps() == []
+
+
+class TestDiscoverAppPythonFiles:
+    """Testes de discover_app_python_files."""
+
+    def test_deve_ignorar_diretorios_e_arquivos_excluidos(self, tmp_path):
+        app_dir = tmp_path / "usuarios"
+        app_dir.mkdir()
+
+        (app_dir / "models.py").write_text("x = 1")
+
+        subdir = app_dir / "subdir"
+        subdir.mkdir()
+        (subdir / "nested.py").write_text("x = 1")
+
+        migrations = app_dir / "migrations"
+        migrations.mkdir()
+        (migrations / "0001_initial.py").write_text("x = 1")
+
+        testes = app_dir / "__tests__"
+        testes.mkdir()
+        (testes / "test_models.py").write_text("x = 1")
+
+        tests_dir = app_dir / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_bar.py").write_text("x = 1")
+
+        pycache = app_dir / "__pycache__"
+        pycache.mkdir()
+        (pycache / "models.cpython-312.pyc.py").write_text("x = 1")
+
+        (app_dir / "gerar_relatorio_pep.py").write_text("x = 1")
+
+        result = discover_app_python_files(app_dir)
+        names = sorted(str(p.relative_to(app_dir)) for p in result)
+
+        assert names == ["models.py", "subdir/nested.py"]
+
+
 class TestAnalyzePep440:
     """Testes de analyze_pep440."""
 
@@ -356,6 +580,18 @@ class TestAnalyzePep440:
 
         assert result["total_dependency_lines"] == 0
 
+    def test_analyze_pep440_ignora_include(self, tmp_path):
+        requirements = tmp_path / "requirements"
+        requirements.mkdir()
+
+        (requirements / "local.txt").write_text(
+            "\n".join(["-r base.txt", "django==4.2.0"])
+        )
+
+        result = analyze_pep440(requirements)
+
+        assert result["total_dependency_lines"] == 1
+
 
 class TestPercentuais:
     """Testes de _pct_float."""
@@ -365,6 +601,30 @@ class TestPercentuais:
 
     def test_pct_float_normal(self):
         assert _pct_float(5, 10) == pytest.approx(50.0)
+
+    def test_pct_zero(self):
+        assert _pct(0, 0) == "—"
+
+    def test_pct_normal(self):
+        assert _pct(5, 10) == "50.0%"
+
+
+class TestGetGitCommit:
+    """Testes de _get_git_commit."""
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep.subprocess.run")
+    def test_deve_retornar_hash_do_commit(self, mock_run, tmp_path):
+        result = Mock()
+        result.stdout = "abc1234\n"
+        mock_run.return_value = result
+
+        assert _get_git_commit(tmp_path) == "abc1234"
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep.subprocess.run")
+    def test_deve_retornar_none_quando_git_falha(self, mock_run, tmp_path):
+        mock_run.side_effect = FileNotFoundError
+
+        assert _get_git_commit(tmp_path) is None
 
 
 class TestStatus:
@@ -443,6 +703,18 @@ class TestAggregate:
         assert result["classes_total"] == 1
         assert result["symbols_with_docstring"] == 1
 
+    def test_aggregate_modulo_sem_docstring(self):
+        file_metric = FileMetrics(
+            path="service.py",
+            loc=10,
+            module_has_docstring=False,
+        )
+
+        result = aggregate([file_metric])
+
+        assert result["modules_without_docstring"] == 1
+        assert result["modules_with_docstring"] == 0
+
 
 class TestWalkSymbols:
     """Testes de _walk_symbols."""
@@ -469,6 +741,19 @@ def processar(a: int) -> int:
         assert "Usuario.salvar" in names
         assert "processar" in names
 
+    def test_walk_symbols_async_function(self):
+        tree = ast.parse('''
+async def buscar(a: int) -> int:
+    """doc"""
+    return a
+''')
+
+        symbols = _walk_symbols(tree)
+
+        assert any(
+            s.kind == "async_function" and s.name == "buscar" for s in symbols
+        )
+
 
 class TestAnalyzeFile:
     """Testes de analyze_file."""
@@ -494,6 +779,25 @@ def processar(a: int) -> int:
         assert result.loc > 0
         assert result.module_has_docstring is True
         assert len(result.symbols) > 0
+
+    def test_analyze_file_linha_acima_do_limite(self, tmp_path):
+        arquivo = tmp_path / "service.py"
+
+        arquivo.write_text("x = " + "1" * 100 + "\n")
+
+        result = analyze_file(arquivo, tmp_path, 79)
+
+        assert result.lines_over_max == 1
+
+    def test_analyze_file_com_erro_de_sintaxe(self, tmp_path):
+        arquivo = tmp_path / "service.py"
+
+        arquivo.write_text("def (:\n    pass\n")
+
+        result = analyze_file(arquivo, tmp_path, 79)
+
+        assert result.symbols == []
+        assert result.module_has_docstring is False
 
 
 class TestRenderizadores:
@@ -612,6 +916,213 @@ class TestRenderizadores:
         assert "json" in args
 
 
+class TestRenderMarkdown:
+    """Testes de render_markdown."""
+
+    def test_render_markdown_com_todos_os_blocos(self):
+        summary = {
+            "files_count": 2,
+            "loc_total": 200,
+            "lines_over_79": 3,
+            "lines_length_eligible": 180,
+            "functions_methods_total": 2,
+            "functions_methods_with_docstring": 1,
+            "classes_total": 1,
+            "classes_with_docstring": 1,
+            "hints_completo": 1,
+            "missing_docstrings_top": [
+                {
+                    "path": "service.py",
+                    "lineno": 10,
+                    "name": "processar",
+                    "kind": "function",
+                }
+            ],
+        }
+
+        fm_com_funcoes = FileMetrics(
+            path="service.py",
+            loc=100,
+            lines_over_max=2,
+            module_has_docstring=True,
+            symbols=[
+                SymbolMetrics(
+                    kind="function",
+                    name="processar",
+                    lineno=10,
+                    has_docstring=False,
+                    hint_level="completo",
+                ),
+            ],
+        )
+        fm_sem_funcoes = FileMetrics(
+            path="vazio.py",
+            loc=5,
+            module_has_docstring=False,
+        )
+
+        meta = {
+            "generated_at": "agora",
+            "command": "teste",
+            "git_commit": "abc123",
+        }
+
+        md = render_markdown(
+            summary,
+            [fm_com_funcoes, fm_sem_funcoes],
+            Counter({"E501": 3, "W293": 1}),
+            ["apps/core/service.py:1:1: E501 line too long"],
+            {"error": 2, "warning": 1},
+            ["a.py:1: error: erro [arg-type]"],
+            {"PEP 484": 2},
+            {
+                "files_analyzed": ["base.txt"],
+                "total_dependency_lines": 3,
+                "pypi_valid": 2,
+                "git_pins": 1,
+                "pinned_with_eq": 1,
+                "invalid_lines": [],
+            },
+            meta,
+            79,
+            "core",
+        )
+
+        assert "Top flake8" in md
+        assert "Primeiras 30 linhas flake8" in md
+        assert "## MyPy" in md
+        assert "Primeiras 30 linhas mypy" in md
+        assert "Símbolos sem docstring" in md
+        assert "`processar`" in md
+        assert "base.txt" in md
+        assert "`service.py`" in md
+        assert "`vazio.py`" in md
+
+    def test_render_markdown_sem_blocos_opcionais(self):
+        summary = {
+            "files_count": 0,
+            "loc_total": 0,
+            "lines_over_79": 0,
+            "lines_length_eligible": 0,
+            "functions_methods_total": 0,
+            "functions_methods_with_docstring": 0,
+            "classes_total": 0,
+            "classes_with_docstring": 0,
+            "hints_completo": 0,
+            "missing_docstrings_top": [],
+        }
+
+        meta = {"generated_at": "agora", "command": "teste"}
+
+        md = render_markdown(
+            summary,
+            [],
+            Counter(),
+            [],
+            {},
+            [],
+            {},
+            {
+                "files_analyzed": [],
+                "total_dependency_lines": 0,
+                "invalid_lines": [],
+            },
+            meta,
+            79,
+            "core",
+        )
+
+        assert "Top flake8" not in md
+        assert "## MyPy" not in md
+
+
+class TestBuildMeta:
+    """Testes de _build_meta."""
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep._get_git_commit")
+    def test_deve_montar_meta(self, mock_git_commit, tmp_path):
+        mock_git_commit.return_value = "abc1234"
+
+        meta = _build_meta(tmp_path, "core")
+
+        assert (
+            meta["command"]
+            == "python manage.py gerar_relatorio_pep --app core"
+        )
+        assert meta["git_commit"] == "abc1234"
+        assert "generated_at" in meta
+
+
+class TestWriteAppOutputs:
+    """Testes de _write_app_outputs."""
+
+    def test_deve_gravar_todos_os_arquivos(self, tmp_path):
+        summary = {
+            "files_count": 1,
+            "loc_total": 10,
+            "lines_over_79": 0,
+            "lines_length_eligible": 10,
+            "modules_with_docstring": 1,
+            "modules_without_docstring": 0,
+            "functions_methods_total": 1,
+            "functions_methods_with_docstring": 1,
+            "functions_methods_without_docstring": 0,
+            "classes_total": 0,
+            "classes_with_docstring": 0,
+            "classes_without_docstring": 0,
+            "symbols_with_docstring": 1,
+            "symbols_without_docstring": 0,
+            "hints_completo": 1,
+            "hints_parcial": 0,
+            "hints_sem": 0,
+            "missing_docstrings_top": [],
+        }
+        fm = FileMetrics(path="service.py", loc=10, module_has_docstring=True)
+        meta = {
+            "generated_at": "agora",
+            "command": "teste",
+            "git_commit": "abc123",
+        }
+        pep440 = {"total_dependency_lines": 0, "invalid_lines": []}
+
+        payload_args = _build_payload_args(
+            summary,
+            [fm],
+            Counter(),
+            [],
+            {},
+            [],
+            {},
+            pep440,
+            meta,
+            79,
+            "usuarios",
+            0,
+        )
+
+        paths = _write_app_outputs(tmp_path, payload_args, "TESTE")
+
+        assert paths["md"].exists()
+        assert paths["md_simple"].exists()
+        assert paths["txt_simple"].exists()
+        assert paths["json"].exists()
+        assert "Relatório PEP" in paths["md"].read_text()
+
+
+class TestAggregateFlake8Codes:
+    """Testes de _aggregate_flake8_codes."""
+
+    def test_deve_somar_ocorrencias_por_codigo(self):
+        per_app = [
+            {"payload": {"flake8": {"E501": 2}}},
+            {"payload": {"flake8": {"E501": 1, "W293": 1}}},
+        ]
+
+        result = _aggregate_flake8_codes(per_app)
+
+        assert result == {"E501": 3, "W293": 1}
+
+
 class TestConsolidate:
     """Testes de consolidate."""
 
@@ -666,6 +1177,52 @@ class TestConsolidate:
         assert result["md"].exists()
         assert result["json"].exists()
 
+    def test_consolidate_com_codigos_flake8(self, tmp_path):
+        payload = {
+            "summary": {
+                "files_count": 1,
+                "loc_total": 10,
+                "lines_over_79": 0,
+                "lines_length_eligible": 10,
+                "functions_methods_total": 1,
+                "functions_methods_with_docstring": 1,
+                "functions_methods_without_docstring": 0,
+                "classes_total": 0,
+                "classes_with_docstring": 0,
+                "symbols_with_docstring": 1,
+                "hints_completo": 1,
+                "hints_parcial": 0,
+                "hints_sem": 0,
+            },
+            "simple": {
+                "pep8_line_width_compliance_pct": 100,
+                "pep8_flake8_compliance_pct": 100,
+                "pep257_docstring_compliance_pct": 100,
+                "pep484_full_hints_pct": 100,
+                "mypy_compliance_pct": 100,
+            },
+            "mypy": {"errors": 0, "warnings": 0},
+            "pep440": {"total_dependency_lines": 1, "invalid_lines": []},
+            "flake8": {"E501": 5, "W293": 1},
+        }
+
+        result = consolidate(
+            [
+                {
+                    "app": "usuarios",
+                    "payload": payload,
+                    "flake8_total": 6,
+                }
+            ],
+            tmp_path,
+            79,
+        )
+
+        md_content = result["md"].read_text()
+
+        assert "Top códigos flake8" in md_content
+        assert "E501" in md_content
+
 
 class TestRunFlake8:
     """Testes de run_flake8."""
@@ -712,6 +1269,12 @@ class TestRunFlake8:
         assert codes == Counter()
         assert "flake8" in lines[0]
 
+    def test_run_flake8_app_nao_existe(self, tmp_path):
+        codes, lines = run_flake8("inexistente", tmp_path)
+
+        assert codes == Counter()
+        assert lines == []
+
 
 class TestRunMypy:
     """Testes de run_mypy."""
@@ -730,6 +1293,7 @@ class TestRunMypy:
         result.stdout = (
             "a.py:1: error: erro [arg-type]\n"
             "a.py:2: warning: aviso [var-annotated]\n"
+            "a.py:3: note: informação adicional\n"
         )
 
         mock_run.return_value = result
@@ -741,9 +1305,30 @@ class TestRunMypy:
 
         assert codes["error"] == 1
         assert codes["warning"] == 1
+        assert codes["note"] == 1
 
         assert peps["PEP 484"] == 1
         assert peps["PEP 526"] == 1
+
+    def test_run_mypy_app_nao_existe(self, tmp_path):
+        codes, lines, peps = run_mypy("inexistente", tmp_path)
+
+        assert codes == Counter()
+        assert lines == []
+        assert peps == {}
+
+    @patch("apps.core.management.commands.gerar_relatorio_pep.subprocess.run")
+    def test_run_mypy_sem_mypy(self, mock_run, tmp_path):
+        app_dir = tmp_path / "apps" / "usuarios"
+        app_dir.mkdir(parents=True)
+
+        mock_run.side_effect = FileNotFoundError
+
+        codes, lines, peps = run_mypy("usuarios", tmp_path)
+
+        assert codes == Counter()
+        assert "mypy" in lines[0]
+        assert peps == {}
 
 
 class TestRunSingle:

@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from apps.designacao.services.designacao_servidor_service import (
+    INDISPONIVEL_NO_EOL,
     DesignacaoServidorService,
 )
 from apps.helpers.exceptions import SmeIntegracaoError
@@ -71,9 +72,54 @@ class TestDesignacaoServidorService:
             "cd_cargo_sobreposto_funcao_atividade": 123,
             "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
             "local_de_exercicio": "Escola X",
-            "laudo_medico": "Indisponível",
-            "local_de_servico": "Indisponível",
+            "laudo_medico": INDISPONIVEL_NO_EOL,
+            "local_de_servico": INDISPONIVEL_NO_EOL,
         }
+
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.informacao_usuario_sgp"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.consulta_cargos_funcionario"
+    )
+    def test_obter_designacao_sem_local_exercicio_no_eol(
+        self,
+        mock_consulta_cargos,
+        mock_info_usuario,
+        mock_consulta_unidade,
+    ):
+        """Verifica fallback quando o EOL não retorna local de exercício."""
+        mock_info_usuario.return_value = {
+            "nome": "João da Silva",
+            "codigoRf": "0000000",
+        }
+
+        mock_consulta_cargos.return_value = [
+            {
+                "tipoVinculoCargoBase": 2,
+                "cargoBase": "Cargo Base",
+                "cdCargoBase": 456,
+                "ueCargoBase": "Escola Base",
+                "cargoSobreposto": None,
+                "funcaoAtividade": None,
+                "cdUeFuncaoAtividade": None,
+                "ueFuncaoAtividade": None,
+            }
+        ]
+
+        mock_consulta_unidade.return_value = {
+            "nomeDRE": "DRE TESTE",
+        }
+
+        resultado = DesignacaoServidorService.obter_designacao("0000000")
+
+        assert resultado["local_de_exercicio"] == INDISPONIVEL_NO_EOL
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
         """Verifica obter designacao sem registro funcional raises."""

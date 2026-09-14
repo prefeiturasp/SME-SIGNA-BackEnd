@@ -243,3 +243,14 @@ class TestAtoAdministrativoCleanCessacaoUnica:
 
         c2 = criar_ato_cessacao(d, sei_numero="SEI-C2", numero_portaria="002")
         assert c2.pk is not None
+
+    def test_atualizar_cessacao_ativa_existente_nao_gera_erro(self):
+        """Verifica que resalvar a própria cessação ativa não gera erro."""
+        d = criar_ato_designacao()
+        c = criar_ato_cessacao(d)
+
+        c.sei_numero = "SEI-ATUALIZADO"
+        c.save()
+
+        c.refresh_from_db()
+        assert c.sei_numero == "SEI-ATUALIZADO"

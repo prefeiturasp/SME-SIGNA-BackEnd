@@ -25,7 +25,7 @@ class AtoAdministrativo(models.Model):
         PUBLICADO = "PUBLICADO", "Publicado"
         NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
 
-    _TIPOS_PAI_VALIDOS = {
+    TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
         "INSUBSISTENCIA": {
@@ -89,7 +89,7 @@ class AtoAdministrativo(models.Model):
         """
         if self.ato_pai_id:
             assert self.ato_pai is not None
-            tipos_validos = self._TIPOS_PAI_VALIDOS.get(self.tipo, set())
+            tipos_validos = self.TIPOS_PAI_VALIDOS.get(self.tipo, set())
             if self.ato_pai.tipo not in tipos_validos:
                 raise ValidationError(
                     f"{self.tipo} não pode ter {self.ato_pai.tipo} como ato pai."  # noqa: E501

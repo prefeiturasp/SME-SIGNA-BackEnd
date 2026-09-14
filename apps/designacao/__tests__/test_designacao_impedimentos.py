@@ -11,6 +11,18 @@ from apps.designacao.api.views.designacao_impedimentos_view import (
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 
 
+class TestImpedimentoSubstituicaoModel(TestCase):
+    """Testes para o modelo ImpedimentoSubstituicao."""
+
+    def test_str_retorna_descricao(self):
+        """Verifica que __str__ retorna a descrição do impedimento."""
+        impedimento = ImpedimentoSubstituicao.objects.create(
+            codigo="LIC_PREMIO", descricao="Por licença prêmio"
+        )
+
+        self.assertEqual(str(impedimento), "Por licença prêmio")
+
+
 class TestImpedimentoSubstituicaoView(TestCase):
     """Testes para impedimento substituicao view."""
 

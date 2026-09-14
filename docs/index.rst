@@ -13,5 +13,6 @@ SIGNA — Documentação
 
    dominios/usuarios/index
    dominios/designacao/index
+   dominios/gestao/index
    dominios/alteracao_email/index
    dominios/unidades/index
