@@ -33,7 +33,7 @@ def _payload(ato_pai_id):
     """Método auxiliar para payload."""
     return {
         "ato_pai": ato_pai_id,
-        "numero_portaria": "9999",
+        "numero_portaria": 9999,
         "ano_vigente": "2024",
         "sei_numero": "SEI-C1",
         "a_pedido": True,
@@ -148,7 +148,7 @@ def test_buscar_por_portaria_encontra_cessacao(auth_client):
     """Verifica que a busca por portaria e ano encontra a cessação e o ato pai."""  # noqa: E501
     designacao = criar_ato_designacao()
     cessacao = criar_ato_cessacao(
-        designacao, numero_portaria="777", ano_vigente="2025"
+        designacao, numero_portaria=777, ano_vigente="2025"
     )
 
     url = reverse("designacao:cessacao-buscar-por-portaria")
@@ -164,7 +164,7 @@ def test_buscar_por_portaria_cessacao_retorna_apostilas_ativas(auth_client):
     """Verifica que apostilas insubsistentes são excluídas da lista."""
     designacao = criar_ato_designacao()
     cessacao = criar_ato_cessacao(
-        designacao, numero_portaria="778", ano_vigente="2025"
+        designacao, numero_portaria=778, ano_vigente="2025"
     )
     apostila_ativa = criar_ato_apostila(cessacao, sei_numero="SEI-ATIVA")
     apostila_anulada = criar_ato_apostila(cessacao, sei_numero="SEI-ANULADA")
@@ -183,7 +183,7 @@ def test_buscar_por_portaria_cessacao_retorna_apostilas_ativas(auth_client):
 def test_buscar_por_portaria_cessacao_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma cessação."""
     url = reverse("designacao:cessacao-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
+    response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
 
     assert response.status_code == 404
 
@@ -194,7 +194,7 @@ def test_buscar_por_portaria_cessacao_ano_diferente_nao_encontrada(
 ):
     """Verifica 404 quando a portaria existe mas em outro ano."""
     designacao = criar_ato_designacao()
-    criar_ato_cessacao(designacao, numero_portaria="777", ano_vigente="2024")
+    criar_ato_cessacao(designacao, numero_portaria=777, ano_vigente="2024")
 
     url = reverse("designacao:cessacao-buscar-por-portaria")
     response = auth_client.get(url, {"portaria": "777", "ano": "2025"})

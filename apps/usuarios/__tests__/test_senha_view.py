@@ -527,6 +527,44 @@ class TestEsqueciMinhaSenhaViewSet(TestCase):
     @patch(
         "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
     )
+    @patch(
+        "apps.usuarios.api.views.senha_view.SenhaService.gerar_token_para_reset"
+    )
+    @patch("apps.usuarios.api.views.senha_view.EnviaEmailService.enviar")
+    @patch("apps.usuarios.api.views.senha_view.env")
+    def test_post_sme_integracao_exception_when_user_exists_local(
+        self, mock_env, mock_enviar, mock_gerar_token, mock_informacao_usuario
+    ):
+        """Testa SmeIntegracaoError quando o usuário existe localmente.
+
+        Espelha o caso em que não existe usuário local: aqui a consulta à
+        SME falha do mesmo jeito, mas como há usuário local o fluxo segue
+        com o email cadastrado em vez de levantar UserNotFoundError.
+        """
+        mock_env.return_value = "http://localhost:8000"
+        mock_informacao_usuario.side_effect = SmeIntegracaoError(
+            "Erro de conexão com SME"
+        )
+        mock_gerar_token.return_value = {
+            "uid": "test-uid",
+            "token": "test-token",
+            "name": "Usuário",
+        }
+
+        response = self.client.post(self.url, self.valid_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("Enviamos um link", response.data["detail"])
+
+        # Sem dados da SME, o email vem do cadastro local.
+        mock_gerar_token.assert_called_once_with(
+            "1234567", "usuario@teste.com"
+        )
+        mock_enviar.assert_called_once()
+
+    @patch(
+        "apps.usuarios.api.views.senha_view.SmeIntegracaoService.informacao_usuario_sgp"
+    )
     def test_post_sme_integracao_exception_when_user_not_local(
         self, mock_informacao_usuario
     ):
