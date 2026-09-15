@@ -14,8 +14,8 @@ from rest_framework.test import APIRequestFactory
 # ==================== CONSTANTES ====================
 
 # Códigos de teste
-CODIGO_DRE_BUTANTA = "108200"
-CODIGO_DRE_CAMPO_LIMPO = "108300"
+CODIGO_DRE_BUTANTA = "108100"
+CODIGO_DRE_CAMPO_LIMPO = "108200"
 CODIGO_EOL_EMEF = "019456"
 CODIGO_EOL_EMEI = "019457"
 

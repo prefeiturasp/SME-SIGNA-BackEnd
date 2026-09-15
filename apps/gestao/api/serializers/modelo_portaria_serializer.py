@@ -101,7 +101,7 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
         combinação possível), então `tipo_ato_pai` deve ficar vazio.
         Apostila e insubsistência exigem `tipo_ato_pai` dentre os tipos de
         ato pai válidos para aquele tipo, conforme
-        `AtoAdministrativo.TIPOS_PAI_VALIDOS`.
+        `ModeloPortaria.TIPOS_QUE_VARIAM_POR_ATO_PAI`.
 
         Args:
             attrs: Dados já validados individualmente pelos campos.
@@ -120,7 +120,7 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
         tipo_ato_pai = attrs.get(
             "tipo_ato_pai", getattr(self.instance, "tipo_ato_pai", "")
         )
-        tipos_validos = AtoAdministrativo.TIPOS_PAI_VALIDOS.get(
+        tipos_validos = ModeloPortaria.TIPOS_QUE_VARIAM_POR_ATO_PAI.get(
             tipo_portaria, set()
         )
 

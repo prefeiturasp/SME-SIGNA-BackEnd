@@ -10,10 +10,12 @@ from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
 )
 from apps.designacao.api.serializers.utils import (
+    NUMERO_PORTARIA_MAX,
     NullableDateField,
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class CessacaoWriteSerializer(serializers.Serializer):
@@ -31,7 +33,9 @@ class CessacaoWriteSerializer(serializers.Serializer):
     )
 
     # Campos de AtoAdministrativo
-    numero_portaria = serializers.CharField(max_length=20)
+    numero_portaria = serializers.IntegerField(
+        min_value=1, max_value=NUMERO_PORTARIA_MAX
+    )
     ano_vigente = serializers.CharField(max_length=6)
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
@@ -42,17 +46,17 @@ class CessacaoWriteSerializer(serializers.Serializer):
     aposentadoria = serializers.BooleanField(required=False, default=False)
     data_cessacao = serializers.DateField()
 
-    def validate_numero_portaria(self, value: str) -> str:
-        """Valida que o número da portaria contenha apenas dígitos.
-
-        Args:
-            value: Valor do número da portaria.
-
-        Returns:
-            str: Valor validado com apenas dígitos.
-
-        """
-        return validar_somente_numeros(value)
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento da criação (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate_ano_vigente(self, value: str) -> str:
         """Valida que o ano vigente contenha apenas dígitos.
@@ -110,6 +114,8 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
             "remocao",
             "aposentadoria",
             "data_cessacao",
+            "texto_sei",
+            "modelo_portaria",
             "insubsistencia",
             "apostilas",
         ]
@@ -190,6 +196,8 @@ class CessacaoReadSerializerById(AtoRelacionadoMixin, CessacaoReadSerializer):
             "remocao",
             "aposentadoria",
             "data_cessacao",
+            "texto_sei",
+            "modelo_portaria",
             "insubsistencia",
             "apostilas",
             "designacao",

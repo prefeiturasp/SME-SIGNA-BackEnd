@@ -29,10 +29,9 @@ class ModuloCoordenadorPedagogicoCalculator(ModuloCalculator):
         """
         sigla_tipo = self._obter_sigla(informacoes_ue)
         dados_turmas = informacoes_ue.get("turmas") or {}
-        por_turno = dados_turmas.get("por_turno") or {}
         qtd_classes = dados_turmas.get("total")
-        tem_turno_noturno = por_turno.get("noite", 0) > 0
-        qtd_turmas_noturno = por_turno.get("noite", 0)
+        qtd_turmas_noturno = self._obter_qtd_turmas_noturno(dados_turmas)
+        tem_turno_noturno = qtd_turmas_noturno > 0
 
         modulo_fixo = self._regra_modulo_fixo(sigla_tipo)
         if modulo_fixo is not None:
@@ -64,6 +63,29 @@ class ModuloCoordenadorPedagogicoCalculator(ModuloCalculator):
 
         """
         return (informacoes_ue.get("siglaTipoEscola") or "").strip().upper()
+
+    def _obter_qtd_turmas_noturno(self, dados_turmas: dict) -> int:
+        """Retorna a quantidade de turmas no turno da noite.
+
+        Args:
+            dados_turmas: Dicionário com dados de turmas da unidade,
+                contendo a lista `turnos` no formato retornado por
+                `TurmaService.calcular_turmas`.
+
+        Returns:
+            int: Quantidade de turmas do turno da noite (0 se ausente).
+
+        """
+        turnos = dados_turmas.get("turnos") or []
+        turno_noite = next(
+            (
+                turno
+                for turno in turnos
+                if (turno.get("turno") or "").strip().lower() == "noite"
+            ),
+            None,
+        )
+        return turno_noite.get("total", 0) if turno_noite else 0
 
     def _regra_modulo_fixo(self, sigla_tipo: str) -> int | None:
         """Aplica regras de módulo fixo para determinados tipos de escola.

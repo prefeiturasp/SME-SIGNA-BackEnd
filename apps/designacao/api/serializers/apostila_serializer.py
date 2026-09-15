@@ -13,6 +13,7 @@ from apps.designacao.api.serializers.ato_relacionado_mixin import (
 )
 from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
@@ -20,6 +21,17 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
 
     campo_alterado = serializers.CharField(max_length=100)
     valor_novo = serializers.CharField()
+    # Ato para qual esta alteração específica se aplica. Quando nao passado,
+    # altera o próprio `ato_pai` da apostila (comportamento padrão). Só
+    # é possível informar um valor diferente do tipo de `ato_pai` quando
+    # `ato_pai` é uma cessação e o alvo é a designação de origem dela —
+    # o service valida essa combinação.
+    tipo_ato_alvo = serializers.ChoiceField(
+        choices=AtoAdministrativo.Tipo.choices,
+        required=False,
+        allow_blank=True,
+        default="",
+    )
 
 
 class ApostilaWriteSerializer(serializers.Serializer):
@@ -46,6 +58,18 @@ class ApostilaWriteSerializer(serializers.Serializer):
         many=True, required=False, default=list
     )
 
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento do apostilamento (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
+    )
+
 
 class ApostilaAlteracaoReadSerializer(serializers.Serializer):
     """Serializador de leitura para alteração de apostila."""
@@ -53,6 +77,8 @@ class ApostilaAlteracaoReadSerializer(serializers.Serializer):
     campo_alterado = serializers.CharField()
     valor_anterior = serializers.CharField()
     valor_novo = serializers.CharField()
+    ato_alterado_id = serializers.IntegerField()
+    ato_alterado_tipo = serializers.CharField(source="ato_alterado.tipo")
 
 
 class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
@@ -84,6 +110,8 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "doc",
             "criado_em",
             "observacao",
+            "texto_sei",
+            "modelo_portaria",
             "alteracoes",
             "insubsistencia",
             "designacao",
@@ -116,7 +144,7 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
 
         """
         try:
-            qs = obj.apostila_detalhe.alteracoes.all()
+            qs = obj.apostila_detalhe.alteracoes.select_related("ato_alterado")
             # many=True faz a DRF retornar um ListSerializer em runtime,
             # mas os stubs tipam Serializer.data como ReturnDict.
             return cast(
