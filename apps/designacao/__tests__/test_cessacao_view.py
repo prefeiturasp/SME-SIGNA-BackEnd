@@ -144,6 +144,69 @@ def test_destroy_cessacao(auth_client):
 
 
 @pytest.mark.django_db
+def test_partial_update_cessacao(auth_client):
+    """Verifica que partial_update atualiza campos da cessação."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao, numero_portaria="111")
+
+    url = reverse("designacao:cessacao-detail", args=[cessacao.id])
+    response = auth_client.patch(
+        url,
+        data={"ato_pai": designacao.id, "numero_portaria": "222"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["numero_portaria"] == "222"
+    cessacao.refresh_from_db()
+    assert cessacao.numero_portaria == "222"
+
+
+@pytest.mark.django_db
+def test_partial_update_cessacao_detalhe(auth_client):
+    """Verifica que partial_update atualiza campos do detalhe da cessação."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao, a_pedido=False)
+
+    url = reverse("designacao:cessacao-detail", args=[cessacao.id])
+    response = auth_client.patch(
+        url,
+        data={
+            "ato_pai": designacao.id,
+            "a_pedido": True,
+            "data_cessacao": "2024-08-01",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["a_pedido"] is True
+    assert response.data["data_cessacao"] == "2024-08-01"
+    cessacao.cessacao_detalhe.refresh_from_db()
+    assert cessacao.cessacao_detalhe.a_pedido is True
+
+
+@pytest.mark.django_db
+def test_partial_update_cessacao_publicada_retorna_erro(auth_client):
+    """Verifica que partial_update bloqueia cessação já publicada."""
+    designacao = criar_ato_designacao()
+    cessacao = criar_ato_cessacao(designacao, numero_portaria="111")
+    cessacao.status_publicacao = AtoAdministrativo.StatusPublicacao.PUBLICADO
+    cessacao.save(update_fields=["status_publicacao"])
+
+    url = reverse("designacao:cessacao-detail", args=[cessacao.id])
+    response = auth_client.patch(
+        url,
+        data={"ato_pai": designacao.id, "numero_portaria": "222"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    cessacao.refresh_from_db()
+    assert cessacao.numero_portaria == "111"
+
+
+@pytest.mark.django_db
 def test_buscar_por_portaria_encontra_cessacao(auth_client):
     """Verifica que a busca por portaria e ano encontra a cessação e o ato pai."""  # noqa: E501
     designacao = criar_ato_designacao()
