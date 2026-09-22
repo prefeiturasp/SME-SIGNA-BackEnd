@@ -111,8 +111,37 @@ class TestCessacaoService:
         with pytest.raises(ValidationError, match="insubsistente"):
             CessacaoService.atualizar(
                 cessacao,
-                {"ato_pai": designacao, "numero_portaria": 999},
+                {"numero_portaria": 999},
             )
+
+    def test_erro_atualizar_cessacao_sem_designacao_pai(self):
+        """Verifica erro ao atualizar cessação sem designação pai vinculada."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao)
+        cessacao.ato_pai = None
+        cessacao.save(update_fields=["ato_pai"])
+
+        with pytest.raises(ValidationError) as exc_info:
+            CessacaoService.atualizar(cessacao, {"numero_portaria": 999})
+
+        assert (
+            exc_info.value.detail["ato_pai"]
+            == "Esta cessação não possui uma designação pai."
+        )
+
+    def test_atualizar_sem_ato_pai_no_data(self):
+        """Verifica atualização quando ato_pai não vem no payload."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao, numero_portaria=111)
+
+        atualizado = CessacaoService.atualizar(
+            cessacao,
+            {"numero_portaria": 999},
+        )
+
+        atualizado.refresh_from_db()
+        assert atualizado.numero_portaria == 999
+        assert atualizado.ato_pai_id == designacao.id
 
     def test_erro_atualizar_quando_ja_publicado(self):
         """Verifica que cessação publicada não pode ser atualizada."""
@@ -126,5 +155,5 @@ class TestCessacaoService:
         with pytest.raises(ValidationError, match="publicada"):
             CessacaoService.atualizar(
                 cessacao,
-                {"ato_pai": designacao, "numero_portaria": 999},
+                {"numero_portaria": 999},
             )
