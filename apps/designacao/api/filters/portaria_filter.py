@@ -18,12 +18,12 @@ class PortariaFilter(django_filters.FilterSet):
     servidor, unidade e data de cessação.
     """
 
-    portaria_inicial = django_filters.CharFilter(
+    portaria_inicial = django_filters.NumberFilter(
         field_name="numero_portaria",
         lookup_expr="gte",
         label="Portaria inicial",
     )
-    portaria_final = django_filters.CharFilter(
+    portaria_final = django_filters.NumberFilter(
         field_name="numero_portaria",
         lookup_expr="lte",
         label="Portaria final",

@@ -50,7 +50,7 @@ def designacao_1(db):
     """Cria um ato de designação com status não publicado."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="001/2024",
+        numero_portaria=1,
         ano_vigente="2024",
         sei_numero="6018.2024/0001234-5",
         doc=None,
@@ -92,7 +92,7 @@ def designacao_2(db):
     """Cria um ato de designação com status publicado."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="002/2024",
+        numero_portaria=2,
         ano_vigente="2024",
         sei_numero="6018.2024/0002345-6",
         doc="2024-10-10",
@@ -269,11 +269,11 @@ class TestAtoAdministrativoListView:
     ):
         """Verifica filtro por portaria exata."""
         response = auth_client.get(
-            URL_LIST, {"portaria": "001/2024", "no_pagination": "true"}
+            URL_LIST, {"portaria": "001", "no_pagination": "true"}
         )
         assert response.status_code == 200
         assert len(response.data) == 1
-        assert response.data[0]["numero_portaria"] == "001/2024"
+        assert response.data[0]["numero_portaria"] == 1
 
     def test_filtro_nome_titular_e_indicado(
         self, auth_client, designacao_1, designacao_2
@@ -305,4 +305,4 @@ class TestAtoAdministrativoListView:
         )
         assert response.status_code == 200
         portarias = [item["numero_portaria"] for item in response.data]
-        assert portarias == ["002/2024", "001/2024"]
+        assert portarias == [2, 1]
