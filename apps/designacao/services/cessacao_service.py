@@ -110,3 +110,56 @@ class CessacaoService:
             CessacaoDetalhe.objects.create(ato=ato, **data_detalhe)
 
         return ato
+
+    @staticmethod
+    def atualizar(ato: AtoAdministrativo, data: dict) -> AtoAdministrativo:
+        """Atualiza um ato administrativo de cessação e seu detalhe.
+
+        Args:
+            ato: Ato administrativo de cessação existente.
+            data: Dicionário com os campos a atualizar.
+
+        Returns:
+            AtoAdministrativo: Ato administrativo atualizado.
+
+        """
+        ato_pai: AtoAdministrativo = data["ato_pai"]
+
+        if not ato_pai.eh_valido:
+            raise ValidationError(
+                {"ato_pai": "Esta designação está insubsistente."}
+            )
+
+        if (
+            ato.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.PUBLICADO
+        ):
+            raise ValidationError(
+                {
+                    "ato": (
+                        "Esta cessação não pode "
+                        "ser atualizada pois está publicada."
+                    )
+                }
+            )
+
+        data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
+        data_detalhe = {
+            k: v
+            for k, v in data.items()
+            if k not in _CAMPOS_ATO and k != "ato_pai"
+        }
+
+        with transaction.atomic():
+            if data_ato:
+                for field, value in data_ato.items():
+                    setattr(ato, field, value)
+                ato.save(update_fields=list(data_ato.keys()))
+
+            if data_detalhe:
+                detalhe = ato.cessacao_detalhe
+                for field, value in data_detalhe.items():
+                    setattr(detalhe, field, value)
+                detalhe.save(update_fields=list(data_detalhe.keys()))
+
+        return ato
