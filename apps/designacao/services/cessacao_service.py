@@ -122,10 +122,20 @@ class CessacaoService:
         Returns:
             AtoAdministrativo: Ato administrativo atualizado.
 
-        """
-        ato_pai: AtoAdministrativo = data["ato_pai"]
+        Raises:
+            ValidationError: Se o ato pai não for válido.
+            ValidationError: Se a cessação não possui uma designação pai.
+            ValidationError: Se a cessação estiver publicada.
 
-        if not ato_pai.eh_valido:
+        """
+        ato_pai: AtoAdministrativo | None = ato.ato_pai
+
+        if ato_pai is None:
+            raise ValidationError(
+                {"ato_pai": "Esta cessação não possui uma designação pai."}
+            )
+
+        if ato_pai and not ato_pai.eh_valido:
             raise ValidationError(
                 {"ato_pai": "Esta designação está insubsistente."}
             )

@@ -38,7 +38,6 @@ class CessacaoPagination(PageNumberPagination):
 
 class CessacaoViewSet(
     mixins.ListModelMixin,
-    mixins.UpdateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
