@@ -147,19 +147,19 @@ def test_destroy_cessacao(auth_client):
 def test_partial_update_cessacao(auth_client):
     """Verifica que partial_update atualiza campos da cessação."""
     designacao = criar_ato_designacao()
-    cessacao = criar_ato_cessacao(designacao, numero_portaria="111")
+    cessacao = criar_ato_cessacao(designacao, numero_portaria=111)
 
     url = reverse("designacao:cessacao-detail", args=[cessacao.id])
     response = auth_client.patch(
         url,
-        data={"ato_pai": designacao.id, "numero_portaria": "222"},
+        data={"ato_pai": designacao.id, "numero_portaria": 222},
         format="json",
     )
 
     assert response.status_code == 200
-    assert response.data["numero_portaria"] == "222"
+    assert response.data["numero_portaria"] == 222
     cessacao.refresh_from_db()
-    assert cessacao.numero_portaria == "222"
+    assert cessacao.numero_portaria == 222
 
 
 @pytest.mark.django_db
@@ -190,20 +190,20 @@ def test_partial_update_cessacao_detalhe(auth_client):
 def test_partial_update_cessacao_publicada_retorna_erro(auth_client):
     """Verifica que partial_update bloqueia cessação já publicada."""
     designacao = criar_ato_designacao()
-    cessacao = criar_ato_cessacao(designacao, numero_portaria="111")
+    cessacao = criar_ato_cessacao(designacao, numero_portaria=111)
     cessacao.status_publicacao = AtoAdministrativo.StatusPublicacao.PUBLICADO
     cessacao.save(update_fields=["status_publicacao"])
 
     url = reverse("designacao:cessacao-detail", args=[cessacao.id])
     response = auth_client.patch(
         url,
-        data={"ato_pai": designacao.id, "numero_portaria": "222"},
+        data={"ato_pai": designacao.id, "numero_portaria": 222},
         format="json",
     )
 
     assert response.status_code == 400
     cessacao.refresh_from_db()
-    assert cessacao.numero_portaria == "111"
+    assert cessacao.numero_portaria == 111
 
 
 @pytest.mark.django_db

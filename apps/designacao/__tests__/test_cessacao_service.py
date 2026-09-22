@@ -43,15 +43,15 @@ class TestCessacaoService:
     def test_atualizar_campos_do_ato(self):
         """Verifica atualização de campos pertencentes ao ato."""
         designacao = criar_ato_designacao()
-        cessacao = criar_ato_cessacao(designacao, numero_portaria="111")
+        cessacao = criar_ato_cessacao(designacao, numero_portaria=111)
 
         atualizado = CessacaoService.atualizar(
             cessacao,
-            {"ato_pai": designacao, "numero_portaria": "999"},
+            {"ato_pai": designacao, "numero_portaria": 999},
         )
 
         atualizado.refresh_from_db()
-        assert atualizado.numero_portaria == "999"
+        assert atualizado.numero_portaria == 999
 
     def test_atualizar_campos_do_detalhe(self):
         """Verifica atualização de campos pertencentes ao detalhe."""
@@ -80,7 +80,7 @@ class TestCessacaoService:
         designacao = criar_ato_designacao()
         cessacao = criar_ato_cessacao(
             designacao,
-            numero_portaria="111",
+            numero_portaria=111,
             data_cessacao=datetime.date(2024, 3, 1),
         )
 
@@ -88,14 +88,14 @@ class TestCessacaoService:
             cessacao,
             {
                 "ato_pai": designacao,
-                "numero_portaria": "222",
+                "numero_portaria": 222,
                 "data_cessacao": datetime.date(2024, 7, 1),
             },
         )
 
         atualizado.refresh_from_db()
         atualizado.cessacao_detalhe.refresh_from_db()
-        assert atualizado.numero_portaria == "222"
+        assert atualizado.numero_portaria == 222
         assert atualizado.cessacao_detalhe.data_cessacao == datetime.date(
             2024, 7, 1
         )
@@ -111,7 +111,7 @@ class TestCessacaoService:
         with pytest.raises(ValidationError, match="insubsistente"):
             CessacaoService.atualizar(
                 cessacao,
-                {"ato_pai": designacao, "numero_portaria": "999"},
+                {"ato_pai": designacao, "numero_portaria": 999},
             )
 
     def test_erro_atualizar_quando_ja_publicado(self):
@@ -126,5 +126,5 @@ class TestCessacaoService:
         with pytest.raises(ValidationError, match="publicada"):
             CessacaoService.atualizar(
                 cessacao,
-                {"ato_pai": designacao, "numero_portaria": "999"},
+                {"ato_pai": designacao, "numero_portaria": 999},
             )
