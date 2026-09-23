@@ -8,7 +8,7 @@ from apps.gestao.models.modelo_portaria import ModeloPortaria
 def criar_cargo_base(**kwargs) -> CargoBase:
     """Cria um cargo base com valores padrão para uso em testes."""
     defaults = {
-        "codigo_cargo": "3360",
+        "codigo_cargo": "9360",
         "descricao_completa": "DIRETOR DE ESCOLA MUNICIPAL",
         "descricao_resumida": "Diretor de Escola",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
