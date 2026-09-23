@@ -250,6 +250,36 @@ def test_create_designacao_cargo_vaga_valido_persiste_e_exibe_display(
 
 
 @pytest.mark.django_db
+def test_create_designacao_cargo_vaga_none_e_aceito(auth_client):
+    """Verifica que cargo_vaga=None não é validado contra CargoBase."""
+    payload = {
+        "numero_portaria": 555,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-D1",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "data_inicio": "2024-01-01",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+        "cargo_vaga": None,
+    }
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+    ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+    assert ato.designacao_detalhe.cargo_vaga is None
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "cargo_base_kwargs",
     [
