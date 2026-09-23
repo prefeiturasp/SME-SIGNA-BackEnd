@@ -80,10 +80,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
     )
 
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)
-    # O código do cargo é validado em tempo de escrita contra
-    # `gestao.CargoBase` (ver DesignacaoWriteSerializer.validate_cargo_vaga)
-    # em vez de um enum fixo, pois qualquer cargo cadastrado e ativo na
-    # tela "Gestão de cargos base" deve estar disponível aqui.
+    # Validado contra gestao.CargoBase, não um enum fixo.
     cargo_vaga = models.IntegerField(null=True, blank=True)
 
     class Meta:

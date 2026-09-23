@@ -41,9 +41,6 @@ def test_filtra_por_descricao_resumida_parcial():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    # Não asserta a contagem total: a migração de seed de cargos legados
-    # (gestao.0007_populate_cargos_base_designacao) também cadastra um
-    # "Diretor de Escola" nesse mesmo banco.
     assert "9360" in resultado.values_list("codigo_cargo", flat=True)
     assert "9182" not in resultado.values_list("codigo_cargo", flat=True)
 
@@ -63,8 +60,6 @@ def test_filtra_por_descricao_completa_parcial():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    # Não asserta a contagem total: a migração de seed de cargos legados
-    # também cadastra um "SECRETARIO DE ESCOLA" nesse mesmo banco.
     assert "9182" in resultado.values_list("codigo_cargo", flat=True)
     assert "9360" not in resultado.values_list("codigo_cargo", flat=True)
 
@@ -127,8 +122,6 @@ def test_combina_multiplos_filtros():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    # Não asserta a contagem total: os cargos legados da migração de seed
-    # também são GESTORES_EDUCACAO/ATIVO.
     assert "9360" in resultado.values_list("codigo_cargo", flat=True)
     assert "9379" not in resultado.values_list("codigo_cargo", flat=True)
 
@@ -141,6 +134,4 @@ def test_sem_filtros_retorna_todos():
 
     resultado = CargoBaseFilter({}, queryset=CargoBase.objects.all()).qs
 
-    # "Todos" inclui também os cargos legados da migração de seed — o que
-    # importa aqui é que o filtro vazio não descarta nada do queryset.
     assert resultado.count() == CargoBase.objects.count()

@@ -1,10 +1,6 @@
 from django.db import migrations
 
-# Cargos legados que estavam fixos no enum DesignacaoDetalhe.CargoVaga
-# (apps/designacao/models/designacao_detalhe.py) e agora passam a ser
-# geridos via cadastro "Gestão de cargos base". Precisam existir para que
-# designações já criadas continuem com um cargo correspondente disponível
-# para seleção/exibição.
+# Cargos legados que antes eram um enum fixo em DesignacaoDetalhe.CargoVaga.
 CARGOS = [
     (
         "3085",

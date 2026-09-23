@@ -353,9 +353,6 @@ class TestDesignacaoUnidadeService:
 
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
-        # Códigos fora da faixa 3xxx usada pelos cargos legados populados via
-        # migração (gestao.0007_populate_cargos_base_designacao), para não
-        # colidir com o unique de codigo_cargo nem com a contagem do teste.
         criar_cargo_base(
             codigo_cargo="9360",
             descricao_completa="DIRETOR DE ESCOLA",
@@ -366,7 +363,6 @@ class TestDesignacaoUnidadeService:
             descricao_completa="COORDENADOR PEDAGOGICO",
             descricao_resumida="Coordenador Pedagógico",
         )
-        # Inativo e não utilizado para designações — não devem aparecer.
         criar_cargo_base(
             codigo_cargo="9998",
             descricao_completa="CARGO INATIVO",
@@ -384,8 +380,6 @@ class TestDesignacaoUnidadeService:
         codigos_resultado = {c["codigoCargo"] for c in resultado}
 
         assert isinstance(resultado, list)
-        # Não asserta a contagem total porque a migração de seed também
-        # popula cargos legados (3085/3360/3379/3182/3352) nesse mesmo banco.
         assert {9360, 9379}.issubset(codigos_resultado)
         assert 9998 not in codigos_resultado
         assert 9997 not in codigos_resultado

@@ -15,8 +15,6 @@ def test_listar_retorna_todos_os_cargos_cadastrados():
 
     resultado = CargoBaseService.listar()
 
-    # A migração de seed de cargos legados também popula CargoBase nesse
-    # mesmo banco — o que importa é que "listar" traz o queryset completo.
     assert resultado.count() == CargoBase.objects.count()
     assert {"9360", "9379"}.issubset(
         set(resultado.values_list("codigo_cargo", flat=True))

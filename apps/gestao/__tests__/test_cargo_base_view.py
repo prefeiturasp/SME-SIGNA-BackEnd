@@ -41,8 +41,6 @@ def test_list_retorna_cargos_paginados(auth_client):
     url = reverse("gestao:cargos-base")
     response = auth_client.get(url)
 
-    # A migração de seed de cargos legados também popula CargoBase nesse
-    # mesmo banco, então a contagem total não é exclusiva deste teste.
     assert response.status_code == 200
     assert response.data["count"] == CargoBase.objects.count()
     codigos_retornados = {c["codigo_cargo"] for c in response.data["results"]}
@@ -77,8 +75,6 @@ def test_list_aplica_filtro_por_descricao_resumida(auth_client):
     url = reverse("gestao:cargos-base")
     response = auth_client.get(url, {"descricao_resumida": "diretor"})
 
-    # Não asserta a contagem total: a migração de seed de cargos legados
-    # também cadastra um "Diretor de Escola" nesse mesmo banco.
     assert response.status_code == 200
     codigos_retornados = {c["codigo_cargo"] for c in response.data["results"]}
     assert "9360" in codigos_retornados
