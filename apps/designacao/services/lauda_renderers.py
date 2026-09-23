@@ -15,6 +15,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 from docx.text.paragraph import Paragraph as DocxParagraph
+from reportlab.lib.colors import HexColor
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -201,7 +202,7 @@ def _estilos_pdf() -> dict[str, ParagraphStyle]:
             fontName="Helvetica-Bold",
             fontSize=10,
             leading=13,
-            textColor=_VERMELHO,
+            textColor=HexColor(_VERMELHO),
             alignment=TA_CENTER,
             spaceAfter=6 * mm,
         ),
@@ -225,7 +226,7 @@ def _estilos_pdf() -> dict[str, ParagraphStyle]:
             "LaudaMeta",
             parent=base["Normal"],
             fontSize=9,
-            textColor=_CINZA,
+            textColor=HexColor(_CINZA),
             alignment=TA_CENTER,
         ),
         "corpo": ParagraphStyle(
