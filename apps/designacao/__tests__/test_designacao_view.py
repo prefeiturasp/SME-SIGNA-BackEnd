@@ -202,6 +202,96 @@ def test_create_designacao_persiste_texto_sei_e_modelo_usado(auth_client):
 
 
 @pytest.mark.django_db
+def test_create_designacao_cargo_vaga_valido_persiste_e_exibe_display(
+    auth_client,
+):
+    """Verifica que cargo_vaga de um CargoBase ativo/utilizável é aceito."""
+    from apps.gestao.__tests__.factories import criar_cargo_base
+
+    criar_cargo_base(
+        codigo_cargo="9360",
+        descricao_completa="DIRETOR DE ESCOLA MUNICIPAL",
+    )
+
+    payload = {
+        "numero_portaria": 555,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-D1",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "data_inicio": "2024-01-01",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+        "cargo_vaga": 9360,
+    }
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+    ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+    assert ato.designacao_detalhe.cargo_vaga == 9360
+
+    detalhe_url = reverse(
+        "designacao:designacao-detail", kwargs={"pk": ato.pk}
+    )
+    detalhe_response = auth_client.get(detalhe_url)
+    assert (
+        detalhe_response.data["cargo_vaga_display"]
+        == "DIRETOR DE ESCOLA MUNICIPAL"
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "cargo_base_kwargs",
+    [
+        {"status": "INATIVO"},
+        {"utilizado_para_designacoes": False},
+    ],
+)
+def test_create_designacao_cargo_vaga_indisponivel_retorna_erro(
+    auth_client, cargo_base_kwargs
+):
+    """Verifica que cargo inativo ou não utilizado em designações é rejeitado."""
+    from apps.gestao.__tests__.factories import criar_cargo_base
+
+    criar_cargo_base(codigo_cargo="9360", **cargo_base_kwargs)
+
+    payload = {
+        "numero_portaria": 555,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-D1",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "data_inicio": "2024-01-01",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+        "cargo_vaga": 9360,
+    }
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 400
+    assert "cargo_vaga" in response.data
+
+
+@pytest.mark.django_db
 def test_create_designacao_payload_invalido_retorna_detail_especifico(
     auth_client,
 ):

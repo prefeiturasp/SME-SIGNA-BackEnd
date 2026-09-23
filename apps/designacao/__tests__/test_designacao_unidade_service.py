@@ -5,7 +5,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.designacao_unidades_service import (
     CicloService,
     DesignacaoUnidadeService,
@@ -13,6 +12,8 @@ from apps.designacao.services.designacao_unidades_service import (
     ServidorService,
     TurmaService,
 )
+from apps.gestao.__tests__.factories import criar_cargo_base
+from apps.gestao.models.cargo_base import CargoBase
 from apps.helpers.exceptions import SmeIntegracaoError
 
 
@@ -352,17 +353,44 @@ class TestDesignacaoUnidadeService:
 
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
+        # Códigos fora da faixa 3xxx usada pelos cargos legados populados via
+        # migração (gestao.0007_populate_cargos_base_designacao), para não
+        # colidir com o unique de codigo_cargo nem com a contagem do teste.
+        criar_cargo_base(
+            codigo_cargo="9360",
+            descricao_completa="DIRETOR DE ESCOLA",
+            descricao_resumida="Diretor de Escola",
+        )
+        criar_cargo_base(
+            codigo_cargo="9379",
+            descricao_completa="COORDENADOR PEDAGOGICO",
+            descricao_resumida="Coordenador Pedagógico",
+        )
+        # Inativo e não utilizado para designações — não devem aparecer.
+        criar_cargo_base(
+            codigo_cargo="9998",
+            descricao_completa="CARGO INATIVO",
+            descricao_resumida="Cargo Inativo",
+            status=CargoBase.Status.INATIVO,
+        )
+        criar_cargo_base(
+            codigo_cargo="9997",
+            descricao_completa="CARGO NAO USADO EM DESIGNACAO",
+            descricao_resumida="Cargo não usado",
+            utilizado_para_designacoes=False,
+        )
+
         resultado = DesignacaoUnidadeService.listar_cargos_vaga()
+        codigos_resultado = {c["codigoCargo"] for c in resultado}
 
         assert isinstance(resultado, list)
-        assert len(resultado) == len(DesignacaoDetalhe.CargoVaga.choices)
+        # Não asserta a contagem total porque a migração de seed também
+        # popula cargos legados (3085/3360/3379/3182/3352) nesse mesmo banco.
+        assert {9360, 9379}.issubset(codigos_resultado)
+        assert 9998 not in codigos_resultado
+        assert 9997 not in codigos_resultado
 
-        primeiro_cargo = resultado[0]
-
-        assert "codigoCargo" in primeiro_cargo
-        assert "nomeCargo" in primeiro_cargo
-
-        diretor = next(c for c in resultado if c["codigoCargo"] == 3360)
+        diretor = next(c for c in resultado if c["codigoCargo"] == 9360)
 
         assert diretor["nomeCargo"] == "DIRETOR DE ESCOLA"
 
