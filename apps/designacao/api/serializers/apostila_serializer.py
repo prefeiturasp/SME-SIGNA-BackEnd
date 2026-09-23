@@ -34,21 +34,13 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
     )
 
 
-class ApostilaWriteSerializer(serializers.Serializer):
+class ApostilaUpdateSerializer(serializers.Serializer):
     """Serializador de escrita para apostila.
 
-    Valida os campos necessários para criar uma apostila vinculada a um ato
-    pai.
+    Valida os campos necessários para atualizar uma apostila
     """
 
-    ato_pai = serializers.PrimaryKeyRelatedField(
-        queryset=AtoAdministrativo.objects.filter(
-            tipo__in=[
-                AtoAdministrativo.Tipo.DESIGNACAO,
-                AtoAdministrativo.Tipo.CESSACAO,
-            ]
-        )
-    )
+    numero_portaria = serializers.CharField(max_length=30)
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
     observacao = serializers.CharField(
@@ -68,6 +60,23 @@ class ApostilaWriteSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
         default=None,
+    )
+
+
+class ApostilaWriteSerializer(ApostilaUpdateSerializer):
+    """Serializador de escrita para apostila.
+
+    Valida os campos necessários para criar uma apostila vinculada a um ato
+    pai.
+    """
+
+    ato_pai = serializers.PrimaryKeyRelatedField(
+        queryset=AtoAdministrativo.objects.filter(
+            tipo__in=[
+                AtoAdministrativo.Tipo.DESIGNACAO,
+                AtoAdministrativo.Tipo.CESSACAO,
+            ]
+        )
     )
 
 

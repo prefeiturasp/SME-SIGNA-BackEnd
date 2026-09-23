@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from apps.designacao.api.serializers.apostila_serializer import (
     ApostilaReadSerializer,
+    ApostilaUpdateSerializer,
     ApostilaWriteSerializer,
 )
 from apps.designacao.services.apostila_service import ApostilaService
@@ -76,3 +77,25 @@ class ApostilaViewSet(
             ApostilaReadSerializer(ApostilaService.buscar(ato.pk)).data,
             status=status.HTTP_201_CREATED,
         )
+
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        """Atualiza uma apostila existente.
+
+        Args:
+            request: Requisição HTTP contendo os dados de atualização.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados da apostila atualizada.
+
+        """
+        ato = self.get_object()
+        serializer = ApostilaUpdateSerializer(ato, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ato = ApostilaService.atualizar(ato, serializer.validated_data)
+        ato_atualizado = self.get_queryset().filter(pk=ato.pk).first()
+        return Response(ApostilaReadSerializer(ato_atualizado).data)

@@ -18,7 +18,14 @@ from apps.designacao.models.apostila_detalhe import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 _CAMPOS_ATO = frozenset(
-    {"sei_numero", "doc", "criado_por", "texto_sei", "modelo_portaria"}
+    {
+        "numero_portaria",
+        "sei_numero",
+        "doc",
+        "criado_por",
+        "texto_sei",
+        "modelo_portaria",
+    }
 )
 _CAMPOS_PROTEGIDOS = frozenset(
     {
@@ -156,6 +163,42 @@ class ApostilaService:
                 ApostilaService._aplicar_alteracoes(
                     ato_pai, apostila_detalhe, alteracoes
                 )
+
+        return ato
+
+    @staticmethod
+    def atualizar(ato: AtoAdministrativo, data: dict) -> AtoAdministrativo:
+        """Atualiza um ato administrativo do tipo apostila.
+
+        Args:
+            ato: Ato administrativo de apostila existente.
+            data: Dicionário somente com os dados do ato a ser atualizado.
+
+        Returns:
+            AtoAdministrativo: Ato administrativo de apostila criado.
+
+        Raises:
+            ValidationError: Se o ato pai for inválido ou não puder ser
+            apostilado.
+
+        """
+        ato_pai: AtoAdministrativo | None = ato.ato_pai
+
+        if ato_pai is None:
+            raise ValidationError(
+                {"ato_pai": "Esta apostila não possui uma designação pai."}
+            )
+
+        if not ato_pai.eh_valido:
+            raise ValidationError({"ato_pai": "Este ato está insubsistente."})
+
+        data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
+
+        with transaction.atomic():
+            if data_ato:
+                for field, value in data_ato.items():
+                    setattr(ato, field, value)
+                ato.save(update_fields=list(data_ato.keys()))
 
         return ato
 
