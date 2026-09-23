@@ -21,6 +21,15 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
         DISPONIVEL = "DISPONIVEL", "Cargo Disponível"
 
     class CargoVaga(models.IntegerChoices):
+        """Códigos legados de cargo de vaga.
+
+        Não é mais usado para restringir o campo `cargo_vaga` (que hoje
+        aceita qualquer código cadastrado em `gestao.CargoBase` ativo e
+        utilizado para designações) — mantido apenas como referência para
+        a migração `gestao.0007_populate_cargos_base_designacao` que popula
+        o cadastro de cargos base.
+        """
+
         ASSISTENTE_DIRETOR = 3085, "ASSISTENTE DE DIRETOR DE ESCOLA"
         DIRETOR = 3360, "DIRETOR DE ESCOLA"
         COORDENADOR_PEDAGOGICO = 3379, "COORDENADOR PEDAGOGICO"
@@ -71,25 +80,11 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
     )
 
     tipo_vaga = models.CharField(max_length=15, choices=TipoVaga.choices)
-    cargo_vaga = models.IntegerField(
-        choices=CargoVaga.choices, null=True, blank=True
-    )
+    # O código do cargo é validado em tempo de escrita contra
+    # `gestao.CargoBase` (ver DesignacaoWriteSerializer.validate_cargo_vaga)
+    # em vez de um enum fixo, pois qualquer cargo cadastrado e ativo na
+    # tela "Gestão de cargos base" deve estar disponível aqui.
+    cargo_vaga = models.IntegerField(null=True, blank=True)
 
     class Meta:
         db_table = "designacao_detalhe"
-
-    @classmethod
-    def get_cargos_formatados(cls) -> list:
-        """Retorna os cargos de vaga formatados para consumo da API.
-
-        Converte os valores definidos em `CargoVaga` para uma lista
-        de dicionários contendo código e nome do cargo.
-
-        Returns:
-            list[dict]: Lista de cargos formatados com código e descrição.
-
-        """
-        return [
-            {"codigoCargo": c.value, "nomeCargo": c.label}
-            for c in cls.CargoVaga
-        ]
