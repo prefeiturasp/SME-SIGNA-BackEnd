@@ -5,6 +5,7 @@ de alterações em atos administrativos.
 """
 
 import datetime
+from dataclasses import dataclass, field
 from typing import NotRequired, TypedDict
 
 from django.db import transaction
@@ -55,6 +56,23 @@ class CriarApostilaData(TypedDict):
     sei_numero: str
     observacao: str
     d_o: NotRequired[str]
+
+
+@dataclass
+class _PlanoAplicacao:
+    """Acumula o efeito de uma apostila antes de gravar no banco."""
+
+    originais: dict[tuple[int, str], ApostilaAlteracao] = field(
+        default_factory=dict
+    )
+    detalhes_por_ato: dict[int, Model | None] = field(default_factory=dict)
+    buckets: dict[tuple[int, str], dict[str, str]] = field(
+        default_factory=dict
+    )
+    atos_por_pk: dict[int, AtoAdministrativo] = field(default_factory=dict)
+    registros_novos: list[ApostilaAlteracao] = field(default_factory=list)
+    ids_excluir: set[int] = field(default_factory=set)
+    atualizacoes: dict[int, ApostilaAlteracao] = field(default_factory=dict)
 
 
 class ApostilaService:
@@ -309,86 +327,141 @@ class ApostilaService:
             alteracoes: Lista de alterações a serem aplicadas.
 
         """
-        detalhes_por_ato: dict[int, Model | None] = {}
-        buckets: dict[tuple[int, str], dict] = {}
-        atos_por_pk: dict[int, AtoAdministrativo] = {}
-        registros = []
-
-        registros_originais_da_apostila = ApostilaAlteracao.objects.filter(
-            apostila_id=apostila_detalhe.ato.id
+        plano = _PlanoAplicacao(
+            originais={
+                (registro.ato_alterado_id, registro.campo_alterado): registro
+                for registro in ApostilaAlteracao.objects.filter(
+                    apostila_id=apostila_detalhe.ato_id
+                )
+            }
         )
-
+        # gera as alterações de designaçao e cessação e apostila
         for alt in alteracoes:
-            campo = alt["campo_alterado"]
-            valor_novo = str(alt["valor_novo"])
-
-            if campo in _CAMPOS_PROTEGIDOS:
-                raise ValidationError(
-                    {
-                        "alteracoes": f"Campo '{campo}' não pode ser alterado via apostila."  # noqa: E501
-                    }
-                )
-
-            ato_alvo = ApostilaService._resolver_ato_alvo(alt, ato_pai)
-            atos_por_pk[ato_alvo.pk] = ato_alvo
-
-            if campo in _CAMPOS_TEXTO_PORTARIA and ato_alvo.esta_publicado:
-                raise ValidationError(
-                    {
-                        "alteracoes": (
-                            "Não é possível alterar o texto da portaria de "
-                            "um ato já publicado no Diário Oficial."
-                        )
-                    }
-                )
-
-            if ato_alvo.pk not in detalhes_por_ato:
-                detalhes_por_ato[ato_alvo.pk] = ApostilaService._get_detalhe(
-                    ato_alvo
-                )
-            detalhe_alvo = detalhes_por_ato[ato_alvo.pk]
-
-            destino, valor_anterior = ApostilaService._encontrar_campo(
-                campo, ato_alvo, detalhe_alvo
-            )
-            buckets.setdefault((ato_alvo.pk, destino), {})[campo] = valor_novo
-
-            campo_original_na_apostila = (
-                registros_originais_da_apostila.filter(
-                    ato_alterado_id=ato_alvo.id, campo_alterado=campo
-                )
+            ApostilaService._acumular_alteracao(
+                alt, ato_pai, apostila_detalhe, plano
             )
 
-            registro_original = campo_original_na_apostila.first()
-            if registro_original is not None:
-                # remove modificações que retornam ao valor original
-                if registro_original.valor_anterior == valor_novo:
-                    campo_original_na_apostila.delete()
-                else:
-                    campo_original_na_apostila.update(valor_novo=valor_novo)
-            else:
-                registros.append(
-                    ApostilaAlteracao(
-                        apostila=apostila_detalhe,
-                        ato_alterado=ato_alvo,
-                        campo_alterado=campo,
-                        valor_anterior=valor_anterior,
-                        valor_novo=valor_novo,
-                    )
-                )
-
-        for (ato_pk, destino), updates in buckets.items():
-            alvo: Model
-            if destino == "ato":
-                alvo = atos_por_pk[ato_pk]
-            else:
-                detalhe_para_update = detalhes_por_ato[ato_pk]
-                assert detalhe_para_update is not None
-                alvo = detalhe_para_update
-
+        # persiste as alterações de designaçao e cessação no banco de dados
+        for (ato_pk, destino), updates in plano.buckets.items():
+            alvo = ApostilaService._alvo_do_bucket(ato_pk, destino, plano)
             ApostilaService._salvar_updates(alvo, updates)
 
-        ApostilaAlteracao.objects.bulk_create(registros)
+        # persiste as alterações de apostila no banco de dados
+        if plano.ids_excluir:
+            ApostilaAlteracao.objects.filter(pk__in=plano.ids_excluir).delete()
+        if plano.atualizacoes:
+            ApostilaAlteracao.objects.bulk_update(
+                list(plano.atualizacoes.values()), ["valor_novo"]
+            )
+        ApostilaAlteracao.objects.bulk_create(plano.registros_novos)
+
+    @staticmethod
+    def _acumular_alteracao(
+        alt: dict,
+        ato_pai: AtoAdministrativo,
+        apostila_detalhe: ApostilaDetalhe,
+        plano: _PlanoAplicacao,
+    ) -> None:
+        """Classifica uma alteração e acumula o efeito no plano.
+
+        Registros já gravados são marcados para exclusão quando o valor
+        volta ao original, ou para atualização de ``valor_novo``.
+        Campos inéditos entram na lista de criação.
+
+        Args:
+            alt: Item da lista de alterações.
+            ato_pai: Ato sobre o qual a apostila é criada.
+            apostila_detalhe: Detalhe da apostila que recebe o histórico.
+            plano: Acumulador das gravações adiadas para o fim.
+
+        """
+        campo = alt["campo_alterado"]
+        valor_novo = str(alt["valor_novo"])
+
+        if campo in _CAMPOS_PROTEGIDOS:
+            raise ValidationError(
+                {
+                    "alteracoes": (
+                        f"Campo '{campo}' não pode ser alterado "
+                        "via apostila."
+                    )
+                }
+            )
+
+        ato_alvo = ApostilaService._resolver_ato_alvo(alt, ato_pai)
+        plano.atos_por_pk[ato_alvo.pk] = ato_alvo
+
+        if campo in _CAMPOS_TEXTO_PORTARIA and ato_alvo.esta_publicado:
+            raise ValidationError(
+                {
+                    "alteracoes": (
+                        "Não é possível alterar o texto da portaria de "
+                        "um ato já publicado no Diário Oficial."
+                    )
+                }
+            )
+
+        if ato_alvo.pk not in plano.detalhes_por_ato:
+            plano.detalhes_por_ato[ato_alvo.pk] = ApostilaService._get_detalhe(
+                ato_alvo
+            )
+        detalhe_alvo = plano.detalhes_por_ato[ato_alvo.pk]
+
+        destino, valor_anterior = ApostilaService._encontrar_campo(
+            campo, ato_alvo, detalhe_alvo
+        )
+        # Marca para atualização do campo de cessação ou designação
+        plano.buckets.setdefault((ato_alvo.pk, destino), {})[
+            campo
+        ] = valor_novo
+
+        # Marca para atualização do campo de apostila
+        chave = (ato_alvo.id, campo)
+        registro = plano.originais.get(chave)
+        # Se o registro não existir, marca para criação de um novo registro
+        if registro is None:
+            plano.registros_novos.append(
+                ApostilaAlteracao(
+                    apostila=apostila_detalhe,
+                    ato_alterado=ato_alvo,
+                    campo_alterado=campo,
+                    valor_anterior=valor_anterior,
+                    valor_novo=valor_novo,
+                )
+            )
+            return
+        # Se o registro tem o valor anterior
+        # igual ao valor novo, marca para exclusão
+        if registro.valor_anterior == valor_novo:
+            plano.ids_excluir.add(registro.pk)
+            plano.atualizacoes.pop(registro.pk, None)
+            plano.originais.pop(chave, None)
+            return
+        # Se o registro tem o valor anterior
+        # diferente do valor novo, marca para atualização
+        registro.valor_novo = valor_novo
+        plano.atualizacoes[registro.pk] = registro
+
+    @staticmethod
+    def _alvo_do_bucket(
+        ato_pk: int, destino: str, plano: _PlanoAplicacao
+    ) -> Model:
+        """Retorna o objeto que receberá as alterações de um bucket.
+
+        Args:
+            ato_pk: Chave do ato alvo.
+            destino: ``ato`` ou ``detalhe``.
+            plano: Acumulador com os atos e detalhes já resolvidos.
+
+        Returns:
+            Model: Instância do ato ou do detalhe a ser atualizado.
+
+        """
+        if destino == "ato":
+            return plano.atos_por_pk[ato_pk]
+        detalhe_para_update = plano.detalhes_por_ato[ato_pk]
+        assert detalhe_para_update is not None
+        return detalhe_para_update
 
     @staticmethod
     def _salvar_updates(obj: Model, updates: dict) -> None:
