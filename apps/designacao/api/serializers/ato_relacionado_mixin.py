@@ -6,49 +6,6 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
-_CAMPOS_ATO = (
-    "numero_portaria",
-    "ano_vigente",
-    "sei_numero",
-    "doc",
-)
-
-_CAMPOS_DESIGNACAO = (
-    "dre_nome",
-    "dre",
-    "indicado_rf",
-    "indicado_vinculo",
-    "indicado_nome_civil",
-    "indicado_nome_servidor",
-    "indicado_lotacao",
-    "indicado_cargo_base",
-    "indicado_cargo_sobreposto",
-    "indicado_local_exercicio",
-    "indicado_categoria",
-    "tipo_vaga",
-    "cargo_vaga",
-    "titular_nome_civil",
-    "titular_nome_servidor",
-    "titular_rf",
-    "titular_cargo_base",
-    "titular_vinculo",
-    "ue",
-    "codigo_hierarquico",
-    "data_inicio",
-    "data_fim",
-    "com_afastamento",
-    "motivo_afastamento",
-    "unidade_proponente",
-    "carater_excepcional",
-    "possui_pendencia",
-    "pendencias",
-)
-
-
-def _spread(origem: Any, campos: tuple[str, ...]) -> dict[str, Any]:
-    """Copia atributos nomeados para um dict, no estilo do spread do JS."""
-    return {campo: getattr(origem, campo) for campo in campos}
-
 
 class AtoRelacionadoMixin:
     """Compartilha helpers de serializacao de atos relacionados."""
