@@ -183,6 +183,7 @@ class ApostilaService:
 
         """
         ato_pai: AtoAdministrativo | None = ato.ato_pai
+        alteracoes: list = data.get("alteracoes", [])
 
         if ato_pai is None:
             raise ValidationError(
@@ -200,6 +201,12 @@ class ApostilaService:
                     setattr(ato, field, value)
                 ato.save(update_fields=list(data_ato.keys()))
 
+            apostila_detalhe = ApostilaDetalhe.objects.get(ato=ato)
+
+            if alteracoes:
+                ApostilaService._aplicar_alteracoes(
+                    ato_pai, apostila_detalhe, alteracoes
+                )
         return ato
 
     @staticmethod
@@ -307,6 +314,10 @@ class ApostilaService:
         atos_por_pk: dict[int, AtoAdministrativo] = {}
         registros = []
 
+        registros_originais_da_apostila = ApostilaAlteracao.objects.filter(
+            apostila_id=apostila_detalhe.ato.id
+        )
+
         for alt in alteracoes:
             campo = alt["campo_alterado"]
             valor_novo = str(alt["valor_novo"])
@@ -342,15 +353,29 @@ class ApostilaService:
             )
             buckets.setdefault((ato_alvo.pk, destino), {})[campo] = valor_novo
 
-            registros.append(
-                ApostilaAlteracao(
-                    apostila=apostila_detalhe,
-                    ato_alterado=ato_alvo,
-                    campo_alterado=campo,
-                    valor_anterior=valor_anterior,
-                    valor_novo=valor_novo,
+            campo_original_na_apostila = (
+                registros_originais_da_apostila.filter(
+                    ato_alterado_id=ato_alvo.id, campo_alterado=campo
                 )
             )
+
+            registro_original = campo_original_na_apostila.first()
+            if registro_original is not None:
+                # remove modificações que retornam ao valor original
+                if registro_original.valor_anterior == valor_novo:
+                    campo_original_na_apostila.delete()
+                else:
+                    campo_original_na_apostila.update(valor_novo=valor_novo)
+            else:
+                registros.append(
+                    ApostilaAlteracao(
+                        apostila=apostila_detalhe,
+                        ato_alterado=ato_alvo,
+                        campo_alterado=campo,
+                        valor_anterior=valor_anterior,
+                        valor_novo=valor_novo,
+                    )
+                )
 
         for (ato_pk, destino), updates in buckets.items():
             alvo: Model
@@ -360,6 +385,7 @@ class ApostilaService:
                 detalhe_para_update = detalhes_por_ato[ato_pk]
                 assert detalhe_para_update is not None
                 alvo = detalhe_para_update
+
             ApostilaService._salvar_updates(alvo, updates)
 
         ApostilaAlteracao.objects.bulk_create(registros)

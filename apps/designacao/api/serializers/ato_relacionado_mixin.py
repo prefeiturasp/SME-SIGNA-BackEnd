@@ -6,6 +6,49 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.cessacao_detalhe import CessacaoDetalhe
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
+_CAMPOS_ATO = (
+    "numero_portaria",
+    "ano_vigente",
+    "sei_numero",
+    "doc",
+)
+
+_CAMPOS_DESIGNACAO = (
+    "dre_nome",
+    "dre",
+    "indicado_rf",
+    "indicado_vinculo",
+    "indicado_nome_civil",
+    "indicado_nome_servidor",
+    "indicado_lotacao",
+    "indicado_cargo_base",
+    "indicado_cargo_sobreposto",
+    "indicado_local_exercicio",
+    "indicado_categoria",
+    "tipo_vaga",
+    "cargo_vaga",
+    "titular_nome_civil",
+    "titular_nome_servidor",
+    "titular_rf",
+    "titular_cargo_base",
+    "titular_vinculo",
+    "ue",
+    "codigo_hierarquico",
+    "data_inicio",
+    "data_fim",
+    "com_afastamento",
+    "motivo_afastamento",
+    "unidade_proponente",
+    "carater_excepcional",
+    "possui_pendencia",
+    "pendencias",
+)
+
+
+def _spread(origem: Any, campos: tuple[str, ...]) -> dict[str, Any]:
+    """Copia atributos nomeados para um dict, no estilo do spread do JS."""
+    return {campo: getattr(origem, campo) for campo in campos}
+
 
 class AtoRelacionadoMixin:
     """Compartilha helpers de serializacao de atos relacionados."""
@@ -64,46 +107,52 @@ class AtoRelacionadoMixin:
 
     def get_designacao(self, obj: AtoAdministrativo) -> dict[str, Any] | None:
         """Retorna os dados de designacao do ato ou do ato relacionado."""
-        detalhe = self._get_designacao_detalhe(obj)
+        d = self._get_designacao_detalhe(obj)
         ato_designacao = self._get_designacao_ato_administrativo(obj)
 
-        if detalhe and ato_designacao is not None:
+        if d and ato_designacao is not None:
+            detalhe_historico = d.detalhe_para_quadro_de_historico_por_ano
             return {
                 "numero_portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
                 "sei_numero": ato_designacao.sei_numero,
                 "doc": ato_designacao.doc,
-                "dre_nome": detalhe.dre_nome,
-                "dre": detalhe.dre,
-                "indicado_rf": detalhe.indicado_rf,
-                "indicado_vinculo": detalhe.indicado_vinculo,
-                "indicado_nome_civil": detalhe.indicado_nome_civil,
-                "indicado_nome_servidor": detalhe.indicado_nome_servidor,
-                "indicado_lotacao": detalhe.indicado_lotacao,
-                "indicado_cargo_base": detalhe.indicado_cargo_base,
-                "indicado_cargo_sobreposto": detalhe.indicado_cargo_sobreposto,
-                "indicado_local_exercicio": detalhe.indicado_local_exercicio,
-                "indicado_categoria": detalhe.indicado_categoria,
-                "tipo_vaga": detalhe.tipo_vaga,
-                "cargo_vaga": detalhe.cargo_vaga,
-                "titular_nome_civil": detalhe.titular_nome_civil,
-                "titular_nome_servidor": detalhe.titular_nome_servidor,
-                "titular_rf": detalhe.titular_rf,
-                "titular_cargo_base": detalhe.titular_cargo_base,
-                "titular_vinculo": detalhe.titular_vinculo,
-                "impedimento_substituicao": (
-                    detalhe.impedimento_substituicao.descricao
-                    if detalhe.impedimento_substituicao
+                "dre_nome": d.dre_nome,
+                "dre": d.dre,
+                "indicado_rf": d.indicado_rf,
+                "indicado_vinculo": d.indicado_vinculo,
+                "indicado_nome_civil": d.indicado_nome_civil,
+                "indicado_nome_servidor": d.indicado_nome_servidor,
+                "indicado_lotacao": d.indicado_lotacao,
+                "indicado_cargo_base": d.indicado_cargo_base,
+                "indicado_cargo_sobreposto": d.indicado_cargo_sobreposto,
+                "indicado_local_exercicio": d.indicado_local_exercicio,
+                "indicado_categoria": d.indicado_categoria,
+                "tipo_vaga": d.tipo_vaga,
+                "cargo_vaga": d.cargo_vaga,
+                "titular_nome_civil": d.titular_nome_civil,
+                "titular_nome_servidor": d.titular_nome_servidor,
+                "titular_rf": d.titular_rf,
+                "titular_cargo_base": d.titular_cargo_base,
+                "titular_vinculo": d.titular_vinculo,
+                "impedimento_display": (
+                    d.impedimento_substituicao.descricao
+                    if d.impedimento_substituicao
                     else None
                 ),
-                "ue": detalhe.ue,
-                "codigo_hierarquico": detalhe.codigo_hierarquico,
-                "data_inicio": detalhe.data_inicio,
-                "data_fim": detalhe.data_fim,
-                "com_afastamento": detalhe.com_afastamento,
-                "motivo_afastamento": detalhe.motivo_afastamento,
-                "pendencias": detalhe.pendencias,
-                "unidade_proponente": detalhe.unidade_proponente,
+                "impedimento_substituicao": d.impedimento_substituicao_id,
+                "ue": d.ue,
+                "codigo_hierarquico": d.codigo_hierarquico,
+                "data_inicio": d.data_inicio,
+                "data_fim": d.data_fim,
+                "com_afastamento": d.com_afastamento,
+                "motivo_afastamento": d.motivo_afastamento,
+                "unidade_proponente": d.unidade_proponente,
+                "carater_excepcional": d.carater_excepcional,
+                "possui_pendencia": d.possui_pendencia,
+                "pendencias": d.pendencias,
+                "informacoes_adicionais": d.informacoes_adicionais,
+                "detalhe_para_quadro_de_historico_por_ano": detalhe_historico,
             }
         return None
 
