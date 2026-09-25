@@ -176,6 +176,63 @@ class InsubsistenciaService:
         return ato
 
     @staticmethod
+    def atualizar(ato: AtoAdministrativo, data: dict) -> AtoAdministrativo:
+        """Atualiza um ato de insubsistência e seus detalhes.
+
+        O ato pai não pode ser trocado: `ato_pai`, se enviado, é ignorado,
+        pois a criação já aplicou os efeitos da insubsistência sobre ele.
+        O `texto_apostila` só é persistido quando o ato pai é uma apostila
+        (anulação de apostila).
+
+        Args:
+            ato: Ato de insubsistência existente.
+            data: Dicionário com os campos a atualizar.
+
+        Returns:
+            AtoAdministrativo: Ato de insubsistência atualizado.
+
+        Raises:
+            ValidationError: Se a insubsistência estiver publicada.
+
+        """
+        if (
+            ato.status_publicacao
+            == AtoAdministrativo.StatusPublicacao.PUBLICADO
+        ):
+            raise ValidationError(
+                {
+                    "ato": (
+                        "Esta insubsistência não pode "
+                        "ser atualizada pois está publicada."
+                    )
+                }
+            )
+
+        data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
+        eh_anulacao_apostila = (
+            ato.ato_pai is not None
+            and ato.ato_pai.tipo == AtoAdministrativo.Tipo.APOSTILA
+        )
+
+        with transaction.atomic():
+            if data_ato:
+                for field, value in data_ato.items():
+                    setattr(ato, field, value)
+                ato.save(update_fields=list(data_ato.keys()))
+
+            if "observacoes" in data:
+                InsubsistenciaDetalhe.objects.update_or_create(
+                    ato=ato, defaults={"observacoes": data["observacoes"]}
+                )
+
+            if "texto_apostila" in data and eh_anulacao_apostila:
+                InsubsistenciaApostilaDetalhe.objects.update_or_create(
+                    ato=ato, defaults={"texto": data["texto_apostila"]}
+                )
+
+        return ato
+
+    @staticmethod
     def _reverter_apostila(apostila_ato: AtoAdministrativo) -> None:
         """Reverte as alterações de uma apostila nos atos que ela afetou.
 

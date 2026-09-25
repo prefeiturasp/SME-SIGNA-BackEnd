@@ -314,3 +314,75 @@ def test_buscar_por_portaria_insubsistencia_sem_parametro_ano(auth_client):
     response = auth_client.get(url, {"portaria": "654"})
 
     assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_partial_update_insubsistencia(auth_client):
+    """Verifica que partial_update atualiza campos da insubsistência."""
+    d = criar_ato_designacao()
+    insub = criar_ato_insubsistencia(d, numero_portaria=111)
+
+    url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    response = auth_client.patch(
+        url,
+        data={"numero_portaria": 222, "observacoes": "Ajustada"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["numero_portaria"] == 222
+    assert response.data["observacoes"] == "Ajustada"
+    insub.refresh_from_db()
+    assert insub.numero_portaria == 222
+
+
+@pytest.mark.django_db
+def test_partial_update_anulacao_de_apostila(auth_client):
+    """Verifica que partial_update edita o texto da anulação de apostila."""
+    d = criar_ato_designacao()
+    apostila = criar_ato_apostila(d)
+    insub = criar_ato_insubsistencia(apostila, texto_apostila="Texto antigo")
+
+    url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    response = auth_client.patch(
+        url,
+        data={"ato_pai": apostila.id, "texto_apostila": "Texto novo"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["texto_apostila"] == "Texto novo"
+    assert response.data["tipo_insubsistencia"] == "APOSTILA"
+
+
+@pytest.mark.django_db
+def test_partial_update_nao_sobrescreve_campos_omitidos(auth_client):
+    """Verifica que campos não enviados mantêm o valor atual."""
+    d = criar_ato_designacao()
+    insub = criar_ato_insubsistencia(d, observacoes="Mantida")
+
+    url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    response = auth_client.patch(
+        url, data={"sei_numero": "SEI-NOVO"}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert response.data["observacoes"] == "Mantida"
+
+
+@pytest.mark.django_db
+def test_partial_update_insubsistencia_publicada_retorna_erro(auth_client):
+    """Verifica que partial_update bloqueia insubsistência publicada."""
+    d = criar_ato_designacao()
+    insub = criar_ato_insubsistencia(d, numero_portaria=111)
+    insub.status_publicacao = AtoAdministrativo.StatusPublicacao.PUBLICADO
+    insub.save(update_fields=["status_publicacao"])
+
+    url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    response = auth_client.patch(
+        url, data={"numero_portaria": 222}, format="json"
+    )
+
+    assert response.status_code == 400
+    insub.refresh_from_db()
+    assert insub.numero_portaria == 111
