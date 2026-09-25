@@ -11,6 +11,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_designacao,
     criar_ato_insubsistencia,
 )
+from apps.designacao.models.apostila_detalhe import ApostilaAlteracao
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.apostila_service import ApostilaService
 
@@ -392,3 +393,132 @@ class TestApostilaService:
                     ],
                 )
             )
+
+    # ── Atualização ───────────────────────────────────────────────────────────
+
+    def test_buscar_retorna_apostila_com_prefetch(self):
+        """Verifica que buscar retorna apostila com relacionamentos."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+
+        encontrada = ApostilaService.buscar(apostila.pk)
+
+        assert encontrada is not None
+        assert encontrada.pk == apostila.pk
+        assert hasattr(encontrada, "apostila_detalhe")
+
+    def test_atualizar_campos_do_ato(self):
+        """Verifica atualização de campos pertencentes ao ato."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d, sei_numero="SEI-ORIG")
+
+        atualizada = ApostilaService.atualizar(
+            apostila,
+            {"sei_numero": "SEI-NOVO"},
+        )
+
+        atualizada.refresh_from_db()
+        assert atualizada.sei_numero == "SEI-NOVO"
+
+    def test_atualizar_com_novas_alteracoes(self):
+        """Verifica atualização aplicando alterações na designação."""
+        d = criar_ato_designacao(numero_portaria=1)
+        apostila = criar_ato_apostila(d)
+
+        ApostilaService.atualizar(
+            apostila,
+            {
+                "observacao": "Obs",
+                "alteracoes": [
+                    {"campo_alterado": "numero_portaria", "valor_novo": "999"},
+                ],
+            },
+        )
+
+        d.refresh_from_db()
+        assert d.numero_portaria == 999
+
+    def test_atualizar_reutiliza_registro_de_alteracao_existente(self):
+        """Verifica que alteração existente tem valor_novo atualizado."""
+        d = criar_ato_designacao(numero_portaria=1)
+        apostila = ApostilaService.criar(
+            self._data(
+                d,
+                alteracoes=[
+                    {"campo_alterado": "numero_portaria", "valor_novo": "200"},
+                ],
+            )
+        )
+
+        ApostilaService.atualizar(
+            apostila,
+            {
+                "observacao": "Obs",
+                "alteracoes": [
+                    {"campo_alterado": "numero_portaria", "valor_novo": "300"},
+                ],
+            },
+        )
+
+        registro = ApostilaAlteracao.objects.get(
+            apostila=apostila.apostila_detalhe,
+            campo_alterado="numero_portaria",
+        )
+        d.refresh_from_db()
+        assert registro.valor_novo == "300"
+        assert d.numero_portaria == 300
+
+    def test_atualizar_remove_registro_quando_valor_volta_ao_original(self):
+        """Verifica exclusão do histórico quando valor retorna ao original."""
+        d = criar_ato_designacao(numero_portaria=1)
+        apostila = ApostilaService.criar(
+            self._data(
+                d,
+                alteracoes=[
+                    {"campo_alterado": "numero_portaria", "valor_novo": "200"},
+                ],
+            )
+        )
+
+        ApostilaService.atualizar(
+            apostila,
+            {
+                "observacao": "Obs",
+                "alteracoes": [
+                    {"campo_alterado": "numero_portaria", "valor_novo": "1"},
+                ],
+            },
+        )
+
+        assert not ApostilaAlteracao.objects.filter(
+            apostila=apostila.apostila_detalhe,
+            campo_alterado="numero_portaria",
+        ).exists()
+        d.refresh_from_db()
+        assert d.numero_portaria == 1
+
+    def test_erro_atualizar_apostila_sem_ato_pai(self):
+        """Verifica erro ao atualizar apostila sem designação pai."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+        apostila.ato_pai = None
+        apostila.save(update_fields=["ato_pai"])
+
+        with pytest.raises(ValidationError) as exc_info:
+            ApostilaService.atualizar(apostila, {"sei_numero": "SEI-NOVO"})
+
+        assert (
+            exc_info.value.detail["ato_pai"]
+            == "Esta apostila não possui uma designação pai."
+        )
+
+    def test_erro_atualizar_ato_pai_insubsistente(self):
+        """Verifica erro ao atualizar apostila com ato pai insubsistente."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+        criar_ato_insubsistencia(d)
+        d.ativo = False
+        d.save(update_fields=["ativo"])
+
+        with pytest.raises(ValidationError, match="insubsistente"):
+            ApostilaService.atualizar(apostila, {"sei_numero": "SEI-NOVO"})

@@ -10,6 +10,7 @@ from apps.designacao.__tests__.factories import (
 )
 from apps.designacao.api.serializers.apostila_serializer import (
     ApostilaReadSerializer,
+    ApostilaUpdateSerializer,
     ApostilaWriteSerializer,
 )
 from apps.designacao.models.apostila_detalhe import ApostilaAlteracao
@@ -24,6 +25,7 @@ class TestApostilaWriteSerializer:
         """Método auxiliar para payload."""
         return {
             "ato_pai": ato_pai_id,
+            "numero_portaria": "1234",
             "sei_numero": "SEI-AP-123",
             "observacao": "Texto de observação",
             "alteracoes": [
@@ -110,6 +112,41 @@ class TestApostilaWriteSerializer:
 
 
 @pytest.mark.django_db
+class TestApostilaUpdateSerializer:
+    """Testes para apostila update serializer."""
+
+    def test_serializer_valido_atualiza_campos(self):
+        """Verifica serializer de atualização com payload válido."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao, sei_numero="SEI-ORIG")
+
+        serializer = ApostilaUpdateSerializer(
+            apostila,
+            data={
+                "numero_portaria": "5555",
+                "sei_numero": "SEI-UPD",
+                "observacao": "Obs atualizada",
+            },
+        )
+
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["sei_numero"] == "SEI-UPD"
+
+    def test_serializer_rejeita_sem_numero_portaria(self):
+        """Verifica que numero_portaria é obrigatório na atualização."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+
+        serializer = ApostilaUpdateSerializer(
+            apostila,
+            data={"sei_numero": "SEI-UPD"},
+        )
+
+        assert not serializer.is_valid()
+        assert "numero_portaria" in serializer.errors
+
+
+@pytest.mark.django_db
 class TestApostilaReadSerializer:
     """Testes para apostila read serializer."""
 
@@ -176,6 +213,20 @@ class TestApostilaReadSerializer:
         assert data["ato_apostilado_display"] == "Designação"
         assert data["designacao"] is not None
         assert data["cessacao"] is None
+
+    def test_serializer_retorna_dados_do_ato_apostilado_cessacao(self):
+        """Verifica serializer retorna dados quando apostila é de cessação."""
+        designacao = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(designacao, numero_portaria=50)
+        apostila = criar_ato_apostila(cessacao)
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert data["ato_apostilado"] == AtoAdministrativo.Tipo.CESSACAO
+        assert data["ato_apostilado_display"] == "Cessação"
+        assert data["designacao"] is not None
+        assert data["cessacao"] is not None
+        assert data["cessacao"]["numero_portaria"] == 50
 
     def test_get_alteracoes_retorna_lista_vazia_quando_sem_detalhe(self):
         """Verifica get alteracoes retorna lista vazia em erro inesperado."""
