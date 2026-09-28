@@ -265,7 +265,9 @@ class TestApostilaReadSerializer:
     def test_read_serializer_expoe_ano_vigente(self):
         """Verifica que o serializer de leitura expõe o ano vigente."""
         designacao = criar_ato_designacao()
-        apostila = criar_ato_apostila(designacao, ano_vigente="2024")
+        apostila = criar_ato_apostila(designacao)
+        apostila.ano_vigente = "2024"
+        apostila.save(update_fields=["ano_vigente"])
 
         data = ApostilaReadSerializer(apostila).data
 
