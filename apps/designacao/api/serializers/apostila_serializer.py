@@ -43,7 +43,7 @@ class ApostilaUpdateSerializer(AtoAdministrativoBaseSerializer):
     """
 
     ano_vigente = serializers.CharField(
-        max_length=6, required=False, default=""
+        max_length=6, required=False, allow_blank=True, default=""
     )
     observacao = serializers.CharField(
         required=False, allow_blank=True, default=""

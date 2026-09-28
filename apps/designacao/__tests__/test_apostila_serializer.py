@@ -156,6 +156,32 @@ class TestApostilaUpdateSerializer:
         assert not serializer.is_valid()
         assert "numero_portaria" in serializer.errors
 
+    def test_serializer_atualizacao_aceita_observacao_e_ano_vigente_vazios(
+        self,
+    ):
+        """Verifica que observação e ano vazios são aceitos na atualização."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(
+            designacao,
+            observacao="Observação preenchida",
+            ano_vigente="2024",
+            numero_portaria=1234,
+        )
+
+        serializer = ApostilaUpdateSerializer(
+            apostila,
+            data={
+                "numero_portaria": 1234,
+                "sei_numero": apostila.sei_numero,
+                "ano_vigente": "",
+                "observacao": "",
+            },
+        )
+
+        assert serializer.is_valid(), serializer.errors
+        assert serializer.validated_data["ano_vigente"] == ""
+        assert serializer.validated_data["observacao"] == ""
+
 
 @pytest.mark.django_db
 class TestApostilaReadSerializer:

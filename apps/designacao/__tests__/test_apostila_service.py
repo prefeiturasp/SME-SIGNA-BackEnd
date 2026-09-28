@@ -456,6 +456,30 @@ class TestApostilaService:
         apostila.apostila_detalhe.refresh_from_db()
         assert apostila.apostila_detalhe.observacao == "Obs atualizada"
 
+    def test_atualizar_permite_limpar_observacao_e_ano_vigente(self):
+        """Verifica que observação e ano podem ser esvaziados na atualização."""
+        d = criar_ato_designacao()
+        ato = ApostilaService.criar(
+            self._data(
+                d,
+                ano_vigente="2024",
+                observacao="Observação preenchida",
+            )
+        )
+
+        assert ato.ano_vigente == "2024"
+        assert ato.apostila_detalhe.observacao == "Observação preenchida"
+
+        atualizada = ApostilaService.atualizar(
+            ato,
+            {"ano_vigente": "", "observacao": ""},
+        )
+
+        atualizada.refresh_from_db()
+        atualizada.apostila_detalhe.refresh_from_db()
+        assert atualizada.ano_vigente == ""
+        assert atualizada.apostila_detalhe.observacao == ""
+
     def test_atualizar_com_novas_alteracoes(self):
         """Verifica atualização aplicando alterações na designação."""
         d = criar_ato_designacao(numero_portaria=1)
