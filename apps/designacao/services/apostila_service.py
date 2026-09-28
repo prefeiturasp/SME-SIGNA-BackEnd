@@ -23,6 +23,7 @@ _CAMPOS_ATO = frozenset(
         "numero_portaria",
         "sei_numero",
         "doc",
+        "ano_vigente",
         "criado_por",
         "texto_sei",
         "modelo_portaria",
@@ -221,7 +222,8 @@ class ApostilaService:
                 ato.save(update_fields=list(data_ato.keys()))
 
             apostila_detalhe = ApostilaDetalhe.objects.get(ato=ato)
-            if observacao:
+
+            if "observacao" in data:
                 apostila_detalhe.observacao = observacao
                 apostila_detalhe.save(update_fields=["observacao"])
 
