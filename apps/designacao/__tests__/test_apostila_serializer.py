@@ -262,6 +262,15 @@ class TestApostilaReadSerializer:
 
         assert data["observacao"] == "Apostila de retificação."
 
+    def test_read_serializer_expoe_ano_vigente(self):
+        """Verifica que o serializer de leitura expõe o ano vigente."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao, ano_vigente="2024")
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert data["ano_vigente"] == "2024"
+
     def test_serializer_retorna_dados_do_ato_apostilado_cessacao(self):
         """Verifica serializer retorna dados quando apostila é de cessação."""
         designacao = criar_ato_designacao()

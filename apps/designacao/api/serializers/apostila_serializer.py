@@ -118,6 +118,7 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "status",
             "ato_pai_id",
             "sei_numero",
+            "ano_vigente",
             "doc",
             "criado_em",
             "observacao",
