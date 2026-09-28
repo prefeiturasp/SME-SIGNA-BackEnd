@@ -10,6 +10,10 @@ from rest_framework import serializers
 from apps.designacao.api.serializers.portaria_serializer import (
     PortariaListSerializer,
 )
+from apps.designacao.api.serializers.utils import (
+    NUMERO_PORTARIA_MAX,
+    NullableDateField,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
@@ -214,3 +218,18 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             }
         except Exception:
             return None
+
+
+class AtoAdministrativoBaseSerializer(serializers.Serializer):
+    """Serializador de escrita para ato administrativo base.
+
+    Valida os dados necessários para criar um ato administrativo base.
+    """
+
+    # Campos de AtoAdministrativo
+    numero_portaria = serializers.IntegerField(
+        min_value=1, max_value=NUMERO_PORTARIA_MAX
+    )
+    ano_vigente = serializers.CharField(max_length=6)
+    sei_numero = serializers.CharField(max_length=30)
+    doc = NullableDateField(required=False, default=None, allow_null=True)

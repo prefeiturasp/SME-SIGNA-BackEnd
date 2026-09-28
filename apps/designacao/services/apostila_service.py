@@ -202,6 +202,7 @@ class ApostilaService:
         """
         ato_pai: AtoAdministrativo | None = ato.ato_pai
         alteracoes: list = data.get("alteracoes", [])
+        observacao: str = data.get("observacao", "")
 
         if ato_pai is None:
             raise ValidationError(
@@ -220,6 +221,9 @@ class ApostilaService:
                 ato.save(update_fields=list(data_ato.keys()))
 
             apostila_detalhe = ApostilaDetalhe.objects.get(ato=ato)
+            if observacao:
+                apostila_detalhe.observacao = observacao
+                apostila_detalhe.save(update_fields=["observacao"])
 
             if alteracoes:
                 ApostilaService._aplicar_alteracoes(

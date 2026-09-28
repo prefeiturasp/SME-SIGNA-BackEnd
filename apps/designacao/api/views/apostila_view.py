@@ -93,7 +93,9 @@ class ApostilaViewSet(
 
         """
         ato = self.get_object()
-        serializer = ApostilaUpdateSerializer(ato, data=request.data)
+        serializer = ApostilaUpdateSerializer(
+            ato, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
 
         ato = ApostilaService.atualizar(ato, serializer.validated_data)

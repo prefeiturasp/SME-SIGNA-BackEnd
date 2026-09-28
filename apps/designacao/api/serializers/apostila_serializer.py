@@ -8,10 +8,12 @@ from typing import Any, cast
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoBaseSerializer,
+)
 from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
 )
-from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
@@ -34,15 +36,15 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
     )
 
 
-class ApostilaUpdateSerializer(serializers.Serializer):
-    """Serializador de escrita para apostila.
+class ApostilaUpdateSerializer(AtoAdministrativoBaseSerializer):
+    """Serializador de atualização para apostila.
 
     Valida os campos necessários para atualizar uma apostila
     """
 
-    numero_portaria = serializers.CharField(max_length=30)
-    sei_numero = serializers.CharField(max_length=30)
-    doc = NullableDateField(required=False, default=None, allow_null=True)
+    ano_vigente = serializers.CharField(
+        max_length=6, required=False, default=""
+    )
     observacao = serializers.CharField(
         required=False, allow_blank=True, default=""
     )
