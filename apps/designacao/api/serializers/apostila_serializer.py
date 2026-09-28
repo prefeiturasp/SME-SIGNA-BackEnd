@@ -8,10 +8,12 @@ from typing import Any, cast
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoBaseSerializer,
+)
 from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
 )
-from apps.designacao.api.serializers.utils import NullableDateField
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
@@ -34,23 +36,15 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
     )
 
 
-class ApostilaWriteSerializer(serializers.Serializer):
-    """Serializador de escrita para apostila.
+class ApostilaUpdateSerializer(AtoAdministrativoBaseSerializer):
+    """Serializador de atualização para apostila.
 
-    Valida os campos necessários para criar uma apostila vinculada a um ato
-    pai.
+    Valida os campos necessários para atualizar uma apostila
     """
 
-    ato_pai = serializers.PrimaryKeyRelatedField(
-        queryset=AtoAdministrativo.objects.filter(
-            tipo__in=[
-                AtoAdministrativo.Tipo.DESIGNACAO,
-                AtoAdministrativo.Tipo.CESSACAO,
-            ]
-        )
+    ano_vigente = serializers.CharField(
+        max_length=6, required=False, allow_blank=True, default=""
     )
-    sei_numero = serializers.CharField(max_length=30)
-    doc = NullableDateField(required=False, default=None, allow_null=True)
     observacao = serializers.CharField(
         required=False, allow_blank=True, default=""
     )
@@ -68,6 +62,23 @@ class ApostilaWriteSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
         default=None,
+    )
+
+
+class ApostilaWriteSerializer(ApostilaUpdateSerializer):
+    """Serializador de escrita para apostila.
+
+    Valida os campos necessários para criar uma apostila vinculada a um ato
+    pai.
+    """
+
+    ato_pai = serializers.PrimaryKeyRelatedField(
+        queryset=AtoAdministrativo.objects.filter(
+            tipo__in=[
+                AtoAdministrativo.Tipo.DESIGNACAO,
+                AtoAdministrativo.Tipo.CESSACAO,
+            ]
+        )
     )
 
 
@@ -107,6 +118,7 @@ class ApostilaReadSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "status",
             "ato_pai_id",
             "sei_numero",
+            "ano_vigente",
             "doc",
             "criado_em",
             "observacao",

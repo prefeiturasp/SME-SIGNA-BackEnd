@@ -6,9 +6,10 @@ relacionados a impedimento de substituição, portaria, servidor e período.
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoBaseSerializer,
+)
 from apps.designacao.api.serializers.utils import (
-    NUMERO_PORTARIA_MAX,
-    NullableDateField,
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -32,7 +33,7 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 # ── Escrita ──────────────────────────────────────────────────────────────────
 
 
-class DesignacaoWriteSerializer(serializers.Serializer):
+class DesignacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     """Serializador de escrita para criação/atualização de designações.
 
     Define os campos necessários para persistir um ato administrativo de
@@ -40,14 +41,6 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     incluindo informações de unidade, servidor indicado, titular, período e
     vaga.
     """
-
-    # AtoAdministrativo
-    numero_portaria = serializers.IntegerField(
-        min_value=1, max_value=NUMERO_PORTARIA_MAX
-    )
-    ano_vigente = serializers.CharField(max_length=6)
-    sei_numero = serializers.CharField(max_length=30)
-    doc = NullableDateField(required=False, default=None, allow_null=True)
 
     # Unidade
     dre_nome = serializers.CharField(max_length=255)
