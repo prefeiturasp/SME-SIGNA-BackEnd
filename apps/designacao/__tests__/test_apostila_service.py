@@ -24,6 +24,7 @@ class TestApostilaService:
         """Método auxiliar para data."""
         base = {
             "ato_pai": ato_pai,
+            "numero_portaria": 1234,
             "sei_numero": "12345",
             "observacao": "Obs",
             "alteracoes": [],
@@ -32,6 +33,28 @@ class TestApostilaService:
         return base
 
     # ── Criação básica ────────────────────────────────────────────────────────
+
+    def test_criar_salva_observacao(self):
+        """Verifica que a observação é persistida no detalhe da apostila."""
+        d = criar_ato_designacao()
+        texto = "Retificação de cargo por erro material."
+
+        ato = ApostilaService.criar(
+            self._data(d, observacao=texto),
+        )
+
+        assert ato.apostila_detalhe.observacao == texto
+
+    def test_criar_salva_numero_portaria(self):
+        """Verifica que numero_portaria informado é persistido no ato."""
+        d = criar_ato_designacao()
+
+        ato = ApostilaService.criar(
+            self._data(d, numero_portaria=5678),
+        )
+
+        ato.refresh_from_db()
+        assert ato.numero_portaria == 5678
 
     def test_criar_apostila_designacao_sucesso(self):
         """Verifica criar apostila designacao sucesso."""
@@ -419,6 +442,19 @@ class TestApostilaService:
 
         atualizada.refresh_from_db()
         assert atualizada.sei_numero == "SEI-NOVO"
+
+    def test_atualizar_salva_observacao(self):
+        """Verifica que a observação é atualizada no detalhe da apostila."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d, observacao="Obs original")
+
+        ApostilaService.atualizar(
+            apostila,
+            {"observacao": "Obs atualizada"},
+        )
+
+        apostila.apostila_detalhe.refresh_from_db()
+        assert apostila.apostila_detalhe.observacao == "Obs atualizada"
 
     def test_atualizar_com_novas_alteracoes(self):
         """Verifica atualização aplicando alterações na designação."""

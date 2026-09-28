@@ -42,6 +42,17 @@ class TestApostilaWriteSerializer:
         serializer = ApostilaWriteSerializer(data=self._payload(designacao.id))
         assert serializer.is_valid(), serializer.errors
 
+    def test_serializer_rejeita_sem_numero_portaria_na_criacao(self):
+        """Verifica que numero_portaria é obrigatório na criação."""
+        designacao = criar_ato_designacao()
+        payload = self._payload(designacao.id)
+        del payload["numero_portaria"]
+
+        serializer = ApostilaWriteSerializer(data=payload)
+
+        assert not serializer.is_valid()
+        assert "numero_portaria" in serializer.errors
+
     def test_serializer_valido_com_cessacao(self):
         """Verifica serializer valido com ato pai cessacao."""
         designacao = criar_ato_designacao()
@@ -213,6 +224,17 @@ class TestApostilaReadSerializer:
         assert data["ato_apostilado_display"] == "Designação"
         assert data["designacao"] is not None
         assert data["cessacao"] is None
+
+    def test_read_serializer_expoe_observacao(self):
+        """Verifica que o serializer de leitura expõe a observação salva."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(
+            designacao, observacao="Apostila de retificação."
+        )
+
+        data = ApostilaReadSerializer(apostila).data
+
+        assert data["observacao"] == "Apostila de retificação."
 
     def test_serializer_retorna_dados_do_ato_apostilado_cessacao(self):
         """Verifica serializer retorna dados quando apostila é de cessação."""
