@@ -12,8 +12,21 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
 _CAMPOS_ATO = frozenset(
-    {"numero_portaria", "ano_vigente", "sei_numero", "doc", "criado_por"}
+    {
+        "numero_portaria",
+        "ano_vigente",
+        "sei_numero",
+        "doc",
+        "criado_por",
+        "texto_sei",
+        "modelo_portaria",
+    }
 )
+
+# Campos que representam o texto congelado da portaria — uma vez que o
+# ato é publicado no Diário Oficial (doc preenchido), esse texto passa a
+# ser um registro histórico e não pode mais ser reescrito.
+_CAMPOS_TEXTO_PORTARIA = frozenset({"texto_sei", "modelo_portaria"})
 
 
 class DesignacaoService:
@@ -57,6 +70,16 @@ class DesignacaoService:
         """
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
+
+        if _CAMPOS_TEXTO_PORTARIA & data_ato.keys() and ato.esta_publicado:
+            raise ValidationError(
+                {
+                    "texto_sei": (
+                        "Não é possível alterar o texto da portaria de um "
+                        "ato já publicado no Diário Oficial."
+                    )
+                }
+            )
 
         with transaction.atomic():
             if data_ato:

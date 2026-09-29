@@ -88,7 +88,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEI",
-            "turmas": {"total": qtd_classes, "por_turno": {}},
+            "turmas": {"total": qtd_classes, "turnos": []},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -118,7 +118,10 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
-            "turmas": {"total": qtd_classes, "por_turno": {"noite": 0}},
+            "turmas": {
+                "total": qtd_classes,
+                "turnos": [{"turno": "Noite", "total": 0}],
+            },
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -128,7 +131,34 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """Verifica acréscimo de módulo para EMEF com cinco turmas noturnas."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEF",
-            "turmas": {"total": 20, "por_turno": {"noite": 5}},
+            "turmas": {
+                "total": 20,
+                "turnos": [{"turno": "Noite", "total": 5}],
+            },
+        }
+
+        resultado = self.calculator.calcular({}, informacoes_ue)
+        assert resultado == 3
+
+    def test_emef_com_formato_real_de_turnos_do_backend(self):
+        """Verifica cálculo usando o formato real de `turmas` do backend.
+
+        Usa o formato retornado por `TurmaService.calcular_turmas`
+        (lista `turnos`, não `por_turno`).
+        """
+        informacoes_ue = {
+            "siglaTipoEscola": "EMEF",
+            "turmas": {
+                "total": 26,
+                "turnos": [
+                    {"turno": "Manhã", "total": 2},
+                    {"turno": "Intermediário", "total": 0},
+                    {"turno": "Tarde", "total": 9},
+                    {"turno": "Vespertino", "total": 0},
+                    {"turno": "Noite", "total": 8},
+                    {"turno": "Integral", "total": 7},
+                ],
+            },
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)
@@ -138,7 +168,7 @@ class TestModuloCoordenadorPedagogicoCalculator:
         """Verifica que EMEBS utiliza as mesmas regras de cálculo do EMEF."""
         informacoes_ue = {
             "siglaTipoEscola": "EMEBS",
-            "turmas": {"total": 40, "por_turno": {}},
+            "turmas": {"total": 40, "turnos": []},
         }
 
         resultado = self.calculator.calcular({}, informacoes_ue)

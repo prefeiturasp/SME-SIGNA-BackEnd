@@ -189,7 +189,7 @@ class TestAtoAdministrativoCleanHierarquia:
                 tipo=T.CESSACAO,
                 ato_pai=c,
                 sei_numero="SEI-X",
-                numero_portaria="001",
+                numero_portaria=1,
                 ano_vigente="2024",
             )
 
@@ -212,7 +212,7 @@ class TestAtoAdministrativoCleanHierarquia:
                 tipo=T.DESIGNACAO,
                 ato_pai=d,
                 sei_numero="SEI-X",
-                numero_portaria="001",
+                numero_portaria=1,
                 ano_vigente="2024",
             )
 
@@ -230,7 +230,7 @@ class TestAtoAdministrativoCleanCessacaoUnica:
                 tipo=T.CESSACAO,
                 ato_pai=d,
                 sei_numero="SEI-C2",
-                numero_portaria="002",
+                numero_portaria=2,
                 ano_vigente="2024",
             )
 
@@ -241,7 +241,7 @@ class TestAtoAdministrativoCleanCessacaoUnica:
         c1.ativo = False
         c1.save(update_fields=["ativo"])
 
-        c2 = criar_ato_cessacao(d, sei_numero="SEI-C2", numero_portaria="002")
+        c2 = criar_ato_cessacao(d, sei_numero="SEI-C2", numero_portaria=2)
         assert c2.pk is not None
 
     def test_atualizar_cessacao_ativa_existente_nao_gera_erro(self):

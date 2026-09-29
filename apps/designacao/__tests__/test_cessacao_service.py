@@ -18,7 +18,7 @@ class TestCessacaoService:
         """Método auxiliar para payload de criação."""
         base = {
             "ato_pai": ato_pai,
-            "numero_portaria": "12345",
+            "numero_portaria": 12345,
             "ano_vigente": "2024",
             "sei_numero": "SEI-999999",
             "data_cessacao": "2024-03-10",

@@ -6,10 +6,15 @@ relacionados a impedimento de substituição, portaria, servidor e período.
 
 from rest_framework import serializers
 
-from apps.designacao.api.serializers.utils import NullableDateField
+from apps.designacao.api.serializers.utils import (
+    NUMERO_PORTARIA_MAX,
+    NullableDateField,
+    validar_somente_numeros,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
@@ -36,7 +41,9 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     """
 
     # AtoAdministrativo
-    numero_portaria = serializers.CharField(max_length=20)
+    numero_portaria = serializers.IntegerField(
+        min_value=1, max_value=NUMERO_PORTARIA_MAX
+    )
     ano_vigente = serializers.CharField(max_length=6)
     sei_numero = serializers.CharField(max_length=30)
     doc = NullableDateField(required=False, default=None, allow_null=True)
@@ -155,6 +162,30 @@ class DesignacaoWriteSerializer(serializers.Serializer):
         required=False,
         allow_null=True,
     )
+
+    # Texto SEI — congelado a partir do modelo de portaria vigente no
+    # momento da criação/atualização (gerado via preview antes do Salvar)
+    texto_sei = serializers.CharField(
+        required=False, default="", allow_blank=True
+    )
+    modelo_portaria = serializers.PrimaryKeyRelatedField(
+        queryset=ModeloPortaria.objects.all(),
+        required=False,
+        allow_null=True,
+        default=None,
+    )
+
+    def validate_ano_vigente(self, value: str) -> str:
+        """Valida que o ano vigente contenha apenas dígitos.
+
+        Args:
+            value: Valor do ano vigente.
+
+        Returns:
+            str: Valor validado com apenas dígitos.
+
+        """
+        return validar_somente_numeros(value)
 
 
 # ── Leitura ──────────────────────────────────────────────────────────────────
@@ -398,6 +429,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "cargo_vaga",
             "tipo_vaga_display",
             "cargo_vaga_display",
+            # Texto SEI
+            "texto_sei",
+            "modelo_portaria",
             # Filhos
             "cessacao",
             "apostilas",

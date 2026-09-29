@@ -25,6 +25,9 @@ class AtoAdministrativo(models.Model):
         PUBLICADO = "PUBLICADO", "Publicado"
         NAO_PUBLICADO = "NAO_PUBLICADO", "Não Publicado"
 
+    # Única fonte de verdade para quais tipos de ato podem ser pai de quais.
+    # Reaproveitado por `ModeloPortaria.TIPOS_QUE_VARIAM_POR_ATO_PAI`, já que
+    # ambos expressam a mesma regra de hierarquia de negócio.
     TIPOS_PAI_VALIDOS = {
         "CESSACAO": {"DESIGNACAO"},
         "APOSTILA": {"DESIGNACAO", "CESSACAO"},
@@ -57,8 +60,9 @@ class AtoAdministrativo(models.Model):
         related_name="descendentes",
     )
 
-    # Apostila não usa numero_portaria/ano_vigente — ficam blank para esse tipo
-    numero_portaria = models.CharField(max_length=20, blank=True, default="")
+    # Apostila não usa numero_portaria/ano_vigente — numero_portaria fica
+    # nulo e ano_vigente blank para esse tipo
+    numero_portaria = models.IntegerField(null=True, blank=True)
     ano_vigente = models.CharField(max_length=6, blank=True, default="")
     sei_numero = models.CharField(max_length=30)
     doc = models.DateField(null=True, blank=True)
@@ -71,6 +75,17 @@ class AtoAdministrativo(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="atos_administrativos_criados",
+    )
+
+    # Texto SEI congelado no momento da criação/apostilamento, conforme o
+    # modelo de portaria vigente na época — nunca é regerado depois.
+    texto_sei = models.TextField(blank=True, default="")
+    modelo_portaria = models.ForeignKey(
+        "gestao.ModeloPortaria",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="atos_gerados",
     )
 
     class Meta:
@@ -179,3 +194,20 @@ class AtoAdministrativo(models.Model):
 
         """
         return self.ativo
+
+    @property
+    def esta_publicado(self) -> bool:
+        """Indica se o ato já foi publicado no Diário Oficial.
+
+        A data de publicação (`doc`) só é preenchida pela tela de
+        publicação (`atualizar-data-publicacao`), junto com
+        `status_publicacao`. A partir desse momento o texto da portaria
+        (`texto_sei`) deixa de poder ser alterado, pois passa a
+        representar um registro histórico do que foi efetivamente
+        publicado.
+
+        Returns:
+            bool: True quando `doc` está preenchido.
+
+        """
+        return self.doc is not None

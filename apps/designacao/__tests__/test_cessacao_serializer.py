@@ -12,6 +12,7 @@ from apps.designacao.api.serializers.cessacao_serializer import (
     CessacaoReadSerializerById,
     CessacaoWriteSerializer,
 )
+from apps.designacao.api.serializers.utils import NUMERO_PORTARIA_MAX
 
 
 @pytest.mark.django_db
@@ -22,7 +23,7 @@ class TestCessacaoWriteSerializer:
         """Método auxiliar para payload."""
         return {
             "ato_pai": ato_pai_id,
-            "numero_portaria": "12345",
+            "numero_portaria": 12345,
             "ano_vigente": "2024",
             "sei_numero": "999999",
             "a_pedido": True,
@@ -40,6 +41,40 @@ class TestCessacaoWriteSerializer:
         d = criar_ato_designacao()
         payload = self._payload(d.id)
         payload["numero_portaria"] = "12A45"
+        s = CessacaoWriteSerializer(data=payload)
+        assert not s.is_valid()
+        assert "numero_portaria" in s.errors
+
+    def test_numero_portaria_acima_do_teto_do_integer(self):
+        """Verifica rejeição de número que não cabe em um IntegerField.
+
+        Sem max_value o valor passaria pelo serializer e só estouraria no
+        Postgres, virando erro 500 em vez de 400.
+        """
+        d = criar_ato_designacao()
+        payload = self._payload(d.id)
+        payload["numero_portaria"] = NUMERO_PORTARIA_MAX + 1
+        s = CessacaoWriteSerializer(data=payload)
+        assert not s.is_valid()
+        assert "numero_portaria" in s.errors
+
+    def test_numero_portaria_no_teto_do_integer_e_aceito(self):
+        """Verifica que o maior valor representável ainda é aceito."""
+        d = criar_ato_designacao()
+        payload = self._payload(d.id)
+        payload["numero_portaria"] = NUMERO_PORTARIA_MAX
+        s = CessacaoWriteSerializer(data=payload)
+        assert s.is_valid(), s.errors
+
+    def test_numero_portaria_negativo_rejeita(self):
+        """Verifica que número negativo é rejeitado.
+
+        O CharField anterior barrava "-5" via isdigit(); min_value preserva
+        essa garantia agora que o campo é inteiro.
+        """
+        d = criar_ato_designacao()
+        payload = self._payload(d.id)
+        payload["numero_portaria"] = -5
         s = CessacaoWriteSerializer(data=payload)
         assert not s.is_valid()
         assert "numero_portaria" in s.errors
@@ -108,7 +143,7 @@ class TestCessacaoReadSerializerById:
     def test_serializer_retorna_designacao_com_dados_do_ato_pai(self):
         """Verifica retorno de designacao no serializer by id."""
         designacao = criar_ato_designacao(
-            numero_portaria="9876",
+            numero_portaria=9876,
             ano_vigente="2025",
             sei_numero="SEI-DES",
         )

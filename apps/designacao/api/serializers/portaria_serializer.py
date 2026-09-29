@@ -21,7 +21,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
     observações, cessacao e designacao.
     """
 
-    numero_portaria = serializers.CharField()
+    numero_portaria = serializers.IntegerField(allow_null=True)
     doc = serializers.DateField(allow_null=True)
     tipo_de_ato = serializers.SerializerMethodField()
     nome = serializers.SerializerMethodField()
@@ -50,6 +50,7 @@ class PortariaListSerializer(AtoRelacionadoMixin, serializers.ModelSerializer):
             "data_cessacao",
             "sei_numero",
             "observacoes",
+            "texto_sei",
             "designacao",
             "cessacao",
             "tipo_insubsistencia",

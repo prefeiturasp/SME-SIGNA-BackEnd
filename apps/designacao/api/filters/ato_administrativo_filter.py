@@ -19,7 +19,7 @@ class AtoAdministrativoFilter(PortariaFilter):
     servidor, unidade e data de cessação.
     """
 
-    portaria = django_filters.CharFilter(
+    portaria = django_filters.NumberFilter(
         field_name="numero_portaria",
         lookup_expr="exact",
         label="Portaria",

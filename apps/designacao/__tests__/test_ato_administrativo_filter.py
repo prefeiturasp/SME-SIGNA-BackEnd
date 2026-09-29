@@ -32,7 +32,7 @@ def designacao_1(db):
     """Método designacao 1."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="001/2024",
+        numero_portaria=1,
         ano_vigente="2024",
         sei_numero="6018.2024/0001234-5",
         doc=None,
@@ -74,7 +74,7 @@ def designacao_2(db):
     """Método designacao 2."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="002/2024",
+        numero_portaria=2,
         ano_vigente="2024",
         sei_numero="6018.2024/0002345-6",
         doc=None,
@@ -107,7 +107,7 @@ def designacao_3(db):
     """Método designacao 3."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="003/2024",
+        numero_portaria=3,
         ano_vigente="2024",
         sei_numero="6018.2024/0003456-7",
         doc=None,
@@ -141,7 +141,7 @@ def cessacao(db, designacao_1):
     """Método cessacao."""
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
-        numero_portaria="003/2024",
+        numero_portaria=3,
         ano_vigente="2024",
         sei_numero="6018.2024/0003456-7",
         doc=None,
@@ -161,7 +161,7 @@ def insubsistencia(db, designacao_1):
     """Método insubsistencia."""
     return AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="004/2024",
+        numero_portaria=4,
         ano_vigente="2024",
         sei_numero="6018.2024/0004567-8",
         doc=None,
@@ -175,7 +175,7 @@ def insubsistencia_cessacao(db, cessacao):
     """Método insubsistencia cessação."""
     return AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="005/2024",
+        numero_portaria=5,
         ano_vigente="2024",
         sei_numero="6018.2024/0004567-8",
         doc=None,
@@ -189,7 +189,7 @@ def apostila(db, designacao_1):
     """Método apostila com observação."""
     ato = AtoAdministrativo.objects.create(
         tipo="APOSTILA",
-        numero_portaria="",
+        numero_portaria=None,
         ano_vigente="",
         sei_numero="6018.2024/0005678-9",
         doc=None,
@@ -207,7 +207,7 @@ def insubsistencia_com_observacao(db, designacao_1):
     """Método insubsistencia com observação."""
     ato = AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="006/2024",
+        numero_portaria=6,
         ano_vigente="2024",
         sei_numero="6018.2024/0006789-0",
         doc=None,
@@ -279,9 +279,9 @@ class TestAtoAdministrativoFilter:
         # Filtra apenas designação no queryset
         """Verifica filtro portaria."""
         qs = AtoAdministrativo.objects.all()
-        f = AtoAdministrativoFilter(data={"portaria": "001/2024"}, queryset=qs)
+        f = AtoAdministrativoFilter(data={"portaria": "001"}, queryset=qs)
         assert f.qs.count() == 1
-        assert f.qs.first().numero_portaria == "001/2024"
+        assert f.qs.first().numero_portaria == 1
 
     def test_filtro_rf(self, designacao_1, designacao_2, designacao_3):
         # Filtra apenas designação no queryset

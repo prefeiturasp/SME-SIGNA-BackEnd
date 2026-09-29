@@ -35,7 +35,7 @@ def _payload(ato_pai_id, **kwargs):
     """Método auxiliar para payload."""
     base = {
         "ato_pai": ato_pai_id,
-        "numero_portaria": "12345",
+        "numero_portaria": 12345,
         "ano_vigente": "2024",
         "sei_numero": "999999",
         "observacoes": "Criada via teste",
@@ -54,6 +54,39 @@ def test_create_insubsistencia_de_designacao(auth_client):
     assert AtoAdministrativo.objects.filter(
         tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ato_pai=d
     ).exists()
+
+
+@pytest.mark.django_db
+def test_create_insubsistencia_persiste_texto_sei_e_modelo_usado(auth_client):
+    """Verifica que o texto SEI e o modelo usado são salvos e lidos de volta."""
+    from apps.gestao.__tests__.factories import criar_modelo_portaria
+
+    d = criar_ato_designacao()
+    modelo = criar_modelo_portaria(
+        tipo_portaria=AtoAdministrativo.Tipo.INSUBSISTENCIA,
+        tipo_ato_pai=AtoAdministrativo.Tipo.DESIGNACAO,
+    )
+
+    url = reverse("designacao:insubsistencias")
+    payload = _payload(
+        d.id,
+        texto_sei="Texto literal já gerado a partir do modelo vigente.",
+        modelo_portaria=modelo.pk,
+    )
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 201
+
+    insub = AtoAdministrativo.objects.get(
+        tipo=AtoAdministrativo.Tipo.INSUBSISTENCIA, ato_pai=d
+    )
+    assert insub.texto_sei == payload["texto_sei"]
+    assert insub.modelo_portaria_id == modelo.pk
+
+    detalhe_url = reverse("designacao:insubsistencia-detail", args=[insub.id])
+    detalhe_response = auth_client.get(detalhe_url)
+    assert detalhe_response.data["texto_sei"] == payload["texto_sei"]
+    assert detalhe_response.data["modelo_portaria"] == modelo.pk
 
 
 @pytest.mark.django_db
@@ -228,7 +261,7 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
     d = criar_ato_designacao()
     cessacao = criar_ato_cessacao(d)
     insub = criar_ato_insubsistencia(
-        cessacao, numero_portaria="654", ano_vigente="2025"
+        cessacao, numero_portaria=654, ano_vigente="2025"
     )
 
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
@@ -243,7 +276,7 @@ def test_buscar_por_portaria_encontra_insubsistencia(auth_client):
 def test_buscar_por_portaria_insubsistencia_nao_encontrada(auth_client):
     """Verifica 404 quando a portaria não corresponde a nenhuma insubsistência."""  # noqa: E501
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
-    response = auth_client.get(url, {"portaria": "inexistente", "ano": "2025"})
+    response = auth_client.get(url, {"portaria": "999", "ano": "2025"})
 
     assert response.status_code == 404
 
@@ -255,9 +288,7 @@ def test_buscar_por_portaria_insubsistencia_ano_diferente_nao_encontrada(
     """Verifica 404 quando a portaria existe mas em outro ano."""
     d = criar_ato_designacao()
     cessacao = criar_ato_cessacao(d)
-    criar_ato_insubsistencia(
-        cessacao, numero_portaria="654", ano_vigente="2024"
-    )
+    criar_ato_insubsistencia(cessacao, numero_portaria=654, ano_vigente="2024")
 
     url = reverse("designacao:insubsistencia-buscar-por-portaria")
     response = auth_client.get(url, {"portaria": "654", "ano": "2025"})

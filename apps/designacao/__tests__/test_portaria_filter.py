@@ -27,7 +27,7 @@ def designacao_1(db):
     """Método designacao 1."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="001/2024",
+        numero_portaria=1,
         ano_vigente="2024",
         sei_numero="6018.2024/0001234-5",
         doc=None,
@@ -59,7 +59,7 @@ def designacao_2(db):
     """Método designacao 2."""
     ato = AtoAdministrativo.objects.create(
         tipo="DESIGNACAO",
-        numero_portaria="002/2024",
+        numero_portaria=2,
         ano_vigente="2024",
         sei_numero="6018.2024/0002345-6",
         doc=None,
@@ -92,7 +92,7 @@ def cessacao(db, designacao_1):
     """Método cessacao."""
     ato = AtoAdministrativo.objects.create(
         tipo="CESSACAO",
-        numero_portaria="003/2024",
+        numero_portaria=3,
         ano_vigente="2024",
         sei_numero="6018.2024/0003456-7",
         doc=None,
@@ -112,7 +112,7 @@ def insubsistencia(db, designacao_1):
     """Método insubsistencia."""
     return AtoAdministrativo.objects.create(
         tipo="INSUBSISTENCIA",
-        numero_portaria="004/2024",
+        numero_portaria=4,
         ano_vigente="2024",
         sei_numero="6018.2024/0004567-8",
         doc=None,
@@ -193,3 +193,67 @@ class TestPortariaFilter:
         f = PortariaFilter(data={"tipo": "DESIGNACAO_CESSACAO"}, queryset=qs)
         assert f.qs.count() == 1
         assert f.qs.first().tipo == "CESSACAO"
+
+
+# ─── Intervalo numérico ───────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def portarias_99_e_100(db):
+    """Cria duas portarias que expõem comparação lexicográfica.
+
+    Em texto "100" < "99", então um filtro de intervalo que compare como
+    string devolve o conjunto errado para esses dois valores.
+    """
+    for numero in (99, 100):
+        AtoAdministrativo.objects.create(
+            tipo="DESIGNACAO",
+            numero_portaria=numero,
+            ano_vigente="2024",
+            sei_numero=f"6018.2024/000{numero}-0",
+            doc=None,
+            ativo=True,
+        )
+
+
+@pytest.mark.django_db
+class TestPortariaFilterIntervaloNumerico:
+    """Garante que o intervalo de portaria compare números, não texto."""
+
+    def test_portaria_inicial_inclui_numero_maior_que_dois_digitos(
+        self, portarias_99_e_100
+    ):
+        """Verifica que 100 entra no intervalo que começa em 99."""
+        qs = apply_filter({"portaria_inicial": "99"})
+        assert set(qs.values_list("numero_portaria", flat=True)) == {99, 100}
+
+    def test_portaria_final_exclui_numero_maior(self, portarias_99_e_100):
+        """Verifica que 100 fica fora do intervalo que termina em 99."""
+        qs = apply_filter({"portaria_final": "99"})
+        assert list(qs.values_list("numero_portaria", flat=True)) == [99]
+
+    def test_intervalo_fechado_isola_a_portaria(self, portarias_99_e_100):
+        """Verifica intervalo fechado de 100 a 100."""
+        qs = apply_filter({"portaria_inicial": "100", "portaria_final": "100"})
+        assert list(qs.values_list("numero_portaria", flat=True)) == [100]
+
+    def test_apostila_sem_numero_fica_fora_do_intervalo(
+        self, portarias_99_e_100, designacao_1
+    ):
+        """Verifica que ato sem número de portaria não entra no intervalo."""
+        AtoAdministrativo.objects.create(
+            tipo="APOSTILA",
+            ato_pai=designacao_1,
+            numero_portaria=None,
+            ano_vigente="",
+            sei_numero="6018.2024/0000999-9",
+            doc=None,
+            ativo=True,
+        )
+        qs = apply_filter({"portaria_inicial": "1"})
+        assert not qs.filter(numero_portaria=None).exists()
+
+    def test_ordenacao_por_numero_e_numerica(self, portarias_99_e_100):
+        """Verifica que a ordenação coloca 99 antes de 100."""
+        qs = AtoAdministrativo.objects.order_by("numero_portaria")
+        assert list(qs.values_list("numero_portaria", flat=True)) == [99, 100]

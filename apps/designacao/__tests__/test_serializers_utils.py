@@ -35,6 +35,15 @@ class TestValidarSomenteNumeros:
         """Verifica que string apenas com dígitos é retornada."""
         assert validar_somente_numeros("12345") == "12345"
 
+    def test_digito_unicode_nao_decimal_gera_erro(self):
+        """Verifica que "²" é rejeitado.
+
+        str.isdigit() aceita "²", mas int() não converte — aceitá-lo
+        gravaria um valor que nenhum consumidor numérico consegue ler.
+        """
+        with pytest.raises(serializers.ValidationError):
+            validar_somente_numeros("²")
+
     def test_valor_com_letras_gera_erro(self):
         """Verifica que caracteres não numéricos disparam erro."""
         with pytest.raises(serializers.ValidationError):
