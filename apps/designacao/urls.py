@@ -126,6 +126,7 @@ urlpatterns = [
             {
                 "get": "retrieve",
                 "delete": "destroy",
+                "patch": "partial_update",
             }
         ),
         name="insubsistencia-detail",
