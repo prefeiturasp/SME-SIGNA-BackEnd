@@ -430,20 +430,9 @@ class DesignacaoUnidadeService:
         info_ue = SmeIntegracaoService.consulta_informacoes_unidades_escolares(
             codigo_ue
         )
-
         codigo_dre = info_ue.get("codigoDRE")
-        if not isinstance(codigo_dre, (str, int)):
-            unidades: list[dict[str, Any]] = []
-        else:
-            unidades = (
-                UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
-                    codigo_dre
-                )
-            )
 
-        unidade = next(
-            (u for u in unidades if u.get("codigoUe") == codigo_ue), None
-        )
+        unidade = cls.obter_informacoes_unidade(codigo_dre, codigo_ue)
 
         turmas = TurmaService.calcular_turmas(codigo_ue)
         info_ue["turmas"] = turmas
@@ -463,6 +452,57 @@ class DesignacaoUnidadeService:
                 unidade.get("codigoIntegracao") if unidade else None
             ),
             "spi": turmas.get("spi"),
+        }
+
+    @classmethod
+    def obter_informacoes_unidade(
+        cls, codigo_dre: str | int | None, codigo_ue: str
+    ) -> dict[str, Any] | None:
+        """Obtém a unidade escolar com base no código.
+
+        Args:
+            codigo_dre: Código da diretoria regional.
+            codigo_ue: Código da unidade escolar.
+
+        Returns:
+            Dict[str, Any] | None:
+            Dados da unidade escolar ou None se não encontrada.
+
+        """
+        if not isinstance(codigo_dre, (str, int)):
+            unidades: list[dict[str, Any]] = []
+        else:
+            unidades = (
+                UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre(
+                    codigo_dre
+                )
+            )
+
+        unidade = next(
+            (u for u in unidades if u.get("codigoUe") == codigo_ue), None
+        )
+        return unidade
+
+    @classmethod
+    def obter_codigo_hierarquico(
+        cls, codigo_dre: str, codigo_ue: str
+    ) -> dict[str, Any]:
+        """Obtém informações escolares completas para uma unidade escolar.
+
+        Args:
+            codigo_dre: Código da diretoria regional.
+            codigo_ue: Código da unidade escolar.
+
+        Returns:
+            Dict[str, Any]: Dados de cargos, turmas e unidade escolar.
+
+        """
+        unidade = cls.obter_informacoes_unidade(codigo_dre, codigo_ue)
+
+        return {
+            "codigo_hierarquico": (
+                unidade.get("codigoIntegracao") if unidade else None
+            ),
         }
 
     @classmethod
