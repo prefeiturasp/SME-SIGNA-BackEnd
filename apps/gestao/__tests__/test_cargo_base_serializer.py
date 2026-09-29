@@ -111,7 +111,7 @@ def test_read_serializer_expoe_displays_legiveis():
 def test_write_serializer_valido_cria_cargo_base():
     """Verifica que o serializer de escrita valida e cria um cargo base."""
     payload = {
-        "codigo_cargo": "3085",
+        "codigo_cargo": "9085",
         "descricao_completa": "ASSISTENTE DE DIRETOR DE ESCOLA",
         "descricao_resumida": "Assistente de Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
@@ -129,7 +129,7 @@ def test_write_serializer_valido_cria_cargo_base():
 def test_write_serializer_valido_cria_cargo_base_com_campos_opcionais():
     """Verifica que o serializer de escrita valida e cria um cargo base."""
     payload = {
-        "codigo_cargo": "3085",
+        "codigo_cargo": "9085",
         "descricao_completa": "ASSISTENTE DE DIRETOR DE ESCOLA",
         "descricao_resumida": "Assistente de Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
@@ -151,10 +151,10 @@ def test_write_serializer_valido_cria_cargo_base_com_campos_opcionais():
 @pytest.mark.django_db
 def test_write_serializer_rejeita_codigo_cargo_duplicado():
     """Verifica que o serializer rejeita código de cargo já cadastrado."""
-    criar_cargo_base(codigo_cargo="3360")
+    criar_cargo_base(codigo_cargo="9360")
 
     payload = {
-        "codigo_cargo": "3360",
+        "codigo_cargo": "9360",
         "descricao_completa": "DIRETOR DE ESCOLA",
         "descricao_resumida": "Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
@@ -246,7 +246,7 @@ def test_update_serializer_altera_campos_editaveis():
 def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
     """Verifica que campos vindos do EOL não são editáveis via atualização."""
     cargo = criar_cargo_base(
-        codigo_cargo="3360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
+        codigo_cargo="9360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
     )
 
     payload = {
@@ -258,7 +258,7 @@ def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
 
     assert serializer.is_valid(), serializer.errors
     cargo_atualizado = serializer.save()
-    assert cargo_atualizado.codigo_cargo == "3360"
+    assert cargo_atualizado.codigo_cargo == "9360"
     assert cargo_atualizado.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
 
 
@@ -266,7 +266,7 @@ def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
 def test_update_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_invalida():
     """Verifica que campos vindos do EOL não são editáveis via atualização."""
     cargo = criar_cargo_base(
-        codigo_cargo="3360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
+        codigo_cargo="9360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
     )
 
     payload = {"pesquisar_licencas_no_sigpec": True}

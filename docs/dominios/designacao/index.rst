@@ -418,6 +418,7 @@ Método        Rota                                          Descrição
 ===========  ===========================================  ================================================================
 ``GET``       ``portarias/``                                Lista todos os tipos de ato administrativo formatados para a tela de publicação no Diário Oficial (sem paginação).
 ``POST``      ``portarias/atualizar-data-publicacao/``      Atualiza em massa ``doc`` e ``status_publicacao=PUBLICADO`` para os ``ids`` informados.
+``POST``      ``portarias/lauda/``                          Gera um único arquivo (lauda para o D.O.) com o ``texto_sei`` dos ``ids`` informados, ordenados por número de portaria. Recusa atos sem ``texto_sei`` (erro em ``detail`` identificando a portaria); o status de publicação não é verificado por ora. Body: ``{"ids": [...], "formato": "PDF" | "WORD"}``; resposta ``application/pdf`` ou ``.docx`` como anexo.
 ``GET``       ``atos-administrativos/``                     Visão paginada e mais detalhada dos atos, com filtros adicionais (tipo de ato composto, ``ato_id`` que casa id/ato_pai/ato_raiz, ``status_publicacao``, etc.).
 ===========  ===========================================  ================================================================
 

@@ -95,6 +95,29 @@ class CessacaoViewSet(
             status=status.HTTP_201_CREATED,
         )
 
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        """Atualiza parcialmente uma cessação existente.
+
+        Args:
+            request: Requisição HTTP contendo os campos a atualizar.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados atualizados da cessação.
+
+        """
+        ato = self.get_object()
+        serializer = CessacaoWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        ato = CessacaoService.atualizar(ato, serializer.validated_data)
+
+        ato_atualizado = self.get_queryset().filter(pk=ato.pk).first()
+        return Response(CessacaoReadSerializer(ato_atualizado).data)
+
     @action(detail=False, methods=["get"], url_path="buscar-por-portaria")
     def buscar_por_portaria(self, request: Request) -> Response:
         """Busca uma cessação pelo número da portaria e ano.

@@ -18,6 +18,8 @@ django-stubs==6.0.7
 djangorestframework-stubs==3.17.0
 types-requests==2.33.0.20260712
 types-django-filter==26.1.0.20260713
+types-reportlab==5.0.0.20260911
+types-lxml==2026.2.16
 
 # Git hooks
 pre-commit==4.6.0

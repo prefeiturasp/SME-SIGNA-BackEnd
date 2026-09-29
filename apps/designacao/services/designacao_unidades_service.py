@@ -11,12 +11,12 @@ from datetime import datetime
 from typing import Any
 
 from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.modulos import Calculadores
 from apps.designacao.modulos.base import ModuloCalculator
 from apps.designacao.services.designacao_servidor_service import (
     DesignacaoServidorService,
 )
+from apps.gestao.models.cargo_base import CargoBase
 from apps.helpers.exceptions import SmeIntegracaoError
 from apps.unidades.services.unidades_service import UnidadeIntegracaoService
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
@@ -391,6 +391,30 @@ class ModuloService:
 class DesignacaoUnidadeService:
     """Serviço de agregação de informações escolares para uma unidade."""
 
+    @staticmethod
+    def _get_cargos_formatados() -> list[dict[str, Any]]:
+        """Retorna os cargos base disponíveis para o campo "Cargo base".
+
+        Consulta os cargos cadastrados em "Gestão de cargos base" que
+        estão ativos e parametrizados como utilizados para designações.
+
+        Returns:
+            list[dict]: Lista de cargos formatados com código e descrição.
+
+        """
+        cargos = CargoBase.objects.filter(
+            status=CargoBase.Status.ATIVO,
+            utilizado_para_designacoes=True,
+        ).order_by("descricao_resumida")
+
+        return [
+            {
+                "codigoCargo": int(cargo.codigo_cargo),
+                "nomeCargo": cargo.descricao_completa,
+            }
+            for cargo in cargos
+        ]
+
     @classmethod
     def obter_informacoes_escolares(cls, codigo_ue: str) -> dict[str, Any]:
         """Obtém informações escolares completas para uma unidade escolar.
@@ -432,7 +456,7 @@ class DesignacaoUnidadeService:
             ]
 
         return {
-            "cargos": DesignacaoDetalhe.get_cargos_formatados(),
+            "cargos": cls._get_cargos_formatados(),
             "funcionarios_unidade": {c["codigo_cargo"]: c for c in cargos},
             "turmas": turmas,
             "codigo_hierarquico": (
@@ -441,7 +465,7 @@ class DesignacaoUnidadeService:
             "spi": turmas.get("spi"),
         }
 
-    @staticmethod
-    def listar_cargos_vaga() -> list:
+    @classmethod
+    def listar_cargos_vaga(cls) -> list:
         """Retorna a lista de cargos de vaga formatados."""
-        return DesignacaoDetalhe.get_cargos_formatados()
+        return cls._get_cargos_formatados()

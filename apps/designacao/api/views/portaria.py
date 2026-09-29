@@ -1,11 +1,14 @@
 """Views para a listagem de portarias.
 
 Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do
-D.O.
+D.O. e para gerar a lauda (PDF) dos atos selecionados.
 """
 
 from django.db.models import QuerySet
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import filters, mixins, viewsets
 from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
@@ -14,10 +17,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.designacao.api.filters.portaria_filter import PortariaFilter
+from apps.designacao.api.serializers.lauda_serializer import (
+    LaudaRequestSerializer,
+)
 from apps.designacao.api.serializers.portaria_serializer import (
     PortariaListSerializer,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.services.lauda_service import LaudaService
 
 
 class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -122,3 +129,51 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 "data_publicacao": data_publicacao,
             }
         )
+
+    @extend_schema(
+        request=LaudaRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.BINARY,
+                description="Arquivo da lauda (PDF ou .docx) como anexo "
+                "(Content-Disposition: attachment).",
+            ),
+            400: OpenApiResponse(
+                description="Payload inválido, ou atos inexistentes ou "
+                "sem texto SEI (mensagem em `detail`)."
+            ),
+        },
+    )
+    @action(detail=False, methods=["post"], url_path="lauda")
+    def lauda(self, request: Request) -> HttpResponse:
+        """Gera a lauda de publicação com os atos selecionados.
+
+        Um único arquivo (PDF ou Word) com o texto SEI de cada ato, na
+        ordem do número de portaria, independentemente do status de
+        publicação.
+
+        Args:
+            request: Requisição HTTP com ``ids`` e ``formato``.
+
+        Returns:
+            HttpResponse: Arquivo como anexo, com o content-type do
+            formato pedido.
+
+        Raises:
+            ValidationError: Payload inválido ou atos que não podem
+                compor a lauda.
+
+        """
+        serializer = LaudaRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dados = serializer.validated_data
+
+        arquivo = LaudaService.gerar(dados["ids"], dados["formato"])
+
+        response = HttpResponse(
+            arquivo.conteudo, content_type=arquivo.content_type
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="{arquivo.nome}"'
+        )
+        return response
