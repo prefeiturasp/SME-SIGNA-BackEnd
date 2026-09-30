@@ -351,6 +351,39 @@ class TestDesignacaoUnidadeService:
 
         assert resultado["total"] == 0
 
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre"
+    )
+    def test_obter_codigo_hierarquico_com_unidade(self, mock_unidades):
+        """Verifica obter codigo hierarquico quando a unidade existe."""
+        mock_unidades.return_value = [
+            {"codigoUe": "UE123", "codigoIntegracao": "ABC123"}
+        ]
+
+        resultado = DesignacaoUnidadeService.obter_codigo_hierarquico(
+            "DRE1", "UE123"
+        )
+
+        assert resultado == {"codigo_hierarquico": "ABC123"}
+        mock_unidades.assert_called_once_with("DRE1")
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.UnidadeIntegracaoService.get_unidades_codigo_integracao_by_dre"
+    )
+    def test_obter_codigo_hierarquico_unidade_nao_encontrada(
+        self, mock_unidades
+    ):
+        """Verifica obter codigo hierarquico quando a unidade não existe."""
+        mock_unidades.return_value = [
+            {"codigoUe": "UE999", "codigoIntegracao": "OUTRO"}
+        ]
+
+        resultado = DesignacaoUnidadeService.obter_codigo_hierarquico(
+            "DRE1", "UE123"
+        )
+
+        assert resultado == {"codigo_hierarquico": None}
+
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
         criar_cargo_base(

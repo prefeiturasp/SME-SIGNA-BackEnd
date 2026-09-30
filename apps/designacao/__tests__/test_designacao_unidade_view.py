@@ -102,6 +102,115 @@ class TestDesignacaoUnidadeView:
 
 
 @pytest.mark.django_db
+class TestDesignacaoUnidadeCodigoHierarquicoView:
+    """Testes para view de código hierárquico da unidade."""
+
+    password = secrets.token_urlsafe(16)
+
+    def setup_method(self):
+        """Método setup method."""
+        self.client = APIClient()
+        self.url = "/api/designacao/unidade/codigo-hierarquico/"
+
+    @patch(
+        "apps.designacao.api.views.designacao_unidades_view."
+        "DesignacaoUnidadeService.obter_codigo_hierarquico"
+    )
+    def test_get_sucesso(self, mock_service, django_user_model):
+        """Verifica get sucesso."""
+        user = django_user_model.objects.create_user(
+            username="user_hierarquico", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_service.return_value = {"codigo_hierarquico": "ABC123"}
+
+        response = self.client.get(
+            self.url, {"codigo_ue": "UE123", "codigo_dre": "DRE1"}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {"codigo_hierarquico": "ABC123"}
+        mock_service.assert_called_once_with("DRE1", "UE123")
+
+    def test_get_sem_codigo_ue(self, django_user_model):
+        """Verifica get sem codigo ue."""
+        user = django_user_model.objects.create_user(
+            username="user_hierarquico", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.url, {"codigo_dre": "DRE1"})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {
+            "detail": "codigo_ue e codigo_dre são obrigatórios"
+        }
+
+    def test_get_sem_codigo_dre(self, django_user_model):
+        """Verifica get sem codigo dre."""
+        user = django_user_model.objects.create_user(
+            username="user_hierarquico", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(self.url, {"codigo_ue": "UE123"})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {
+            "detail": "codigo_ue e codigo_dre são obrigatórios"
+        }
+
+    @patch(
+        "apps.designacao.api.views.designacao_unidades_view."
+        "DesignacaoUnidadeService.obter_codigo_hierarquico"
+    )
+    def test_get_erro_integracao_sme(self, mock_service, django_user_model):
+        """Verifica get erro integracao sme."""
+        user = django_user_model.objects.create_user(
+            username="user_hierarquico", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_service.side_effect = SmeIntegracaoError("Erro integração SME")
+
+        response = self.client.get(
+            self.url, {"codigo_ue": "UE123", "codigo_dre": "DRE1"}
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json() == {"detail": "Erro integração SME"}
+
+    @patch(
+        "apps.designacao.api.views.designacao_unidades_view."
+        "DesignacaoUnidadeService.obter_codigo_hierarquico"
+    )
+    def test_get_erro_inesperado(self, mock_service, django_user_model):
+        """Verifica get erro inesperado."""
+        user = django_user_model.objects.create_user(
+            username="user_hierarquico", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_service.side_effect = Exception("boom")
+
+        response = self.client.get(
+            self.url, {"codigo_ue": "UE123", "codigo_dre": "DRE1"}
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.json() == {"detail": "Erro interno do servidor"}
+
+    def test_get_nao_autenticado(self):
+        """Verifica get nao autenticado."""
+        response = self.client.get(
+            self.url, {"codigo_ue": "UE123", "codigo_dre": "DRE1"}
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.django_db
 class TestDesignacaoUnidadeCargosView:
     """Testes para designacao unidade cargos view."""
 
