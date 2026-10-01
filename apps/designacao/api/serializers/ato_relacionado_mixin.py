@@ -70,6 +70,7 @@ class AtoRelacionadoMixin:
         if d and ato_designacao is not None:
             detalhe_historico = d.detalhe_para_quadro_de_historico_por_ano
             return {
+                "id": ato_designacao.id,
                 "numero_portaria": ato_designacao.numero_portaria,
                 "ano_vigente": ato_designacao.ano_vigente,
                 "sei_numero": ato_designacao.sei_numero,
@@ -120,6 +121,7 @@ class AtoRelacionadoMixin:
 
         if detalhe and ato_cessacao is not None:
             return {
+                "id": ato_cessacao.id,
                 "numero_portaria": ato_cessacao.numero_portaria,
                 "ano_vigente": ato_cessacao.ano_vigente,
                 "sei_numero": ato_cessacao.sei_numero,
