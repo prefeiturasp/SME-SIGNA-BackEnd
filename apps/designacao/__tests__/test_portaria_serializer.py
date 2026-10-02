@@ -38,6 +38,7 @@ def serialize(ato):
 
 
 DADOS_CESSACAO = {
+    "id": 2,
     "numero_portaria": 2,
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0002345-6",
@@ -49,6 +50,7 @@ DADOS_CESSACAO = {
 }
 
 DADOS_DESIGNACAO = {
+    "id": 1,
     "numero_portaria": 1,
     "ano_vigente": "2024",
     "sei_numero": "6018.2024/0001234-5",
