@@ -491,7 +491,21 @@ class TestPortariaListSerializer:
                 "id": apostila.id,
                 "sei_numero": "6018.2024/0004567-8",
                 "doc": None,
+                "status": "ativo",
             }
+        ]
+
+    def test_apostilas_informa_status_insubsistente_da_apostila_anulada(
+        self, designacao, apostila
+    ):
+        """Verifica que apostila anulada vem com status insubsistente."""
+        apostila.ativo = False
+        apostila.save(update_fields=["ativo"])
+        ato = AtoAdministrativo.objects.prefetch_related("filhos").get(
+            pk=designacao.pk
+        )
+        assert [a["status"] for a in serialize(ato)["apostilas"]] == [
+            "insubsistente"
         ]
 
     def test_apostilas_ignora_filho_apostila_sem_detalhe(
