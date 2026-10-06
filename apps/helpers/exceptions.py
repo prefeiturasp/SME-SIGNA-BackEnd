@@ -67,3 +67,9 @@ class PerfilNaoAutorizadoError(Exception):
     """Não possui perfil signa."""
 
     pass
+
+
+class ValorInvalidoError(Exception):
+    """Valor de alteração de apostila inválido para o campo alvo."""
+
+    pass

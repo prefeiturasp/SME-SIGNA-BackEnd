@@ -22,7 +22,7 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
     """Serializador de alteração de apostila para entrada de dados."""
 
     campo_alterado = serializers.CharField(max_length=100)
-    valor_novo = serializers.CharField()
+    valor_novo = serializers.CharField(allow_blank=True, allow_null=True)
     # Ato para qual esta alteração específica se aplica. Quando nao passado,
     # altera o próprio `ato_pai` da apostila (comportamento padrão). Só
     # é possível informar um valor diferente do tipo de `ato_pai` quando
