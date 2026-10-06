@@ -216,3 +216,240 @@ class TestDesignacaoService:
         )
 
         assert resultado == [{"codigoCargo": 1, "nomeCargo": "Professor"}]
+
+
+def _dados_substituicao_diretor(**kwargs):
+    """Monta dados de designação para substituição do Diretor."""
+    data = {
+        "numero_portaria": 777,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-777",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "EMEF Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "Nome Civil",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "PROF.ENS.FUND.II E MED.-CIENCIAS",
+        "indicado_codigo_cargo_base": 3255,
+        "indicado_lotacao": "EMEF Teste",
+        "indicado_codigo_ue_lotacao": "090450",
+        "ue": "090450",
+        "indicado_local_exercicio": "EMEF Teste",
+        "data_inicio": datetime.date(2024, 1, 1),
+        "data_fim": datetime.date(2024, 1, 16),
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+        "cargo_vaga": DesignacaoDetalhe.CargoVaga.DIRETOR,
+    }
+    data.update(kwargs)
+    return data
+
+
+@pytest.mark.django_db
+class TestDesignacaoServiceSubstituicaoDiretor:
+    """Testes das regras de substituição do Diretor."""
+
+    @pytest.mark.parametrize(
+        "data_fim",
+        [datetime.date(2024, 1, 16), datetime.date(2024, 1, 30)],
+    )
+    def test_permite_periodo_de_16_a_30_dias(self, data_fim):
+        """Verifica que 16 a 30 dias é aceito como substituição formal."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(data_fim=data_fim)
+        )
+
+        assert ato.designacao_detalhe.data_fim == data_fim
+
+    def test_bloqueia_periodo_menor_que_16_dias(self):
+        """Verifica que período inferior a 16 dias é bloqueado."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    data_fim=datetime.date(2024, 1, 15)
+                )
+            )
+
+        assert "16 a 30 dias" in str(exc.value.detail["data_fim"])
+        assert exc.value.get_codes() == {"data_fim": ["periodo_insuficiente"]}
+        assert not AtoAdministrativo.objects.exists()
+
+    @pytest.mark.parametrize("data_fim", [datetime.date(2024, 1, 31), None])
+    def test_bloqueia_periodo_acima_de_30_dias_indicando_eleicao(
+        self, data_fim
+    ):
+        """Verifica que acima de 30 dias (ou sem fim) exige eleição."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(data_fim=data_fim)
+            )
+
+        assert "eleição" in str(exc.value.detail["data_fim"])
+        assert exc.value.get_codes() == {"data_fim": ["eleicao_necessaria"]}
+        assert not AtoAdministrativo.objects.exists()
+
+    def test_bloqueia_professor_de_outra_unidade(self):
+        """Verifica bloqueio de professor de outra unidade escolar."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_codigo_ue_lotacao="090451"
+                )
+            )
+
+        assert "mesma unidade escolar" in str(
+            exc.value.detail["indicado_codigo_ue_lotacao"]
+        )
+        assert exc.value.get_codes() == {
+            "indicado_codigo_ue_lotacao": ["unidade_diferente"]
+        }
+
+    def test_permite_professor_da_mesma_unidade_ignorando_zeros(self):
+        """Verifica que a comparação de código ignora zeros à esquerda."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(indicado_codigo_ue_lotacao=90450)
+        )
+
+        assert ato.pk is not None
+
+    def test_compara_por_codigo_e_nao_por_nome(self):
+        """Verifica que nomes diferentes com o mesmo código são aceitos."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(indicado_lotacao="EMEF - TESTE")
+        )
+
+        assert ato.pk is not None
+
+    @pytest.mark.parametrize(
+        "campos",
+        [{"indicado_codigo_ue_lotacao": ""}, {"ue": ""}],
+    )
+    def test_bloqueia_professor_sem_codigo_de_unidade(self, campos):
+        """Verifica bloqueio quando não é possível comparar as unidades."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(_dados_substituicao_diretor(**campos))
+
+        assert exc.value.get_codes() == {
+            "indicado_codigo_ue_lotacao": ["unidade_diferente"]
+        }
+
+    def test_nao_professor_de_outra_unidade_e_permitido(self):
+        """Verifica que a regra de unidade só se aplica a professor."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                indicado_cargo_base="ASSISTENTE DE DIRETOR DE ESCOLA",
+                indicado_codigo_cargo_base=3085,
+                indicado_codigo_ue_lotacao="090451",
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_cargo_com_prof_no_nome_mas_nao_professor_e_permitido(self):
+        """Verifica que a identificação de professor é por código."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                indicado_cargo_base=(
+                    "Profissional Eng, Arq, Agron e Geologia - N I"
+                ),
+                indicado_codigo_cargo_base=2666,
+                indicado_codigo_ue_lotacao="090451",
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_cargo_sobreposto_nao_professor_prevalece_sobre_base(self):
+        """Verifica que o sobreposto define o cargo quando informado."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                indicado_cargo_sobreposto="COORDENADOR PEDAGOGICO",
+                indicado_codigo_cargo_sobreposto=3379,
+                indicado_possui_cargo_sobreposto=True,
+                indicado_codigo_ue_lotacao="090451",
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_cargo_sobreposto_professor_de_outra_unidade_e_bloqueado(self):
+        """Verifica bloqueio quando o sobreposto é de professor."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_cargo_base="AUXILIAR TECNICO-SECRETARIA",
+                    indicado_codigo_cargo_base=4907,
+                    indicado_cargo_sobreposto="PROF.DE ED.INFANTIL",
+                    indicado_codigo_cargo_sobreposto=3875,
+                    indicado_possui_cargo_sobreposto=True,
+                    indicado_codigo_ue_lotacao="090451",
+                )
+            )
+
+        assert "mesma unidade escolar" in str(
+            exc.value.detail["indicado_codigo_ue_lotacao"]
+        )
+
+    def test_funcao_atividade_nao_prevalece_sobre_cargo_base(self):
+        """Verifica que função/atividade é ignorada e vale o cargo base."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_cargo_sobreposto="PROF.ORIENT.SALA LEITURA",
+                    indicado_codigo_cargo_sobreposto=9999,
+                    indicado_possui_cargo_sobreposto=False,
+                    indicado_codigo_ue_lotacao="090451",
+                )
+            )
+
+        assert exc.value.get_codes() == {
+            "indicado_codigo_ue_lotacao": ["unidade_diferente"]
+        }
+
+    def test_outros_cargos_nao_sao_afetados(self):
+        """Verifica que vagas diferentes de Diretor não têm a regra."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                cargo_vaga=DesignacaoDetalhe.CargoVaga.SECRETARIO,
+                data_fim=None,
+                indicado_codigo_ue_lotacao="090451",
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_bloqueia_extensao_acima_de_30_dias(self):
+        """Verifica que estender a designação além de 30 dias é bloqueado."""
+        ato = DesignacaoService.criar(_dados_substituicao_diretor())
+
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.atualizar(
+                ato, {"data_fim": datetime.date(2024, 2, 15)}
+            )
+
+        assert "eleição" in str(exc.value.detail["data_fim"])
+        ato.designacao_detalhe.refresh_from_db()
+        assert ato.designacao_detalhe.data_fim == datetime.date(2024, 1, 16)
+
+    def test_permite_extensao_dentro_de_30_dias(self):
+        """Verifica que estender dentro do limite de 30 dias é aceito."""
+        ato = DesignacaoService.criar(_dados_substituicao_diretor())
+
+        DesignacaoService.atualizar(
+            ato, {"data_fim": datetime.date(2024, 1, 30)}
+        )
+
+        ato.designacao_detalhe.refresh_from_db()
+        assert ato.designacao_detalhe.data_fim == datetime.date(2024, 1, 30)
+
+    def test_atualizacao_sem_campos_da_regra_nao_revalida(self):
+        """Verifica que atualizar outros campos não aplica a regra."""
+        ato = criar_ato_designacao(
+            cargo_vaga=DesignacaoDetalhe.CargoVaga.DIRETOR
+        )
+
+        DesignacaoService.atualizar(ato, {"informacoes_adicionais": "obs"})
+
+        ato.designacao_detalhe.refresh_from_db()
+        assert ato.designacao_detalhe.informacoes_adicionais == "obs"
