@@ -13,6 +13,7 @@ from apps.designacao.__tests__.factories import (
 )
 from apps.designacao.models.apostila_detalhe import ApostilaAlteracao
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.services.apostila_service import ApostilaService
 
 
@@ -582,3 +583,143 @@ class TestApostilaService:
 
         with pytest.raises(ValidationError, match="insubsistente"):
             ApostilaService.atualizar(apostila, {"sei_numero": "SEI-NOVO"})
+
+    # ── Campos de período, pendência, afastamento e impedimento ─────────────
+
+    def _alterar(self, d, alteracoes):
+        """Cria uma apostila na designação e recarrega o detalhe."""
+        apostila = ApostilaService.criar(self._data(d, alteracoes=alteracoes))
+        d.designacao_detalhe.refresh_from_db()
+        return apostila
+
+    def test_altera_descricao_pendencia_motivo_afastamento_e_data_fim(self):
+        """Verifica que os campos editados na apostila são persistidos."""
+        d = criar_ato_designacao(
+            possui_pendencia=True,
+            pendencias="Antiga",
+            com_afastamento=True,
+            motivo_afastamento="Antigo",
+            data_fim=datetime.date(2026, 12, 31),
+        )
+
+        self._alterar(
+            d,
+            [
+                {"campo_alterado": "pendencias", "valor_novo": "Nova"},
+                {"campo_alterado": "motivo_afastamento", "valor_novo": "Novo"},
+                {"campo_alterado": "data_fim", "valor_novo": "2027-06-30"},
+            ],
+        )
+
+        detalhe = d.designacao_detalhe
+        assert detalhe.pendencias == "Nova"
+        assert detalhe.motivo_afastamento == "Novo"
+        assert detalhe.data_fim == datetime.date(2027, 6, 30)
+
+    def test_permite_limpar_data_fim(self):
+        """Verifica que valor vazio limpa um campo de data opcional."""
+        d = criar_ato_designacao(data_fim=datetime.date(2026, 12, 31))
+
+        apostila = self._alterar(
+            d, [{"campo_alterado": "data_fim", "valor_novo": ""}]
+        )
+
+        assert d.designacao_detalhe.data_fim is None
+        registro = apostila.apostila_detalhe.alteracoes.get()
+        assert registro.valor_anterior == "2026-12-31"
+        assert registro.valor_novo == ""
+
+    def test_altera_impedimento_substituicao_registrando_ids(self):
+        """Verifica troca de impedimento com histórico pelo id."""
+        antigo = ImpedimentoSubstituicao.objects.create(
+            codigo="A", descricao="Antigo"
+        )
+        novo = ImpedimentoSubstituicao.objects.create(
+            codigo="N", descricao="Novo"
+        )
+        d = criar_ato_designacao(impedimento_substituicao=antigo)
+
+        apostila = self._alterar(
+            d,
+            [
+                {
+                    "campo_alterado": "impedimento_substituicao",
+                    "valor_novo": str(novo.pk),
+                }
+            ],
+        )
+
+        assert d.designacao_detalhe.impedimento_substituicao_id == novo.pk
+        registro = apostila.apostila_detalhe.alteracoes.get()
+        assert registro.campo_alterado == "impedimento_substituicao_id"
+        assert registro.valor_anterior == str(antigo.pk)
+        assert registro.valor_novo == str(novo.pk)
+
+    @pytest.mark.parametrize(
+        ("flag", "texto"),
+        [
+            ("possui_pendencia", "pendencias"),
+            ("com_afastamento", "motivo_afastamento"),
+        ],
+    )
+    def test_flag_nao_apaga_texto_dependente(self, flag, texto):
+        """Verifica que marcar a flag como 'Não' apaga o texto vinculado."""
+        d = criar_ato_designacao(**{flag: True, texto: "Texto antigo"})
+
+        apostila = self._alterar(
+            d, [{"campo_alterado": flag, "valor_novo": "False"}]
+        )
+
+        assert getattr(d.designacao_detalhe, flag) is False
+        assert getattr(d.designacao_detalhe, texto) == ""
+        registro = apostila.apostila_detalhe.alteracoes.get(
+            campo_alterado=texto
+        )
+        assert registro.valor_anterior == "Texto antigo"
+        assert registro.valor_novo == ""
+
+    def test_flag_nao_sobrepoe_texto_dependente_enviado(self):
+        """Verifica que o texto enviado junto com a flag 'Não' é apagado."""
+        d = criar_ato_designacao(possui_pendencia=True, pendencias="Antiga")
+
+        self._alterar(
+            d,
+            [
+                {"campo_alterado": "possui_pendencia", "valor_novo": "False"},
+                {"campo_alterado": "pendencias", "valor_novo": "Outra"},
+            ],
+        )
+
+        assert d.designacao_detalhe.pendencias == ""
+
+    @pytest.mark.parametrize(
+        ("campo", "valor", "mensagem"),
+        [
+            ("data_fim", "31/12/2027", "Até \\(data final\\).*AAAA-MM-DD"),
+            (
+                "impedimento_substituicao_id",
+                "abc",
+                "Impedimento para substituição.*opção válida",
+            ),
+            (
+                "impedimento_substituicao_id",
+                "999999",
+                "Impedimento para substituição.*não existe",
+            ),
+            ("possui_pendencia", "talvez", "Possui pendência"),
+            ("data_inicio", "", "A partir de.*obrigatório"),
+        ],
+    )
+    def test_erro_claro_para_valor_invalido(self, campo, valor, mensagem):
+        """Verifica mensagem específica quando o valor é inválido."""
+        d = criar_ato_designacao()
+
+        with pytest.raises(ValidationError, match=mensagem):
+            ApostilaService.criar(
+                self._data(
+                    d,
+                    alteracoes=[
+                        {"campo_alterado": campo, "valor_novo": valor}
+                    ],
+                )
+            )
