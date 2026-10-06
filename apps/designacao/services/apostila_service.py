@@ -28,6 +28,7 @@ from apps.designacao.models.apostila_detalhe import (
     ApostilaDetalhe,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.helpers.exceptions import ValorInvalidoError
 
 _CAMPOS_ATO = frozenset(
     {
@@ -364,50 +365,66 @@ class ApostilaService:
             mensagem que identifica o campo para o usuário.
 
         """
-        rotulo = _ROTULOS_CAMPOS.get(
-            model_field.name, str(model_field.verbose_name)
-        )
-
-        def _erro(motivo: str) -> ValidationError:
-            return ValidationError(
-                {"alteracoes": f"Valor inválido para '{rotulo}': {motivo}"}
+        try:
+            if valor == "":
+                return ApostilaService._converter_vazio(model_field)
+            if isinstance(model_field, BooleanField):
+                return ApostilaService._converter_booleano(valor)
+            if isinstance(model_field, ForeignKey):
+                return ApostilaService._converter_fk(model_field, valor)
+            return ApostilaService._converter_generico(model_field, valor)
+        except ValorInvalidoError as exc:
+            rotulo = _ROTULOS_CAMPOS.get(
+                model_field.name, str(model_field.verbose_name)
             )
+            raise ValidationError(
+                {"alteracoes": f"Valor inválido para '{rotulo}': {exc}"}
+            ) from None
 
-        if valor == "":
-            if model_field.null:
-                return None
-            if isinstance(model_field, (CharField, TextField)):
-                return ""
-            raise _erro("o campo é obrigatório.")
+    @staticmethod
+    def _converter_vazio(model_field: Field) -> Any:
+        """Retorna o valor que limpa o campo, se ele aceitar ficar vazio."""
+        if model_field.null:
+            return None
+        if isinstance(model_field, (CharField, TextField)):
+            return ""
+        raise ValorInvalidoError("o campo é obrigatório.")
 
-        if isinstance(model_field, BooleanField):
-            normalizado = valor.strip().lower()
-            if normalizado in _VALORES_VERDADEIROS:
-                return True
-            if normalizado in _VALORES_FALSOS:
-                return False
-            raise _erro("informe verdadeiro ou falso.")
+    @staticmethod
+    def _converter_booleano(valor: str) -> bool:
+        """Converta textos como 'True'/'sim'/'nao' para booleano."""
+        normalizado = valor.strip().lower()
+        if normalizado in _VALORES_VERDADEIROS:
+            return True
+        if normalizado in _VALORES_FALSOS:
+            return False
+        raise ValorInvalidoError("informe verdadeiro ou falso.")
 
-        if isinstance(model_field, ForeignKey):
-            modelo_relacionado = model_field.related_model
-            try:
-                pk = int(valor)
-            except (TypeError, ValueError):
-                raise _erro("informe uma opção válida.") from None
-            assert not isinstance(modelo_relacionado, str)
-            if not modelo_relacionado._default_manager.filter(pk=pk).exists():
-                raise _erro("a opção selecionada não existe.")
-            return pk
+    @staticmethod
+    def _converter_fk(model_field: ForeignKey, valor: str) -> int:
+        """Converta o id informado, garantindo que o registro exista."""
+        try:
+            pk = int(valor)
+        except (TypeError, ValueError):
+            raise ValorInvalidoError("informe uma opção válida.") from None
+        modelo_relacionado = model_field.related_model
+        assert not isinstance(modelo_relacionado, str)
+        if not modelo_relacionado._default_manager.filter(pk=pk).exists():
+            raise ValorInvalidoError("a opção selecionada não existe.")
+        return pk
 
+    @staticmethod
+    def _converter_generico(model_field: Field, valor: str) -> Any:
+        """Converta e valide o valor usando o próprio campo do model."""
         try:
             convertido = model_field.to_python(valor)
             model_field.run_validators(convertido)
         except DjangoValidationError as exc:
             if isinstance(model_field, DateField):
-                raise _erro(
+                raise ValorInvalidoError(
                     "data inválida, use o formato AAAA-MM-DD."
                 ) from None
-            raise _erro(" ".join(exc.messages)) from None
+            raise ValorInvalidoError(" ".join(exc.messages)) from None
         return convertido
 
     @staticmethod
