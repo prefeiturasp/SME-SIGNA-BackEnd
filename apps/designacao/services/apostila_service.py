@@ -6,10 +6,21 @@ de alterações em atos administrativos.
 
 import datetime
 from dataclasses import dataclass, field
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
+from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Model, QuerySet
+from django.db.models import (
+    BooleanField,
+    CharField,
+    DateField,
+    Field,
+    ForeignKey,
+    Model,
+    QuerySet,
+    TextField,
+)
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.models.apostila_detalhe import (
@@ -47,6 +58,26 @@ _CAMPOS_EXCLUIDOS_DETALHE = frozenset({"ato_id", "ato"})
 # passa a ser um registro histórico e nao pode mais ser editado via apostila.
 _CAMPOS_TEXTO_PORTARIA = frozenset({"texto_sei", "modelo_portaria"})
 
+_CAMPOS_DEPENDENTES = {
+    "possui_pendencia": "pendencias",
+    "com_afastamento": "motivo_afastamento",
+}
+
+_ROTULOS_CAMPOS = {
+    "data_inicio": "A partir de",
+    "data_fim": "Até (data final)",
+    "pendencias": "Descrição da pendência",
+    "possui_pendencia": "Possui pendência?",
+    "motivo_afastamento": "Motivo do afastamento",
+    "com_afastamento": "Com afastamento?",
+    "impedimento_substituicao": "Impedimento para substituição",
+    "carater_excepcional": "Caráter excepcional",
+    "data_cessacao": "Data da cessação",
+}
+
+_VALORES_VERDADEIROS = frozenset({"true", "1", "t", "sim"})
+_VALORES_FALSOS = frozenset({"false", "0", "f", "nao", "não"})
+
 
 class CriarApostilaData(TypedDict):
     """Payload validado para criação de apostila no modelo legado."""
@@ -67,7 +98,7 @@ class _PlanoAplicacao:
         default_factory=dict
     )
     detalhes_por_ato: dict[int, Model | None] = field(default_factory=dict)
-    buckets: dict[tuple[int, str], dict[str, str]] = field(
+    buckets: dict[tuple[int, str], dict[str, Any]] = field(
         default_factory=dict
     )
     atos_por_pk: dict[int, AtoAdministrativo] = field(default_factory=dict)
@@ -284,35 +315,145 @@ class ApostilaService:
         campo: str,
         ato: AtoAdministrativo,
         detalhe: Model | None,
-    ) -> tuple[str, str]:
+    ) -> tuple[str, Field]:
         """Encontra o campo a ser alterado no ato ou no detalhe.
 
         Args:
-            campo: Nome do campo a ser alterado.
+            campo: Nome do campo a ser alterado. Para chaves estrangeiras
+                aceita tanto o nome (``impedimento_substituicao``) quanto
+                a coluna (``impedimento_substituicao_id``).
             ato: Ato administrativo alvo da alteração.
             detalhe: Detalhe associado ao ato, se existir.
 
         Returns:
-            tuple[str, str]: Tupla com destino ('ato' ou 'detalhe') e
-            valor anterior.
+            tuple[str, Field]: Tupla com destino ('ato' ou 'detalhe') e o
+            campo do model.
 
         Raises:
             ValidationError: Se o campo não existir no ato ou no detalhe.
 
         """
-        if hasattr(ato, campo):
-            raw = getattr(ato, campo)
-            return "ato", ("" if raw is None else str(raw))
-        if (
-            detalhe
-            and hasattr(detalhe, campo)
-            and campo not in _CAMPOS_EXCLUIDOS_DETALHE
-        ):
-            raw = getattr(detalhe, campo)
-            return "detalhe", ("" if raw is None else str(raw))
+        candidatos: list[tuple[str, Model]] = [("ato", ato)]
+        if detalhe is not None and campo not in _CAMPOS_EXCLUIDOS_DETALHE:
+            candidatos.append(("detalhe", detalhe))
+
+        for destino, obj in candidatos:
+            try:
+                model_field = obj._meta.get_field(campo)
+            except FieldDoesNotExist:
+                continue
+            if isinstance(model_field, Field) and model_field.concrete:
+                return destino, model_field
         raise ValidationError(
             {"alteracoes": f"Campo '{campo}' não encontrado no ato alvo."}
         )
+
+    @staticmethod
+    def _converter_valor(model_field: Field, valor: str) -> Any:
+        """Converta o valor textual da alteração para o tipo do campo.
+
+        Args:
+            model_field: Campo do model que receberá o valor.
+            valor: Valor informado na apostila (vazio limpa o campo).
+
+        Returns:
+            Valor convertido, pronto para ser atribuído ao campo.
+
+        Raises:
+            ValidationError: Se o valor for inválido para o campo, com uma
+            mensagem que identifica o campo para o usuário.
+
+        """
+        rotulo = _ROTULOS_CAMPOS.get(
+            model_field.name, str(model_field.verbose_name)
+        )
+
+        def _erro(motivo: str) -> ValidationError:
+            return ValidationError(
+                {"alteracoes": f"Valor inválido para '{rotulo}': {motivo}"}
+            )
+
+        if valor == "":
+            if model_field.null:
+                return None
+            if isinstance(model_field, (CharField, TextField)):
+                return ""
+            raise _erro("o campo é obrigatório.")
+
+        if isinstance(model_field, BooleanField):
+            normalizado = valor.strip().lower()
+            if normalizado in _VALORES_VERDADEIROS:
+                return True
+            if normalizado in _VALORES_FALSOS:
+                return False
+            raise _erro("informe verdadeiro ou falso.")
+
+        if isinstance(model_field, ForeignKey):
+            modelo_relacionado = model_field.related_model
+            try:
+                pk = int(valor)
+            except (TypeError, ValueError):
+                raise _erro("informe uma opção válida.") from None
+            assert not isinstance(modelo_relacionado, str)
+            if not modelo_relacionado._default_manager.filter(pk=pk).exists():
+                raise _erro("a opção selecionada não existe.")
+            return pk
+
+        try:
+            convertido = model_field.to_python(valor)
+            model_field.run_validators(convertido)
+        except DjangoValidationError as exc:
+            if isinstance(model_field, DateField):
+                raise _erro(
+                    "data inválida, use o formato AAAA-MM-DD."
+                ) from None
+            raise _erro(" ".join(exc.messages)) from None
+        return convertido
+
+    @staticmethod
+    def _expandir_dependentes(alteracoes: list) -> list:
+        """Inclui a limpeza dos textos que dependem de uma flag booleana.
+
+        Quando ``possui_pendencia``/``com_afastamento`` é alterado para
+        falso, a descrição da pendência / motivo do afastamento também é
+        apagada — mesmo que o front não envie essa alteração. Como a
+        limpeza vira uma ``ApostilaAlteracao``, a insubsistência da
+        apostila restaura o texto original.
+
+        Args:
+            alteracoes: Lista de alterações recebida.
+
+        Returns:
+            list: Nova lista com as alterações dependentes ajustadas.
+
+        """
+        resultado = [dict(alt) for alt in alteracoes]
+        for alt in list(resultado):
+            dependente = _CAMPOS_DEPENDENTES.get(alt["campo_alterado"])
+            if dependente is None:
+                continue
+            valor = str(alt.get("valor_novo") or "").strip().lower()
+            if valor not in _VALORES_FALSOS:
+                continue
+            alvo = alt.get("tipo_ato_alvo") or ""
+            existentes = [
+                a
+                for a in resultado
+                if a["campo_alterado"] == dependente
+                and (a.get("tipo_ato_alvo") or "") == alvo
+            ]
+            if existentes:
+                for existente in existentes:
+                    existente["valor_novo"] = ""
+            else:
+                resultado.append(
+                    {
+                        "campo_alterado": dependente,
+                        "valor_novo": "",
+                        "tipo_ato_alvo": alvo,
+                    }
+                )
+        return resultado
 
     @staticmethod
     def _aplicar_alteracoes(
@@ -342,7 +483,7 @@ class ApostilaService:
             }
         )
         # gera as alterações de designaçao e cessação e apostila
-        for alt in alteracoes:
+        for alt in ApostilaService._expandir_dependentes(alteracoes):
             ApostilaService._acumular_alteracao(
                 alt, ato_pai, apostila_detalhe, plano
             )
@@ -382,7 +523,10 @@ class ApostilaService:
 
         """
         campo = alt["campo_alterado"]
-        valor_novo = str(alt["valor_novo"])
+        valor_informado = alt["valor_novo"]
+        valor_informado = (
+            "" if valor_informado is None else str(valor_informado)
+        )
 
         if campo in _CAMPOS_PROTEGIDOS:
             raise ValidationError(
@@ -413,13 +557,23 @@ class ApostilaService:
             )
         detalhe_alvo = plano.detalhes_por_ato[ato_alvo.pk]
 
-        destino, valor_anterior = ApostilaService._encontrar_campo(
+        destino, model_field = ApostilaService._encontrar_campo(
             campo, ato_alvo, detalhe_alvo
         )
+        campo = model_field.attname
+        obj_alvo = ato_alvo if destino == "ato" else detalhe_alvo
+        raw_anterior = getattr(obj_alvo, campo)
+        valor_anterior = "" if raw_anterior is None else str(raw_anterior)
+
+        convertido = ApostilaService._converter_valor(
+            model_field, valor_informado
+        )
+        valor_novo = "" if convertido is None else str(convertido)
+
         # Marca para atualização do campo de cessação ou designação
         plano.buckets.setdefault((ato_alvo.pk, destino), {})[
             campo
-        ] = valor_novo
+        ] = convertido
 
         # Marca para atualização do campo de apostila
         chave = (ato_alvo.id, campo)
