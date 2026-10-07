@@ -527,3 +527,54 @@ def test_create_substituicao_diretor_acima_30_dias_retorna_codigo(
     assert response.data["codes"] == {"data_fim": ["eleicao_necessaria"]}
     assert "eleição" in response.data["data_fim"][0]
     assert not AtoAdministrativo.objects.exists()
+
+
+@pytest.mark.django_db
+def test_create_diretor_com_indicado_ad_retorna_codigo(auth_client):
+    """Verifica que o bloqueio de AD expõe o código para o front."""
+    from apps.gestao.models.cargo_base import CargoBase
+
+    CargoBase.objects.update_or_create(
+        codigo_cargo="3360",
+        defaults={
+            "descricao_completa": "DIRETOR DE ESCOLA",
+            "descricao_resumida": "Diretor de Escola",
+            "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+            "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+            "status": CargoBase.Status.ATIVO,
+            "utilizado_para_designacoes": True,
+        },
+    )
+
+    payload = {
+        "numero_portaria": 556,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-D2",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "PROF.ENS.FUND.II E MED.-CIENCIAS",
+        "indicado_codigo_cargo_base": 3255,
+        "indicado_cargo_sobreposto": "ASSISTENTE DE DIRETOR DE ESCOLA",
+        "indicado_codigo_cargo_sobreposto": 3085,
+        "indicado_possui_cargo_sobreposto": True,
+        "indicado_lotacao": "Escola Teste",
+        "indicado_local_exercicio": "Escola Teste",
+        "data_inicio": "2024-01-01",
+        "data_fim": "2024-01-16",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+        "cargo_vaga": 3360,
+    }
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(url, data=payload, format="json")
+
+    assert response.status_code == 400
+    assert response.data["codes"] == {
+        "indicado_codigo_cargo_sobreposto": ["assistente_diretor"]
+    }
+    assert not AtoAdministrativo.objects.exists()

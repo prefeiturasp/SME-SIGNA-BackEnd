@@ -17,6 +17,11 @@ TURNOS_MAP = {
     6: "integral",
 }
 
+# Código EOL do cargo de Assistente de Diretor (AD). Quem possui esse cargo
+# sobreposto substitui o Diretor informalmente (até 15 dias) e não pode ser
+# designado formalmente para o cargo de Diretor.
+CODIGO_CARGO_ASSISTENTE_DIRETOR = 3085
+
 # Códigos EOL de cargos de professor, usados nas regras de substituição do
 # Diretor (ex.: exigência de mesma unidade escolar).
 CODIGOS_CARGO_PROFESSOR = frozenset(

@@ -334,44 +334,49 @@ class TestDesignacaoServiceSubstituicaoDiretor:
             "indicado_codigo_ue_lotacao": ["unidade_diferente"]
         }
 
-    def test_nao_professor_de_outra_unidade_e_permitido(self):
-        """Verifica que a regra de unidade só se aplica a professor."""
-        ato = DesignacaoService.criar(
-            _dados_substituicao_diretor(
-                indicado_cargo_base="ASSISTENTE DE DIRETOR DE ESCOLA",
-                indicado_codigo_cargo_base=3085,
-                indicado_codigo_ue_lotacao="090451",
+    @pytest.mark.parametrize(
+        ("cargo_base", "codigo_cargo_base"),
+        [
+            ("SECRETARIO DE ESCOLA", 3182),
+            ("Profissional Eng, Arq, Agron e Geologia - N I", 2666),
+        ],
+    )
+    def test_bloqueia_nao_professor_mesmo_da_mesma_unidade(
+        self, cargo_base, codigo_cargo_base
+    ):
+        """Verifica que só professor pode substituir o Diretor."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_cargo_base=cargo_base,
+                    indicado_codigo_cargo_base=codigo_cargo_base,
+                )
             )
+
+        assert "Somente professor" in str(
+            exc.value.detail["indicado_codigo_cargo_base"]
         )
+        assert exc.value.get_codes() == {
+            "indicado_codigo_cargo_base": ["indicado_nao_professor"]
+        }
+        assert not AtoAdministrativo.objects.exists()
 
-        assert ato.pk is not None
-
-    def test_cargo_com_prof_no_nome_mas_nao_professor_e_permitido(self):
-        """Verifica que a identificação de professor é por código."""
-        ato = DesignacaoService.criar(
-            _dados_substituicao_diretor(
-                indicado_cargo_base=(
-                    "Profissional Eng, Arq, Agron e Geologia - N I"
-                ),
-                indicado_codigo_cargo_base=2666,
-                indicado_codigo_ue_lotacao="090451",
-            )
-        )
-
-        assert ato.pk is not None
-
-    def test_cargo_sobreposto_nao_professor_prevalece_sobre_base(self):
+    def test_bloqueia_cargo_sobreposto_nao_professor_com_base_professor(
+        self,
+    ):
         """Verifica que o sobreposto define o cargo quando informado."""
-        ato = DesignacaoService.criar(
-            _dados_substituicao_diretor(
-                indicado_cargo_sobreposto="COORDENADOR PEDAGOGICO",
-                indicado_codigo_cargo_sobreposto=3379,
-                indicado_possui_cargo_sobreposto=True,
-                indicado_codigo_ue_lotacao="090451",
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_cargo_sobreposto="COORDENADOR PEDAGOGICO",
+                    indicado_codigo_cargo_sobreposto=3379,
+                    indicado_possui_cargo_sobreposto=True,
+                )
             )
-        )
 
-        assert ato.pk is not None
+        assert exc.value.get_codes() == {
+            "indicado_codigo_cargo_sobreposto": ["indicado_nao_professor"]
+        }
 
     def test_cargo_sobreposto_professor_de_outra_unidade_e_bloqueado(self):
         """Verifica bloqueio quando o sobreposto é de professor."""
@@ -406,6 +411,74 @@ class TestDesignacaoServiceSubstituicaoDiretor:
         assert exc.value.get_codes() == {
             "indicado_codigo_ue_lotacao": ["unidade_diferente"]
         }
+
+    @pytest.mark.parametrize(
+        "data_fim",
+        [datetime.date(2024, 1, 10), datetime.date(2024, 1, 16)],
+    )
+    def test_bloqueia_indicado_com_cargo_sobreposto_de_ad(self, data_fim):
+        """Verifica que quem possui cargo sobreposto de AD é bloqueado."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_substituicao_diretor(
+                    indicado_cargo_sobreposto=(
+                        "ASSISTENTE DE DIRETOR DE ESCOLA"
+                    ),
+                    indicado_codigo_cargo_sobreposto=3085,
+                    indicado_possui_cargo_sobreposto=True,
+                    data_fim=data_fim,
+                )
+            )
+
+        assert "Assistente de Diretor" in str(
+            exc.value.detail["indicado_codigo_cargo_sobreposto"]
+        )
+        assert exc.value.get_codes() == {
+            "indicado_codigo_cargo_sobreposto": ["assistente_diretor"]
+        }
+        assert not AtoAdministrativo.objects.exists()
+
+    def test_funcao_atividade_com_codigo_de_ad_nao_e_bloqueada(self):
+        """Verifica que o bloqueio de AD exige cargo sobreposto."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                indicado_codigo_cargo_sobreposto=3085,
+                indicado_possui_cargo_sobreposto=False,
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_cargo_sobreposto_de_ad_em_outra_vaga_e_permitido(self):
+        """Verifica que o bloqueio de AD só vale para vaga de Diretor."""
+        ato = DesignacaoService.criar(
+            _dados_substituicao_diretor(
+                cargo_vaga=DesignacaoDetalhe.CargoVaga.SECRETARIO,
+                indicado_codigo_cargo_sobreposto=3085,
+                indicado_possui_cargo_sobreposto=True,
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_bloqueia_troca_do_indicado_para_ad_na_atualizacao(self):
+        """Verifica que atualizar o indicado para um AD é bloqueado."""
+        ato = DesignacaoService.criar(_dados_substituicao_diretor())
+
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.atualizar(
+                ato,
+                {
+                    "indicado_codigo_cargo_sobreposto": 3085,
+                    "indicado_possui_cargo_sobreposto": True,
+                },
+            )
+
+        assert exc.value.get_codes() == {
+            "indicado_codigo_cargo_sobreposto": ["assistente_diretor"]
+        }
+        ato.designacao_detalhe.refresh_from_db()
+        assert ato.designacao_detalhe.indicado_codigo_cargo_sobreposto is None
 
     def test_outros_cargos_nao_sao_afetados(self):
         """Verifica que vagas diferentes de Diretor não têm a regra."""

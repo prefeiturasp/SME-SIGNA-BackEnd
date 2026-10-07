@@ -9,6 +9,7 @@ from django.db.models import F, QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.constants.cargos_gestao_escolar import (
+    CODIGO_CARGO_ASSISTENTE_DIRETOR,
     CODIGOS_CARGO_PROFESSOR,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -26,8 +27,9 @@ _CAMPOS_ATO = frozenset(
     }
 )
 
-# Regras de substituição do Diretor de Escola: período formal de 16 a 30
-# dias (inclusivos); acima disso é necessária eleição para o cargo.
+# Regras de substituição do Diretor de Escola: até 15 dias o Assistente de
+# Diretor (AD) substitui informalmente, sem designação; período formal de 16
+# a 30 dias (inclusivos); acima disso é necessária eleição para o cargo.
 _SUBSTITUICAO_DIRETOR_MIN_DIAS = 16
 _SUBSTITUICAO_DIRETOR_MAX_DIAS = 30
 _CAMPOS_SUBSTITUICAO_DIRETOR = frozenset(
@@ -45,7 +47,9 @@ _CAMPOS_SUBSTITUICAO_DIRETOR = frozenset(
 
 # Códigos de erro das regras de substituição do Diretor, expostos em
 # `codes` na resposta para o front diferenciar os bloqueios.
+CODIGO_ASSISTENTE_DIRETOR = "assistente_diretor"
 CODIGO_ELEICAO_NECESSARIA = "eleicao_necessaria"
+CODIGO_INDICADO_NAO_PROFESSOR = "indicado_nao_professor"
 CODIGO_PERIODO_INSUFICIENTE = "periodo_insuficiente"
 CODIGO_UNIDADE_DIFERENTE = "unidade_diferente"
 
@@ -138,14 +142,17 @@ class DesignacaoService:
     def _validar_substituicao_diretor(dados: dict) -> None:
         """Valida as regras de designação para substituição do Diretor.
 
-        Aplica-se quando a vaga é de Diretor de Escola: o período deve ter
-        de 16 a 30 dias (acima disso é necessária eleição) e, se o indicado
-        for professor, ele deve ser da mesma unidade escolar. O cargo do
-        indicado (código EOL) é o cargo sobreposto, quando houver, ou o
-        cargo base (função/atividade é ignorada), e é professor se estiver
-        em `CODIGOS_CARGO_PROFESSOR`; a unidade
-        é comparada pelo código da UE de lotação do indicado contra o
-        código da UE da designação.
+        Aplica-se quando a vaga é de Diretor de Escola: o indicado não pode
+        possuir o cargo sobreposto de Assistente de Diretor (o AD substitui
+        o Diretor informalmente, sem designação), o período deve ter de 16
+        a 30 dias (até 15 dias a substituição é informal; acima de 30 é
+        necessária eleição) e o indicado deve ser professor da mesma
+        unidade escolar. O cargo do indicado (código EOL) é o cargo
+        sobreposto, quando `indicado_possui_cargo_sobreposto` for verdadeiro,
+        ou o cargo base (código de função/atividade é ignorado), e é
+        professor se estiver em `CODIGOS_CARGO_PROFESSOR`; a
+        unidade é comparada pelo código da UE de lotação do indicado contra
+        o código da UE da designação.
 
         Args:
             dados: Campos do detalhe de designação (valores efetivos).
@@ -157,6 +164,49 @@ class DesignacaoService:
         if dados.get("cargo_vaga") != DesignacaoDetalhe.CargoVaga.DIRETOR:
             return
 
+        DesignacaoService._validar_indicado_nao_assistente_diretor(dados)
+        DesignacaoService._validar_periodo_substituicao_diretor(dados)
+        DesignacaoService._validar_professor_mesma_unidade(dados)
+
+    @staticmethod
+    def _validar_indicado_nao_assistente_diretor(dados: dict) -> None:
+        """Bloqueia indicado com cargo sobreposto de Assistente de Diretor.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o indicado possuir o cargo sobreposto de AD.
+
+        """
+        if (
+            dados.get("indicado_possui_cargo_sobreposto")
+            and dados.get("indicado_codigo_cargo_sobreposto")
+            == CODIGO_CARGO_ASSISTENTE_DIRETOR
+        ):
+            raise ValidationError(
+                {
+                    "indicado_codigo_cargo_sobreposto": [
+                        "O servidor não pode ser designado para o cargo de "
+                        "Diretor por já possuir o cargo sobreposto de "
+                        "Assistente de Diretor."
+                    ]
+                },
+                code=CODIGO_ASSISTENTE_DIRETOR,
+            )
+
+    @staticmethod
+    def _validar_periodo_substituicao_diretor(dados: dict) -> None:
+        """Exige período de 16 a 30 dias na substituição do Diretor.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o período estiver fora de 16 a 30 dias ou
+            não tiver data final.
+
+        """
         data_inicio = dados.get("data_inicio")
         data_fim = dados.get("data_fim")
         dias = (
@@ -190,6 +240,18 @@ class DesignacaoService:
                 code=CODIGO_PERIODO_INSUFICIENTE,
             )
 
+    @staticmethod
+    def _validar_professor_mesma_unidade(dados: dict) -> None:
+        """Exige que o indicado seja professor da mesma unidade escolar.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o indicado não for professor ou não for da
+            mesma unidade escolar da designação.
+
+        """
         # Função/atividade não muda o cargo: só o cargo sobreposto
         # prevalece sobre o cargo base.
         codigo_cargo_indicado = (
@@ -197,16 +259,31 @@ class DesignacaoService:
             if dados.get("indicado_possui_cargo_sobreposto")
             else dados.get("indicado_codigo_cargo_base")
         )
-        eh_professor = codigo_cargo_indicado in CODIGOS_CARGO_PROFESSOR
+        if codigo_cargo_indicado not in CODIGOS_CARGO_PROFESSOR:
+            campo_cargo = (
+                "indicado_codigo_cargo_sobreposto"
+                if dados.get("indicado_possui_cargo_sobreposto")
+                else "indicado_codigo_cargo_base"
+            )
+            raise ValidationError(
+                {
+                    campo_cargo: [
+                        "Somente professor pode ser designado para "
+                        "substituir o Diretor."
+                    ]
+                },
+                code=CODIGO_INDICADO_NAO_PROFESSOR,
+            )
+
         # Zeros à esquerda são ignorados: o EOL pode devolver o código
         # como número ("90450") ou texto ("090450").
-        codigo_lotacao = str(dados.get("indicado_codigo_ue_lotacao") or "")
-        codigo_ue = str(dados.get("ue") or "")
-        if eh_professor and (
-            not codigo_ue.strip().lstrip("0")
-            or codigo_lotacao.strip().lstrip("0")
-            != codigo_ue.strip().lstrip("0")
-        ):
+        codigo_lotacao = (
+            str(dados.get("indicado_codigo_ue_lotacao") or "")
+            .strip()
+            .lstrip("0")
+        )
+        codigo_ue = str(dados.get("ue") or "").strip().lstrip("0")
+        if not codigo_ue or codigo_lotacao != codigo_ue:
             raise ValidationError(
                 {
                     "indicado_codigo_ue_lotacao": [
