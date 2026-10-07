@@ -10,6 +10,7 @@ from apps.gestao.api.serializers.cargo_base_serializer import (
     MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO,
     MSG_LICENCA_OBRIGATORIO,
     MSG_LICENCA_ZERADA,
+    MSG_PERIODO_FECHADO_OBRIGATORIO,
     CargoBaseReadSerializer,
     CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
@@ -92,6 +93,29 @@ def test_validate_data_final_do_periodo_rejeita_data_ausente():
         validate_data_final_do_periodo(attrs)
 
     assert MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO in str(exc_info.value)
+
+
+def test_validate_data_final_do_periodo_rejeita_periodo_fechado_ausente():
+    """Verifica que o período fechado é obrigatório com data final informada."""
+    attrs = {"data_fim_periodo": date(2026, 12, 31)}
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_data_final_do_periodo(attrs)
+
+    assert MSG_PERIODO_FECHADO_OBRIGATORIO in str(exc_info.value)
+
+
+def test_validate_data_final_do_periodo_rejeita_data_com_periodo_desligado():
+    """Verifica que data final exige período fechado ativo."""
+    attrs = {
+        "possui_periodo_fechado": False,
+        "data_fim_periodo": date(2026, 12, 31),
+    }
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_data_final_do_periodo(attrs)
+
+    assert MSG_PERIODO_FECHADO_OBRIGATORIO in str(exc_info.value)
 
 
 @pytest.mark.django_db

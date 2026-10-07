@@ -31,6 +31,13 @@ MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO = (
 MSG_DATA_FINAL_DO_PERIODO_INVALIDO = (
     "Data final do período não informada ou inválida"
 )
+MSG_PERIODO_FECHADO_OBRIGATORIO = (
+    "É necessário informar o valor do período fechado "
+    "quando a data final do período for informada."
+)
+MSG_PERIODO_FECHADO_INVALIDO = (
+    "Valor do período fechado não informado ou inválido"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -71,24 +78,39 @@ def validate_quantidade_maxima_de_dias_de_licenca(attrs: dict) -> dict:
     return attrs
 
 
-def validate_data_final_do_periodo(attrs: dict) -> dict:
+def validate_data_final_do_periodo(
+    attrs: dict, instance: CargoBase | None = None
+) -> dict:
     """Valida data final do período.
 
     Args:
         attrs: Dicionário com os dados validados do cargo base.
+        instance: Instância existente do cargo base, quando em atualização.
 
     Returns:
         True: Se os dados são válidos.
         Exception: Se os dados não são válidos.
 
     """
-    possui_periodo_fechado = attrs.get("possui_periodo_fechado")
-    data_fim_periodo = attrs.get("data_fim_periodo")
+    possui_periodo_fechado = attrs.get(
+        "possui_periodo_fechado",
+        getattr(instance, "possui_periodo_fechado", None),
+    )
+    data_fim_periodo = attrs.get(
+        "data_fim_periodo",
+        getattr(instance, "data_fim_periodo", None),
+    )
 
     if possui_periodo_fechado and not data_fim_periodo:
         logger.warning(MSG_DATA_FINAL_DO_PERIODO_INVALIDO)
         raise serializers.ValidationError(
             {"data_fim_periodo": MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO}
+        )
+
+    if data_fim_periodo and not possui_periodo_fechado:
+        logger.warning(MSG_PERIODO_FECHADO_INVALIDO)
+        raise serializers.ValidationError(
+            {"possui_periodo_fechado": MSG_PERIODO_FECHADO_OBRIGATORIO}
         )
 
     return attrs
@@ -185,7 +207,9 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
         response_quantidade_maxima_de_dias_de_licenca = (
             validate_quantidade_maxima_de_dias_de_licenca(attrs)
         )
-        response_data_final_do_periodo = validate_data_final_do_periodo(attrs)
+        response_data_final_do_periodo = validate_data_final_do_periodo(
+            attrs, self.instance
+        )
 
         return (
             response_quantidade_maxima_de_dias_de_licenca
@@ -234,7 +258,9 @@ class CargoBaseUpdateSerializer(serializers.ModelSerializer):
         response_quantidade_maxima_de_dias_de_licenca = (
             validate_quantidade_maxima_de_dias_de_licenca(attrs)
         )
-        response_data_final_do_periodo = validate_data_final_do_periodo(attrs)
+        response_data_final_do_periodo = validate_data_final_do_periodo(
+            attrs, self.instance
+        )
 
         return (
             response_quantidade_maxima_de_dias_de_licenca
