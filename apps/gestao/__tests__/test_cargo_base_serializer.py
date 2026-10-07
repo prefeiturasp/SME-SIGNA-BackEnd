@@ -11,6 +11,7 @@ from apps.gestao.api.serializers.cargo_base_serializer import (
     MSG_LICENCA_OBRIGATORIO,
     MSG_LICENCA_ZERADA,
     MSG_PERIODO_FECHADO_OBRIGATORIO,
+    MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO,
     CargoBaseReadSerializer,
     CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
@@ -62,6 +63,16 @@ def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_zero()
         validate_quantidade_maxima_de_dias_de_licenca(attrs)
 
     assert MSG_LICENCA_ZERADA in str(exc_info.value)
+
+
+def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_sem_pesquisa():
+    """Verifica que a quantidade exige pesquisa de licenças ativa."""
+    attrs = {"quantidade_maxima_de_dias_de_licenca": 30}
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_quantidade_maxima_de_dias_de_licenca(attrs)
+
+    assert MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO in str(exc_info.value)
 
 
 def test_validate_data_final_do_periodo_ignora_quando_periodo_nao_fechado():
@@ -395,5 +406,24 @@ def test_update_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_zero():
     assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
     assert (
         resposta_esperada
+        in serializer.errors["quantidade_maxima_de_dias_de_licenca"][0]
+    )
+
+
+@pytest.mark.django_db
+def test_update_serializer_rejeita_quantidade_de_licenca_sem_pesquisa_ativa():
+    """Verifica que a atualização usa a pesquisa da instância na validação."""
+    cargo = criar_cargo_base(codigo_cargo="3364")
+
+    serializer = CargoBaseUpdateSerializer(
+        cargo,
+        data={"quantidade_maxima_de_dias_de_licenca": 30},
+        partial=True,
+    )
+
+    assert not serializer.is_valid()
+    assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
+    assert (
+        MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO
         in serializer.errors["quantidade_maxima_de_dias_de_licenca"][0]
     )

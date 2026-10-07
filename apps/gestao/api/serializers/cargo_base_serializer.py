@@ -31,6 +31,12 @@ MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO = (
 MSG_DATA_FINAL_DO_PERIODO_INVALIDO = (
     "Data final do período não informada ou inválida"
 )
+
+MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO = (
+    "É necessário informar o valor de pesquisar licenças no SIGPEC "
+    "quando a quantidade máxima de dias de licença for informada."
+)
+
 MSG_PERIODO_FECHADO_OBRIGATORIO = (
     "É necessário informar o valor do período fechado "
     "quando a data final do período for informada."
@@ -41,20 +47,27 @@ MSG_PERIODO_FECHADO_INVALIDO = (
 logger = logging.getLogger(__name__)
 
 
-def validate_quantidade_maxima_de_dias_de_licenca(attrs: dict) -> dict:
+def validate_quantidade_maxima_de_dias_de_licenca(
+    attrs: dict, instance: CargoBase | None = None
+) -> dict:
     """Valida quantidade máxima de dias de licença.
 
     Args:
         attrs: Dicionário com os dados validados do cargo base.
+        instance: Instância existente do cargo base, quando em atualização.
 
     Returns:
         True: Se os dados são válidos.
         Exception: Se os dados não são válidos.
 
     """
-    pesquisar_licencas_no_sigpec = attrs.get("pesquisar_licencas_no_sigpec")
+    pesquisar_licencas_no_sigpec = attrs.get(
+        "pesquisar_licencas_no_sigpec",
+        getattr(instance, "pesquisar_licencas_no_sigpec", None),
+    )
     quantidade_maxima_de_dias_de_licenca = attrs.get(
-        "quantidade_maxima_de_dias_de_licenca"
+        "quantidade_maxima_de_dias_de_licenca",
+        getattr(instance, "quantidade_maxima_de_dias_de_licenca", None),
     )
 
     if (
@@ -73,6 +86,19 @@ def validate_quantidade_maxima_de_dias_de_licenca(attrs: dict) -> dict:
         logger.warning(MSG_LICENCA_INVALIDO)
         raise serializers.ValidationError(
             {"quantidade_maxima_de_dias_de_licenca": MSG_LICENCA_OBRIGATORIO}
+        )
+
+    if (
+        quantidade_maxima_de_dias_de_licenca
+        and not pesquisar_licencas_no_sigpec
+    ):
+        logger.warning(MSG_LICENCA_INVALIDO)
+        raise serializers.ValidationError(
+            {
+                "quantidade_maxima_de_dias_de_licenca": (
+                    MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO
+                )
+            }
         )
 
     return attrs
@@ -205,7 +231,7 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
 
         """
         response_quantidade_maxima_de_dias_de_licenca = (
-            validate_quantidade_maxima_de_dias_de_licenca(attrs)
+            validate_quantidade_maxima_de_dias_de_licenca(attrs, self.instance)
         )
         response_data_final_do_periodo = validate_data_final_do_periodo(
             attrs, self.instance
@@ -256,7 +282,7 @@ class CargoBaseUpdateSerializer(serializers.ModelSerializer):
 
         """
         response_quantidade_maxima_de_dias_de_licenca = (
-            validate_quantidade_maxima_de_dias_de_licenca(attrs)
+            validate_quantidade_maxima_de_dias_de_licenca(attrs, self.instance)
         )
         response_data_final_do_periodo = validate_data_final_do_periodo(
             attrs, self.instance
