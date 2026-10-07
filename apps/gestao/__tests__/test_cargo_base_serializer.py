@@ -1,15 +1,19 @@
 """Testes para os serializadores de CargoBase."""
 
+from datetime import date
+
 import pytest
 from rest_framework import serializers
 
 from apps.gestao.__tests__.factories import criar_cargo_base
 from apps.gestao.api.serializers.cargo_base_serializer import (
+    MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO,
     MSG_LICENCA_OBRIGATORIO,
     MSG_LICENCA_ZERADA,
     CargoBaseReadSerializer,
     CargoBaseUpdateSerializer,
     CargoBaseWriteSerializer,
+    validate_data_final_do_periodo,
     validate_quantidade_maxima_de_dias_de_licenca,
 )
 from apps.gestao.models.cargo_base import CargoBase
@@ -59,6 +63,37 @@ def test_validate_quantidade_maxima_de_dias_de_licenca_rejeita_quantidade_zero()
     assert MSG_LICENCA_ZERADA in str(exc_info.value)
 
 
+def test_validate_data_final_do_periodo_ignora_quando_periodo_nao_fechado():
+    """Verifica que a data final não é exigida sem período fechado."""
+    attrs = {"possui_periodo_fechado": False}
+
+    resultado = validate_data_final_do_periodo(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_data_final_do_periodo_aceita_data_informada():
+    """Verifica que a data final é aceita com período fechado ativo."""
+    attrs = {
+        "possui_periodo_fechado": True,
+        "data_fim_periodo": date(2026, 12, 31),
+    }
+
+    resultado = validate_data_final_do_periodo(attrs)
+
+    assert resultado == attrs
+
+
+def test_validate_data_final_do_periodo_rejeita_data_ausente():
+    """Verifica que a data final é obrigatória com período fechado ativo."""
+    attrs = {"possui_periodo_fechado": True}
+
+    with pytest.raises(serializers.ValidationError) as exc_info:
+        validate_data_final_do_periodo(attrs)
+
+    assert MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO in str(exc_info.value)
+
+
 @pytest.mark.django_db
 def test_read_serializer_expoe_todos_os_campos():
     """Verifica que o serializer de leitura expõe os campos esperados."""
@@ -88,6 +123,9 @@ def test_read_serializer_expoe_todos_os_campos():
         data["quantidade_maxima_de_dias_de_licenca"]
         == cargo.quantidade_maxima_de_dias_de_licenca
     )
+    assert data["permite_substituicao"] == cargo.permite_substituicao
+    assert data["possui_periodo_fechado"] == cargo.possui_periodo_fechado
+    assert data["data_fim_periodo"] == cargo.data_fim_periodo
     assert "criado_em" in data
 
 
@@ -275,6 +313,41 @@ def test_update_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_invalida
 
     assert not serializer.is_valid()
     assert "quantidade_maxima_de_dias_de_licenca" in serializer.errors
+
+
+@pytest.mark.django_db
+def test_update_serializer_rejeita_data_fim_periodo_ausente():
+    """Verifica que a data final é obrigatória com período fechado ativo."""
+    cargo = criar_cargo_base(codigo_cargo="3362")
+
+    payload = {"possui_periodo_fechado": True}
+
+    serializer = CargoBaseUpdateSerializer(cargo, data=payload, partial=True)
+
+    assert not serializer.is_valid()
+    assert "data_fim_periodo" in serializer.errors
+    assert (
+        MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO
+        in serializer.errors["data_fim_periodo"][0]
+    )
+
+
+@pytest.mark.django_db
+def test_update_serializer_altera_periodo_fechado_com_data_final():
+    """Verifica que o serializer aceita período fechado com data final."""
+    cargo = criar_cargo_base(codigo_cargo="3363")
+
+    payload = {
+        "possui_periodo_fechado": True,
+        "data_fim_periodo": "2026-12-31",
+    }
+
+    serializer = CargoBaseUpdateSerializer(cargo, data=payload, partial=True)
+
+    assert serializer.is_valid(), serializer.errors
+    cargo_atualizado = serializer.save()
+    assert cargo_atualizado.possui_periodo_fechado is True
+    assert cargo_atualizado.data_fim_periodo == date(2026, 12, 31)
 
 
 @pytest.mark.django_db
