@@ -5,10 +5,15 @@ mensagem legível, mesmo quando o corpo original é um dicionário de erros por
 campo (comportamento padrão de `ValidationError` em serializers). Sem isso,
 clientes que só leem `detail` (como o front-end) recebem uma mensagem
 genérica em vez do motivo real da falha de validação.
+
+Para erros de validação por campo, também expõe `codes` com os códigos de
+erro da DRF (ex.: `required`, `invalid` ou códigos de regra de negócio),
+permitindo ao cliente tratar cada caso sem depender do texto da mensagem.
 """
 
 from typing import Any
 
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
@@ -45,7 +50,8 @@ def exception_handler(exc: Exception, context: dict) -> Response | None:
 
     Preserva o corpo padrão da DRF (por exemplo, erros por campo) e, quando
     ele ainda não possui `detail`, adiciona um resumo com todas as
-    mensagens de erro concatenadas.
+    mensagens de erro concatenadas e, para `ValidationError` por campo,
+    os códigos de erro em `codes`.
 
     Args:
         exc: Exceção capturada pela DRF.
@@ -67,6 +73,8 @@ def exception_handler(exc: Exception, context: dict) -> Response | None:
     detail = "; ".join(_flatten_errors(response.data)) or "Erro de validação."
 
     if isinstance(response.data, dict):
+        if isinstance(exc, ValidationError):
+            response.data["codes"] = exc.get_codes()
         response.data["detail"] = detail
     else:
         response.data = {"detail": detail, "errors": response.data}

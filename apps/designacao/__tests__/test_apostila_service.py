@@ -708,6 +708,7 @@ class TestApostilaService:
             ),
             ("possui_pendencia", "talvez", "Possui pendência"),
             ("data_inicio", "", "A partir de.*obrigatório"),
+            ("indicado_vinculo", "abc", "indicado vinculo.*abc"),
         ],
     )
     def test_erro_claro_para_valor_invalido(self, campo, valor, mensagem):
