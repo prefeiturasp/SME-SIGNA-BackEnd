@@ -82,6 +82,14 @@ class DesignacaoServidorService:
             else cargo.get("ueFuncaoAtividade")
         ) or INDISPONIVEL_NO_EOL
 
+        # Lotação considerada nas regras de unidade: a do cargo sobreposto,
+        # quando houver, ou a do cargo base.
+        cd_ue_lotacao = (
+            cargo.get("cdUeCargoSobreposto")
+            if possui_cargo_sobreposto
+            else cargo.get("cdUeCargoBase")
+        )
+
         return {
             "nome_servidor": usuario.get("nome"),
             "nome_civil": "",  # to-do: ajustar quando tiver api eol que traga valor  # noqa: E501
@@ -90,6 +98,8 @@ class DesignacaoServidorService:
             "cd_cargo_base": cargo.get("cdCargoBase"),
             "cargo_base": cargo.get("cargoBase"),
             "lotacao": cargo.get("ueCargoBase"),
+            "possui_cargo_sobreposto": possui_cargo_sobreposto,
+            "cd_ue_lotacao": cd_ue_lotacao,
             "cd_cargo_sobreposto_funcao_atividade": cd_cargo_sobreposto_funcao_atividade,  # noqa: E501
             "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,  # noqa: E501
             "local_de_exercicio": local_exercicio,
