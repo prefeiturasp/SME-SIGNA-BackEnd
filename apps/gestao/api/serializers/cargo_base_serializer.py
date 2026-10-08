@@ -203,6 +203,9 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
             "testar_laudo",
             "pesquisar_licencas_no_sigpec",
             "quantidade_maxima_de_dias_de_licenca",
+            "permite_substituicao",
+            "possui_periodo_fechado",
+            "data_fim_periodo",
         ]
         extra_kwargs = {
             "status": {"required": False},
