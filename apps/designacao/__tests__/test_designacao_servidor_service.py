@@ -43,6 +43,8 @@ class TestDesignacaoServidorService:
             {
                 "tipoVinculoCargoSobreposto": 1,
                 "ueCargoSobreposto": "Escola X",
+                "cdUeCargoSobreposto": "090451",
+                "cdUeCargoBase": "090450",
                 "cdCargoSobreposto": 123,
                 "cargoSobreposto": "Cargo Sobreposto",
                 "cargoBase": "Cargo Base",
@@ -69,6 +71,8 @@ class TestDesignacaoServidorService:
             "cd_cargo_base": 456,
             "cargo_base": "Cargo Base",
             "lotacao": "Escola Base",
+            "possui_cargo_sobreposto": True,
+            "cd_ue_lotacao": "090451",
             "cd_cargo_sobreposto_funcao_atividade": 123,
             "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
             "local_de_exercicio": "Escola X",
@@ -106,6 +110,7 @@ class TestDesignacaoServidorService:
                 "cargoBase": "Cargo Base",
                 "cdCargoBase": 456,
                 "ueCargoBase": "Escola Base",
+                "cdUeCargoBase": "090450",
                 "cargoSobreposto": None,
                 "funcaoAtividade": None,
                 "cdUeFuncaoAtividade": None,
@@ -120,6 +125,8 @@ class TestDesignacaoServidorService:
         resultado = DesignacaoServidorService.obter_designacao("0000000")
 
         assert resultado["local_de_exercicio"] == INDISPONIVEL_NO_EOL
+        assert resultado["cd_ue_lotacao"] == "090450"
+        assert resultado["possui_cargo_sobreposto"] is False
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
         """Verifica obter designacao sem registro funcional raises."""
