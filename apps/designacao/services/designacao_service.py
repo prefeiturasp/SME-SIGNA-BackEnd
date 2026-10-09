@@ -384,8 +384,9 @@ class DesignacaoService:
         if not registro_funcional:
             return False
 
-        designacao = AtoAdministrativo.objects.filter(
-            designacao_detalhe__indicado_rf=registro_funcional, ativo=True
-        ).first()
+        designacoes = AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+            designacao_detalhe__indicado_rf=registro_funcional,
+        ).prefetch_related("filhos")
 
-        return designacao is not None
+        return any(d.status == "ativo" for d in designacoes)

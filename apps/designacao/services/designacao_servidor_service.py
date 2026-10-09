@@ -48,8 +48,14 @@ class DesignacaoServidorService:
             raise SmeIntegracaoError("Servidor não possui cargos")
 
         cargo = cargos[0]
+        possui_designacao_ativa = (
+            DesignacaoService.get_possui_designacao_ativa(registro_funcional)
+        )
 
-        return cls.montar_dados_servidor(usuario, cargo)
+        return {
+            **cls.montar_dados_servidor(usuario, cargo),
+            "possui_designacao_ativa": possui_designacao_ativa,
+        }
 
     @classmethod
     def montar_dados_servidor(cls, usuario: dict, cargo: dict) -> dict:
@@ -91,15 +97,10 @@ class DesignacaoServidorService:
             else cargo.get("cdUeCargoBase")
         )
 
-        registro_funcional = usuario.get("codigoRf")
-        possui_designacao_ativa = (
-            DesignacaoService.get_possui_designacao_ativa(registro_funcional)
-        )
-
         return {
             "nome_servidor": usuario.get("nome"),
             "nome_civil": "",  # to-do: ajustar quando tiver api eol que traga valor  # noqa: E501
-            "rf": registro_funcional,
+            "rf": usuario.get("codigoRf"),
             "vinculo": cargo.get("tipoVinculoCargoBase"),
             "cd_cargo_base": cargo.get("cdCargoBase"),
             "cargo_base": cargo.get("cargoBase"),
@@ -111,5 +112,4 @@ class DesignacaoServidorService:
             "local_de_exercicio": local_exercicio,
             "laudo_medico": INDISPONIVEL_NO_EOL,
             "local_de_servico": INDISPONIVEL_NO_EOL,
-            "possui_designacao_ativa": possui_designacao_ativa,
         }
