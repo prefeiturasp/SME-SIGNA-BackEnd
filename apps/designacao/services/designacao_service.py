@@ -518,3 +518,25 @@ class DesignacaoService:
         ]
         resultado.sort(key=lambda x: x["nomeCargo"])
         return resultado
+
+    @staticmethod
+    def get_possui_designacao_ativa(registro_funcional: str | None) -> bool:
+        """Retorna se o servidor possui designação ativa.
+
+        Args:
+            registro_funcional: Registro funcional do servidor.
+
+        Returns:
+            bool: True se o servidor possui designação ativa,
+            False caso contrário.
+
+        """
+        if not registro_funcional:
+            return False
+
+        designacoes = AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+            designacao_detalhe__indicado_rf=registro_funcional,
+        ).prefetch_related("filhos")
+
+        return any(d.status == "ativo" for d in designacoes)
