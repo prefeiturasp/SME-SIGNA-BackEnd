@@ -4,6 +4,8 @@ Gerencia a criação, atualização e consulta de cargos pareados para atos de
 designação.
 """
 
+import datetime
+
 from django.db import transaction
 from django.db.models import F, QuerySet
 from rest_framework.exceptions import ValidationError
@@ -22,6 +24,22 @@ _CAMPOS_ATO = frozenset(
         "modelo_portaria",
     }
 )
+
+# Campos do detalhe que identificam a substituição (unidade, cargo,
+# titular e tipo de vaga) e o seu período — usados na validação de
+# sobreposição.
+_CAMPOS_SOBREPOSICAO = frozenset(
+    {
+        "ue",
+        "cargo_vaga",
+        "titular_rf",
+        "tipo_vaga",
+        "data_inicio",
+        "data_fim",
+    }
+)
+
+CODIGO_PERIODO_SOBREPOSTO = "periodo_sobreposto"
 
 # Campos que representam o texto congelado da portaria — uma vez que o
 # ato é publicado no Diário Oficial (doc preenchido), esse texto passa a
@@ -46,6 +64,8 @@ class DesignacaoService:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
 
+        cls._validar_sobreposicao(data_detalhe)
+
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.DESIGNACAO,
@@ -56,8 +76,10 @@ class DesignacaoService:
 
         return ato
 
-    @staticmethod
-    def atualizar(ato: AtoAdministrativo, data: dict) -> AtoAdministrativo:
+    @classmethod
+    def atualizar(
+        cls, ato: AtoAdministrativo, data: dict
+    ) -> AtoAdministrativo:
         """Atualiza um ato administrativo de designação e seu detalhe.
 
         Args:
@@ -81,6 +103,15 @@ class DesignacaoService:
                 }
             )
 
+        if _CAMPOS_SOBREPOSICAO & data_detalhe.keys():
+            detalhe_atual = ato.designacao_detalhe
+            dados_efetivos = {
+                campo: getattr(detalhe_atual, campo)
+                for campo in _CAMPOS_SOBREPOSICAO
+            }
+            dados_efetivos.update(data_detalhe)
+            cls._validar_sobreposicao(dados_efetivos, ignorar_ato=ato)
+
         with transaction.atomic():
             if data_ato:
                 for field, value in data_ato.items():
@@ -94,6 +125,128 @@ class DesignacaoService:
                 detalhe.save(update_fields=list(data_detalhe.keys()))
 
         return ato
+
+    @staticmethod
+    def _fim_efetivo(ato: AtoAdministrativo) -> datetime.date | None:
+        """Retorna o último dia de vigência de uma designação.
+
+        Com cessação ativa, a designação termina na data da cessação; caso
+        contrário, na data final. `None` indica vigência sem data final.
+
+        Args:
+            ato: Ato de designação (com `filhos` pré-carregados).
+
+        Returns:
+            datetime.date | None: Último dia de vigência.
+
+        """
+        cessacao = next(
+            (
+                f
+                for f in ato.filhos.all()
+                if f.tipo == AtoAdministrativo.Tipo.CESSACAO and f.ativo
+            ),
+            None,
+        )
+        if cessacao is not None:
+            return cessacao.cessacao_detalhe.data_cessacao
+        return ato.designacao_detalhe.data_fim
+
+    @classmethod
+    def _validar_sobreposicao(
+        cls,
+        dados: dict,
+        ignorar_ato: AtoAdministrativo | None = None,
+    ) -> None:
+        """Bloqueia substituição cujo período choca com outra do titular.
+
+        Aplica-se só às substituições — cargo disponível (`DISPONIVEL`) com
+        titular informado; cargo vago ainda não é validado. Considera as
+        substituições ativas do mesmo titular (`titular_rf`), no mesmo
+        cargo (`cargo_vaga`) e unidade (`ue`), cujo período se sobrepõe ao
+        informado. Os dois extremos são inclusivos: iniciar no mesmo dia em
+        que a outra termina também é sobreposição. Sem data final, a
+        designação é considerada vigente em aberto.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+            ignorar_ato: Designação a desconsiderar (a própria, na edição).
+
+        Raises:
+            ValidationError: Se houver sobreposição de período.
+
+        """
+        ue = dados.get("ue")
+        cargo_vaga = dados.get("cargo_vaga")
+        titular_rf = dados.get("titular_rf")
+        data_inicio = dados.get("data_inicio")
+        data_fim = dados.get("data_fim")
+        if (
+            dados.get("tipo_vaga") != DesignacaoDetalhe.TipoVaga.DISPONIVEL
+            or not ue
+            or cargo_vaga is None
+            or not titular_rf
+            or data_inicio is None
+        ):
+            return
+
+        atos = (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+                ativo=True,
+                designacao_detalhe__tipo_vaga=DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+                designacao_detalhe__ue=ue,
+                designacao_detalhe__cargo_vaga=cargo_vaga,
+                designacao_detalhe__titular_rf=titular_rf,
+            )
+            .select_related("designacao_detalhe")
+            .prefetch_related("filhos__cessacao_detalhe")
+        )
+        if data_fim is not None:
+            atos = atos.filter(designacao_detalhe__data_inicio__lte=data_fim)
+        if ignorar_ato is not None:
+            atos = atos.exclude(pk=ignorar_ato.pk)
+
+        fins_sobrepostos = []
+        for ato in atos:
+            fim = cls._fim_efetivo(ato)
+            if fim is None or fim >= data_inicio:
+                fins_sobrepostos.append(fim)
+
+        if not fins_sobrepostos:
+            return
+
+        raise ValidationError(
+            {"data_inicio": [cls._mensagem_sobreposicao(fins_sobrepostos)]},
+            code=CODIGO_PERIODO_SOBREPOSTO,
+        )
+
+    @staticmethod
+    def _mensagem_sobreposicao(fins: list[datetime.date | None]) -> str:
+        """Monta a mensagem de bloqueio por sobreposição de período.
+
+        Args:
+            fins: Últimos dias de vigência das designações sobrepostas.
+
+        Returns:
+            str: Mensagem explicando o conflito e a data mínima de início.
+
+        """
+        if None in fins:
+            return (
+                "Já existe designação vigente em substituição a este "
+                "titular, para este cargo nesta unidade, sem data final. "
+                "Encerre-a antes de registrar uma nova designação."
+            )
+        ultimo_dia = max(f for f in fins if f is not None)
+        dia_seguinte = ultimo_dia + datetime.timedelta(days=1)
+        return (
+            "Já existe designação em substituição a este titular, para "
+            "este cargo nesta unidade, vigente até "
+            f"{ultimo_dia:%d/%m/%Y}. A nova designação só pode iniciar "
+            f"a partir do dia seguinte ao término da anterior "
+            f"({dia_seguinte:%d/%m/%Y})."
+        )
 
     @staticmethod
     def excluir(ato: AtoAdministrativo) -> None:
