@@ -6,6 +6,7 @@ integrações com o SGP.
 
 import logging
 
+from apps.designacao.services.designacao_service import DesignacaoService
 from apps.helpers.exceptions import SmeIntegracaoError
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
@@ -90,10 +91,15 @@ class DesignacaoServidorService:
             else cargo.get("cdUeCargoBase")
         )
 
+        registro_funcional = usuario.get("codigoRf")
+        possui_designacao_ativa = (
+            DesignacaoService.get_possui_designacao_ativa(registro_funcional)
+        )
+
         return {
             "nome_servidor": usuario.get("nome"),
             "nome_civil": "",  # to-do: ajustar quando tiver api eol que traga valor  # noqa: E501
-            "rf": usuario.get("codigoRf"),
+            "rf": registro_funcional,
             "vinculo": cargo.get("tipoVinculoCargoBase"),
             "cd_cargo_base": cargo.get("cdCargoBase"),
             "cargo_base": cargo.get("cargoBase"),
@@ -105,4 +111,5 @@ class DesignacaoServidorService:
             "local_de_exercicio": local_exercicio,
             "laudo_medico": INDISPONIVEL_NO_EOL,
             "local_de_servico": INDISPONIVEL_NO_EOL,
+            "possui_designacao_ativa": possui_designacao_ativa,
         }
