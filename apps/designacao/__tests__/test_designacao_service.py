@@ -11,7 +11,10 @@ from apps.designacao.__tests__.factories import (
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
-from apps.designacao.services.designacao_service import DesignacaoService
+from apps.designacao.services.designacao_service import (
+    CODIGO_PERIODO_SOBREPOSTO,
+    DesignacaoService,
+)
 
 
 @pytest.mark.django_db
@@ -216,3 +219,253 @@ class TestDesignacaoService:
         )
 
         assert resultado == [{"codigoCargo": 1, "nomeCargo": "Professor"}]
+
+
+def _dados_designacao(**kwargs):
+    """Monta o payload mínimo de criação de uma substituição."""
+    dados = {
+        "numero_portaria": 900,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-900",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "Nome Civil",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "titular_rf": "7654321",
+        "ue": "094765",
+        "cargo_vaga": 3360,
+        "data_inicio": datetime.date(2024, 2, 1),
+        "data_fim": datetime.date(2024, 2, 20),
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+    }
+    dados.update(kwargs)
+    return dados
+
+
+def _criar_existente(**kwargs):
+    """Cria substituição existente (UE 094765, Diretor, titular 7654321)."""
+    base = {
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+        "titular_rf": "7654321",
+        "ue": "094765",
+        "cargo_vaga": 3360,
+        "data_inicio": datetime.date(2024, 1, 1),
+        "data_fim": datetime.date(2024, 1, 31),
+    }
+    base.update(kwargs)
+    return criar_ato_designacao(**base)
+
+
+@pytest.mark.django_db
+class TestDesignacaoServiceSobreposicao:
+    """Testes do bloqueio de sobreposição entre substituições."""
+
+    def test_bloqueia_inicio_no_mesmo_dia_do_termino(self):
+        """Início no dia do término da anterior é sobreposição."""
+        _criar_existente()
+
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_designacao(data_inicio=datetime.date(2024, 1, 31))
+            )
+
+        mensagem = str(exc.value.detail["data_inicio"][0])
+        assert "31/01/2024" in mensagem
+        assert "01/02/2024" in mensagem
+        assert exc.value.get_codes() == {
+            "data_inicio": [CODIGO_PERIODO_SOBREPOSTO]
+        }
+
+    def test_permite_inicio_no_dia_seguinte_ao_termino(self):
+        """Início no dia seguinte ao término não sobrepõe."""
+        _criar_existente()
+
+        ato = DesignacaoService.criar(_dados_designacao())
+
+        assert ato.pk is not None
+
+    def test_bloqueia_sobreposicao_no_meio_do_periodo(self):
+        """Período que começa no meio de outra substituição é bloqueado."""
+        _criar_existente()
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.criar(
+                _dados_designacao(data_inicio=datetime.date(2024, 1, 15))
+            )
+
+    def test_bloqueia_nova_que_termina_dentro_da_existente(self):
+        """Nova substituição anterior que avança sobre a existente."""
+        _criar_existente()
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.criar(
+                _dados_designacao(
+                    data_inicio=datetime.date(2023, 12, 1),
+                    data_fim=datetime.date(2024, 1, 1),
+                )
+            )
+
+    def test_permite_nova_que_termina_antes_da_existente(self):
+        """Nova substituição inteiramente anterior não sobrepõe."""
+        _criar_existente()
+
+        ato = DesignacaoService.criar(
+            _dados_designacao(
+                data_inicio=datetime.date(2023, 12, 1),
+                data_fim=datetime.date(2023, 12, 31),
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_bloqueia_existente_sem_data_final(self):
+        """Substituição existente sem data final vale em aberto."""
+        _criar_existente(data_fim=None)
+
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_designacao(data_inicio=datetime.date(2025, 1, 1))
+            )
+
+        assert "sem data final" in str(exc.value.detail["data_inicio"][0])
+
+    def test_bloqueia_nova_sem_data_final(self):
+        """Nova substituição sem data final sobrepõe as posteriores."""
+        _criar_existente(
+            data_inicio=datetime.date(2024, 6, 1),
+            data_fim=datetime.date(2024, 6, 30),
+        )
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.criar(_dados_designacao(data_fim=None))
+
+    def test_usa_data_da_cessacao_ativa_como_termino(self):
+        """Com cessação ativa, a substituição termina na data da cessação."""
+        existente = _criar_existente(data_fim=None)
+        criar_ato_cessacao(existente, data_cessacao=datetime.date(2024, 1, 31))
+
+        DesignacaoService.criar(_dados_designacao())
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.criar(
+                _dados_designacao(data_inicio=datetime.date(2024, 1, 31))
+            )
+
+    def test_ignora_cessacao_inativa(self):
+        """Cessação tornada insubsistente não encerra a substituição."""
+        existente = _criar_existente(data_fim=None)
+        cessacao = criar_ato_cessacao(
+            existente, data_cessacao=datetime.date(2024, 1, 31)
+        )
+        cessacao.ativo = False
+        cessacao.save(update_fields=["ativo"])
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.criar(_dados_designacao())
+
+    def test_ignora_designacao_insubsistente(self):
+        """Substituição inativa (insubsistente) não é considerada."""
+        existente = _criar_existente()
+        existente.ativo = False
+        existente.save(update_fields=["ativo"])
+
+        ato = DesignacaoService.criar(
+            _dados_designacao(data_inicio=datetime.date(2024, 1, 15))
+        )
+
+        assert ato.pk is not None
+
+    @pytest.mark.parametrize(
+        "campo, valor",
+        [
+            ("ue", "000191"),
+            ("cargo_vaga", 3085),
+            ("titular_rf", "1111111"),
+            ("tipo_vaga", DesignacaoDetalhe.TipoVaga.VAGO),
+        ],
+    )
+    def test_ignora_outra_unidade_cargo_titular_ou_cargo_vago(
+        self, campo, valor
+    ):
+        """Só substituições do mesmo titular, cargo e unidade conflitam."""
+        _criar_existente(**{campo: valor})
+
+        ato = DesignacaoService.criar(
+            _dados_designacao(data_inicio=datetime.date(2024, 1, 15))
+        )
+
+        assert ato.pk is not None
+
+    @pytest.mark.parametrize(
+        "campo, valor",
+        [
+            ("ue", ""),
+            ("cargo_vaga", None),
+            ("titular_rf", ""),
+            ("tipo_vaga", DesignacaoDetalhe.TipoVaga.VAGO),
+        ],
+    )
+    def test_nao_valida_cargo_vago_ou_sem_identificacao(self, campo, valor):
+        """Cargo vago ou sem unidade/cargo/titular não é validado."""
+        _criar_existente(**{campo: valor})
+
+        ato = DesignacaoService.criar(
+            _dados_designacao(
+                data_inicio=datetime.date(2024, 1, 15), **{campo: valor}
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_edicao_desconsidera_a_propria_designacao(self):
+        """Editar o período da própria substituição não conflita com ela."""
+        designacao = _criar_existente()
+
+        DesignacaoService.atualizar(
+            designacao, {"data_fim": datetime.date(2024, 2, 15)}
+        )
+
+        designacao.designacao_detalhe.refresh_from_db()
+        assert designacao.designacao_detalhe.data_fim == datetime.date(
+            2024, 2, 15
+        )
+
+    def test_edicao_bloqueia_ao_estender_sobre_outra(self):
+        """Estender o período até a próxima substituição é bloqueado."""
+        designacao = _criar_existente()
+        _criar_existente(
+            data_inicio=datetime.date(2024, 2, 1),
+            data_fim=datetime.date(2024, 2, 28),
+        )
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.atualizar(
+                designacao, {"data_fim": datetime.date(2024, 2, 1)}
+            )
+
+    def test_edicao_bloqueia_ao_trocar_para_titular_em_conflito(self):
+        """Trocar o titular para um já substituído no período bloqueia."""
+        designacao = _criar_existente(titular_rf="1111111")
+        _criar_existente(
+            data_inicio=datetime.date(2024, 1, 10),
+            data_fim=datetime.date(2024, 1, 20),
+        )
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.atualizar(designacao, {"titular_rf": "7654321"})
+
+    def test_edicao_sem_campos_de_periodo_nao_valida(self):
+        """Edição que não mexe na substituição nem no período não valida."""
+        designacao = _criar_existente()
+        _criar_existente()
+
+        DesignacaoService.atualizar(designacao, {"pendencias": "Nova"})
+
+        designacao.designacao_detalhe.refresh_from_db()
+        assert designacao.designacao_detalhe.pendencias == "Nova"
