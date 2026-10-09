@@ -23,23 +23,51 @@ MSG_LICENCA_INVALIDO = (
 MSG_LICENCA_ZERADA = (
     "Quantidade máxima de dias de licença deve ser maior que zero"
 )
+
+MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO = (
+    "É necessário informar uma data final do período válida "
+    "quando o período de fechamento estiver ativo."
+)
+MSG_DATA_FINAL_DO_PERIODO_INVALIDO = (
+    "Data final do período não informada ou inválida"
+)
+
+MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO = (
+    "É necessário informar o valor de pesquisar licenças no SIGPEC "
+    "quando a quantidade máxima de dias de licença for informada."
+)
+
+MSG_PERIODO_FECHADO_OBRIGATORIO = (
+    "É necessário informar o valor do período fechado "
+    "quando a data final do período for informada."
+)
+MSG_PERIODO_FECHADO_INVALIDO = (
+    "Valor do período fechado não informado ou inválido"
+)
 logger = logging.getLogger(__name__)
 
 
-def validate_quantidade_maxima_de_dias_de_licenca(attrs: dict) -> dict:
+def validate_quantidade_maxima_de_dias_de_licenca(
+    attrs: dict, instance: CargoBase | None = None
+) -> dict:
     """Valida quantidade máxima de dias de licença.
 
     Args:
         attrs: Dicionário com os dados validados do cargo base.
+        instance: Instância existente do cargo base, quando em atualização.
 
     Returns:
         True: Se os dados são válidos.
         Exception: Se os dados não são válidos.
 
     """
-    pesquisar_licencas_no_sigpec = attrs.get("pesquisar_licencas_no_sigpec")
+    pesquisar_licencas_no_sigpec = attrs.get(
+        "pesquisar_licencas_no_sigpec",
+        getattr(instance, "pesquisar_licencas_no_sigpec", None),
+    )
     quantidade_maxima_de_dias_de_licenca = attrs.get(
-        "quantidade_maxima_de_dias_de_licenca"
+        "quantidade_maxima_de_dias_de_licenca",
+        getattr(instance, "quantidade_maxima_de_dias_de_licenca", None),
     )
 
     if (
@@ -58,6 +86,57 @@ def validate_quantidade_maxima_de_dias_de_licenca(attrs: dict) -> dict:
         logger.warning(MSG_LICENCA_INVALIDO)
         raise serializers.ValidationError(
             {"quantidade_maxima_de_dias_de_licenca": MSG_LICENCA_OBRIGATORIO}
+        )
+
+    if (
+        quantidade_maxima_de_dias_de_licenca
+        and not pesquisar_licencas_no_sigpec
+    ):
+        logger.warning(MSG_LICENCA_INVALIDO)
+        raise serializers.ValidationError(
+            {
+                "quantidade_maxima_de_dias_de_licenca": (
+                    MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO
+                )
+            }
+        )
+
+    return attrs
+
+
+def validate_data_final_do_periodo(
+    attrs: dict, instance: CargoBase | None = None
+) -> dict:
+    """Valida data final do período.
+
+    Args:
+        attrs: Dicionário com os dados validados do cargo base.
+        instance: Instância existente do cargo base, quando em atualização.
+
+    Returns:
+        True: Se os dados são válidos.
+        Exception: Se os dados não são válidos.
+
+    """
+    possui_periodo_fechado = attrs.get(
+        "possui_periodo_fechado",
+        getattr(instance, "possui_periodo_fechado", None),
+    )
+    data_fim_periodo = attrs.get(
+        "data_fim_periodo",
+        getattr(instance, "data_fim_periodo", None),
+    )
+
+    if possui_periodo_fechado and not data_fim_periodo:
+        logger.warning(MSG_DATA_FINAL_DO_PERIODO_INVALIDO)
+        raise serializers.ValidationError(
+            {"data_fim_periodo": MSG_DATA_FINAL_DO_PERIODO_OBRIGATORIO}
+        )
+
+    if data_fim_periodo and not possui_periodo_fechado:
+        logger.warning(MSG_PERIODO_FECHADO_INVALIDO)
+        raise serializers.ValidationError(
+            {"possui_periodo_fechado": MSG_PERIODO_FECHADO_OBRIGATORIO}
         )
 
     return attrs
@@ -97,6 +176,9 @@ class CargoBaseReadSerializer(serializers.ModelSerializer):
             "testar_laudo",
             "pesquisar_licencas_no_sigpec",
             "quantidade_maxima_de_dias_de_licenca",
+            "permite_substituicao",
+            "possui_periodo_fechado",
+            "data_fim_periodo",
             "criado_em",
         ]
 
@@ -121,6 +203,9 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
             "testar_laudo",
             "pesquisar_licencas_no_sigpec",
             "quantidade_maxima_de_dias_de_licenca",
+            "permite_substituicao",
+            "possui_periodo_fechado",
+            "data_fim_periodo",
         ]
         extra_kwargs = {
             "status": {"required": False},
@@ -132,6 +217,9 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
             "testar_laudo": {"required": False},
             "pesquisar_licencas_no_sigpec": {"required": False},
             "quantidade_maxima_de_dias_de_licenca": {"required": False},
+            "permite_substituicao": {"required": False},
+            "possui_periodo_fechado": {"required": False},
+            "data_fim_periodo": {"required": False},
         }
 
     def validate(self, attrs: dict) -> dict:
@@ -145,8 +233,17 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
             Exception: Se os dados não são válidos.
 
         """
-        response = validate_quantidade_maxima_de_dias_de_licenca(attrs)
-        return response
+        response_quantidade_maxima_de_dias_de_licenca = (
+            validate_quantidade_maxima_de_dias_de_licenca(attrs, self.instance)
+        )
+        response_data_final_do_periodo = validate_data_final_do_periodo(
+            attrs, self.instance
+        )
+
+        return (
+            response_quantidade_maxima_de_dias_de_licenca
+            and response_data_final_do_periodo
+        )
 
 
 class CargoBaseUpdateSerializer(serializers.ModelSerializer):
@@ -171,6 +268,9 @@ class CargoBaseUpdateSerializer(serializers.ModelSerializer):
             "testar_laudo",
             "pesquisar_licencas_no_sigpec",
             "quantidade_maxima_de_dias_de_licenca",
+            "permite_substituicao",
+            "possui_periodo_fechado",
+            "data_fim_periodo",
         ]
 
     def validate(self, attrs: dict) -> dict:
@@ -184,5 +284,14 @@ class CargoBaseUpdateSerializer(serializers.ModelSerializer):
             Exception: Se os dados não são válidos.
 
         """
-        response = validate_quantidade_maxima_de_dias_de_licenca(attrs)
-        return response
+        response_quantidade_maxima_de_dias_de_licenca = (
+            validate_quantidade_maxima_de_dias_de_licenca(attrs, self.instance)
+        )
+        response_data_final_do_periodo = validate_data_final_do_periodo(
+            attrs, self.instance
+        )
+
+        return (
+            response_quantidade_maxima_de_dias_de_licenca
+            and response_data_final_do_periodo
+        )
