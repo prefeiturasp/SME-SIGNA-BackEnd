@@ -1,7 +1,7 @@
 """Views para a API de insubsistência.
 
-Fornece endpoints para listagem, recuperação, criação e exclusão de
-insubsistências.
+Fornece endpoints para listagem, recuperação, criação, atualização e
+exclusão de insubsistências.
 """
 
 from typing import Any
@@ -46,8 +46,8 @@ class InsubsistenciaViewSet(
 ):
     """ViewSet de insubsistência.
 
-    Expõe operações de listagem, recuperação, criação e exclusão de
-    insubsistências.
+    Expõe operações de listagem, recuperação, criação, atualização e
+    exclusão de insubsistências.
     """
 
     serializer_class = InsubsistenciaReadSerializer
@@ -86,6 +86,35 @@ class InsubsistenciaViewSet(
                 InsubsistenciaService.buscar(ato.pk)
             ).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    def partial_update(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        """Atualiza parcialmente uma insubsistência existente.
+
+        Args:
+            request: Requisição HTTP contendo os campos a atualizar.
+            *args: Argumentos posicionais adicionais.
+            **kwargs: Argumentos nomeados adicionais.
+
+        Returns:
+            Response: Resposta HTTP com os dados atualizados da
+            insubsistência.
+
+        """
+        ato = self.get_object()
+        serializer = InsubsistenciaWriteSerializer(
+            data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
+        ato = InsubsistenciaService.atualizar(ato, serializer.validated_data)
+
+        return Response(
+            InsubsistenciaReadSerializer(
+                InsubsistenciaService.buscar(ato.pk)
+            ).data
         )
 
     def destroy(self, request: Request, *args: Any, **kwargs: Any) -> Response:

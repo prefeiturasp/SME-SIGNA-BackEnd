@@ -86,6 +86,7 @@ def criar_ato_apostila(ato_pai, observacao="Obs", **kwargs):
         ato_pai=ato_pai,
         sei_numero=ato_kwargs.get("sei_numero", "SEI-A"),
         doc=ato_kwargs.get("doc"),
+        ano_vigente=ato_kwargs.get("ano_vigente", "2024"),
     )
     ApostilaDetalhe.objects.create(ato=ato, observacao=observacao)
     return ato

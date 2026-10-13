@@ -6,19 +6,20 @@ ano.
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoBaseSerializer,
+)
 from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
 )
 from apps.designacao.api.serializers.utils import (
-    NUMERO_PORTARIA_MAX,
-    NullableDateField,
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
-class CessacaoWriteSerializer(serializers.Serializer):
+class CessacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     """Serializador de escrita para cessação.
 
     Valida os dados necessários para criar uma cessação vinculada a uma
@@ -31,14 +32,6 @@ class CessacaoWriteSerializer(serializers.Serializer):
             tipo=AtoAdministrativo.Tipo.DESIGNACAO
         )
     )
-
-    # Campos de AtoAdministrativo
-    numero_portaria = serializers.IntegerField(
-        min_value=1, max_value=NUMERO_PORTARIA_MAX
-    )
-    ano_vigente = serializers.CharField(max_length=6)
-    sei_numero = serializers.CharField(max_length=30)
-    doc = NullableDateField(required=False, default=None, allow_null=True)
 
     # Campos de CessacaoDetalhe
     a_pedido = serializers.BooleanField(required=False, default=False)

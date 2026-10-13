@@ -6,14 +6,16 @@ relacionados a impedimento de substituição, portaria, servidor e período.
 
 from rest_framework import serializers
 
+from apps.designacao.api.serializers.ato_administrativo_serializer import (
+    AtoAdministrativoBaseSerializer,
+)
 from apps.designacao.api.serializers.utils import (
-    NUMERO_PORTARIA_MAX,
-    NullableDateField,
     validar_somente_numeros,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.gestao.models.cargo_base import CargoBase
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
@@ -31,7 +33,7 @@ class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
 # ── Escrita ──────────────────────────────────────────────────────────────────
 
 
-class DesignacaoWriteSerializer(serializers.Serializer):
+class DesignacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     """Serializador de escrita para criação/atualização de designações.
 
     Define os campos necessários para persistir um ato administrativo de
@@ -39,14 +41,6 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     incluindo informações de unidade, servidor indicado, titular, período e
     vaga.
     """
-
-    # AtoAdministrativo
-    numero_portaria = serializers.IntegerField(
-        min_value=1, max_value=NUMERO_PORTARIA_MAX
-    )
-    ano_vigente = serializers.CharField(max_length=6)
-    sei_numero = serializers.CharField(max_length=30)
-    doc = NullableDateField(required=False, default=None, allow_null=True)
 
     # Unidade
     dre_nome = serializers.CharField(max_length=255)
@@ -157,8 +151,7 @@ class DesignacaoWriteSerializer(serializers.Serializer):
     tipo_vaga = serializers.ChoiceField(
         choices=DesignacaoDetalhe.TipoVaga.choices
     )
-    cargo_vaga = serializers.ChoiceField(
-        choices=DesignacaoDetalhe.CargoVaga.choices,
+    cargo_vaga = serializers.IntegerField(
         required=False,
         allow_null=True,
     )
@@ -186,6 +179,37 @@ class DesignacaoWriteSerializer(serializers.Serializer):
 
         """
         return validar_somente_numeros(value)
+
+    def validate_cargo_vaga(self, value: int | None) -> int | None:
+        """Valida que o cargo da vaga existe em CargoBase e está disponível.
+
+        Args:
+            value: Código do cargo (codigo_cargo em CargoBase).
+
+        Returns:
+            int|None: Valor validado.
+
+        Raises:
+            serializers.ValidationError: Se o cargo não existir, estiver
+            inativo ou não estiver parametrizado para uso em designações.
+
+        """
+        if value is None:
+            return value
+
+        existe = CargoBase.objects.filter(
+            codigo_cargo=str(value),
+            status=CargoBase.Status.ATIVO,
+            utilizado_para_designacoes=True,
+        ).exists()
+
+        if not existe:
+            raise serializers.ValidationError(
+                "Cargo base não encontrado, inativo ou não utilizado "
+                "para designações."
+            )
+
+        return value
 
 
 # ── Leitura ──────────────────────────────────────────────────────────────────
@@ -492,7 +516,13 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
 
         """
         try:
-            return obj.designacao_detalhe.get_cargo_vaga_display()
+            cargo_vaga = obj.designacao_detalhe.cargo_vaga
+            if cargo_vaga is None:
+                return None
+            cargo = CargoBase.objects.filter(
+                codigo_cargo=str(cargo_vaga)
+            ).first()
+            return cargo.descricao_completa if cargo else None
         except Exception:
             return None
 

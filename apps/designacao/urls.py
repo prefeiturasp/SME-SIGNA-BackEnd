@@ -87,6 +87,7 @@ urlpatterns = [
             {
                 "get": "retrieve",
                 "delete": "destroy",
+                "patch": "partial_update",
             }
         ),
         name="cessacao-detail",
@@ -108,6 +109,7 @@ urlpatterns = [
             {
                 "get": "retrieve",
                 "delete": "destroy",
+                "patch": "partial_update",
             }
         ),
         name="apostila-detail",
@@ -124,6 +126,7 @@ urlpatterns = [
             {
                 "get": "retrieve",
                 "delete": "destroy",
+                "patch": "partial_update",
             }
         ),
         name="insubsistencia-detail",
@@ -143,6 +146,11 @@ urlpatterns = [
         "portarias/atualizar-data-publicacao/",
         PortariaListViewSet.as_view({"post": "atualizar_data_publicacao"}),
         name="portarias-atualizar-data-publicacao",
+    ),
+    path(
+        "portarias/lauda/",
+        PortariaListViewSet.as_view({"post": "lauda"}),
+        name="portarias-lauda",
     ),
     # Atos Administrativos — listagem de atos administrativos
     path(

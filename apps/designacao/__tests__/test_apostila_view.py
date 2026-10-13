@@ -33,8 +33,20 @@ def _payload(ato_pai_id, **kwargs):
     """Método auxiliar para payload."""
     base = {
         "ato_pai": ato_pai_id,
+        "numero_portaria": "9999",
         "sei_numero": "99999",
         "observacao": "Apostila via",
+    }
+    base.update(kwargs)
+    return base
+
+
+def _update_payload(**kwargs):
+    """Método auxiliar para payload de atualização."""
+    base = {
+        "numero_portaria": "8888",
+        "sei_numero": "SEI-UPD",
+        "observacao": "Obs atualizada",
     }
     base.update(kwargs)
     return base
@@ -194,3 +206,61 @@ def test_destroy_apostila(auth_client):
 
     assert response.status_code == 204
     assert not AtoAdministrativo.objects.filter(pk=apostila.pk).exists()
+
+
+@pytest.mark.django_db
+def test_partial_update_apostila(auth_client):
+    """Verifica que partial_update atualiza campos da apostila."""
+    designacao = criar_ato_designacao()
+    apostila = criar_ato_apostila(designacao, sei_numero="SEI-ORIG")
+
+    url = reverse("designacao:apostila-detail", args=[apostila.id])
+    response = auth_client.patch(
+        url,
+        data=_update_payload(sei_numero="SEI-NOVO", numero_portaria="7777"),
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.data["sei_numero"] == "SEI-NOVO"
+    assert response.data["numero_portaria"] == 7777
+    apostila.refresh_from_db()
+    assert apostila.sei_numero == "SEI-NOVO"
+
+
+@pytest.mark.django_db
+def test_partial_update_apostila_com_alteracoes(auth_client):
+    """Verifica que partial_update aplica alterações na designação."""
+    designacao = criar_ato_designacao(numero_portaria=1)
+    apostila = criar_ato_apostila(designacao, sei_numero="SEI-ORIG")
+
+    url = reverse("designacao:apostila-detail", args=[apostila.id])
+    response = auth_client.patch(
+        url,
+        data=_update_payload(
+            alteracoes=[
+                {"campo_alterado": "numero_portaria", "valor_novo": "999"},
+            ],
+        ),
+        format="json",
+    )
+
+    assert response.status_code == 200
+    designacao.refresh_from_db()
+    assert designacao.numero_portaria == 999
+    assert len(response.data["alteracoes"]) == 1
+
+
+@pytest.mark.django_db
+def test_partial_update_apostila_sem_ato_pai_retorna_erro(auth_client):
+    """Verifica que partial_update bloqueia apostila sem designação pai."""
+    designacao = criar_ato_designacao()
+    apostila = criar_ato_apostila(designacao)
+    apostila.ato_pai = None
+    apostila.save(update_fields=["ato_pai"])
+
+    url = reverse("designacao:apostila-detail", args=[apostila.id])
+    response = auth_client.patch(url, data=_update_payload(), format="json")
+
+    assert response.status_code == 400
+    assert "ato_pai" in response.data

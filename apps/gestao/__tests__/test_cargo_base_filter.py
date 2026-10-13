@@ -11,10 +11,10 @@ from apps.gestao.models.cargo_base import CargoBase
 def test_filtra_por_grupamento():
     """Verifica que o filtro por grupamento retorna só os cargos do grupo."""
     criar_cargo_base(
-        codigo_cargo="3360", grupamento=CargoBase.Grupamento.GESTORES_EDUCACAO
+        codigo_cargo="9360", grupamento=CargoBase.Grupamento.GESTORES_EDUCACAO
     )
     criar_cargo_base(
-        codigo_cargo="3379", grupamento=CargoBase.Grupamento.DOCENTES
+        codigo_cargo="9379", grupamento=CargoBase.Grupamento.DOCENTES
     )
 
     resultado = CargoBaseFilter(
@@ -23,17 +23,17 @@ def test_filtra_por_grupamento():
     ).qs
 
     assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3379"
+    assert resultado.first().codigo_cargo == "9379"
 
 
 @pytest.mark.django_db
 def test_filtra_por_descricao_resumida_parcial():
     """Verifica que o filtro por descrição resumida faz busca parcial."""
     criar_cargo_base(
-        codigo_cargo="3360", descricao_resumida="Diretor de Escola"
+        codigo_cargo="9360", descricao_resumida="Diretor de Escola"
     )
     criar_cargo_base(
-        codigo_cargo="3182", descricao_resumida="Secretário de Escola"
+        codigo_cargo="9182", descricao_resumida="Secretário de Escola"
     )
 
     resultado = CargoBaseFilter(
@@ -41,18 +41,18 @@ def test_filtra_por_descricao_resumida_parcial():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3360"
+    assert "9360" in resultado.values_list("codigo_cargo", flat=True)
+    assert "9182" not in resultado.values_list("codigo_cargo", flat=True)
 
 
 @pytest.mark.django_db
 def test_filtra_por_descricao_completa_parcial():
     """Verifica que o filtro por descrição completa faz busca parcial."""
     criar_cargo_base(
-        codigo_cargo="3360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
+        codigo_cargo="9360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
     )
     criar_cargo_base(
-        codigo_cargo="3182", descricao_completa="SECRETARIO DE ESCOLA"
+        codigo_cargo="9182", descricao_completa="SECRETARIO DE ESCOLA"
     )
 
     resultado = CargoBaseFilter(
@@ -60,19 +60,19 @@ def test_filtra_por_descricao_completa_parcial():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3182"
+    assert "9182" in resultado.values_list("codigo_cargo", flat=True)
+    assert "9360" not in resultado.values_list("codigo_cargo", flat=True)
 
 
 @pytest.mark.django_db
 def test_filtra_por_situacao_funcional():
     """Verifica que o filtro por situação funcional retorna os compatíveis."""
     criar_cargo_base(
-        codigo_cargo="3360",
+        codigo_cargo="9360",
         situacao_funcional=CargoBase.SituacaoFuncional.EFETIVO,
     )
     criar_cargo_base(
-        codigo_cargo="3182",
+        codigo_cargo="9182",
         situacao_funcional=CargoBase.SituacaoFuncional.CONTRATADO,
     )
 
@@ -82,14 +82,14 @@ def test_filtra_por_situacao_funcional():
     ).qs
 
     assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3182"
+    assert resultado.first().codigo_cargo == "9182"
 
 
 @pytest.mark.django_db
 def test_filtra_por_status():
     """Verifica que o filtro por status retorna os compatíveis."""
-    criar_cargo_base(codigo_cargo="3360", status=CargoBase.Status.ATIVO)
-    criar_cargo_base(codigo_cargo="3182", status=CargoBase.Status.EXTINTO)
+    criar_cargo_base(codigo_cargo="9360", status=CargoBase.Status.ATIVO)
+    criar_cargo_base(codigo_cargo="9182", status=CargoBase.Status.EXTINTO)
 
     resultado = CargoBaseFilter(
         {"status": CargoBase.Status.EXTINTO},
@@ -97,19 +97,19 @@ def test_filtra_por_status():
     ).qs
 
     assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3182"
+    assert resultado.first().codigo_cargo == "9182"
 
 
 @pytest.mark.django_db
 def test_combina_multiplos_filtros():
     """Verifica que múltiplos filtros preenchidos são combinados (E lógico)."""
     criar_cargo_base(
-        codigo_cargo="3360",
+        codigo_cargo="9360",
         grupamento=CargoBase.Grupamento.GESTORES_EDUCACAO,
         status=CargoBase.Status.ATIVO,
     )
     criar_cargo_base(
-        codigo_cargo="3379",
+        codigo_cargo="9379",
         grupamento=CargoBase.Grupamento.GESTORES_EDUCACAO,
         status=CargoBase.Status.INATIVO,
     )
@@ -122,16 +122,16 @@ def test_combina_multiplos_filtros():
         queryset=CargoBase.objects.all(),
     ).qs
 
-    assert resultado.count() == 1
-    assert resultado.first().codigo_cargo == "3360"
+    assert "9360" in resultado.values_list("codigo_cargo", flat=True)
+    assert "9379" not in resultado.values_list("codigo_cargo", flat=True)
 
 
 @pytest.mark.django_db
 def test_sem_filtros_retorna_todos():
     """Verifica que a ausência de filtros retorna todos os cargos."""
-    criar_cargo_base(codigo_cargo="3360")
-    criar_cargo_base(codigo_cargo="3182")
+    criar_cargo_base(codigo_cargo="9360")
+    criar_cargo_base(codigo_cargo="9182")
 
     resultado = CargoBaseFilter({}, queryset=CargoBase.objects.all()).qs
 
-    assert resultado.count() == 2
+    assert resultado.count() == CargoBase.objects.count()

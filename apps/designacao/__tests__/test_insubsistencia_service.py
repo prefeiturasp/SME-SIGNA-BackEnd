@@ -13,6 +13,9 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.insubsistencia_apostila_detalhe import (
+    InsubsistenciaApostilaDetalhe,
+)
 from apps.designacao.services.insubsistencia_service import (
     InsubsistenciaService,
 )
@@ -367,3 +370,72 @@ class TestInsubsistenciaService:
         )
 
         assert valor == "abc"
+
+    def test_atualizar_campos_do_ato(self):
+        """Verifica atualização de campos pertencentes ao ato."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d, numero_portaria=111)
+
+        atualizado = InsubsistenciaService.atualizar(
+            insub, {"numero_portaria": 999, "sei_numero": "SEI-NOVO"}
+        )
+
+        atualizado.refresh_from_db()
+        assert atualizado.numero_portaria == 999
+        assert atualizado.sei_numero == "SEI-NOVO"
+
+    def test_atualizar_observacoes(self):
+        """Verifica atualização das observações no detalhe."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d, observacoes="antiga")
+
+        InsubsistenciaService.atualizar(insub, {"observacoes": "nova"})
+
+        insub.insubsistencia_detalhe.refresh_from_db()
+        assert insub.insubsistencia_detalhe.observacoes == "nova"
+
+    def test_atualizar_texto_da_anulacao_de_apostila(self):
+        """Verifica atualização do texto da anulação de apostila."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+        insub = criar_ato_insubsistencia(apostila, texto_apostila="antigo")
+
+        InsubsistenciaService.atualizar(insub, {"texto_apostila": "novo"})
+
+        insub.insubsistencia_apostila_detalhe.refresh_from_db()
+        assert insub.insubsistencia_apostila_detalhe.texto == "novo"
+
+    def test_atualizar_texto_apostila_ignorado_fora_de_apostila(self):
+        """Verifica que texto_apostila é ignorado se o pai não é apostila."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d)
+
+        InsubsistenciaService.atualizar(insub, {"texto_apostila": "texto"})
+
+        assert not InsubsistenciaApostilaDetalhe.objects.filter(
+            ato=insub
+        ).exists()
+
+    def test_atualizar_ignora_troca_de_ato_pai(self):
+        """Verifica que o ato pai não é alterado na atualização."""
+        d = criar_ato_designacao()
+        outra = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d)
+
+        InsubsistenciaService.atualizar(
+            insub, {"ato_pai": outra, "numero_portaria": 999}
+        )
+
+        insub.refresh_from_db()
+        assert insub.ato_pai_id == d.pk
+        assert insub.numero_portaria == 999
+
+    def test_erro_atualizar_quando_ja_publicada(self):
+        """Verifica que insubsistência publicada não pode ser atualizada."""
+        d = criar_ato_designacao()
+        insub = criar_ato_insubsistencia(d)
+        insub.status_publicacao = AtoAdministrativo.StatusPublicacao.PUBLICADO
+        insub.save(update_fields=["status_publicacao"])
+
+        with pytest.raises(ValidationError, match="publicada"):
+            InsubsistenciaService.atualizar(insub, {"numero_portaria": 999})
