@@ -226,6 +226,42 @@ class TestDesignacaoService:
 
         assert DesignacaoService.get_possui_designacao_ativa("1234567") is True
 
+    def test_get_possui_designacao_ativa_sem_data_fim(self):
+        """Verifica que designação ativa sem data final retorna True."""
+        criar_ato_designacao(indicado_rf="1234567", data_fim=None)
+
+        assert DesignacaoService.get_possui_designacao_ativa("1234567") is True
+
+    # Verificar com as P.O.S se existirá designação com data final futura
+    def test_get_possui_designacao_ativa_com_data_fim_futura(self):
+        """Verifica que designação com data final futura está vigente."""
+        criar_ato_designacao(
+            indicado_rf="1234567",
+            data_fim=datetime.date.today() + datetime.timedelta(days=1),
+        )
+
+        assert DesignacaoService.get_possui_designacao_ativa("1234567") is True
+
+    def test_get_possui_designacao_ativa_com_data_fim_hoje(self):
+        """Verifica o limite: vencer no dia atual ainda está vigente."""
+        criar_ato_designacao(
+            indicado_rf="1234567",
+            data_fim=datetime.date.today(),
+        )
+
+        assert DesignacaoService.get_possui_designacao_ativa("1234567") is True
+
+    def test_get_possui_designacao_ativa_com_data_fim_passada(self):
+        """Verifica que designação com data final vencida não conta."""
+        criar_ato_designacao(
+            indicado_rf="1234567",
+            data_fim=datetime.date.today() - datetime.timedelta(days=1),
+        )
+
+        assert (
+            DesignacaoService.get_possui_designacao_ativa("1234567") is False
+        )
+
     def test_get_possui_designacao_ativa_sem_registro_funcional(self):
         """Verifica que registro funcional vazio ou nulo retorna False."""
         assert DesignacaoService.get_possui_designacao_ativa(None) is False

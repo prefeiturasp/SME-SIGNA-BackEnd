@@ -539,4 +539,4 @@ class DesignacaoService:
             designacao_detalhe__indicado_rf=registro_funcional,
         ).prefetch_related("filhos")
 
-        return any(d.status == "ativo" for d in designacoes)
+        return any(d.esta_vigente for d in designacoes)
