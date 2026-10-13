@@ -17,6 +17,10 @@ class TestDesignacaoServidorService:
 
     @patch(
         "apps.designacao.services.designacao_servidor_service."
+        "DesignacaoService.get_possui_designacao_ativa"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
         "SmeIntegracaoService.consulta_informacoes_unidades_escolares"
     )
     @patch(
@@ -32,12 +36,14 @@ class TestDesignacaoServidorService:
         mock_consulta_cargos,
         mock_info_usuario,
         mock_consulta_unidade,
+        mock_possui_designacao_ativa,
     ):
         """Verifica obter designacao sucesso."""
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
             "codigoRf": "0000000",
         }
+        mock_possui_designacao_ativa.return_value = False
 
         mock_consulta_cargos.return_value = [
             {
@@ -78,8 +84,14 @@ class TestDesignacaoServidorService:
             "local_de_exercicio": "Escola X",
             "laudo_medico": INDISPONIVEL_NO_EOL,
             "local_de_servico": INDISPONIVEL_NO_EOL,
+            "possui_designacao_ativa": False,
         }
+        mock_possui_designacao_ativa.assert_called_once_with("0000000")
 
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "DesignacaoService.get_possui_designacao_ativa"
+    )
     @patch(
         "apps.designacao.services.designacao_servidor_service."
         "SmeIntegracaoService.consulta_informacoes_unidades_escolares"
@@ -97,12 +109,14 @@ class TestDesignacaoServidorService:
         mock_consulta_cargos,
         mock_info_usuario,
         mock_consulta_unidade,
+        mock_possui_designacao_ativa,
     ):
         """Verifica fallback quando o EOL não retorna local de exercício."""
         mock_info_usuario.return_value = {
             "nome": "João da Silva",
             "codigoRf": "0000000",
         }
+        mock_possui_designacao_ativa.return_value = False
 
         mock_consulta_cargos.return_value = [
             {
@@ -127,6 +141,52 @@ class TestDesignacaoServidorService:
         assert resultado["local_de_exercicio"] == INDISPONIVEL_NO_EOL
         assert resultado["cd_ue_lotacao"] == "090450"
         assert resultado["possui_cargo_sobreposto"] is False
+        assert resultado["possui_designacao_ativa"] is False
+
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "DesignacaoService.get_possui_designacao_ativa"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.informacao_usuario_sgp"
+    )
+    @patch(
+        "apps.designacao.services.designacao_servidor_service."
+        "SmeIntegracaoService.consulta_cargos_funcionario"
+    )
+    def test_obter_designacao_com_designacao_ativa(
+        self,
+        mock_consulta_cargos,
+        mock_info_usuario,
+        mock_possui_designacao_ativa,
+    ):
+        """Verifica que possui_designacao_ativa reflete o serviço."""
+        mock_info_usuario.return_value = {
+            "nome": "João da Silva",
+            "codigoRf": "0000000",
+        }
+
+        mock_consulta_cargos.return_value = [
+            {
+                "tipoVinculoCargoBase": 2,
+                "cargoBase": "Cargo Base",
+                "cdCargoBase": 456,
+                "ueCargoBase": "Escola Base",
+                "cdUeCargoBase": "090450",
+                "cargoSobreposto": None,
+                "funcaoAtividade": None,
+                "cdUeFuncaoAtividade": None,
+                "ueFuncaoAtividade": None,
+            }
+        ]
+
+        mock_possui_designacao_ativa.return_value = True
+
+        resultado = DesignacaoServidorService.obter_designacao("0000000")
+
+        assert resultado["possui_designacao_ativa"] is True
+        mock_possui_designacao_ativa.assert_called_once_with("0000000")
 
     def test_obter_designacao_sem_registro_funcional_raises(self):
         """Verifica obter designacao sem registro funcional raises."""

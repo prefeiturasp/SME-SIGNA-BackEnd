@@ -217,6 +217,43 @@ class TestDesignacaoService:
 
         assert resultado == [{"codigoCargo": 1, "nomeCargo": "Professor"}]
 
+    def test_get_possui_designacao_ativa_com_designacao_ativa(self):
+        """Verifica que designação ativa retorna True."""
+        criar_ato_designacao(indicado_rf="1234567")
+
+        assert DesignacaoService.get_possui_designacao_ativa("1234567") is True
+
+    def test_get_possui_designacao_ativa_sem_registro_funcional(self):
+        """Verifica que registro funcional vazio ou nulo retorna False."""
+        assert DesignacaoService.get_possui_designacao_ativa(None) is False
+        assert DesignacaoService.get_possui_designacao_ativa("") is False
+
+    def test_get_possui_designacao_ativa_outro_registro_funcional(self):
+        """Verifica que apenas a designação do próprio RF é considerada."""
+        criar_ato_designacao(indicado_rf="1234567")
+
+        assert (
+            DesignacaoService.get_possui_designacao_ativa("7654321") is False
+        )
+
+    def test_get_possui_designacao_ativa_designacao_cessada(self):
+        """Verifica que designação com cessação ativa retorna False."""
+        designacao = criar_ato_designacao(indicado_rf="1234567")
+        criar_ato_cessacao(designacao)
+
+        assert (
+            DesignacaoService.get_possui_designacao_ativa("1234567") is False
+        )
+
+    def test_get_possui_designacao_ativa_designacao_insubsistente(self):
+        """Verifica que designação inativa (insubsistente) retorna False."""
+        designacao = criar_ato_designacao(indicado_rf="1234567")
+        AtoAdministrativo.objects.filter(pk=designacao.pk).update(ativo=False)
+
+        assert (
+            DesignacaoService.get_possui_designacao_ativa("1234567") is False
+        )
+
 
 def _dados_substituicao_diretor(**kwargs):
     """Monta dados de designação para substituição do Diretor."""
