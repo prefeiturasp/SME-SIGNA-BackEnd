@@ -191,6 +191,71 @@ class TestDesignacaoUnidadeService:
             else:
                 assert servidor[chave] is None
 
+    @pytest.mark.parametrize(
+        ("servidores", "modulo", "quantidade", "excedente"),
+        [
+            ([{"rf": "RF1"}, {"rf": "RF2"}], 1, 2, True),
+            ([{"rf": "RF1"}], 1, 1, False),
+            ([{"rf": "RF1"}, {"rf": "RF1"}], 1, 1, False),
+            (
+                [{"rf": "RF1"}, {"rf": "RF2", "esta_afastado": True}],
+                1,
+                1,
+                False,
+            ),
+        ],
+        ids=["maior", "igual", "mesmo_rf_dois_vinculos", "afastado_nao_conta"],
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.ServidorService.enriquecer"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.ModuloService.definir_modulo"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.TurmaService.calcular_turmas"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.consulta_informacoes_unidades_escolares"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_funcionarios_escolares"
+    )
+    def test_obter_informacoes_escolares_calcula_excedente(
+        self,
+        mock_buscar_funcionarios,
+        mock_info_ue,
+        mock_calcular_turmas,
+        mock_definir_modulo,
+        mock_enriquecer,
+        servidores,
+        modulo,
+        quantidade,
+        excedente,
+    ):
+        """Verifica quantidade_servidores e excedente em cada cargo."""
+        mock_buscar_funcionarios.return_value = [
+            {
+                "codigo_cargo": 3360,
+                "nome_cargo": "DIRETOR DE ESCOLA",
+                "servidores": servidores,
+            }
+        ]
+        mock_info_ue.return_value = {}
+        mock_calcular_turmas.return_value = {"total": 0, "spi": {}}
+        mock_definir_modulo.return_value = modulo
+        mock_enriquecer.side_effect = lambda s: {"rf": s["rf"]}
+
+        resultado = DesignacaoUnidadeService.obter_informacoes_escolares(
+            "UE123"
+        )
+
+        cargo = resultado["funcionarios_unidade"][3360]
+        assert cargo["modulo"] == modulo
+        assert cargo["quantidade_servidores"] == quantidade
+        assert cargo["excedente"] is excedente
+        assert len(cargo["servidores"]) == len(servidores)
+
     def test_definir_modulo_cargo_com_calculador(self):
         """Verifica definir modulo cargo com calculador."""
         mock_calc = Mock()
@@ -759,6 +824,73 @@ class TestServidorService:
         assert resultado["rf"] == 12345
         assert resultado["nome_servidor"] is None
         assert resultado["nome_civil"] is None
+
+
+class TestModuloServiceExcedente:
+    """Testes para contagem de servidores e excedente de módulo."""
+
+    def test_contar_servidores_rf_unico(self):
+        """Mesmo RF com dois vínculos conta como um."""
+        servidores = [{"rf": "RF1"}, {"rf": "RF1"}, {"rf": "RF2"}]
+
+        assert ModuloService.contar_servidores(servidores) == 2
+
+    def test_contar_servidores_ignora_afastados(self):
+        """Servidores afastados não entram na contagem."""
+        servidores = [
+            {"rf": "RF1", "esta_afastado": False},
+            {"rf": "RF2", "esta_afastado": True},
+        ]
+
+        assert ModuloService.contar_servidores(servidores) == 1
+
+    def test_contar_servidores_afastado_em_um_vinculo_ativo_em_outro(self):
+        """RF afastado em um vínculo e ativo em outro conta como um."""
+        servidores = [
+            {"rf": "RF1", "esta_afastado": True},
+            {"rf": "RF1", "esta_afastado": False},
+        ]
+
+        assert ModuloService.contar_servidores(servidores) == 1
+
+    def test_contar_servidores_ignora_rf_vazio(self):
+        """Registros sem RF não são contados."""
+        assert ModuloService.contar_servidores([{"rf": None}, {}]) == 0
+
+    def test_excedente_quantidade_maior_que_modulo(self):
+        """Quantidade acima do módulo é excedente."""
+        assert ModuloService.possui_excedente(3379, 1, 2) is True
+
+    def test_excedente_quantidade_igual_ao_modulo(self):
+        """Quantidade igual ao módulo não é excedente."""
+        assert ModuloService.possui_excedente(3379, 2, 2) is False
+
+    def test_excedente_modulo_zero_com_servidor_ativo(self):
+        """Cargo com cálculo e módulo zero é excedente com servidor ativo."""
+        assert ModuloService.possui_excedente(3182, 0, 1) is True
+
+    def test_excedente_modulo_zero_sem_servidor_ativo(self):
+        """Cargo com cálculo e módulo zero sem servidores não é excedente."""
+        assert ModuloService.possui_excedente(3182, 0, 0) is False
+
+    def test_excedente_modulo_string_numerica(self):
+        """Módulo numérico em string é aceito."""
+        assert ModuloService.possui_excedente("3379", "1", 2) is True
+
+    @pytest.mark.parametrize("modulo", [None, "", "  ", "abc", "1.5", True])
+    def test_excedente_modulo_vazio_ou_invalido(self, modulo):
+        """Módulo vazio, nulo ou não numérico não gera excedente."""
+        assert ModuloService.possui_excedente(3379, modulo, 5) is False
+
+    def test_excedente_cargo_sem_calculo_de_modulo(self):
+        """Cargo sem regra de módulo nunca é excedente."""
+        assert ModuloService.possui_excedente(9999, 0, 5) is False
+
+    def test_possui_calculo(self):
+        """Identifica cargos com calculadora de módulo."""
+        assert ModuloService.possui_calculo(3360) is True
+        assert ModuloService.possui_calculo("3352") is True
+        assert ModuloService.possui_calculo(9999) is False
 
 
 class TestFuncaoNormalizar:
