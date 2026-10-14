@@ -6,6 +6,7 @@ integrações com o SGP.
 
 import logging
 
+from apps.designacao.services.designacao_service import DesignacaoService
 from apps.helpers.exceptions import SmeIntegracaoError
 from apps.usuarios.services.sme_integracao_service import SmeIntegracaoService
 
@@ -47,8 +48,14 @@ class DesignacaoServidorService:
             raise SmeIntegracaoError("Servidor não possui cargos")
 
         cargo = cargos[0]
+        possui_designacao_ativa = (
+            DesignacaoService.get_possui_designacao_ativa(registro_funcional)
+        )
 
-        return cls.montar_dados_servidor(usuario, cargo)
+        return {
+            **cls.montar_dados_servidor(usuario, cargo),
+            "possui_designacao_ativa": possui_designacao_ativa,
+        }
 
     @classmethod
     def montar_dados_servidor(cls, usuario: dict, cargo: dict) -> dict:
