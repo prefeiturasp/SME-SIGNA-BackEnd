@@ -94,6 +94,82 @@ class DesignacaoUnidadeView(APIView):
             )
 
 
+class DesignacaoUnidadeCodigoHierarquicoView(APIView):
+    """View que retorna o código hierarquico de uma unidade."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="codigo_ue",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Código EOL da unidade escolar.",
+            ),
+            OpenApiParameter(
+                name="codigo_dre",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Código da diretoria regional.",
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Código hierarquico da unidade.",
+            ),
+            400: inline_serializer(
+                "DesignacaoUnidadeErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+            500: inline_serializer(
+                "DesignacaoUnidadeErroInternoResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Recupera o código hierarquico da unidade especificada.
+
+        Args:
+            request: Requisição HTTP contendo o código_ue.
+
+        Returns:
+            Response: Dados escolares da unidade ou mensagem de erro.
+
+        """
+        codigo_ue = request.query_params.get("codigo_ue")
+        codigo_dre = request.query_params.get("codigo_dre")
+        if not codigo_ue or not codigo_dre:
+            return Response(
+                {"detail": "codigo_ue e codigo_dre são obrigatórios"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = DesignacaoUnidadeService.obter_codigo_hierarquico(
+                codigo_dre, codigo_ue
+            )
+            return Response(result, status=status.HTTP_200_OK)
+
+        except SmeIntegracaoError as e:
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except Exception:
+            logger.exception(
+                "Erro inesperado ao buscar código hierarquico da unidade"
+            )
+            return Response(
+                {"detail": "Erro interno do servidor"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
 class DesignacaoUnidadeCargosView(APIView):
     """View que retorna cargos disponíveis de unidades."""
 

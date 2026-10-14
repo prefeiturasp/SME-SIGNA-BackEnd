@@ -14,6 +14,7 @@ from apps.designacao.api.views.designacao_servidor_view import (
 )
 from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
+    DesignacaoUnidadeCodigoHierarquicoView,
     DesignacaoUnidadeView,
 )
 from apps.designacao.api.views.insubsistencia_view import (
@@ -33,6 +34,11 @@ urlpatterns = [
         name="textos-sei-preview",
     ),
     path("unidade/", DesignacaoUnidadeView.as_view(), name="unidade"),
+    path(
+        "unidade/codigo-hierarquico/",
+        DesignacaoUnidadeCodigoHierarquicoView.as_view(),
+        name="unidade-codigo-hierarquico",
+    ),
     path(
         "unidade/cargos/",
         DesignacaoUnidadeCargosView.as_view(),
