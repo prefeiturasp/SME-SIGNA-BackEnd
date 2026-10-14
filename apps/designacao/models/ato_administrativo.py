@@ -5,6 +5,7 @@ para designação, cessação, apostila e insubsistência.
 """
 
 from collections.abc import Iterable
+from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -184,6 +185,35 @@ class AtoAdministrativo(models.Model):
             if tem_cessacao_ativa:
                 return "cessada"
         return "ativo"
+
+    @property
+    def esta_vigente(self) -> bool:
+        """Indica se o ato administrativo está vigente.
+        A designação está vigente
+        quando está ativa e não tem cessação ativa e a data atual é menor
+        que a data de fim.
+
+        Returns:
+            bool: True ou False dependendo da situação da designação.
+
+        """
+        if not self.ativo:
+            return False
+        if self.tipo == self.Tipo.DESIGNACAO:
+            data_fim = self.designacao_detalhe.data_fim
+            data_atual = datetime.now().date()
+
+            if data_fim is not None and data_atual > data_fim:
+                return False
+
+            tem_cessacao_ativa = any(
+                f.tipo == self.Tipo.CESSACAO and f.ativo
+                for f in self.filhos.all()
+            )
+            if tem_cessacao_ativa:
+                return False
+
+        return True
 
     @property
     def eh_valido(self) -> bool:

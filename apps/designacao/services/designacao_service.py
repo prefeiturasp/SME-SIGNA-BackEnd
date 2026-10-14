@@ -4,10 +4,16 @@ Gerencia a criação, atualização e consulta de cargos pareados para atos de
 designação.
 """
 
+import datetime
+
 from django.db import transaction
 from django.db.models import F, QuerySet
 from rest_framework.exceptions import ValidationError
 
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CODIGO_CARGO_ASSISTENTE_DIRETOR,
+    CODIGOS_CARGO_PROFESSOR,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
@@ -22,6 +28,48 @@ _CAMPOS_ATO = frozenset(
         "modelo_portaria",
     }
 )
+
+# Regras de substituição do Diretor de Escola: até 15 dias o Assistente de
+# Diretor (AD) substitui informalmente, sem designação; período formal de 16
+# a 30 dias (inclusivos); acima disso é necessária eleição para o cargo.
+_SUBSTITUICAO_DIRETOR_MIN_DIAS = 16
+_SUBSTITUICAO_DIRETOR_MAX_DIAS = 30
+_CAMPOS_SUBSTITUICAO_DIRETOR = frozenset(
+    {
+        "cargo_vaga",
+        "data_inicio",
+        "data_fim",
+        "indicado_codigo_cargo_base",
+        "indicado_codigo_cargo_sobreposto",
+        "indicado_possui_cargo_sobreposto",
+        "indicado_codigo_ue_lotacao",
+        "ue",
+    }
+)
+
+# Códigos de erro das regras de substituição do Diretor, expostos em
+# `codes` na resposta para o front diferenciar os bloqueios.
+CODIGO_ASSISTENTE_DIRETOR = "assistente_diretor"
+CODIGO_ELEICAO_NECESSARIA = "eleicao_necessaria"
+CODIGO_INDICADO_NAO_PROFESSOR = "indicado_nao_professor"
+CODIGO_PERIODO_INSUFICIENTE = "periodo_insuficiente"
+CODIGO_UNIDADE_DIFERENTE = "unidade_diferente"
+
+# Campos do detalhe que identificam a substituição (unidade, cargo,
+# titular e tipo de vaga) e o seu período — usados na validação de
+# sobreposição.
+_CAMPOS_SOBREPOSICAO = frozenset(
+    {
+        "ue",
+        "cargo_vaga",
+        "titular_rf",
+        "tipo_vaga",
+        "data_inicio",
+        "data_fim",
+    }
+)
+
+CODIGO_PERIODO_SOBREPOSTO = "periodo_sobreposto"
 
 # Campos que representam o texto congelado da portaria — uma vez que o
 # ato é publicado no Diário Oficial (doc preenchido), esse texto passa a
@@ -46,6 +94,9 @@ class DesignacaoService:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
 
+        cls._validar_substituicao_diretor(data_detalhe)
+        cls._validar_sobreposicao(data_detalhe)
+
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
                 tipo=AtoAdministrativo.Tipo.DESIGNACAO,
@@ -56,8 +107,10 @@ class DesignacaoService:
 
         return ato
 
-    @staticmethod
-    def atualizar(ato: AtoAdministrativo, data: dict) -> AtoAdministrativo:
+    @classmethod
+    def atualizar(
+        cls, ato: AtoAdministrativo, data: dict
+    ) -> AtoAdministrativo:
         """Atualiza um ato administrativo de designação e seu detalhe.
 
         Args:
@@ -81,6 +134,24 @@ class DesignacaoService:
                 }
             )
 
+        if _CAMPOS_SUBSTITUICAO_DIRETOR & data_detalhe.keys():
+            detalhe_atual = ato.designacao_detalhe
+            dados_efetivos = {
+                campo: getattr(detalhe_atual, campo)
+                for campo in _CAMPOS_SUBSTITUICAO_DIRETOR
+            }
+            dados_efetivos.update(data_detalhe)
+            cls._validar_substituicao_diretor(dados_efetivos)
+
+        if _CAMPOS_SOBREPOSICAO & data_detalhe.keys():
+            detalhe_atual = ato.designacao_detalhe
+            dados_efetivos = {
+                campo: getattr(detalhe_atual, campo)
+                for campo in _CAMPOS_SOBREPOSICAO
+            }
+            dados_efetivos.update(data_detalhe)
+            cls._validar_sobreposicao(dados_efetivos, ignorar_ato=ato)
+
         with transaction.atomic():
             if data_ato:
                 for field, value in data_ato.items():
@@ -94,6 +165,284 @@ class DesignacaoService:
                 detalhe.save(update_fields=list(data_detalhe.keys()))
 
         return ato
+
+    @staticmethod
+    def _validar_substituicao_diretor(dados: dict) -> None:
+        """Valida as regras de designação para substituição do Diretor.
+
+        Aplica-se quando a vaga é de Diretor de Escola: o indicado não pode
+        possuir o cargo sobreposto de Assistente de Diretor (o AD substitui
+        o Diretor informalmente, sem designação), o período deve ter de 16
+        a 30 dias (até 15 dias a substituição é informal; acima de 30 é
+        necessária eleição) e o indicado deve ser professor da mesma
+        unidade escolar. O cargo do indicado (código EOL) é o cargo
+        sobreposto, quando `indicado_possui_cargo_sobreposto` for verdadeiro,
+        ou o cargo base (código de função/atividade é ignorado), e é
+        professor se estiver em `CODIGOS_CARGO_PROFESSOR`; a
+        unidade é comparada pelo código da UE de lotação do indicado contra
+        o código da UE da designação.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se alguma regra de substituição for violada.
+
+        """
+        if dados.get("cargo_vaga") != DesignacaoDetalhe.CargoVaga.DIRETOR:
+            return
+
+        DesignacaoService._validar_indicado_nao_assistente_diretor(dados)
+        DesignacaoService._validar_periodo_substituicao_diretor(dados)
+        DesignacaoService._validar_professor_mesma_unidade(dados)
+
+    @staticmethod
+    def _validar_indicado_nao_assistente_diretor(dados: dict) -> None:
+        """Bloqueia indicado com cargo sobreposto de Assistente de Diretor.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o indicado possuir o cargo sobreposto de AD.
+
+        """
+        if (
+            dados.get("indicado_possui_cargo_sobreposto")
+            and dados.get("indicado_codigo_cargo_sobreposto")
+            == CODIGO_CARGO_ASSISTENTE_DIRETOR
+        ):
+            raise ValidationError(
+                {
+                    "indicado_codigo_cargo_sobreposto": [
+                        "O servidor não pode ser designado para o cargo de "
+                        "Diretor por já possuir o cargo sobreposto de "
+                        "Assistente de Diretor."
+                    ]
+                },
+                code=CODIGO_ASSISTENTE_DIRETOR,
+            )
+
+    @staticmethod
+    def _validar_periodo_substituicao_diretor(dados: dict) -> None:
+        """Exige período de 16 a 30 dias na substituição do Diretor.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o período estiver fora de 16 a 30 dias ou
+            não tiver data final.
+
+        """
+        data_inicio = dados.get("data_inicio")
+        data_fim = dados.get("data_fim")
+        dias = (
+            (data_fim - data_inicio).days + 1
+            if data_inicio and data_fim
+            else None
+        )
+
+        if dias is None or dias > _SUBSTITUICAO_DIRETOR_MAX_DIAS:
+            raise ValidationError(
+                {
+                    "data_fim": [
+                        "A substituição do Diretor não pode ultrapassar "
+                        f"{_SUBSTITUICAO_DIRETOR_MAX_DIAS} dias. É "
+                        "necessária a realização de eleição para o cargo "
+                        "de Diretor."
+                    ]
+                },
+                code=CODIGO_ELEICAO_NECESSARIA,
+            )
+
+        if dias < _SUBSTITUICAO_DIRETOR_MIN_DIAS:
+            raise ValidationError(
+                {
+                    "data_fim": [
+                        "A designação para substituição do Diretor deve "
+                        f"ter período de {_SUBSTITUICAO_DIRETOR_MIN_DIAS} a "
+                        f"{_SUBSTITUICAO_DIRETOR_MAX_DIAS} dias."
+                    ]
+                },
+                code=CODIGO_PERIODO_INSUFICIENTE,
+            )
+
+    @staticmethod
+    def _validar_professor_mesma_unidade(dados: dict) -> None:
+        """Exige que o indicado seja professor da mesma unidade escolar.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se o indicado não for professor ou não for da
+            mesma unidade escolar da designação.
+
+        """
+        # Função/atividade não muda o cargo: só o cargo sobreposto
+        # prevalece sobre o cargo base.
+        codigo_cargo_indicado = (
+            dados.get("indicado_codigo_cargo_sobreposto")
+            if dados.get("indicado_possui_cargo_sobreposto")
+            else dados.get("indicado_codigo_cargo_base")
+        )
+        if codigo_cargo_indicado not in CODIGOS_CARGO_PROFESSOR:
+            campo_cargo = (
+                "indicado_codigo_cargo_sobreposto"
+                if dados.get("indicado_possui_cargo_sobreposto")
+                else "indicado_codigo_cargo_base"
+            )
+            raise ValidationError(
+                {
+                    campo_cargo: [
+                        "Somente professor pode ser designado para "
+                        "substituir o Diretor."
+                    ]
+                },
+                code=CODIGO_INDICADO_NAO_PROFESSOR,
+            )
+
+        # Zeros à esquerda são ignorados: o EOL pode devolver o código
+        # como número ("90450") ou texto ("090450").
+        codigo_lotacao = (
+            str(dados.get("indicado_codigo_ue_lotacao") or "")
+            .strip()
+            .lstrip("0")
+        )
+        codigo_ue = str(dados.get("ue") or "").strip().lstrip("0")
+        if not codigo_ue or codigo_lotacao != codigo_ue:
+            raise ValidationError(
+                {
+                    "indicado_codigo_ue_lotacao": [
+                        "O professor designado para substituir o Diretor "
+                        "deve ser da mesma unidade escolar."
+                    ]
+                },
+                code=CODIGO_UNIDADE_DIFERENTE,
+            )
+
+    @staticmethod
+    def _fim_efetivo(ato: AtoAdministrativo) -> datetime.date | None:
+        """Retorna o último dia de vigência de uma designação.
+
+        Com cessação ativa, a designação termina na data da cessação; caso
+        contrário, na data final. `None` indica vigência sem data final.
+
+        Args:
+            ato: Ato de designação (com `filhos` pré-carregados).
+
+        Returns:
+            datetime.date | None: Último dia de vigência.
+
+        """
+        cessacao = next(
+            (
+                f
+                for f in ato.filhos.all()
+                if f.tipo == AtoAdministrativo.Tipo.CESSACAO and f.ativo
+            ),
+            None,
+        )
+        if cessacao is not None:
+            return cessacao.cessacao_detalhe.data_cessacao
+        return ato.designacao_detalhe.data_fim
+
+    @classmethod
+    def _validar_sobreposicao(
+        cls,
+        dados: dict,
+        ignorar_ato: AtoAdministrativo | None = None,
+    ) -> None:
+        """Bloqueia substituição cujo período choca com outra do titular.
+
+        Aplica-se só às substituições — cargo disponível (`DISPONIVEL`) com
+        titular informado; cargo vago ainda não é validado. Considera as
+        substituições ativas do mesmo titular (`titular_rf`), no mesmo
+        cargo (`cargo_vaga`) e unidade (`ue`), cujo período se sobrepõe ao
+        informado. Os dois extremos são inclusivos: iniciar no mesmo dia em
+        que a outra termina também é sobreposição. Sem data final, a
+        designação é considerada vigente em aberto.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+            ignorar_ato: Designação a desconsiderar (a própria, na edição).
+
+        Raises:
+            ValidationError: Se houver sobreposição de período.
+
+        """
+        ue = dados.get("ue")
+        cargo_vaga = dados.get("cargo_vaga")
+        titular_rf = dados.get("titular_rf")
+        data_inicio = dados.get("data_inicio")
+        data_fim = dados.get("data_fim")
+        if (
+            dados.get("tipo_vaga") != DesignacaoDetalhe.TipoVaga.DISPONIVEL
+            or not ue
+            or cargo_vaga is None
+            or not titular_rf
+            or data_inicio is None
+        ):
+            return
+
+        atos = (
+            AtoAdministrativo.objects.filter(
+                tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+                ativo=True,
+                designacao_detalhe__tipo_vaga=DesignacaoDetalhe.TipoVaga.DISPONIVEL,
+                designacao_detalhe__ue=ue,
+                designacao_detalhe__cargo_vaga=cargo_vaga,
+                designacao_detalhe__titular_rf=titular_rf,
+            )
+            .select_related("designacao_detalhe")
+            .prefetch_related("filhos__cessacao_detalhe")
+        )
+        if data_fim is not None:
+            atos = atos.filter(designacao_detalhe__data_inicio__lte=data_fim)
+        if ignorar_ato is not None:
+            atos = atos.exclude(pk=ignorar_ato.pk)
+
+        fins_sobrepostos = []
+        for ato in atos:
+            fim = cls._fim_efetivo(ato)
+            if fim is None or fim >= data_inicio:
+                fins_sobrepostos.append(fim)
+
+        if not fins_sobrepostos:
+            return
+
+        raise ValidationError(
+            {"data_inicio": [cls._mensagem_sobreposicao(fins_sobrepostos)]},
+            code=CODIGO_PERIODO_SOBREPOSTO,
+        )
+
+    @staticmethod
+    def _mensagem_sobreposicao(fins: list[datetime.date | None]) -> str:
+        """Monta a mensagem de bloqueio por sobreposição de período.
+
+        Args:
+            fins: Últimos dias de vigência das designações sobrepostas.
+
+        Returns:
+            str: Mensagem explicando o conflito e a data mínima de início.
+
+        """
+        if None in fins:
+            return (
+                "Já existe designação vigente em substituição a este "
+                "titular, para este cargo nesta unidade, sem data final. "
+                "Encerre-a antes de registrar uma nova designação."
+            )
+        ultimo_dia = max(f for f in fins if f is not None)
+        dia_seguinte = ultimo_dia + datetime.timedelta(days=1)
+        return (
+            "Já existe designação em substituição a este titular, para "
+            "este cargo nesta unidade, vigente até "
+            f"{ultimo_dia:%d/%m/%Y}. A nova designação só pode iniciar "
+            f"a partir do dia seguinte ao término da anterior "
+            f"({dia_seguinte:%d/%m/%Y})."
+        )
 
     @staticmethod
     def excluir(ato: AtoAdministrativo) -> None:
@@ -169,3 +518,25 @@ class DesignacaoService:
         ]
         resultado.sort(key=lambda x: x["nomeCargo"])
         return resultado
+
+    @staticmethod
+    def get_possui_designacao_ativa(registro_funcional: str | None) -> bool:
+        """Retorna se o servidor possui designação ativa.
+
+        Args:
+            registro_funcional: Registro funcional do servidor.
+
+        Returns:
+            bool: True se o servidor possui designação ativa,
+            False caso contrário.
+
+        """
+        if not registro_funcional:
+            return False
+
+        designacoes = AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+            designacao_detalhe__indicado_rf=registro_funcional,
+        ).prefetch_related("filhos")
+
+        return any(d.esta_vigente for d in designacoes)

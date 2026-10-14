@@ -49,6 +49,17 @@ class TestExceptionHandler:
             == "numero_portaria: Este campo é obrigatório."
         )
 
+    def test_response_dict_inclui_codes_por_campo(self):
+        """Erros por campo expõem os códigos de erro em codes."""
+        exc = ValidationError(
+            {"data_fim": ["Período inválido."]}, code="eleicao_necessaria"
+        )
+
+        response = exception_handler(exc, {})
+
+        assert response.data["codes"] == {"data_fim": ["eleicao_necessaria"]}
+        assert response.data["detail"] == "data_fim: Período inválido."
+
     def test_response_dict_com_detail_nao_e_alterado(self):
         """Se o corpo já possui detail, o handler não sobrescreve o corpo."""
         exc = ValidationError(detail={"detail": "erro já descrito"})

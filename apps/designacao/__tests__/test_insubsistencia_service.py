@@ -1,5 +1,6 @@
 """Testes para serviço de insubsistência."""
 
+import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,6 +14,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.models.insubsistencia_apostila_detalhe import (
     InsubsistenciaApostilaDetalhe,
 )
@@ -439,3 +441,59 @@ class TestInsubsistenciaService:
 
         with pytest.raises(ValidationError, match="publicada"):
             InsubsistenciaService.atualizar(insub, {"numero_portaria": 999})
+
+    def test_insubsistencia_de_apostila_restaura_textos_apagados(self):
+        """Verifica que anular a apostila restaura todos os campos.
+
+        Inclui a descrição da pendência e o motivo do afastamento apagados
+        ao marcar as flags como "Não", a data final limpa e o impedimento.
+        """
+        from apps.designacao.services.apostila_service import ApostilaService
+
+        antigo = ImpedimentoSubstituicao.objects.create(
+            codigo="A", descricao="Antigo"
+        )
+        novo = ImpedimentoSubstituicao.objects.create(
+            codigo="N", descricao="Novo"
+        )
+        d = criar_ato_designacao(
+            possui_pendencia=True,
+            pendencias="Pendência original",
+            com_afastamento=True,
+            motivo_afastamento="Motivo original",
+            data_fim=datetime.date(2026, 12, 31),
+            impedimento_substituicao=antigo,
+        )
+        apostila = ApostilaService.criar(
+            {
+                "ato_pai": d,
+                "sei_numero": "SEI-A",
+                "observacao": "",
+                "alteracoes": [
+                    {
+                        "campo_alterado": "possui_pendencia",
+                        "valor_novo": "False",
+                    },
+                    {
+                        "campo_alterado": "com_afastamento",
+                        "valor_novo": "False",
+                    },
+                    {"campo_alterado": "data_fim", "valor_novo": ""},
+                    {
+                        "campo_alterado": "impedimento_substituicao_id",
+                        "valor_novo": str(novo.pk),
+                    },
+                ],
+            }
+        )
+
+        InsubsistenciaService.criar(_data(apostila))
+
+        detalhe = d.designacao_detalhe
+        detalhe.refresh_from_db()
+        assert detalhe.possui_pendencia is True
+        assert detalhe.pendencias == "Pendência original"
+        assert detalhe.com_afastamento is True
+        assert detalhe.motivo_afastamento == "Motivo original"
+        assert detalhe.data_fim == datetime.date(2026, 12, 31)
+        assert detalhe.impedimento_substituicao_id == antigo.pk
