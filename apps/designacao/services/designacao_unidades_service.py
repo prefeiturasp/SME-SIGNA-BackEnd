@@ -10,7 +10,10 @@ import unicodedata
 from datetime import datetime
 from typing import Any
 
-from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
+from apps.designacao.constants.cargos_gestao_escolar import (
+    SITUACAO_TURMA_ABERTA,
+    TURNOS_MAP,
+)
 from apps.designacao.modulos import Calculadores
 from apps.designacao.modulos.base import ModuloCalculator
 from apps.designacao.services.designacao_servidor_service import (
@@ -233,6 +236,9 @@ class TurmaService:
         }
 
         for turma in turmas:
+            if turma.get("situacao") != SITUACAO_TURMA_ABERTA:
+                continue
+
             codigo = turma.get("codigoTurma")
 
             codigo_turma = cls._normalizar_codigo_turma(codigo)

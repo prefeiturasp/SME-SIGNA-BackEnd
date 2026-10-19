@@ -102,6 +102,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -285,7 +286,9 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
         """Verifica calcular turmas turno desconhecido."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": "999"}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": "999", "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
         mock_dados_turma.return_value = {"tipoTurno": 99}
 
@@ -359,7 +362,9 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas
     ):
         """Verifica que turma com código inválido é ignorada."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": None}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": None, "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
 
         resultado = TurmaService.calcular_turmas("UE123")
@@ -383,6 +388,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": 999,
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -408,13 +414,58 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
         """Verifica que turma com tipoTurno não inteiro é ignorada."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": "T1"}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": "T1", "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
         mock_dados_turma.return_value = {"tipoTurno": None}
 
         resultado = TurmaService.calcular_turmas("UE123")
 
         assert resultado["total"] == 0
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_conta_apenas_turmas_abertas(
+        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
+    ):
+        """Verifica que só turmas com situação "O" entram no total."""
+        mock_buscar_turmas.return_value = [
+            {
+                "codigoTurma": 1,
+                "situacao": "O",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1A",
+            },
+            {
+                "codigoTurma": 2,
+                "situacao": "E",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1A",
+            },
+            {
+                "codigoTurma": 3,
+                "situacao": "C",
+                "siglaModalidade": "EJA",
+                "nomeTurmaEOL": "3B",
+            },
+            {"codigoTurma": 4, "siglaModalidade": "EF", "nomeTurmaEOL": "2A"},
+        ]
+        mock_buscar_disciplinas.return_value = []
+        mock_dados_turma.return_value = {"tipoTurno": 1}
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["total"] == 1
+        mock_dados_turma.assert_called_once_with(1)
+        mock_buscar_disciplinas.assert_called_once_with(1)
 
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
@@ -478,6 +529,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -508,6 +560,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -541,6 +594,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -579,6 +633,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -622,6 +677,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1 ano",
             }
@@ -662,6 +718,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
