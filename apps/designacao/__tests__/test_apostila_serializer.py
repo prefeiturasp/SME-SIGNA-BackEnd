@@ -25,8 +25,6 @@ class TestApostilaWriteSerializer:
         """Método auxiliar para payload."""
         return {
             "ato_pai": ato_pai_id,
-            "numero_portaria": "1234",
-            "sei_numero": "SEI-AP-123",
             "observacao": "Texto de observação",
             "alteracoes": [
                 {
@@ -42,16 +40,28 @@ class TestApostilaWriteSerializer:
         serializer = ApostilaWriteSerializer(data=self._payload(designacao.id))
         assert serializer.is_valid(), serializer.errors
 
-    def test_serializer_rejeita_sem_numero_portaria_na_criacao(self):
-        """Verifica que numero_portaria é obrigatório na criação."""
+    def test_serializer_ignora_campos_de_portaria_na_criacao(self):
+        """Verifica que portaria, ano, SEI e D.O não são aceitos na criação.
+
+        Esses campos são herdados do ato pai e o D.O é preenchido na
+        publicação.
+        """
         designacao = criar_ato_designacao()
         payload = self._payload(designacao.id)
-        del payload["numero_portaria"]
+        payload.update(
+            {
+                "numero_portaria": "1234",
+                "ano_vigente": "2024",
+                "sei_numero": "SEI-AP-123",
+                "doc": "2024-05-01",
+            }
+        )
 
         serializer = ApostilaWriteSerializer(data=payload)
 
-        assert not serializer.is_valid()
-        assert "numero_portaria" in serializer.errors
+        assert serializer.is_valid(), serializer.errors
+        for campo in ("numero_portaria", "ano_vigente", "sei_numero", "doc"):
+            assert campo not in serializer.validated_data
 
     def test_serializer_valido_com_cessacao(self):
         """Verifica serializer valido com ato pai cessacao."""
@@ -145,53 +155,45 @@ class TestApostilaUpdateSerializer:
 
         serializer = ApostilaUpdateSerializer(
             apostila,
-            data={
-                "numero_portaria": "5555",
-                "sei_numero": "SEI-UPD",
-                "observacao": "Obs atualizada",
-            },
+            data={"observacao": "Obs atualizada"},
         )
 
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data["sei_numero"] == "SEI-UPD"
+        assert serializer.validated_data["observacao"] == "Obs atualizada"
 
-    def test_serializer_rejeita_sem_numero_portaria(self):
-        """Verifica que numero_portaria é obrigatório na atualização."""
+    def test_serializer_ignora_campos_de_portaria_na_atualizacao(self):
+        """Verifica que portaria, ano, SEI e D.O não são aceitos na edição."""
         designacao = criar_ato_designacao()
         apostila = criar_ato_apostila(designacao)
 
         serializer = ApostilaUpdateSerializer(
             apostila,
-            data={"sei_numero": "SEI-UPD"},
+            data={
+                "numero_portaria": "5555",
+                "ano_vigente": "2025",
+                "sei_numero": "SEI-UPD",
+                "doc": "2024-05-01",
+            },
+            partial=True,
         )
 
-        assert not serializer.is_valid()
-        assert "numero_portaria" in serializer.errors
+        assert serializer.is_valid(), serializer.errors
+        for campo in ("numero_portaria", "ano_vigente", "sei_numero", "doc"):
+            assert campo not in serializer.validated_data
 
-    def test_serializer_atualizacao_aceita_observacao_e_ano_vigente_vazios(
-        self,
-    ):
-        """Verifica que observação e ano vazios são aceitos na atualização."""
+    def test_serializer_atualizacao_aceita_observacao_vazia(self):
+        """Verifica que observação vazia é aceita na atualização."""
         designacao = criar_ato_designacao()
         apostila = criar_ato_apostila(
-            designacao,
-            observacao="Observação preenchida",
-            ano_vigente="2024",
-            numero_portaria=1234,
+            designacao, observacao="Observação preenchida"
         )
 
         serializer = ApostilaUpdateSerializer(
             apostila,
-            data={
-                "numero_portaria": 1234,
-                "sei_numero": apostila.sei_numero,
-                "ano_vigente": "",
-                "observacao": "",
-            },
+            data={"observacao": ""},
         )
 
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data["ano_vigente"] == ""
         assert serializer.validated_data["observacao"] == ""
 
 
