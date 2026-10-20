@@ -32,15 +32,15 @@ from apps.helpers.exceptions import ValorInvalidoError
 
 _CAMPOS_ATO = frozenset(
     {
-        "numero_portaria",
-        "sei_numero",
-        "doc",
-        "ano_vigente",
         "criado_por",
         "texto_sei",
         "modelo_portaria",
     }
 )
+# Campos da portaria que a apostila herda do ato pai (designação ou
+# cessação). São copiados na criação e novamente quando a própria apostila
+# altera um deles no ato pai.
+_CAMPOS_HERDADOS_ATO_PAI = ("numero_portaria", "ano_vigente", "sei_numero")
 _CAMPOS_PROTEGIDOS = frozenset(
     {
         "id",
@@ -195,6 +195,8 @@ class ApostilaService:
                 )
 
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
+        for campo in _CAMPOS_HERDADOS_ATO_PAI:
+            data_ato[campo] = getattr(ato_pai, campo)
 
         with transaction.atomic():
             ato = AtoAdministrativo.objects.create(
@@ -213,6 +215,13 @@ class ApostilaService:
             if alteracoes:
                 ApostilaService._aplicar_alteracoes(
                     ato_pai, apostila_detalhe, alteracoes
+                )
+                ApostilaService._herdar_campos_ato_pai(
+                    ato,
+                    ato_pai,
+                    ApostilaService._campos_herdados_alterados(
+                        alteracoes, ato_pai
+                    ),
                 )
 
         return ato
@@ -263,7 +272,61 @@ class ApostilaService:
                 ApostilaService._aplicar_alteracoes(
                     ato_pai, apostila_detalhe, alteracoes
                 )
+                ApostilaService._herdar_campos_ato_pai(
+                    ato,
+                    ato_pai,
+                    ApostilaService._campos_herdados_alterados(
+                        alteracoes, ato_pai
+                    ),
+                )
         return ato
+
+    @staticmethod
+    def _herdar_campos_ato_pai(
+        ato: AtoAdministrativo,
+        ato_pai: AtoAdministrativo,
+        campos: list[str],
+    ) -> None:
+        """Copia para a apostila os campos de portaria do ato pai.
+
+        Args:
+            ato: Ato de apostila que recebe os valores.
+            ato_pai: Ato apostilado (designação ou cessação).
+            campos: Campos de ``_CAMPOS_HERDADOS_ATO_PAI`` a copiar.
+
+        """
+        if not campos:
+            return
+        for campo in campos:
+            setattr(ato, campo, getattr(ato_pai, campo))
+        ato.save(update_fields=list(campos))
+
+    @staticmethod
+    def _campos_herdados_alterados(
+        alteracoes: list, ato_pai: AtoAdministrativo
+    ) -> list[str]:
+        """Retorna os campos herdados alterados no próprio ato pai.
+
+        Alterações direcionadas à designação de origem de uma cessação
+        não afetam a portaria herdada pela apostila.
+
+        Args:
+            alteracoes: Lista de alterações recebida.
+            ato_pai: Ato apostilado.
+
+        Returns:
+            list[str]: Campos herdados que devem ser copiados novamente.
+
+        """
+        return [
+            campo
+            for campo in _CAMPOS_HERDADOS_ATO_PAI
+            if any(
+                alt["campo_alterado"] == campo
+                and (alt.get("tipo_ato_alvo") or ato_pai.tipo) == ato_pai.tipo
+                for alt in alteracoes
+            )
+        ]
 
     @staticmethod
     def _resolver_ato_alvo(
