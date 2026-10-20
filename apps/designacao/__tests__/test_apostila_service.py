@@ -25,8 +25,6 @@ class TestApostilaService:
         """Método auxiliar para data."""
         base = {
             "ato_pai": ato_pai,
-            "numero_portaria": 1234,
-            "sei_numero": "12345",
             "observacao": "Obs",
             "alteracoes": [],
         }
@@ -46,16 +44,93 @@ class TestApostilaService:
 
         assert ato.apostila_detalhe.observacao == texto
 
-    def test_criar_salva_numero_portaria(self):
-        """Verifica que numero_portaria informado é persistido no ato."""
-        d = criar_ato_designacao()
-
-        ato = ApostilaService.criar(
-            self._data(d, numero_portaria=5678),
+    def test_criar_herda_portaria_e_sei_da_designacao(self):
+        """Verifica que portaria, ano e SEI são herdados da designação."""
+        d = criar_ato_designacao(
+            numero_portaria=5678, ano_vigente="2025", sei_numero="SEI-D"
         )
+
+        ato = ApostilaService.criar(self._data(d))
 
         ato.refresh_from_db()
         assert ato.numero_portaria == 5678
+        assert ato.ano_vigente == "2025"
+        assert ato.sei_numero == "SEI-D"
+        assert ato.doc is None
+
+    def test_criar_herda_portaria_e_sei_da_cessacao(self):
+        """Verifica que portaria, ano e SEI são herdados da cessação."""
+        d = criar_ato_designacao(numero_portaria=1, sei_numero="SEI-D")
+        c = criar_ato_cessacao(
+            d, numero_portaria=50, ano_vigente="2026", sei_numero="SEI-C"
+        )
+
+        ato = ApostilaService.criar(self._data(c))
+
+        ato.refresh_from_db()
+        assert ato.numero_portaria == 50
+        assert ato.ano_vigente == "2026"
+        assert ato.sei_numero == "SEI-C"
+
+    def test_criar_ignora_portaria_sei_e_doc_informados(self):
+        """Verifica que valores informados não sobrepõem os herdados."""
+        d = criar_ato_designacao(numero_portaria=10, sei_numero="SEI-D")
+
+        ato = ApostilaService.criar(
+            self._data(
+                d,
+                numero_portaria=9999,
+                sei_numero="SEI-X",
+                doc=datetime.date(2024, 5, 1),
+            )
+        )
+
+        ato.refresh_from_db()
+        assert ato.numero_portaria == 10
+        assert ato.sei_numero == "SEI-D"
+        assert ato.doc is None
+
+    def test_criar_herda_valores_apos_alteracao_no_ato_pai(self):
+        """Verifica que a apostila herda a portaria e o SEI já alterados."""
+        d = criar_ato_designacao(numero_portaria=1, sei_numero="SEI-D")
+
+        ato = ApostilaService.criar(
+            self._data(
+                d,
+                alteracoes=[
+                    {"campo_alterado": "numero_portaria", "valor_novo": "999"},
+                    {"campo_alterado": "sei_numero", "valor_novo": "SEI-N"},
+                ],
+            )
+        )
+
+        ato.refresh_from_db()
+        assert ato.numero_portaria == 999
+        assert ato.sei_numero == "SEI-N"
+
+    def test_criar_nao_herda_alteracao_da_designacao_de_origem(self):
+        """Verifica que alterar a designação de origem não afeta a herança.
+
+        Na apostila de cessação, a portaria herdada é a da cessação.
+        """
+        d = criar_ato_designacao(numero_portaria=1)
+        c = criar_ato_cessacao(d, numero_portaria=50)
+
+        ato = ApostilaService.criar(
+            self._data(
+                c,
+                alteracoes=[
+                    {
+                        "campo_alterado": "numero_portaria",
+                        "valor_novo": "2",
+                        "tipo_ato_alvo": AtoAdministrativo.Tipo.DESIGNACAO,
+                    },
+                ],
+            )
+        )
+
+        ato.refresh_from_db()
+        assert ato.numero_portaria == 50
 
     def test_criar_apostila_designacao_sucesso(self):
         """Verifica criar apostila designacao sucesso."""
@@ -431,18 +506,86 @@ class TestApostilaService:
         assert encontrada.pk == apostila.pk
         assert hasattr(encontrada, "apostila_detalhe")
 
-    def test_atualizar_campos_do_ato(self):
-        """Verifica atualização de campos pertencentes ao ato."""
+    def test_atualizar_ignora_portaria_sei_e_doc_informados(self):
+        """Verifica que a edição não altera os campos herdados nem o D.O."""
         d = criar_ato_designacao()
-        apostila = criar_ato_apostila(d, sei_numero="SEI-ORIG")
+        apostila = criar_ato_apostila(
+            d, sei_numero="SEI-ORIG", numero_portaria=10
+        )
 
         atualizada = ApostilaService.atualizar(
             apostila,
-            {"sei_numero": "SEI-NOVO"},
+            {
+                "sei_numero": "SEI-NOVO",
+                "numero_portaria": 7777,
+                "doc": datetime.date(2024, 5, 1),
+            },
         )
 
         atualizada.refresh_from_db()
-        assert atualizada.sei_numero == "SEI-NOVO"
+        assert atualizada.sei_numero == "SEI-ORIG"
+        assert atualizada.numero_portaria == 10
+        assert atualizada.doc is None
+
+    def test_atualizar_texto_sei_da_apostila(self):
+        """Verifica que o texto SEI próprio da apostila é atualizado."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+
+        atualizada = ApostilaService.atualizar(
+            apostila,
+            {"texto_sei": "A presente portaria apostilada, texto novo."},
+        )
+
+        atualizada.refresh_from_db()
+        assert (
+            atualizada.texto_sei
+            == "A presente portaria apostilada, texto novo."
+        )
+
+    def test_atualizar_herda_valor_novo_ao_alterar_portaria_do_ato_pai(self):
+        """Verifica que a apostila acompanha a portaria alterada na edição."""
+        d = criar_ato_designacao(numero_portaria=1, sei_numero="SEI-D")
+        apostila = ApostilaService.criar(self._data(d))
+
+        ApostilaService.atualizar(
+            apostila,
+            {
+                "alteracoes": [
+                    {"campo_alterado": "numero_portaria", "valor_novo": "321"},
+                ],
+            },
+        )
+
+        apostila.refresh_from_db()
+        assert apostila.numero_portaria == 321
+        assert apostila.sei_numero == "SEI-D"
+
+    def test_atualizar_mantem_campos_herdados_sem_alteracao_deles(self):
+        """Verifica que apostilas existentes mantêm portaria e SEI próprios.
+
+        Alterações em outros campos não sobrescrevem os valores herdados.
+        """
+        d = criar_ato_designacao(numero_portaria=1, sei_numero="SEI-D")
+        apostila = criar_ato_apostila(
+            d, sei_numero="SEI-LEGADO", numero_portaria=77
+        )
+
+        ApostilaService.atualizar(
+            apostila,
+            {
+                "alteracoes": [
+                    {
+                        "campo_alterado": "carater_excepcional",
+                        "valor_novo": "true",
+                    },
+                ],
+            },
+        )
+
+        apostila.refresh_from_db()
+        assert apostila.numero_portaria == 77
+        assert apostila.sei_numero == "SEI-LEGADO"
 
     def test_atualizar_salva_observacao(self):
         """Verifica que a observação é atualizada no detalhe da apostila."""
@@ -457,28 +600,18 @@ class TestApostilaService:
         apostila.apostila_detalhe.refresh_from_db()
         assert apostila.apostila_detalhe.observacao == "Obs atualizada"
 
-    def test_atualizar_permite_limpar_observacao_e_ano_vigente(self):
-        """Verifica que observação e ano podem ser esvaziados na atualização."""
+    def test_atualizar_permite_limpar_observacao(self):
+        """Verifica que a observação pode ser esvaziada na atualização."""
         d = criar_ato_designacao()
         ato = ApostilaService.criar(
-            self._data(
-                d,
-                ano_vigente="2024",
-                observacao="Observação preenchida",
-            )
+            self._data(d, observacao="Observação preenchida")
         )
 
-        assert ato.ano_vigente == "2024"
         assert ato.apostila_detalhe.observacao == "Observação preenchida"
 
-        atualizada = ApostilaService.atualizar(
-            ato,
-            {"ano_vigente": "", "observacao": ""},
-        )
+        atualizada = ApostilaService.atualizar(ato, {"observacao": ""})
 
-        atualizada.refresh_from_db()
         atualizada.apostila_detalhe.refresh_from_db()
-        assert atualizada.ano_vigente == ""
         assert atualizada.apostila_detalhe.observacao == ""
 
     def test_atualizar_com_novas_alteracoes(self):
