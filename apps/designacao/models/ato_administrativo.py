@@ -61,8 +61,7 @@ class AtoAdministrativo(models.Model):
         related_name="descendentes",
     )
 
-    # Apostila não usa numero_portaria/ano_vigente — numero_portaria fica
-    # nulo e ano_vigente blank para esse tipo
+    # Apostila herda numero_portaria/ano_vigente/sei_numero do ato pai
     numero_portaria = models.IntegerField(null=True, blank=True)
     ano_vigente = models.CharField(max_length=6, blank=True, default="")
     sei_numero = models.CharField(max_length=30)
