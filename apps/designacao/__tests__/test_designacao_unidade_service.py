@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from apps.designacao.__tests__.factories import criar_ato_designacao
 from apps.designacao.services.designacao_unidades_service import (
     CicloService,
     DesignacaoUnidadeService,
@@ -960,3 +961,88 @@ class TestFuncaoNormalizar:
         )
 
         assert normalizar(None) == ""
+
+
+@pytest.mark.django_db
+class TestListarUnidadesCadastradas:
+    """Testes para a listagem de unidades já cadastradas em designações."""
+
+    def test_retorna_campos_da_unidade(self):
+        """Verifica que retorna dre, dre_nome, ue e ue_nome."""
+        criar_ato_designacao(
+            dre="108800",
+            dre_nome="DRE BUTANTA",
+            ue="019453",
+            unidade_proponente="EMEF - ALIPIO CORREA NETO, PROF.",
+        )
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas()
+
+        assert resultado == [
+            {
+                "dre": "108800",
+                "dre_nome": "DRE BUTANTA",
+                "ue": "019453",
+                "ue_nome": "EMEF - ALIPIO CORREA NETO, PROF.",
+            }
+        ]
+
+    def test_ignora_registros_sem_codigo(self):
+        """Verifica que registros sem código de dre ou ue são ignorados."""
+        criar_ato_designacao(dre="", ue="019453")
+        criar_ato_designacao(dre="108800", ue="")
+
+        assert DesignacaoUnidadeService.listar_unidades_cadastradas() == []
+
+    def test_remove_repeticoes_usando_nome_mais_recente(self):
+        """Verifica que a mesma UE aparece uma vez, com o nome mais recente."""
+        criar_ato_designacao(
+            dre="108800", ue="019453", unidade_proponente="EMEF - ALIPIO"
+        )
+        criar_ato_designacao(
+            dre="108800",
+            ue="019453",
+            unidade_proponente="EMEF - ALIPIO CORREA NETO, PROF.",
+        )
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas()
+
+        assert [u["ue_nome"] for u in resultado] == [
+            "EMEF - ALIPIO CORREA NETO, PROF."
+        ]
+
+    def test_filtra_por_search_e_ordena_por_nome(self):
+        """Verifica o filtro por nome e a ordenação alfabética."""
+        criar_ato_designacao(
+            dre="1", ue="3", unidade_proponente="EMEF - ZULMIRA"
+        )
+        criar_ato_designacao(
+            dre="1", ue="2", unidade_proponente="EMEF - ALIPIO"
+        )
+        criar_ato_designacao(dre="1", ue="4", unidade_proponente="CEI - BETA")
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "emef"
+        )
+
+        assert [u["ue"] for u in resultado] == ["2", "3"]
+
+    def test_search_ignora_acentos(self):
+        """Verifica que o filtro por nome ignora acentuação."""
+        criar_ato_designacao(
+            dre="1", ue="2", unidade_proponente="EMEF - SÃO JOÃO"
+        )
+        criar_ato_designacao(
+            dre="1", ue="3", unidade_proponente="EMEF - SAO PAULO"
+        )
+        criar_ato_designacao(dre="1", ue="4", unidade_proponente="CEI - BETA")
+
+        sem_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "sao"
+        )
+        com_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "São"
+        )
+
+        assert [u["ue"] for u in sem_acento] == ["2", "3"]
+        assert [u["ue"] for u in com_acento] == ["2", "3"]

@@ -14,6 +14,7 @@ from apps.designacao.api.views.designacao_servidor_view import (
 )
 from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadeCargosView,
+    DesignacaoUnidadesCadastradasView,
     DesignacaoUnidadeView,
 )
 from apps.designacao.api.views.insubsistencia_view import (
@@ -37,6 +38,11 @@ urlpatterns = [
         "unidade/cargos/",
         DesignacaoUnidadeCargosView.as_view(),
         name="unidade-cargos",
+    ),
+    path(
+        "unidade/cadastradas/",
+        DesignacaoUnidadesCadastradasView.as_view(),
+        name="unidade-cadastradas",
     ),
     # Designações (AtoAdministrativo + DesignacaoDetalhe)
     path(
