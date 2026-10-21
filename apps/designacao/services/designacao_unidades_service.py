@@ -560,11 +560,15 @@ class DesignacaoUnidadeService:
             .values("ultimo")
         )
 
-        detalhes = DesignacaoDetalhe.objects.filter(pk__in=mais_recentes)
-        if search:
-            detalhes = detalhes.filter(unidade_proponente__icontains=search)
-
-        detalhes = detalhes.order_by("unidade_proponente")
+        # Filtro e ordenação em Python para ignorar acentos sem depender
+        # da extensão unaccent nem da collation do banco.
+        termo = normalizar(search)
+        detalhes = sorted(
+            DesignacaoDetalhe.objects.filter(pk__in=mais_recentes).values(
+                "dre", "dre_nome", "ue", "unidade_proponente"
+            ),
+            key=lambda d: normalizar(d["unidade_proponente"]),
+        )
 
         return [
             {
@@ -573,7 +577,6 @@ class DesignacaoUnidadeService:
                 "ue": detalhe["ue"],
                 "ue_nome": detalhe["unidade_proponente"],
             }
-            for detalhe in detalhes.values(
-                "dre", "dre_nome", "ue", "unidade_proponente"
-            )
+            for detalhe in detalhes
+            if termo in normalizar(detalhe["unidade_proponente"])
         ]

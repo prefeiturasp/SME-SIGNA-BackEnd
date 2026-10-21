@@ -1026,3 +1026,23 @@ class TestListarUnidadesCadastradas:
         )
 
         assert [u["ue"] for u in resultado] == ["2", "3"]
+
+    def test_search_ignora_acentos(self):
+        """Verifica que o filtro por nome ignora acentuação."""
+        criar_ato_designacao(
+            dre="1", ue="2", unidade_proponente="EMEF - SÃO JOÃO"
+        )
+        criar_ato_designacao(
+            dre="1", ue="3", unidade_proponente="EMEF - SAO PAULO"
+        )
+        criar_ato_designacao(dre="1", ue="4", unidade_proponente="CEI - BETA")
+
+        sem_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "sao"
+        )
+        com_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "São"
+        )
+
+        assert [u["ue"] for u in sem_acento] == ["2", "3"]
+        assert [u["ue"] for u in com_acento] == ["2", "3"]
