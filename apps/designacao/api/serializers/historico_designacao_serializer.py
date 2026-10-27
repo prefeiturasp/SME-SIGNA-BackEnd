@@ -446,7 +446,12 @@ class HistoricoDesignacaoSerializer(
             "ultimo_ato_vigente_id": _ultimo_ato_vigente_id(derivados),
             # Tipo de cada ato, para `tipo_de_ato` concatenar com o pai
             # sem tocar em `ato_pai` (que seria uma consulta por item).
-            "tipo_por_id": {ato.pk: ato.tipo for ato, _nivel in derivados},
+            # A designação de origem entra no mapa para que os filhos
+            # diretos também saiam como "X de Designação".
+            "tipo_por_id": {
+                obj.pk: obj.tipo,
+                **{ato.pk: ato.tipo for ato, _nivel in derivados},
+            },
             # Detalhe da designação de origem, para o `nome_display`.
             "designacao_por_raiz_id": {obj.pk: self._detalhe_seguro(obj)},
         }

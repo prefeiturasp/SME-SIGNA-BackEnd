@@ -379,6 +379,45 @@ de apostila/insubsistência). Eles escolhem **quais designações** entram na
 resposta; ``atos_relacionados`` continua completo para cada designação
 retornada. Valor inválido devolve ``400`` com o campo do erro.
 
+Dados de demonstração do histórico
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Para testar o histórico sem depender de dados reais, o app traz um seed
+com 34 atos em quatro UEs (``000108``, ``019453``, ``093712`` e
+``095432``), cobrindo todos os tipos de ato e todas as combinações de
+hierarquia permitidas:
+
+.. code-block:: bash
+
+   # cria/recria (idempotente)
+   python manage.py seed_historico_demo
+
+   # remove
+   python manage.py seed_historico_demo --apagar
+
+O seed também pode ser carregado pela migração
+``0027_seed_historico_designacoes_demo``, desde que a variável de
+ambiente ``SEED_HISTORICO_DESIGNACOES`` esteja ligada (sem ela a
+migração não cria nada, então a suíte de testes não é afetada):
+
+.. code-block:: bash
+
+   SEED_HISTORICO_DESIGNACOES=1 python manage.py migrate designacao
+
+Os atos criados usam o prefixo ``DEMO-`` em ``sei_numero``
+(``apps/designacao/seed/historico_demo.py``), o que permite apagá-los sem
+tocar em designações reais. Cenários disponíveis:
+
+- designação vigente, cessada, com ``data_fim`` no passado e rascunho não
+  publicado;
+- cessação ativa, cessação tornada sem efeito e designação com duas
+  cessações (a primeira anulada, a segunda válida);
+- apostila sobre designação e sobre cessação (com ``ApostilaAlteracao``);
+- insubsistência sobre designação, cessação, apostila ("Anulação de
+  Apostila") e sobre insubsistência ("Tornar sem efeito");
+- observações com o texto ``ssss``, para exercitar
+  ``?observacao=ssss``.
+
 Cessações, apostilas e insubsistências
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

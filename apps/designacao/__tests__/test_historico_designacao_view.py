@@ -262,6 +262,23 @@ def test_atos_relacionados_trazem_dados_de_cada_ato(auth_client):
 
 
 @pytest.mark.django_db
+def test_tipo_de_ato_de_filho_direto_da_designacao(auth_client):
+    """Atos filhos diretos da designação citam o tipo do pai."""
+    designacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(designacao, observacao="Apostila direta")
+    criar_ato_insubsistencia(designacao, observacoes="Insubsistência direta")
+
+    response = auth_client.get(_url())
+
+    rotulos = {
+        ato["tipo"]: ato["tipo_de_ato"]
+        for ato in response.data[0]["atos_relacionados"]
+    }
+    assert rotulos["APOSTILA"] == "Apostila de Designação"
+    assert rotulos["INSUBSISTENCIA"] == "Insubsistência de Designação"
+
+
+@pytest.mark.django_db
 def test_ato_sem_numero_de_portaria_retorna_portaria_nula(auth_client):
     """Ato sem número de portaria não quebra a formatação."""
     designacao = criar_ato_designacao(ue=UE)
