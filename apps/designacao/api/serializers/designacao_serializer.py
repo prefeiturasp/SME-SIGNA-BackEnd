@@ -81,6 +81,12 @@ class DesignacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     indicado_categoria = serializers.CharField(
         max_length=255, required=False, default="", allow_blank=True
     )
+    indicado_codigo_ue_lotacao = serializers.CharField(
+        max_length=50, required=False, default="", allow_blank=True
+    )
+    indicado_possui_cargo_sobreposto = serializers.BooleanField(
+        required=False, default=False
+    )
 
     # Titular
     titular_nome_civil = serializers.CharField(
@@ -284,6 +290,14 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     indicado_categoria = serializers.CharField(
         source="designacao_detalhe.indicado_categoria", read_only=True
     )
+    indicado_codigo_ue_lotacao = serializers.CharField(
+        source="designacao_detalhe.indicado_codigo_ue_lotacao",
+        read_only=True,
+    )
+    indicado_possui_cargo_sobreposto = serializers.BooleanField(
+        source="designacao_detalhe.indicado_possui_cargo_sobreposto",
+        read_only=True,
+    )
 
     # Titular
     titular_nome_civil = serializers.CharField(
@@ -421,6 +435,8 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "indicado_local_exercicio",
             "indicado_local_servico",
             "indicado_categoria",
+            "indicado_codigo_ue_lotacao",
+            "indicado_possui_cargo_sobreposto",
             # Titular
             "titular_nome_civil",
             "titular_nome_servidor",

@@ -137,6 +137,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
                         "id": f.id,
                         "sei_numero": f.sei_numero,
                         "doc": f.doc,
+                        "status": f.status,
                     }
                 )
             except Exception:

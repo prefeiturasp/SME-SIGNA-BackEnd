@@ -87,6 +87,18 @@ class TestApostilaWriteSerializer:
         assert not serializer.is_valid()
         assert "alteracoes" in serializer.errors
 
+    @pytest.mark.parametrize("valor", ["", None])
+    def test_alteracoes_aceita_valor_novo_vazio(self, valor):
+        """Verifica que valor vazio/nulo é aceito para limpar um campo."""
+        designacao = criar_ato_designacao()
+        payload = self._payload(designacao.id)
+        payload["alteracoes"] = [
+            {"campo_alterado": "pendencias", "valor_novo": valor}
+        ]
+
+        serializer = ApostilaWriteSerializer(data=payload)
+        assert serializer.is_valid(), serializer.errors
+
     def test_alteracoes_aceita_tipo_ato_alvo_opcional(self):
         """Verifica que tipo_ato_alvo é aceito e tem default vazio."""
         designacao = criar_ato_designacao()

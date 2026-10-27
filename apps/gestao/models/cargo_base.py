@@ -71,6 +71,15 @@ class CargoBase(models.Model):
         null=True,
         blank=True,
     )
+    permite_substituicao = models.BooleanField(
+        "Permite substituição", default=False
+    )
+    possui_periodo_fechado = models.BooleanField(
+        "Possui período fechado", default=False
+    )
+    data_fim_periodo = models.DateField(
+        "Data final do período", default=None, null=True, blank=True
+    )
 
     criado_em = models.DateTimeField(auto_now_add=True)
 

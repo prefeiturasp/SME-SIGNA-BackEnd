@@ -387,6 +387,50 @@ class ModuloService:
 
         return calculator.calcular(cargo_ue, info_ue)
 
+    @staticmethod
+    def possui_calculo(codigo_cargo: object) -> bool:
+        """Indica se o cargo possui regra de cálculo de módulo."""
+        return str(codigo_cargo) in Calculadores
+
+    @staticmethod
+    def contar_servidores(servidores: list[dict[str, Any]]) -> int:
+        """Conta servidores não afastados por RF único."""
+        rfs = {
+            s.get("rf")
+            for s in servidores
+            if s.get("rf") and not s.get("esta_afastado")
+        }
+        return len(rfs)
+
+    @staticmethod
+    def _modulo_como_inteiro(modulo: object) -> int | None:
+        """Retorna o módulo como inteiro, ou None quando inválido."""
+        if isinstance(modulo, bool):
+            return None
+        if isinstance(modulo, int):
+            return modulo
+        if isinstance(modulo, str) and modulo.strip().isdecimal():
+            return int(modulo.strip())
+        return None
+
+    @classmethod
+    def possui_excedente(
+        cls, codigo_cargo: object, modulo: object, quantidade: int
+    ) -> bool:
+        """Indica se a quantidade de servidores excede o módulo do cargo.
+
+        Só se aplica a cargos com regra de cálculo de módulo; módulo
+        vazio ou não numérico é tratado como sem limite definido.
+        """
+        if not cls.possui_calculo(codigo_cargo):
+            return False
+
+        limite = cls._modulo_como_inteiro(modulo)
+        if limite is None:
+            return False
+
+        return quantidade > limite
+
 
 class DesignacaoUnidadeService:
     """Serviço de agregação de informações escolares para uma unidade."""
@@ -450,6 +494,16 @@ class DesignacaoUnidadeService:
 
         for cargo in cargos:
             cargo["modulo"] = ModuloService.definir_modulo(cargo, info_ue)
+            # Conta antes de enriquecer: o enriquecimento descarta
+            # o campo "esta_afastado".
+            cargo["quantidade_servidores"] = ModuloService.contar_servidores(
+                cargo.get("servidores", [])
+            )
+            cargo["excedente"] = ModuloService.possui_excedente(
+                cargo.get("codigo_cargo"),
+                cargo["modulo"],
+                cargo["quantidade_servidores"],
+            )
             cargo["servidores"] = [
                 ServidorService.enriquecer(s)
                 for s in cargo.get("servidores", [])
