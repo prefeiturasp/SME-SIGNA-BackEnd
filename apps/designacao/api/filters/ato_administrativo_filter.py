@@ -68,6 +68,60 @@ class AtoAdministrativoFilter(PortariaFilter):
         method="filter_ato_id",
     )
 
+    codigo_dre = django_filters.CharFilter(
+        label="Código EOL da DRE",
+        method="filter_codigo_dre",
+    )
+
+    codigo_ue = django_filters.CharFilter(
+        label="Código EOL da unidade proponente",
+        method="filter_codigo_ue",
+    )
+
+    def filter_codigo_dre(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra atos administrativos pelo código da DRE.
+
+        Considera a DRE do próprio ato ou da designação raiz, para que
+        cessações, apostilas e insubsistências também sejam retornadas.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Código EOL da DRE buscada.
+
+        Returns:
+            Queryset filtrado com os atos vinculados à DRE.
+
+        """
+        return queryset.filter(
+            models.Q(designacao_detalhe__dre=value)
+            | models.Q(ato_raiz__designacao_detalhe__dre=value)
+        )
+
+    def filter_codigo_ue(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra atos administrativos pelo código da unidade proponente.
+
+        Considera a unidade do próprio ato ou da designação raiz, para que
+        cessações, apostilas e insubsistências também sejam retornadas.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Código EOL da unidade proponente buscada.
+
+        Returns:
+            Queryset filtrado com os atos vinculados à unidade.
+
+        """
+        return queryset.filter(
+            models.Q(designacao_detalhe__ue=value)
+            | models.Q(ato_raiz__designacao_detalhe__ue=value)
+        )
+
     def filter_rf(
         self, queryset: models.QuerySet, name: str, value: str
     ) -> models.QuerySet:
@@ -191,4 +245,6 @@ class AtoAdministrativoFilter(PortariaFilter):
             "numero_sei",
             "ato_id",
             "observacao",
+            "codigo_dre",
+            "codigo_ue",
         ]
