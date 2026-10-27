@@ -17,6 +17,7 @@ from apps.designacao.api.filters.historico_designacao_filter import (
     HistoricoDesignacaoFilter,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.gestao.models.cargo_base import CargoBase
 
 # Código EOL de unidade escolar é numérico e normalmente gravado com zeros
 # à esquerda (ex.: "019453"); o tamanho padrão é 6 dígitos.
@@ -24,23 +25,23 @@ _TAMANHO_CODIGO_UE = 6
 
 # Relações OneToOne do ato com o seu detalhe. Todas viram LEFT JOIN na
 # mesma linha do ato (custo de um lookup por pk), então vale carregá-las
-# de uma vez em vez de deixar o serializer consultar cada uma.
+# de uma vez em vez de deixar o serializer consultar cada uma. O
+# impedimento e o usuário criador também entram: o payload do histórico
+# expõe `impedimento_*` e `criado_por_nome`, como a listagem de atos.
 _SELECT_RELATED_DETALHES = (
     "designacao_detalhe",
+    "designacao_detalhe__impedimento_substituicao",
     "cessacao_detalhe",
     "apostila_detalhe",
     "insubsistencia_detalhe",
+    "criado_por",
 )
 
-# Campos grandes que este endpoint não devolve: adiá-los evita trafegar
-# textos longos (portaria inteira, pendências, informações adicionais) do
-# banco para o processo Python em cada linha do histórico.
-_CAMPOS_ADIADOS = (
-    "texto_sei",
-    "designacao_detalhe__pendencias",
-    "designacao_detalhe__informacoes_adicionais",
-    "designacao_detalhe__motivo_afastamento",
-)
+# Único campo grande que este endpoint não devolve: o texto integral da
+# portaria (`texto_sei`). Adiá-lo evita trafegar megabytes do banco para o
+# processo Python em cada linha do histórico — quem precisa do texto usa
+# `atos-administrativos/<id>/`.
+_CAMPOS_ADIADOS = ("texto_sei",)
 
 
 class HistoricoDesignacaoService:
@@ -163,7 +164,46 @@ class HistoricoDesignacaoService:
             ),
             reverse=True,
         )
+        cls._preencher_descricoes_de_cargo(designacoes)
         return designacoes
+
+    @staticmethod
+    def _preencher_descricoes_de_cargo(
+        designacoes: list[AtoAdministrativo],
+    ) -> None:
+        """Anexa a descrição do cargo de vaga a cada designação.
+
+        O serializer expõe ``cargo_vaga_display`` (igual a
+        ``DesignacaoReadSerializer``). Para não fazer uma consulta por
+        designação, as descrições são buscadas **uma única vez** e
+        guardadas em ``_cargo_por_codigo`` na instância. Quando nenhuma
+        designação tem ``cargo_vaga``, nenhuma consulta extra é feita.
+
+        Args:
+            designacoes: Designações já ordenadas.
+
+        """
+        if not designacoes:
+            return
+
+        codigos = {
+            str(detalhe.cargo_vaga)
+            for detalhe in (
+                ato.designacao_detalhe
+                for ato in designacoes
+                if ato.designacao_detalhe is not None
+            )
+            if detalhe.cargo_vaga is not None
+        }
+        mapa: dict[str, str] = {}
+        if codigos:
+            mapa = dict(
+                CargoBase.objects.filter(codigo_cargo__in=codigos).values_list(
+                    "codigo_cargo", "descricao_completa"
+                )
+            )
+        for ato in designacoes:
+            ato._cargo_por_codigo = mapa  # type: ignore[attr-defined]
 
     @staticmethod
     def _preencher_filhos(atos: list[AtoAdministrativo]) -> None:

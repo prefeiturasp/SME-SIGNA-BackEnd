@@ -17,9 +17,12 @@ from apps.designacao.__tests__.factories import (
 from apps.designacao.api.serializers.historico_designacao_serializer import (
     HistoricoDesignacaoSerializer,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.services.historico_designacao_service import (
     HistoricoDesignacaoService,
 )
+from apps.gestao.models.cargo_base import CargoBase
 
 User = get_user_model()
 
@@ -69,11 +72,252 @@ def test_lista_designacoes_da_ue_com_dados_principais(auth_client):
     assert item["ue"] == UE
     assert item["portaria"] == "123/2024"
     assert item["cargo"] == "Professor"
-    assert item["servidor_indicado"] == "Maria Silva"
+    assert item["nome"] == "Maria Silva"
     assert item["data_inicio"] == "2024-02-05"
     assert item["vigente"] is True
     assert item["cessada_em"] is None
     assert item["atos_relacionados"] == []
+
+
+# ── Paridade com atos administrativos e designação detalhe ───────────────────
+
+
+CAMPOS_ATO = {
+    "id",
+    "tipo",
+    "tipo_de_ato",
+    "status",
+    "status_publicacao",
+    "numero_portaria",
+    "ano_vigente",
+    "sei_numero",
+    "doc",
+    "portaria",
+    "ato_pai_id",
+    "ato_raiz_id",
+    "criado_em",
+    "criado_por_nome",
+}
+
+CAMPOS_DESIGNACAO_DETALHE = {
+    "ue",
+    "dre",
+    "dre_nome",
+    "unidade_proponente",
+    "codigo_hierarquico",
+    "funcionarios_da_unidade",
+    "indicado_nome_civil",
+    "indicado_nome_servidor",
+    "indicado_rf",
+    "indicado_vinculo",
+    "indicado_cargo_base",
+    "indicado_codigo_cargo_base",
+    "indicado_lotacao",
+    "indicado_cargo_sobreposto",
+    "indicado_codigo_cargo_sobreposto",
+    "indicado_local_exercicio",
+    "indicado_local_servico",
+    "indicado_categoria",
+    "indicado_codigo_ue_lotacao",
+    "indicado_possui_cargo_sobreposto",
+    "titular_nome_civil",
+    "titular_nome_servidor",
+    "titular_rf",
+    "titular_vinculo",
+    "titular_cargo_base",
+    "titular_codigo_cargo_base",
+    "titular_lotacao",
+    "titular_cargo_sobreposto",
+    "titular_codigo_cargo_sobreposto",
+    "titular_local_exercicio",
+    "titular_local_servico",
+    "data_inicio",
+    "data_fim",
+    "carater_excepcional",
+    "com_afastamento",
+    "possui_pendencia",
+    "pendencias",
+    "motivo_afastamento",
+    "informacoes_adicionais",
+    "detalhe_para_quadro_de_historico_por_ano",
+    "impedimento_substituicao",
+    "impedimento_substituicao_detail",
+    "impedimento_display",
+    "tipo_vaga",
+    "tipo_vaga_display",
+    "cargo_vaga",
+    "cargo_vaga_display",
+}
+
+CAMPOS_ATO_RELACIONADO = CAMPOS_ATO | {
+    "ativo",
+    "data_designacao",
+    "data_cessacao",
+    "nome",
+    "cargo",
+    "rf",
+    "observacoes",
+    "tipo_insubsistencia",
+    "tipo_apostila",
+    "nivel",
+    "ultimo_ato_vigente",
+}
+
+
+@pytest.mark.django_db
+def test_payload_da_designacao_tem_os_campos_de_atos_e_do_detalhe(
+    auth_client,
+):
+    """A designação expõe os mesmos campos de atos e de designação detalhe.
+
+    Além deles, vêm os campos próprios do histórico.
+    """
+    criar_ato_designacao(
+        ue=UE,
+        indicado_nome_servidor="Maria Silva",
+        indicado_rf="1234567",
+        indicado_cargo_base="Professor",
+        indicado_cargo_sobreposto="Diretor",
+        tipo_vaga="VAGO",
+        cargo_vaga=3360,
+    )
+
+    response = auth_client.get(_url())
+
+    item = response.data[0]
+    assert set(item) >= CAMPOS_ATO
+    assert set(item) >= CAMPOS_DESIGNACAO_DETALHE
+    assert {"vigente", "cessada_em", "atos_relacionados"} <= set(item)
+
+    # Nomenclatura de atos administrativos.
+    assert item["tipo"] == "DESIGNACAO"
+    assert item["tipo_de_ato"] == "Designação"
+    assert item["status"] == "ativo"
+    assert item["status_publicacao"] == "NAO_PUBLICADO"
+    assert item["nome"] == "Maria Silva"
+    assert item["rf"] == "1234567"
+    # `cargo` é o sobreposto, com fallback para o base.
+    assert item["cargo"] == "Diretor"
+    assert item["indicado_cargo_base"] == "Professor"
+
+
+@pytest.mark.django_db
+def test_status_publicacao_acompanha_o_cadastro(auth_client):
+    """`status_publicacao` e `doc` refletem a publicação no D.O."""
+    criar_ato_designacao(ue=UE, doc=datetime.date(2024, 3, 1))
+    AtoAdministrativo.objects.filter(tipo="DESIGNACAO").update(
+        status_publicacao=AtoAdministrativo.StatusPublicacao.PUBLICADO
+    )
+
+    item = auth_client.get(_url()).data[0]
+
+    assert item["status_publicacao"] == "PUBLICADO"
+    assert item["doc"] == "2024-03-01"
+
+
+@pytest.mark.django_db
+def test_criado_por_nome_e_preenchido(auth_client):
+    """`criado_por_nome` segue o padrão de atos administrativos."""
+    usuario = User.objects.first()
+    ato = criar_ato_designacao(ue=UE)
+    ato.criado_por = usuario
+    ato.save(update_fields=["criado_por"])
+
+    item = auth_client.get(_url()).data[0]
+
+    assert item["criado_por_nome"] == (usuario.name or usuario.username)
+
+
+@pytest.mark.django_db
+def test_impedimento_e_vaga_tem_displays(auth_client):
+    """`impedimento_*` e `tipo_vaga_display` vêm como em designacoes/<id>."""
+    impedimento = ImpedimentoSubstituicao.objects.create(
+        codigo="LIC_MEDICA_TESTE", descricao="Por licença médica"
+    )
+    criar_ato_designacao(
+        ue=UE,
+        impedimento_substituicao=impedimento,
+        tipo_vaga="DISPONIVEL",
+    )
+
+    item = auth_client.get(_url()).data[0]
+
+    assert item["impedimento_substituicao"] == impedimento.pk
+    assert item["impedimento_substituicao_detail"] == {
+        "id": impedimento.pk,
+        "codigo": "LIC_MEDICA_TESTE",
+        "descricao": "Por licença médica",
+    }
+    assert item["impedimento_display"] == "Por licença médica"
+    assert item["tipo_vaga_display"] == "Cargo Disponível"
+    assert item["cargo_vaga_display"] is None
+
+
+@pytest.mark.django_db
+def test_cargo_vaga_display_usa_o_cadastro_de_cargos(auth_client):
+    """`cargo_vaga_display` traz a descrição completa do CargoBase."""
+    cargo, _criado = CargoBase.objects.get_or_create(
+        codigo_cargo="9999",
+        defaults={
+            "descricao_resumida": "Cargo de Teste",
+            "descricao_completa": "CARGO DE TESTE PARA HISTÓRICO",
+            "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+            "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+        },
+    )
+    criar_ato_designacao(ue=UE, cargo_vaga=int(cargo.codigo_cargo))
+
+    item = auth_client.get(_url()).data[0]
+
+    assert item["cargo_vaga"] == 9999
+    assert item["cargo_vaga_display"] == "CARGO DE TESTE PARA HISTÓRICO"
+
+
+@pytest.mark.django_db
+def test_ato_relacionado_tem_campos_de_atos_administrativos(auth_client):
+    """Itens de `atos_relacionados` seguem a listagem de atos."""
+    designacao = criar_ato_designacao(ue=UE, indicado_rf="1234567")
+    cessacao = criar_ato_cessacao(
+        designacao, numero_portaria=456, doc=datetime.date(2024, 3, 1)
+    )
+    apostila = criar_ato_apostila(cessacao, observacao="Retifica")
+    criar_ato_insubsistencia(apostila, observacoes="Anula a apostila")
+
+    atos = auth_client.get(_url()).data[0]["atos_relacionados"]
+
+    for ato in atos:
+        assert set(ato) >= CAMPOS_ATO_RELACIONADO
+        assert ato["rf"] == "1234567"
+        assert ato["data_designacao"] == "2024-01-01"
+
+    cessacao_json, apostila_json, insubsistencia_json = atos
+
+    assert cessacao_json["status"] == "ativo"
+    assert cessacao_json["data_cessacao"] == "2024-03-01"
+    assert cessacao_json["tipo_insubsistencia"] is None
+    assert cessacao_json["tipo_apostila"] is None
+    assert cessacao_json["observacoes"] is None
+
+    assert apostila_json["tipo_apostila"] == "CESSACAO"
+    assert apostila_json["data_cessacao"] is None
+    assert apostila_json["observacoes"] == "Retifica"
+
+    assert insubsistencia_json["tipo_insubsistencia"] == "APOSTILA"
+    assert insubsistencia_json["observacoes"] == "Anula a apostila"
+
+
+@pytest.mark.django_db
+def test_ato_relacionado_informa_status_do_pai_desfeito(auth_client):
+    """`status` do ato derivado reflete a insubsistência do próprio ato."""
+    designacao = criar_ato_designacao(ue=UE)
+    cessacao = criar_ato_cessacao(designacao)
+    criar_ato_insubsistencia(cessacao)
+    AtoAdministrativo.objects.filter(pk=cessacao.pk).update(ativo=False)
+
+    atos = auth_client.get(_url()).data[0]["atos_relacionados"]
+
+    assert atos[0]["status"] == "insubsistente"
+    assert atos[0]["ativo"] is False
 
 
 @pytest.mark.django_db
@@ -135,9 +379,9 @@ def test_cessacao_ativa_informa_cessada_em_e_nao_fica_vigente(auth_client):
     ato = item["atos_relacionados"][0]
     assert ato["tipo"] == "CESSACAO"
     assert ato["tipo_de_ato"] == "Cessação"
-    assert ato["data_do_ato"] == "2024-03-02"
+    assert ato["doc"] == "2024-03-02"
     assert ato["portaria"] == "456/2024"
-    assert ato["observacao"] is None
+    assert ato["observacoes"] is None
 
 
 @pytest.mark.django_db
@@ -243,22 +487,22 @@ def test_atos_relacionados_trazem_dados_de_cada_ato(auth_client):
     ]
 
     assert cessacao_json["tipo_de_ato"] == "Cessação"
-    assert cessacao_json["data_do_ato"] == "2024-03-01"
+    assert cessacao_json["doc"] == "2024-03-01"
     assert cessacao_json["portaria"] == "456/2024"
-    assert cessacao_json["nome_display"] == "Maria Silva"
-    assert cessacao_json["observacao"] is None
+    assert cessacao_json["nome"] == "Maria Silva"
+    assert cessacao_json["observacoes"] is None
 
     assert apostila_json["tipo_de_ato"] == "Apostila de Cessação"
-    assert apostila_json["data_do_ato"] == "2024-04-01"
+    assert apostila_json["doc"] == "2024-04-01"
     assert apostila_json["portaria"] == "457/2024"
-    assert apostila_json["nome_display"] == "Maria Silva"
-    assert apostila_json["observacao"] == "Apostila da cessação"
+    assert apostila_json["nome"] == "Maria Silva"
+    assert apostila_json["observacoes"] == "Apostila da cessação"
 
     assert insubsistencia_json["tipo_de_ato"] == "Anulação de Apostila"
-    assert insubsistencia_json["data_do_ato"] == "2024-05-01"
+    assert insubsistencia_json["doc"] == "2024-05-01"
     assert insubsistencia_json["portaria"] == "458/2024"
-    assert insubsistencia_json["nome_display"] == "Maria Silva"
-    assert insubsistencia_json["observacao"] == "Anulação da apostila"
+    assert insubsistencia_json["nome"] == "Maria Silva"
+    assert insubsistencia_json["observacoes"] == "Anulação da apostila"
 
 
 @pytest.mark.django_db
@@ -407,6 +651,39 @@ def test_numero_de_consultas_nao_cresce_com_o_volume(
 
     assert len(payload) == 5
     assert all(len(item["atos_relacionados"]) == 3 for item in payload)
+
+
+@pytest.mark.django_db
+def test_descricao_de_cargo_de_vaga_custa_uma_consulta_extra(
+    django_assert_num_queries,
+):
+    """O mapa de cargos é carregado uma única vez, não por designação."""
+    cargo, _criado = CargoBase.objects.get_or_create(
+        codigo_cargo="9998",
+        defaults={
+            "descricao_resumida": "Cargo de Teste",
+            "descricao_completa": "CARGO DE TESTE",
+            "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
+            "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+        },
+    )
+    for indice in range(5):
+        criar_ato_designacao(
+            ue=UE,
+            data_inicio=datetime.date(2020 + indice, 1, 1),
+            cargo_vaga=int(cargo.codigo_cargo),
+        )
+
+    # 1 consulta da hierarquia + 1 do mapa de cargos, independente do volume.
+    with django_assert_num_queries(2):
+        designacoes = HistoricoDesignacaoService.listar_por_ue(UE)
+
+    with django_assert_num_queries(0):
+        payload = HistoricoDesignacaoSerializer(designacoes, many=True).data
+
+    assert all(
+        item["cargo_vaga_display"] == "CARGO DE TESTE" for item in payload
+    )
 
 
 @pytest.mark.django_db

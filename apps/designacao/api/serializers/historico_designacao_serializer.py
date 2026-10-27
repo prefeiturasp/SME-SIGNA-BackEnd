@@ -1,19 +1,35 @@
 """Serializadores do histórico de designações por unidade escolar.
 
-Expõe a designação com seus dados principais, a situação de vigência e a
-cessação válida, além de uma lista plana com todos os atos relacionados
-(cessações, apostilas, insubsistências e seus descendentes em qualquer
-nível), em ordem cronológica.
+O payload segue a nomenclatura já usada nas outras telas do sistema:
+
+* **campos de ato** iguais aos de ``AtoAdministrativoListSerializer`` /
+  ``PortariaListSerializer``: ``tipo_de_ato``, ``status``,
+  ``status_publicacao``, ``numero_portaria``, ``ano_vigente``,
+  ``sei_numero``, ``doc``, ``nome``, ``cargo``, ``rf``, ``observacoes``,
+  ``tipo_insubsistencia``, ``tipo_apostila``, ``ato_pai_id``,
+  ``criado_em``, ``criado_por_nome``;
+* **campos de detalhe da designação** iguais aos de
+  ``DesignacaoReadSerializer``: ``indicado_*``, ``titular_*``,
+  ``data_inicio``, ``data_fim``, flags, ``impedimento_*``,
+  ``tipo_vaga``/``cargo_vaga`` e os respectivos displays.
+
+Somam-se a esses somente os campos próprios do histórico: ``vigente``,
+``cessada_em``, ``atos_relacionados``, ``nivel``, ``ultimo_ato_vigente``
+e ``portaria`` (número/ano já formatado, como usado no front).
 """
 
 import datetime
 from typing import Any, cast
 
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
+)
+from apps.designacao.api.serializers.designacao_serializer import (
+    ImpedimentoSubstituicaoSerializer,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
@@ -140,40 +156,90 @@ class CessadaEmField(serializers.DateField):
         return _data_cessacao_valida(instance)
 
 
-class AtoRelacionadoHistoricoSerializer(
+class AtoHistoricoBaseSerializer(
     AtoRelacionadoMixin, serializers.ModelSerializer
 ):
-    """Serializa um ato derivado da designação (item da lista plana).
+    """Campos de ato comuns à designação e aos seus atos relacionados.
 
-    Cada ato é uma linha independente; a hierarquia é dada por
-    ``ato_pai_id`` e ``nivel``, sem aninhamento de listas.
+    A nomenclatura é a mesma de ``AtoAdministrativoListSerializer``.
     """
 
     tipo_de_ato = serializers.SerializerMethodField()
-    nivel = serializers.SerializerMethodField()
-    data_do_ato = serializers.DateField(source="doc", allow_null=True)
+    status = serializers.CharField(read_only=True)
     portaria = serializers.SerializerMethodField()
-    nome_display = serializers.SerializerMethodField()
-    observacao = serializers.SerializerMethodField()
-    ultimo_ato_vigente = serializers.SerializerMethodField()
+    nome = serializers.SerializerMethodField()
+    cargo = serializers.SerializerMethodField()
+    rf = serializers.SerializerMethodField()
+    criado_por_nome = serializers.SerializerMethodField()
 
     class Meta:
         model = AtoAdministrativo
         fields = [
             "id",
-            "ato_pai_id",
             "tipo",
             "tipo_de_ato",
-            "nivel",
-            "data_do_ato",
+            "status",
+            "status_publicacao",
             "numero_portaria",
             "ano_vigente",
+            "sei_numero",
+            "doc",
             "portaria",
-            "nome_display",
-            "observacao",
-            "ativo",
-            "ultimo_ato_vigente",
+            "nome",
+            "cargo",
+            "rf",
+            "ato_pai_id",
+            "ato_raiz_id",
+            "criado_em",
+            "criado_por_nome",
         ]
+
+    # ── Helpers de detalhe ──────────────────────────────────────────────
+
+    def _detalhe_da_designacao(self, obj: AtoAdministrativo) -> Any:
+        """Retorna o ``DesignacaoDetalhe`` da designação de origem.
+
+        Para a própria designação é o seu detalhe. Para um ato derivado,
+        o detalhe vem do mapa ``designacao_por_raiz_id`` do contexto
+        (montado com as linhas já carregadas), sem tocar em
+        ``ato_raiz``/``ato_pai``.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            DesignacaoDetalhe|None: Detalhe da designação de origem.
+
+        """
+        if obj.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+            return getattr(obj, "designacao_detalhe", None)
+
+        detalhes: dict[int, Any] = (
+            self.context.get("designacao_por_raiz_id") or {}
+        )
+        chave = obj.ato_raiz_id or obj.ato_pai_id
+        if chave in detalhes:
+            return detalhes[chave]
+        # Dado legado sem `ato_raiz` preenchido: cai no caminho do mixin.
+        return self._get_designacao_detalhe(obj)
+
+    def _tipo_do_pai(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o tipo do ato pai a partir do mapa do contexto.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Tipo do pai ou None quando o ato não tem pai ou o
+            pai não está no conjunto carregado.
+
+        """
+        if obj.ato_pai_id is None:
+            return None
+        tipos: dict[int, str] = self.context.get("tipo_por_id") or {}
+        return tipos.get(obj.ato_pai_id)
+
+    # ── Campos ──────────────────────────────────────────────────────────
 
     def get_tipo_de_ato(self, obj: AtoAdministrativo) -> str:
         """Retorna o tipo do ato em formato legível.
@@ -181,10 +247,6 @@ class AtoRelacionadoHistoricoSerializer(
         Segue a mesma nomenclatura da listagem de atos administrativos:
         o tipo do filho é concatenado com o do pai, com os casos
         especiais de "Tornar sem efeito" e "Anulação de Apostila".
-
-        O tipo do pai vem do mapa ``tipo_por_id`` do contexto (montado a
-        partir das linhas já carregadas), evitando o acesso a
-        ``obj.ato_pai`` e a consulta que ele dispararia.
 
         Args:
             obj: Instância de AtoAdministrativo.
@@ -206,45 +268,14 @@ class AtoRelacionadoHistoricoSerializer(
         label_pai = AtoAdministrativo.Tipo(tipo_pai).label
         return f"{obj.get_tipo_display()} de {label_pai}"
 
-    def _tipo_do_pai(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna o tipo do ato pai a partir do mapa do contexto.
-
-        Args:
-            obj: Instância de AtoAdministrativo.
-
-        Returns:
-            str|None: Tipo do pai ou None quando o ato não tem pai ou o
-            pai não está no conjunto carregado.
-
-        """
-        if obj.ato_pai_id is None:
-            return None
-        tipos: dict[int, str] = self.context.get("tipo_por_id") or {}
-        return tipos.get(obj.ato_pai_id)
-
-    def get_nivel(self, obj: AtoAdministrativo) -> int:
-        """Retorna o nível do ato na hierarquia (1 = filho da designação).
-
-        Args:
-            obj: Instância de AtoAdministrativo.
-
-        Returns:
-            int: Profundidade do ato em relação à designação.
-
-        """
-        return int(self.context.get("nivel", 1))
-
     def get_portaria(self, obj: AtoAdministrativo) -> str | None:
         """Retorna a portaria do ato no formato ``número/ano``."""
         return _formatar_portaria(obj)
 
-    def get_nome_display(self, obj: AtoAdministrativo) -> str | None:
+    def get_nome(self, obj: AtoAdministrativo) -> str | None:
         """Retorna o nome do servidor indicado na designação de origem.
 
-        O nome vem do detalhe da designação raiz, já que os atos
-        derivados não possuem servidor próprio. O detalhe é resolvido
-        pelo mapa ``designacao_por_raiz_id`` do contexto, montado com o
-        que já foi carregado — sem tocar em ``ato_raiz``/``ato_pai``.
+        Equivale ao campo ``nome`` de ``PortariaListSerializer``.
 
         Args:
             obj: Instância de AtoAdministrativo.
@@ -253,7 +284,7 @@ class AtoRelacionadoHistoricoSerializer(
             str|None: Nome do servidor indicado ou None se não houver.
 
         """
-        detalhe = self._designacao_detalhe(obj)
+        detalhe = self._detalhe_da_designacao(obj)
         if detalhe is None:
             return None
         return (
@@ -262,34 +293,121 @@ class AtoRelacionadoHistoricoSerializer(
             or None
         )
 
-    def _designacao_detalhe(self, obj: AtoAdministrativo) -> Any:
-        """Retorna o detalhe da designação de origem do ato.
+    def get_cargo(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o cargo do servidor indicado.
+
+        Prefere o cargo sobreposto e, na ausência dele, o cargo base —
+        mesma regra de ``PortariaListSerializer.get_cargo``.
 
         Args:
             obj: Instância de AtoAdministrativo.
 
         Returns:
-            DesignacaoDetalhe|None: Detalhe da designação de origem.
+            str|None: Cargo do indicado.
 
         """
-        detalhes: dict[int, Any] = (
-            self.context.get("designacao_por_raiz_id") or {}
+        detalhe = self._detalhe_da_designacao(obj)
+        if detalhe is None:
+            return None
+        return (
+            detalhe.indicado_cargo_sobreposto
+            or detalhe.indicado_cargo_base
+            or None
         )
-        chave = obj.ato_raiz_id or obj.ato_pai_id
-        if chave in detalhes:
-            return detalhes[chave]
-        # Dado legado sem `ato_raiz` preenchido: cai no caminho do mixin.
-        return self._get_designacao_detalhe(obj)
 
-    def get_observacao(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna a observação do ato conforme o seu tipo.
+    def get_rf(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o RF do servidor indicado na designação de origem.
 
         Args:
             obj: Instância de AtoAdministrativo.
 
         Returns:
-            str|None: Observação do ato ou None quando o tipo não possui
-            texto de observação (ex.: cessação).
+            str|None: RF do indicado ou None se não houver.
+
+        """
+        detalhe = self._detalhe_da_designacao(obj)
+        if detalhe is None:
+            return None
+        return detalhe.indicado_rf or None
+
+    def get_criado_por_nome(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o nome do responsável pela criação do ato.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Nome ou username do responsável, ou None se não
+            houver.
+
+        """
+        responsavel = obj.criado_por
+        if not responsavel:
+            return None
+        return responsavel.name or responsavel.username
+
+
+class AtoRelacionadoHistoricoSerializer(AtoHistoricoBaseSerializer):
+    """Serializa um ato derivado da designação (item da lista plana).
+
+    Cada ato é uma linha independente; a hierarquia é dada por
+    ``ato_pai_id`` e ``nivel``, sem aninhamento de listas. Os campos
+    extras (``tipo_insubsistencia``, ``tipo_apostila``,
+    ``data_designacao``, ``data_cessacao``) repetem os nomes usados na
+    listagem de atos administrativos.
+    """
+
+    observacoes = serializers.SerializerMethodField()
+    tipo_insubsistencia = serializers.SerializerMethodField()
+    tipo_apostila = serializers.SerializerMethodField()
+    data_designacao = serializers.SerializerMethodField()
+    data_cessacao = serializers.SerializerMethodField()
+    nivel = serializers.SerializerMethodField()
+    ultimo_ato_vigente = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AtoAdministrativo
+        fields = [
+            "id",
+            "tipo",
+            "tipo_de_ato",
+            "status",
+            "status_publicacao",
+            "ativo",
+            "numero_portaria",
+            "ano_vigente",
+            "sei_numero",
+            "doc",
+            "portaria",
+            "data_designacao",
+            "data_cessacao",
+            "nome",
+            "cargo",
+            "rf",
+            "observacoes",
+            "tipo_insubsistencia",
+            "tipo_apostila",
+            "ato_pai_id",
+            "ato_raiz_id",
+            "criado_em",
+            "criado_por_nome",
+            "nivel",
+            "ultimo_ato_vigente",
+        ]
+
+    def get_observacoes(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna a observação do ato conforme o seu tipo.
+
+        Mesma regra de ``PortariaListSerializer.get_observacoes``:
+        insubsistência → ``observacoes``, apostila → ``observacao``,
+        designação → ``informacoes_adicionais``; cessação não possui
+        texto.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Observação do ato ou None.
 
         """
         if obj.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
@@ -302,6 +420,46 @@ class AtoRelacionadoHistoricoSerializer(
             detalhe = getattr(obj, "designacao_detalhe", None)
             return getattr(detalhe, "informacoes_adicionais", None)
         return None
+
+    def get_tipo_insubsistencia(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o tipo do ato pai quando este é uma insubsistência."""
+        if obj.tipo != AtoAdministrativo.Tipo.INSUBSISTENCIA:
+            return None
+        return self._tipo_do_pai(obj)
+
+    def get_tipo_apostila(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o tipo do ato pai quando este é uma apostila."""
+        if obj.tipo != AtoAdministrativo.Tipo.APOSTILA:
+            return None
+        return self._tipo_do_pai(obj)
+
+    @extend_schema_field(OpenApiTypes.DATE)
+    def get_data_designacao(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna a data de início da designação de origem (ISO)."""
+        detalhe = self._detalhe_da_designacao(obj)
+        data = getattr(detalhe, "data_inicio", None)
+        return data.isoformat() if data else None
+
+    @extend_schema_field(OpenApiTypes.DATE)
+    def get_data_cessacao(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna a data de cessação quando o ato é uma cessação (ISO)."""
+        if obj.tipo != AtoAdministrativo.Tipo.CESSACAO:
+            return None
+        detalhe = getattr(obj, "cessacao_detalhe", None)
+        data = getattr(detalhe, "data_cessacao", None)
+        return data.isoformat() if data else None
+
+    def get_nivel(self, obj: AtoAdministrativo) -> int:
+        """Retorna o nível do ato na hierarquia (1 = filho da designação).
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            int: Profundidade do ato em relação à designação.
+
+        """
+        return int(self.context.get("nivel", 1))
 
     def get_ultimo_ato_vigente(self, obj: AtoAdministrativo) -> bool:
         """Indica se este é o último ato feito que ainda está em vigor.
@@ -321,12 +479,15 @@ class AtoRelacionadoHistoricoSerializer(
         return obj.pk == self.context.get("ultimo_ato_vigente_id")
 
 
-class HistoricoDesignacaoSerializer(
-    AtoRelacionadoMixin, serializers.ModelSerializer
-):
-    """Serializa uma designação da UE com a sua situação e histórico."""
+class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
+    """Serializa uma designação da UE com detalhe completo e histórico.
 
-    status = serializers.CharField(read_only=True)
+    Os campos de detalhe repetem ``DesignacaoReadSerializer``; os campos
+    de ato repetem ``AtoAdministrativoListSerializer``. Além deles, vêm
+    ``vigente``, ``cessada_em`` e ``atos_relacionados``.
+    """
+
+    # Unidade (DesignacaoDetalhe)
     ue = serializers.CharField(source="designacao_detalhe.ue", read_only=True)
     dre = serializers.CharField(
         source="designacao_detalhe.dre", read_only=True
@@ -340,18 +501,159 @@ class HistoricoDesignacaoSerializer(
     codigo_hierarquico = serializers.CharField(
         source="designacao_detalhe.codigo_hierarquico", read_only=True
     )
+    funcionarios_da_unidade = serializers.CharField(
+        source="designacao_detalhe.funcionarios_da_unidade", read_only=True
+    )
+
+    # Indicado (DesignacaoDetalhe)
+    indicado_nome_civil = serializers.CharField(
+        source="designacao_detalhe.indicado_nome_civil", read_only=True
+    )
+    indicado_nome_servidor = serializers.CharField(
+        source="designacao_detalhe.indicado_nome_servidor", read_only=True
+    )
     indicado_rf = serializers.CharField(
         source="designacao_detalhe.indicado_rf", read_only=True
     )
+    indicado_vinculo = serializers.IntegerField(
+        source="designacao_detalhe.indicado_vinculo", read_only=True
+    )
+    indicado_cargo_base = serializers.CharField(
+        source="designacao_detalhe.indicado_cargo_base", read_only=True
+    )
+    indicado_codigo_cargo_base = serializers.IntegerField(
+        source="designacao_detalhe.indicado_codigo_cargo_base",
+        read_only=True,
+        allow_null=True,
+    )
+    indicado_lotacao = serializers.CharField(
+        source="designacao_detalhe.indicado_lotacao", read_only=True
+    )
+    indicado_cargo_sobreposto = serializers.CharField(
+        source="designacao_detalhe.indicado_cargo_sobreposto", read_only=True
+    )
+    indicado_codigo_cargo_sobreposto = serializers.IntegerField(
+        source="designacao_detalhe.indicado_codigo_cargo_sobreposto",
+        read_only=True,
+        allow_null=True,
+    )
+    indicado_local_exercicio = serializers.CharField(
+        source="designacao_detalhe.indicado_local_exercicio", read_only=True
+    )
+    indicado_local_servico = serializers.CharField(
+        source="designacao_detalhe.indicado_local_servico", read_only=True
+    )
+    indicado_categoria = serializers.CharField(
+        source="designacao_detalhe.indicado_categoria", read_only=True
+    )
+    indicado_codigo_ue_lotacao = serializers.CharField(
+        source="designacao_detalhe.indicado_codigo_ue_lotacao",
+        read_only=True,
+    )
+    indicado_possui_cargo_sobreposto = serializers.BooleanField(
+        source="designacao_detalhe.indicado_possui_cargo_sobreposto",
+        read_only=True,
+    )
+
+    # Titular (DesignacaoDetalhe)
+    titular_nome_civil = serializers.CharField(
+        source="designacao_detalhe.titular_nome_civil", read_only=True
+    )
+    titular_nome_servidor = serializers.CharField(
+        source="designacao_detalhe.titular_nome_servidor", read_only=True
+    )
+    titular_rf = serializers.CharField(
+        source="designacao_detalhe.titular_rf", read_only=True
+    )
+    titular_vinculo = serializers.IntegerField(
+        source="designacao_detalhe.titular_vinculo",
+        read_only=True,
+        allow_null=True,
+    )
+    titular_cargo_base = serializers.CharField(
+        source="designacao_detalhe.titular_cargo_base", read_only=True
+    )
+    titular_codigo_cargo_base = serializers.IntegerField(
+        source="designacao_detalhe.titular_codigo_cargo_base",
+        read_only=True,
+        allow_null=True,
+    )
+    titular_lotacao = serializers.CharField(
+        source="designacao_detalhe.titular_lotacao", read_only=True
+    )
+    titular_cargo_sobreposto = serializers.CharField(
+        source="designacao_detalhe.titular_cargo_sobreposto", read_only=True
+    )
+    titular_codigo_cargo_sobreposto = serializers.IntegerField(
+        source="designacao_detalhe.titular_codigo_cargo_sobreposto",
+        read_only=True,
+        allow_null=True,
+    )
+    titular_local_exercicio = serializers.CharField(
+        source="designacao_detalhe.titular_local_exercicio", read_only=True
+    )
+    titular_local_servico = serializers.CharField(
+        source="designacao_detalhe.titular_local_servico", read_only=True
+    )
+
+    # Período (DesignacaoDetalhe)
     data_inicio = serializers.DateField(
         source="designacao_detalhe.data_inicio", read_only=True
     )
     data_fim = serializers.DateField(
         source="designacao_detalhe.data_fim", read_only=True, allow_null=True
     )
-    portaria = serializers.SerializerMethodField()
-    cargo = serializers.SerializerMethodField()
-    servidor_indicado = serializers.SerializerMethodField()
+
+    # Flags (DesignacaoDetalhe)
+    carater_excepcional = serializers.BooleanField(
+        source="designacao_detalhe.carater_excepcional", read_only=True
+    )
+    com_afastamento = serializers.BooleanField(
+        source="designacao_detalhe.com_afastamento", read_only=True
+    )
+    possui_pendencia = serializers.BooleanField(
+        source="designacao_detalhe.possui_pendencia", read_only=True
+    )
+    pendencias = serializers.CharField(
+        source="designacao_detalhe.pendencias", read_only=True
+    )
+    motivo_afastamento = serializers.CharField(
+        source="designacao_detalhe.motivo_afastamento", read_only=True
+    )
+    informacoes_adicionais = serializers.CharField(
+        source="designacao_detalhe.informacoes_adicionais", read_only=True
+    )
+    detalhe_para_quadro_de_historico_por_ano = serializers.BooleanField(
+        source="designacao_detalhe.detalhe_para_quadro_de_historico_por_ano",
+        read_only=True,
+    )
+
+    # Impedimento (DesignacaoDetalhe)
+    impedimento_substituicao: serializers.PrimaryKeyRelatedField = (
+        serializers.PrimaryKeyRelatedField(
+            source="designacao_detalhe.impedimento_substituicao",
+            read_only=True,
+        )
+    )
+    impedimento_substituicao_detail: ImpedimentoSubstituicaoSerializer = (
+        ImpedimentoSubstituicaoSerializer(
+            source="designacao_detalhe.impedimento_substituicao",
+            read_only=True,
+        )
+    )
+    impedimento_display = serializers.SerializerMethodField()
+
+    # Vaga (DesignacaoDetalhe)
+    tipo_vaga = serializers.CharField(
+        source="designacao_detalhe.tipo_vaga", read_only=True
+    )
+    tipo_vaga_display = serializers.SerializerMethodField()
+    cargo_vaga = serializers.IntegerField(
+        source="designacao_detalhe.cargo_vaga", read_only=True, allow_null=True
+    )
+    cargo_vaga_display = serializers.SerializerMethodField()
+
+    # Situação e histórico
     vigente = serializers.BooleanField(source="esta_vigente", read_only=True)
     cessada_em = CessadaEmField(read_only=True, allow_null=True)
     atos_relacionados = serializers.SerializerMethodField()
@@ -359,63 +661,136 @@ class HistoricoDesignacaoSerializer(
     class Meta:
         model = AtoAdministrativo
         fields = [
+            # Ato
             "id",
+            "tipo",
+            "tipo_de_ato",
             "status",
+            "status_publicacao",
             "numero_portaria",
             "ano_vigente",
-            "portaria",
             "sei_numero",
             "doc",
+            "portaria",
+            "ato_pai_id",
+            "ato_raiz_id",
+            "criado_em",
+            "criado_por_nome",
+            # Servidor (derivados, como em atos administrativos)
+            "nome",
+            "cargo",
+            "rf",
+            # Unidade
             "ue",
             "dre",
             "dre_nome",
             "unidade_proponente",
             "codigo_hierarquico",
-            "cargo",
-            "servidor_indicado",
+            "funcionarios_da_unidade",
+            # Indicado
+            "indicado_nome_civil",
+            "indicado_nome_servidor",
             "indicado_rf",
+            "indicado_vinculo",
+            "indicado_cargo_base",
+            "indicado_codigo_cargo_base",
+            "indicado_lotacao",
+            "indicado_cargo_sobreposto",
+            "indicado_codigo_cargo_sobreposto",
+            "indicado_local_exercicio",
+            "indicado_local_servico",
+            "indicado_categoria",
+            "indicado_codigo_ue_lotacao",
+            "indicado_possui_cargo_sobreposto",
+            # Titular
+            "titular_nome_civil",
+            "titular_nome_servidor",
+            "titular_rf",
+            "titular_vinculo",
+            "titular_cargo_base",
+            "titular_codigo_cargo_base",
+            "titular_lotacao",
+            "titular_cargo_sobreposto",
+            "titular_codigo_cargo_sobreposto",
+            "titular_local_exercicio",
+            "titular_local_servico",
+            # Período
             "data_inicio",
             "data_fim",
+            # Flags
+            "carater_excepcional",
+            "com_afastamento",
+            "possui_pendencia",
+            "pendencias",
+            "motivo_afastamento",
+            "informacoes_adicionais",
+            "detalhe_para_quadro_de_historico_por_ano",
+            # Impedimento
+            "impedimento_substituicao",
+            "impedimento_substituicao_detail",
+            "impedimento_display",
+            # Vaga
+            "tipo_vaga",
+            "tipo_vaga_display",
+            "cargo_vaga",
+            "cargo_vaga_display",
+            # Histórico
             "vigente",
             "cessada_em",
             "atos_relacionados",
         ]
 
-    def get_portaria(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna a portaria da designação no formato ``número/ano``."""
-        return _formatar_portaria(obj)
-
-    def get_cargo(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna o cargo do servidor indicado.
-
-        Prefere o cargo sobreposto e, na ausência dele, o cargo base.
+    def get_impedimento_display(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna a descrição do impedimento de substituição.
 
         Args:
             obj: Instância de AtoAdministrativo.
 
         Returns:
-            str|None: Cargo do indicado.
+            str|None: Descrição do impedimento ou None se não houver.
+
+        """
+        detalhe = getattr(obj, "designacao_detalhe", None)
+        impedimento = getattr(detalhe, "impedimento_substituicao", None)
+        return impedimento.descricao if impedimento else None
+
+    def get_tipo_vaga_display(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna o texto descritivo do tipo de vaga.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Descrição do tipo de vaga ou None.
 
         """
         detalhe = getattr(obj, "designacao_detalhe", None)
         if detalhe is None:
             return None
-        return (
-            detalhe.indicado_cargo_sobreposto
-            or detalhe.indicado_cargo_base
-            or None
-        )
+        return detalhe.get_tipo_vaga_display()
 
-    def get_servidor_indicado(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna o nome do servidor indicado na designação."""
+    def get_cargo_vaga_display(self, obj: AtoAdministrativo) -> str | None:
+        """Retorna a descrição completa do cargo de vaga.
+
+        O mapa ``código → descrição`` é carregado uma única vez pelo
+        serviço (``_cargo_por_codigo``) — sem uma consulta por
+        designação.
+
+        Args:
+            obj: Instância de AtoAdministrativo.
+
+        Returns:
+            str|None: Descrição do cargo ou None se não houver.
+
+        """
         detalhe = getattr(obj, "designacao_detalhe", None)
-        if detalhe is None:
+        codigo = getattr(detalhe, "cargo_vaga", None)
+        if codigo is None:
             return None
-        return (
-            detalhe.indicado_nome_servidor
-            or detalhe.indicado_nome_civil
-            or None
+        mapa: dict[str, str] = getattr(obj, "_cargo_por_codigo", None) or (
+            self.context.get("cargo_por_codigo") or {}
         )
+        return mapa.get(str(codigo))
 
     @extend_schema_field(AtoRelacionadoHistoricoSerializer(many=True))
     def get_atos_relacionados(
@@ -444,15 +819,16 @@ class HistoricoDesignacaoSerializer(
         contexto = {
             **self.context,
             "ultimo_ato_vigente_id": _ultimo_ato_vigente_id(derivados),
-            # Tipo de cada ato, para `tipo_de_ato` concatenar com o pai
-            # sem tocar em `ato_pai` (que seria uma consulta por item).
-            # A designação de origem entra no mapa para que os filhos
-            # diretos também saiam como "X de Designação".
+            # Tipo de cada ato, para `tipo_de_ato`/`tipo_apostila`/
+            # `tipo_insubsistencia` sem tocar em `ato_pai` (que seria uma
+            # consulta por item). A designação de origem entra no mapa
+            # para que os filhos diretos saiam como "X de Designação".
             "tipo_por_id": {
                 obj.pk: obj.tipo,
                 **{ato.pk: ato.tipo for ato, _nivel in derivados},
             },
-            # Detalhe da designação de origem, para o `nome_display`.
+            # Detalhe da designação de origem, para `nome`/`cargo`/`rf`
+            # e `data_designacao`.
             "designacao_por_raiz_id": {obj.pk: self._detalhe_seguro(obj)},
         }
 

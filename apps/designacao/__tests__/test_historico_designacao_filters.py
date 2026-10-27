@@ -441,7 +441,7 @@ def test_endpoint_mantem_atos_relacionados_completos_ao_filtrar(auth_client):
         insubsistencia.pk,
     ]
     # A observação dos atos que não casaram com o filtro continua na resposta.
-    assert atos[2]["observacao"] == "outra"
+    assert atos[2]["observacoes"] == "outra"
 
 
 @pytest.mark.django_db

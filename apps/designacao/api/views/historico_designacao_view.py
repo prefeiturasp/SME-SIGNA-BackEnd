@@ -90,10 +90,12 @@ class HistoricoDesignacaoView(APIView):
             200: OpenApiResponse(
                 response=HistoricoDesignacaoSerializer(many=True),
                 description=(
-                    "Designações da UE com portaria, cargo, servidor "
-                    "indicado, data da designação, vigência, data de "
-                    "cessação e uma lista plana com todos os atos "
-                    "relacionados."
+                    "Designações da UE com os campos de ato (portaria, "
+                    "status, publicação, SEI, datas, nome/cargo/RF do "
+                    "indicado), o detalhe completo da designação "
+                    "(`indicado_*`, `titular_*`, flags, impedimento e "
+                    "vaga), a vigência, a data de cessação e uma lista "
+                    "plana com todos os atos relacionados."
                 ),
             ),
             400: OpenApiResponse(

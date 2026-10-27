@@ -360,24 +360,11 @@ Designações
    * - ``GET``
      - ``designacoes/buscar-por-portaria/?portaria=``
      - Busca uma designação pelo número exato da portaria.
-   * - ``GET``
-     - ``historico-de-designacoes/<codigo_ue>/``
-     - Histórico de uma unidade escolar: designações da UE com dados
-       principais, vigência, cessação válida e uma lista plana com todos
-       os atos relacionados (filhos, netos, bisnetos...). Carrega tudo em
-       uma única consulta.
 
 Filtros disponíveis (``DesignacaoFilter``): ``rf``, ``nome``,
 ``cargo_base``, ``periodo`` (intervalo de datas), ``cargo_sobreposto``,
 ``dre``, ``unidade``, ``ano``, ``impedimento_substituicao``,
 ``impedimento_codigo``.
-
-Filtros do histórico (``HistoricoDesignacaoFilter``): ``status_publicacao``,
-``periodo_after``/``periodo_before`` (intervalo sobre
-``designacao_detalhe.data_inicio``) e ``observacao`` (trecho da observação
-de apostila/insubsistência). Eles escolhem **quais designações** entram na
-resposta; ``atos_relacionados`` continua completo para cada designação
-retornada. Valor inválido devolve ``400`` com o campo do erro.
 
 Dados de demonstração do histórico
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
