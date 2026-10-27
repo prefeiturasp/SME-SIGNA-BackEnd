@@ -7,7 +7,7 @@ designação.
 import datetime
 
 from django.db import transaction
-from django.db.models import F, QuerySet
+from django.db.models import Count, F, QuerySet
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.constants.cargos_gestao_escolar import (
@@ -16,6 +16,9 @@ from apps.designacao.constants.cargos_gestao_escolar import (
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
+from apps.designacao.services.historico_designacao_service import (
+    HistoricoDesignacaoService,
+)
 
 _CAMPOS_ATO = frozenset(
     {
@@ -79,6 +82,50 @@ _CAMPOS_TEXTO_PORTARIA = frozenset({"texto_sei", "modelo_portaria"})
 
 class DesignacaoService:
     """Serviço de negócio para atos de designação."""
+
+    @staticmethod
+    def contar_designacoes_por_cargo(ue: str) -> list[dict]:
+        """Conta todos os atos de designação por cargo de vaga da UE.
+
+        Inclui designações vigentes, encerradas, cessadas e insubsistentes,
+        independentemente da publicação. Atos relacionados não aumentam
+        a contagem. O total da UE inclui também os cargos que não são
+        exibidos individualmente no painel.
+        """
+        ue = ue.strip()
+        if not ue:
+            raise ValidationError({"ue": "Parâmetro 'ue' é obrigatório."})
+        totais = dict(
+            DesignacaoDetalhe.objects.filter(
+                ato__tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+                ue__in=HistoricoDesignacaoService._variantes_codigo_ue(ue),
+            )
+            .order_by()
+            .values("cargo_vaga")
+            .annotate(quantidade=Count("pk"))
+            .values_list("cargo_vaga", "quantidade")
+        )
+        cargos = (
+            (3085, "Assistente de direção"),
+            (3379, "Coordenador pedagógico"),
+            (3360, "Diretor de escola"),
+            (3182, "Secretário de escola"),
+        )
+        return [
+            {
+                "codigoCargo": None,
+                "nomeCargo": "Todos os cargos",
+                "quantidade_designacoes": sum(totais.values()),
+            },
+            *[
+                {
+                    "codigoCargo": codigo,
+                    "nomeCargo": nome,
+                    "quantidade_designacoes": totais.get(codigo, 0),
+                }
+                for codigo, nome in cargos
+            ],
+        ]
 
     @classmethod
     def criar(cls, data: dict) -> AtoAdministrativo:

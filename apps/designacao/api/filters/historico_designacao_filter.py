@@ -24,6 +24,11 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     entram na resposta.
     """
 
+    cargo = django_filters.NumberFilter(
+        field_name="designacao_detalhe__cargo_vaga",
+        label="Código do cargo da vaga",
+    )
+
     status_publicacao = django_filters.ChoiceFilter(
         field_name="status_publicacao",
         choices=AtoAdministrativo.StatusPublicacao.choices,
@@ -77,6 +82,7 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     class Meta:
         model = AtoAdministrativo
         fields = [
+            "cargo",
             "status_publicacao",
             "periodo",
             "observacao",

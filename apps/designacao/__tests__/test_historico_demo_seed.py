@@ -117,11 +117,11 @@ def test_ue_completa_tem_arvore_de_quatro_niveis():
     assert item["status"] == "cessada"
 
     atos = item["atos_relacionados"]
-    assert [ato["nivel"] for ato in atos] == [1, 2, 3]
+    assert [ato["nivel"] for ato in atos] == [3, 2, 1]
     assert [ato["tipo_de_ato"] for ato in atos] == [
-        "Cessação",
-        "Apostila de Cessação",
         "Anulação de Apostila",
+        "Apostila de Cessação",
+        "Cessação",
     ]
     # Apostila anulada e anulação válida.
     assert [ato["ativo"] for ato in atos] == [True, False, True]
@@ -152,7 +152,7 @@ def test_cessacao_tornada_sem_efeito_devolve_vigencia():
     assert item["cessada_em"] is None
     assert item["status"] == "ativo"
 
-    cessacao, insubsistencia = item["atos_relacionados"]
+    insubsistencia, cessacao = item["atos_relacionados"]
     assert cessacao["tipo_de_ato"] == "Cessação"
     assert cessacao["ativo"] is False
     assert insubsistencia["tipo_de_ato"] == "Insubsistência de Cessação"
@@ -169,7 +169,7 @@ def test_designacao_com_duas_cessacoes_usa_a_valida():
     assert item["cessada_em"] == "2026-06-01"
 
     ativas = [ato for ato in item["atos_relacionados"] if ato["ativo"]]
-    assert [ato["portaria"] for ato in ativas][-1] == "207/2026"
+    assert [ato["portaria"] for ato in ativas][0] == "207/2026"
 
 
 @pytest.mark.django_db
@@ -193,9 +193,9 @@ def test_cadeia_apostila_anulacao_e_tornar_sem_efeito():
 
     rotulos = [ato["tipo_de_ato"] for ato in item["atos_relacionados"]]
     assert rotulos == [
-        "Apostila de Designação",
-        "Anulação de Apostila",
         "Tornar sem efeito",
+        "Anulação de Apostila",
+        "Apostila de Designação",
     ]
 
 

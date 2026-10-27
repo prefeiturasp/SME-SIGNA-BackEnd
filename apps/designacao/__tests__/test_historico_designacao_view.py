@@ -7,6 +7,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.designacao.__tests__.factories import (
     criar_ato_apostila,
@@ -35,7 +36,9 @@ def auth_client(db):
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username="test", password=password)
     client = APIClient()
-    client.force_authenticate(user=user)
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}"
+    )
     return client
 
 
@@ -290,7 +293,7 @@ def test_ato_relacionado_tem_campos_de_atos_administrativos(auth_client):
         assert ato["rf"] == "1234567"
         assert ato["data_designacao"] == "2024-01-01"
 
-    cessacao_json, apostila_json, insubsistencia_json = atos
+    insubsistencia_json, apostila_json, cessacao_json = atos
 
     assert cessacao_json["status"] == "ativo"
     assert cessacao_json["data_cessacao"] == "2024-03-01"
@@ -316,8 +319,8 @@ def test_ato_relacionado_informa_status_do_pai_desfeito(auth_client):
 
     atos = auth_client.get(_url()).data[0]["atos_relacionados"]
 
-    assert atos[0]["status"] == "insubsistente"
-    assert atos[0]["ativo"] is False
+    assert atos[1]["status"] == "insubsistente"
+    assert atos[1]["ativo"] is False
 
 
 @pytest.mark.django_db
@@ -438,20 +441,20 @@ def test_atos_relacionados_em_lista_plana_com_todos_os_niveis(auth_client):
 
     atos = response.data[0]["atos_relacionados"]
     assert [ato["id"] for ato in atos] == [
-        cessacao.pk,
-        apostila.pk,
         insubsistencia.pk,
+        apostila.pk,
+        cessacao.pk,
     ]
     assert [ato["tipo"] for ato in atos] == [
-        "CESSACAO",
-        "APOSTILA",
         "INSUBSISTENCIA",
+        "APOSTILA",
+        "CESSACAO",
     ]
-    assert [ato["nivel"] for ato in atos] == [1, 2, 3]
+    assert [ato["nivel"] for ato in atos] == [3, 2, 1]
     assert [ato["ato_pai_id"] for ato in atos] == [
-        designacao.pk,
-        cessacao.pk,
         apostila.pk,
+        cessacao.pk,
+        designacao.pk,
     ]
     # A lista é plana: nenhum item carrega atos aninhados.
     for ato in atos:
@@ -482,7 +485,7 @@ def test_atos_relacionados_trazem_dados_de_cada_ato(auth_client):
 
     response = auth_client.get(_url())
 
-    cessacao_json, apostila_json, insubsistencia_json = response.data[0][
+    insubsistencia_json, apostila_json, cessacao_json = response.data[0][
         "atos_relacionados"
     ]
 
@@ -611,6 +614,40 @@ def test_sem_atos_ativos_nenhum_item_recebe_a_flag(auth_client):
 
 
 @pytest.mark.django_db
+def test_ordem_decrescente_desempata_por_id_e_preserva_ultimo_vigente(
+    auth_client,
+):
+    designacao = criar_ato_designacao(ue=UE)
+    primeiro = criar_ato_apostila(designacao)
+    segundo = criar_ato_insubsistencia(primeiro)
+    terceiro = criar_ato_apostila(designacao)
+    AtoAdministrativo.objects.filter(
+        pk__in=[primeiro.pk, segundo.pk, terceiro.pk]
+    ).update(criado_em=primeiro.criado_em)
+    terceiro.ativo = False
+    terceiro.save(update_fields=["ativo"])
+
+    response = auth_client.get(_url())
+
+    assert response.status_code == 200
+    atos = response.data[0]["atos_relacionados"]
+    assert [ato["id"] for ato in atos] == [
+        terceiro.pk,
+        segundo.pk,
+        primeiro.pk,
+    ]
+    assert [ato["nivel"] for ato in atos] == [1, 2, 1]
+    assert [ato["ultimo_ato_vigente"] for ato in atos] == [False, True, False]
+
+
+@pytest.mark.django_db
+def test_historico_rejeita_jwt_invalido():
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION="Bearer invalido")
+    assert client.get(_url()).status_code == 401
+
+
+@pytest.mark.django_db
 def test_listagem_e_serializacao_nao_geram_consultas_extras(
     django_assert_num_queries,
 ):
@@ -627,7 +664,7 @@ def test_listagem_e_serializacao_nao_geram_consultas_extras(
         payload = HistoricoDesignacaoSerializer(designacoes, many=True).data
 
     niveis = [ato["nivel"] for ato in payload[0]["atos_relacionados"]]
-    assert niveis == [1, 2, 3]
+    assert niveis == [3, 2, 1]
 
 
 @pytest.mark.django_db

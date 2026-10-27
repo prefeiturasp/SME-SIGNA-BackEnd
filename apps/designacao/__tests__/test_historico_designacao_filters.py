@@ -12,6 +12,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken
 
 from apps.designacao.__tests__.factories import (
     criar_ato_apostila,
@@ -38,7 +39,9 @@ def auth_client(db):
     password = secrets.token_urlsafe(16)
     user = User.objects.create_user(username="test", password=password)
     client = APIClient()
-    client.force_authenticate(user=user)
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(user)}"
+    )
     return client
 
 
@@ -315,6 +318,55 @@ def test_filtros_combinados_ultimo_cenario():
 
 
 @pytest.mark.django_db
+def test_endpoint_filtra_por_cargo_da_vaga_e_preserva_atos(auth_client):
+    alvo = criar_ato_designacao(
+        ue=UE, cargo_vaga=3360, indicado_codigo_cargo_base=3085
+    )
+    apostila = criar_ato_apostila(alvo)
+    criar_ato_designacao(
+        ue=UE, cargo_vaga=3085, indicado_codigo_cargo_base=3360
+    )
+    criar_ato_designacao(ue="999999", cargo_vaga=3360)
+
+    response = auth_client.get(_url(), {"cargo": "3360"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.data] == [alvo.pk]
+    assert [ato["id"] for ato in response.data[0]["atos_relacionados"]] == [
+        apostila.pk
+    ]
+
+
+@pytest.mark.django_db
+def test_endpoint_combina_cargo_e_status(auth_client):
+    alvo = _publicar(criar_ato_designacao(ue=UE, cargo_vaga=3360))
+    criar_ato_designacao(ue=UE, cargo_vaga=3360)
+    _publicar(criar_ato_designacao(ue=UE, cargo_vaga=3085))
+
+    response = auth_client.get(
+        _url(), {"cargo": "3360", "status_publicacao": "PUBLICADO"}
+    )
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.data] == [alvo.pk]
+
+
+@pytest.mark.django_db
+def test_endpoint_rejeita_cargo_invalido(auth_client):
+    response = auth_client.get(_url(), {"cargo": "invalido"})
+    assert response.status_code == 400
+    assert "cargo" in response.data
+
+
+@pytest.mark.django_db
+def test_endpoint_cargo_sem_resultados(auth_client):
+    criar_ato_designacao(ue=UE, cargo_vaga=3085)
+    response = auth_client.get(_url(), {"cargo": "3360"})
+    assert response.status_code == 200
+    assert response.data == []
+
+
+@pytest.mark.django_db
 def test_endpoint_filtra_por_status_publicacao(auth_client):
     """`status_publicacao` na query string filtra as designações."""
     publicada = _publicar(criar_ato_designacao(ue=UE))
@@ -436,12 +488,12 @@ def test_endpoint_mantem_atos_relacionados_completos_ao_filtrar(auth_client):
     assert len(response.data) == 1
     atos = response.data[0]["atos_relacionados"]
     assert [ato["id"] for ato in atos] == [
-        cessacao.pk,
-        apostila.pk,
         insubsistencia.pk,
+        apostila.pk,
+        cessacao.pk,
     ]
     # A observação dos atos que não casaram com o filtro continua na resposta.
-    assert atos[2]["observacoes"] == "outra"
+    assert atos[0]["observacoes"] == "outra"
 
 
 @pytest.mark.django_db

@@ -70,6 +70,11 @@ urlpatterns = [
         name="designacao-detail",
     ),
     path(
+        "designacoes/cargos-designacoes/",
+        DesignacaoViewSet.as_view({"get": "cargos_designacoes"}),
+        name="cargos-designacoes",
+    ),
+    path(
         "designacoes/cargos-base-pareados/",
         DesignacaoViewSet.as_view({"get": "cargos_base_pareados"}),
         name="cargos-base-pareados",

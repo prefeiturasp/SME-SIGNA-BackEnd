@@ -85,7 +85,7 @@ def _percorrer_descendentes(
 
     A travessia usa ``ato.filhos.all()``, alimentado pelo cache de
     prefetch carregado em ``HistoricoDesignacaoService``, então não gera
-    consultas ao banco. O resultado sai em ordem cronológica de criação,
+    consultas ao banco. O resultado sai do mais recente para o mais antigo,
     independentemente do nível — netos e bisnetos aparecem intercalados
     entre os filhos conforme foram criados.
 
@@ -107,7 +107,7 @@ def _percorrer_descendentes(
         pares.append((atual, nivel))
         pendentes.extend((filho, nivel + 1) for filho in atual.filhos.all())
 
-    pares.sort(key=lambda par: (par[0].criado_em, par[0].pk))
+    pares.sort(key=lambda par: (par[0].criado_em, par[0].pk), reverse=True)
     return pares
 
 
@@ -116,14 +116,14 @@ def _ultimo_ato_vigente_id(
 ) -> int | None:
     """Retorna o id do último ato ativo e vigente da lista.
 
-    A lista chega em ordem cronológica, então basta percorrê-la de trás
-    para frente e devolver o primeiro ato que continua ativo
+    A lista chega do mais recente para o mais antigo, então basta
+    devolver o primeiro ato que continua ativo
     (``eh_valido``) e vigente (``esta_vigente``). Todos os atos
     desfeitos (insubsistentes) são ignorados.
 
     Args:
         derivados: Atos derivados com o nível de cada um, em ordem
-            cronológica.
+            decrescente de criação.
 
     Returns:
         int|None: Id do último ato ativo e vigente, ou None quando
@@ -133,7 +133,7 @@ def _ultimo_ato_vigente_id(
     return next(
         (
             ato.pk
-            for ato, _nivel in reversed(derivados)
+            for ato, _nivel in derivados
             if ato.eh_valido and ato.esta_vigente
         ),
         None,
@@ -799,7 +799,7 @@ class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
         """Retorna todos os atos derivados da designação em uma lista plana.
 
         Percorre filhos, netos, bisnetos e demais níveis e devolve tudo
-        em um único array, em ordem cronológica. A hierarquia é
+        em um único array, do mais recente para o mais antigo. A hierarquia é
         representada em cada item por ``ato_pai_id`` e ``nivel``.
 
         O item mais recente que ainda está ativo e vigente é marcado com

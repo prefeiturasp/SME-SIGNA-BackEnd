@@ -41,6 +41,13 @@ class HistoricoDesignacaoView(APIView):
                 description="Código EOL da unidade escolar.",
             ),
             OpenApiParameter(
+                name="cargo",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Código do cargo da vaga da designação.",
+            ),
+            OpenApiParameter(
                 name="status_publicacao",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
@@ -109,7 +116,7 @@ class HistoricoDesignacaoView(APIView):
     def get(self, request: Request, codigo_ue: str) -> Response:
         """Retorna as designações da unidade escolar informada.
 
-        Os filtros de query string (`status_publicacao`,
+        Os filtros de query string (`cargo`, `status_publicacao`,
         `periodo_after`/`periodo_before` e `observacao`) restringem quais
         designações entram na resposta; os atos relacionados de cada
         designação são sempre devolvidos por inteiro.
