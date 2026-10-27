@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from apps.designacao.api.serializers.historico_designacao_serializer import (
     HistoricoDesignacaoSerializer,
 )
+from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.services.historico_designacao_service import (
     HistoricoDesignacaoService,
 )
@@ -39,6 +40,51 @@ class HistoricoDesignacaoView(APIView):
                 required=True,
                 description="Código EOL da unidade escolar.",
             ),
+            OpenApiParameter(
+                name="status_publicacao",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=[
+                    AtoAdministrativo.StatusPublicacao.PUBLICADO,
+                    AtoAdministrativo.StatusPublicacao.NAO_PUBLICADO,
+                ],
+                description=(
+                    "Filtra as designações pelo status de publicação "
+                    "(`PUBLICADO` ou `NAO_PUBLICADO`)."
+                ),
+            ),
+            OpenApiParameter(
+                name="periodo_after",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Data inicial (inclusive) do período da designação, "
+                    "comparada com `data_inicio` (AAAA-MM-DD)."
+                ),
+            ),
+            OpenApiParameter(
+                name="periodo_before",
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Data final (inclusive) do período da designação, "
+                    "comparada com `data_inicio` (AAAA-MM-DD)."
+                ),
+            ),
+            OpenApiParameter(
+                name="observacao",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    "Trecho da observação de um ato relacionado "
+                    "(apostila ou insubsistência). Devolve as designações "
+                    "que possuem algum ato com essa observação."
+                ),
+            ),
         ],
         responses={
             200: OpenApiResponse(
@@ -50,10 +96,21 @@ class HistoricoDesignacaoView(APIView):
                     "relacionados."
                 ),
             ),
+            400: OpenApiResponse(
+                description=(
+                    "Filtro com valor inválido (ex.: `status_publicacao` "
+                    "fora das opções ou data em formato incorreto)."
+                ),
+            ),
         },
     )
     def get(self, request: Request, codigo_ue: str) -> Response:
         """Retorna as designações da unidade escolar informada.
+
+        Os filtros de query string (`status_publicacao`,
+        `periodo_after`/`periodo_before` e `observacao`) restringem quais
+        designações entram na resposta; os atos relacionados de cada
+        designação são sempre devolvidos por inteiro.
 
         Unidade sem designações devolve lista vazia (e não 404), pois a
         tela de histórico precisa exibir o estado vazio.
@@ -66,7 +123,9 @@ class HistoricoDesignacaoView(APIView):
             Response: Lista de designações com os atos relacionados.
 
         """
-        designacoes = HistoricoDesignacaoService.listar_por_ue(codigo_ue)
+        designacoes = HistoricoDesignacaoService.listar_por_ue(
+            codigo_ue, request.query_params
+        )
         return Response(
             HistoricoDesignacaoSerializer(designacoes, many=True).data,
             status=status.HTTP_200_OK,

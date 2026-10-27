@@ -7,11 +7,16 @@ para que a serialização não gere novas consultas ao banco.
 """
 
 from collections import defaultdict
+from typing import Any
 
 from django.db.models import Q, QuerySet
+from django.http import QueryDict
+from rest_framework.exceptions import ValidationError
 
+from apps.designacao.api.filters.historico_designacao_filter import (
+    HistoricoDesignacaoFilter,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
-from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 
 # Código EOL de unidade escolar é numérico e normalmente gravado com zeros
 # à esquerda (ex.: "019453"); o tamanho padrão é 6 dígitos.
@@ -66,27 +71,47 @@ class HistoricoDesignacaoService:
         return variantes - {""}
 
     @classmethod
-    def _ids_designacoes_da_ue(cls, codigo_ue: str) -> QuerySet:
-        """Retorna um queryset com os ids das designações da UE.
+    def _designacoes_da_ue(
+        cls,
+        codigo_ue: str,
+        filtros: QueryDict | dict[str, Any] | None = None,
+    ) -> QuerySet:
+        """Retorna o queryset de designações da UE, já filtrado.
 
-        ``DesignacaoDetalhe.pk`` é o próprio id do ato (OneToOne com
-        ``primary_key=True``), então ``values("pk")`` já entrega os ids
-        de ``AtoAdministrativo``. Usado como subquery, evita materializar
-        a lista de ids em Python e uma viagem extra ao banco.
+        O queryset é usado como subquery da consulta principal: com isso
+        os filtros não precisam de nenhuma consulta extra, e o filtro por
+        `ue` continua aproveitando o índice de `designacao_detalhe.ue`.
 
         Args:
             codigo_ue: Código EOL da unidade escolar.
+            filtros: Parâmetros de query string (``status_publicacao``,
+                ``periodo_after``, ``periodo_before``, ``observacao``).
 
         Returns:
-            QuerySet: Ids das designações da UE (subquery).
+            QuerySet: Designações da UE que satisfazem os filtros.
+
+        Raises:
+            ValidationError: Quando algum filtro recebe valor inválido.
 
         """
-        return DesignacaoDetalhe.objects.filter(
-            ue__in=cls._variantes_codigo_ue(codigo_ue)
-        ).values("pk")
+        designacoes = AtoAdministrativo.objects.filter(
+            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+            designacao_detalhe__ue__in=cls._variantes_codigo_ue(codigo_ue),
+        )
+        if not filtros:
+            return designacoes
+
+        filtro = HistoricoDesignacaoFilter(data=filtros, queryset=designacoes)
+        if not filtro.is_valid():
+            raise ValidationError(filtro.errors)
+        return filtro.qs
 
     @classmethod
-    def listar_por_ue(cls, codigo_ue: str) -> list[AtoAdministrativo]:
+    def listar_por_ue(
+        cls,
+        codigo_ue: str,
+        filtros: QueryDict | dict[str, Any] | None = None,
+    ) -> list[AtoAdministrativo]:
         """Retorna as designações da UE com os atos derivados carregados.
 
         As designações são devolvidas da mais recente para a mais antiga
@@ -95,17 +120,23 @@ class HistoricoDesignacaoService:
 
         Args:
             codigo_ue: Código EOL da unidade escolar.
+            filtros: Parâmetros de query string que restringem quais
+                designações entram na resposta. Os atos relacionados das
+                designações filtradas são devolvidos por inteiro.
 
         Returns:
             list[AtoAdministrativo]: Designações da UE com os atos
             derivados prontos para serialização.
 
+        Raises:
+            ValidationError: Quando algum filtro recebe valor inválido.
+
         """
-        ids_ue = cls._ids_designacoes_da_ue(codigo_ue)
+        ids_ue = cls._designacoes_da_ue(codigo_ue, filtros).values("pk")
 
         atos = list(
             AtoAdministrativo.objects.filter(
-                # As próprias designações da UE...
+                # As próprias designações que passaram nos filtros...
                 Q(pk__in=ids_ue)
                 # ...e todos os descendentes delas, em qualquer nível.
                 # `ato_raiz` sempre aponta para a designação de origem.
