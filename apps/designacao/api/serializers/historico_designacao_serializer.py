@@ -33,6 +33,209 @@ from apps.designacao.api.serializers.designacao_serializer import (
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
+# Nomes compartilhados pelos três payloads. A ordem de cada tupla é a ordem
+# do JSON; os campos simples do detalhe são declarados a partir dela, sem
+# repetir `source="designacao_detalhe.<campo>"` em cada atributo.
+_CAMPOS_ATO_INICIO = (
+    "id",
+    "tipo",
+    "tipo_de_ato",
+    "status",
+    "status_publicacao",
+)
+_CAMPOS_PORTARIA = (
+    "numero_portaria",
+    "ano_vigente",
+    "sei_numero",
+    "doc",
+    "portaria",
+)
+_CAMPOS_SERVIDOR = ("nome", "cargo", "rf")
+_CAMPOS_ATO_FIM = (
+    "ato_pai_id",
+    "ato_raiz_id",
+    "criado_em",
+    "criado_por_nome",
+)
+_CAMPOS_ATO = (
+    *_CAMPOS_ATO_INICIO,
+    *_CAMPOS_PORTARIA,
+    *_CAMPOS_SERVIDOR,
+    *_CAMPOS_ATO_FIM,
+)
+_CAMPOS_ATO_RELACIONADO = (
+    *_CAMPOS_ATO_INICIO,
+    "ativo",
+    *_CAMPOS_PORTARIA,
+    "data_designacao",
+    "data_cessacao",
+    *_CAMPOS_SERVIDOR,
+    "observacoes",
+    "tipo_insubsistencia",
+    "tipo_apostila",
+    *_CAMPOS_ATO_FIM,
+    "nivel",
+    "ultimo_ato_vigente",
+)
+_DETALHE_UNIDADE = (
+    "ue",
+    "dre",
+    "dre_nome",
+    "unidade_proponente",
+    "codigo_hierarquico",
+    "funcionarios_da_unidade",
+)
+_DETALHE_INDICADO = (
+    "indicado_nome_civil",
+    "indicado_nome_servidor",
+    "indicado_rf",
+    "indicado_vinculo",
+    "indicado_cargo_base",
+    "indicado_codigo_cargo_base",
+    "indicado_lotacao",
+    "indicado_cargo_sobreposto",
+    "indicado_codigo_cargo_sobreposto",
+    "indicado_local_exercicio",
+    "indicado_local_servico",
+    "indicado_categoria",
+    "indicado_codigo_ue_lotacao",
+    "indicado_possui_cargo_sobreposto",
+)
+_DETALHE_TITULAR = (
+    "titular_nome_civil",
+    "titular_nome_servidor",
+    "titular_rf",
+    "titular_vinculo",
+    "titular_cargo_base",
+    "titular_codigo_cargo_base",
+    "titular_lotacao",
+    "titular_cargo_sobreposto",
+    "titular_codigo_cargo_sobreposto",
+    "titular_local_exercicio",
+    "titular_local_servico",
+)
+_DETALHE_PERIODO = ("data_inicio", "data_fim")
+_DETALHE_FLAGS = (
+    "carater_excepcional",
+    "com_afastamento",
+    "possui_pendencia",
+    "pendencias",
+    "motivo_afastamento",
+    "informacoes_adicionais",
+    "detalhe_para_quadro_de_historico_por_ano",
+)
+_CAMPOS_DETALHE = (
+    *_DETALHE_UNIDADE,
+    *_DETALHE_INDICADO,
+    *_DETALHE_TITULAR,
+    *_DETALHE_PERIODO,
+    *_DETALHE_FLAGS,
+    "tipo_vaga",
+    "cargo_vaga",
+)
+_CAMPOS_INTEIROS = frozenset(
+    {
+        "indicado_vinculo",
+        "indicado_codigo_cargo_base",
+        "indicado_codigo_cargo_sobreposto",
+        "titular_vinculo",
+        "titular_codigo_cargo_base",
+        "titular_codigo_cargo_sobreposto",
+        "cargo_vaga",
+    }
+)
+_CAMPOS_BOOLEANOS = frozenset(
+    {
+        "indicado_possui_cargo_sobreposto",
+        "carater_excepcional",
+        "com_afastamento",
+        "possui_pendencia",
+        "detalhe_para_quadro_de_historico_por_ano",
+    }
+)
+_CAMPOS_DATAS = frozenset({"data_inicio", "data_fim"})
+_CAMPOS_NULOS = frozenset(
+    {
+        "indicado_codigo_cargo_base",
+        "indicado_codigo_cargo_sobreposto",
+        "titular_vinculo",
+        "titular_codigo_cargo_base",
+        "titular_codigo_cargo_sobreposto",
+        "data_fim",
+        "cargo_vaga",
+    }
+)
+_CAMPOS_HISTORICO = (
+    *_CAMPOS_ATO_INICIO,
+    *_CAMPOS_PORTARIA,
+    *_CAMPOS_ATO_FIM,
+    *_CAMPOS_SERVIDOR,
+    *_DETALHE_UNIDADE,
+    *_DETALHE_INDICADO,
+    *_DETALHE_TITULAR,
+    *_DETALHE_PERIODO,
+    *_DETALHE_FLAGS,
+    "impedimento_substituicao",
+    "impedimento_substituicao_detail",
+    "impedimento_display",
+    "tipo_vaga",
+    "tipo_vaga_display",
+    "cargo_vaga",
+    "cargo_vaga_display",
+    "vigente",
+    "cessada_em",
+    "atos_relacionados",
+)
+
+
+def _classe_do_campo_detalhe(nome: str) -> type[serializers.Field]:
+    """Escolhe o tipo do campo de leitura conforme o nome no detalhe.
+
+    Args:
+        nome: Nome do campo em ``DesignacaoDetalhe``.
+
+    Returns:
+        type[serializers.Field]: Classe do campo DRF.
+
+    """
+    if nome in _CAMPOS_INTEIROS:
+        return serializers.IntegerField
+    if nome in _CAMPOS_BOOLEANOS:
+        return serializers.BooleanField
+    if nome in _CAMPOS_DATAS:
+        return serializers.DateField
+    return serializers.CharField
+
+
+def _campo_do_detalhe(nome: str) -> serializers.Field:
+    """Monta o campo somente leitura espelhado de ``DesignacaoDetalhe``.
+
+    Args:
+        nome: Nome do campo no detalhe e no payload.
+
+    Returns:
+        serializers.Field: Campo com ``source`` em ``designacao_detalhe``.
+
+    """
+    kwargs: dict[str, Any] = {
+        "source": f"designacao_detalhe.{nome}",
+        "read_only": True,
+    }
+    if nome in _CAMPOS_NULOS:
+        kwargs["allow_null"] = True
+    return _classe_do_campo_detalhe(nome)(**kwargs)
+
+
+def _declarar_campos_do_detalhe(namespace: dict[str, Any]) -> None:
+    """Inclui os campos simples do detalhe no serializer em construção.
+
+    Args:
+        namespace: Namespace da classe (o ``locals()`` do corpo dela).
+
+    """
+    for nome in _CAMPOS_DETALHE:
+        namespace[nome] = _campo_do_detalhe(nome)
+
 
 def _formatar_portaria(ato: AtoAdministrativo) -> str | None:
     """Retorna a portaria do ato no formato ``número/ano``.
@@ -174,25 +377,7 @@ class AtoHistoricoBaseSerializer(
 
     class Meta:
         model = AtoAdministrativo
-        fields = [
-            "id",
-            "tipo",
-            "tipo_de_ato",
-            "status",
-            "status_publicacao",
-            "numero_portaria",
-            "ano_vigente",
-            "sei_numero",
-            "doc",
-            "portaria",
-            "nome",
-            "cargo",
-            "rf",
-            "ato_pai_id",
-            "ato_raiz_id",
-            "criado_em",
-            "criado_por_nome",
-        ]
+        fields = _CAMPOS_ATO
 
     # ── Helpers de detalhe ──────────────────────────────────────────────
 
@@ -367,33 +552,7 @@ class AtoRelacionadoHistoricoSerializer(AtoHistoricoBaseSerializer):
 
     class Meta:
         model = AtoAdministrativo
-        fields = [
-            "id",
-            "tipo",
-            "tipo_de_ato",
-            "status",
-            "status_publicacao",
-            "ativo",
-            "numero_portaria",
-            "ano_vigente",
-            "sei_numero",
-            "doc",
-            "portaria",
-            "data_designacao",
-            "data_cessacao",
-            "nome",
-            "cargo",
-            "rf",
-            "observacoes",
-            "tipo_insubsistencia",
-            "tipo_apostila",
-            "ato_pai_id",
-            "ato_raiz_id",
-            "criado_em",
-            "criado_por_nome",
-            "nivel",
-            "ultimo_ato_vigente",
-        ]
+        fields = _CAMPOS_ATO_RELACIONADO
 
     def get_observacoes(self, obj: AtoAdministrativo) -> str | None:
         """Retorna a observação do ato conforme o seu tipo.
@@ -487,148 +646,8 @@ class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
     ``vigente``, ``cessada_em`` e ``atos_relacionados``.
     """
 
-    # Unidade (DesignacaoDetalhe)
-    ue = serializers.CharField(source="designacao_detalhe.ue", read_only=True)
-    dre = serializers.CharField(
-        source="designacao_detalhe.dre", read_only=True
-    )
-    dre_nome = serializers.CharField(
-        source="designacao_detalhe.dre_nome", read_only=True
-    )
-    unidade_proponente = serializers.CharField(
-        source="designacao_detalhe.unidade_proponente", read_only=True
-    )
-    codigo_hierarquico = serializers.CharField(
-        source="designacao_detalhe.codigo_hierarquico", read_only=True
-    )
-    funcionarios_da_unidade = serializers.CharField(
-        source="designacao_detalhe.funcionarios_da_unidade", read_only=True
-    )
+    _declarar_campos_do_detalhe(locals())
 
-    # Indicado (DesignacaoDetalhe)
-    indicado_nome_civil = serializers.CharField(
-        source="designacao_detalhe.indicado_nome_civil", read_only=True
-    )
-    indicado_nome_servidor = serializers.CharField(
-        source="designacao_detalhe.indicado_nome_servidor", read_only=True
-    )
-    indicado_rf = serializers.CharField(
-        source="designacao_detalhe.indicado_rf", read_only=True
-    )
-    indicado_vinculo = serializers.IntegerField(
-        source="designacao_detalhe.indicado_vinculo", read_only=True
-    )
-    indicado_cargo_base = serializers.CharField(
-        source="designacao_detalhe.indicado_cargo_base", read_only=True
-    )
-    indicado_codigo_cargo_base = serializers.IntegerField(
-        source="designacao_detalhe.indicado_codigo_cargo_base",
-        read_only=True,
-        allow_null=True,
-    )
-    indicado_lotacao = serializers.CharField(
-        source="designacao_detalhe.indicado_lotacao", read_only=True
-    )
-    indicado_cargo_sobreposto = serializers.CharField(
-        source="designacao_detalhe.indicado_cargo_sobreposto", read_only=True
-    )
-    indicado_codigo_cargo_sobreposto = serializers.IntegerField(
-        source="designacao_detalhe.indicado_codigo_cargo_sobreposto",
-        read_only=True,
-        allow_null=True,
-    )
-    indicado_local_exercicio = serializers.CharField(
-        source="designacao_detalhe.indicado_local_exercicio", read_only=True
-    )
-    indicado_local_servico = serializers.CharField(
-        source="designacao_detalhe.indicado_local_servico", read_only=True
-    )
-    indicado_categoria = serializers.CharField(
-        source="designacao_detalhe.indicado_categoria", read_only=True
-    )
-    indicado_codigo_ue_lotacao = serializers.CharField(
-        source="designacao_detalhe.indicado_codigo_ue_lotacao",
-        read_only=True,
-    )
-    indicado_possui_cargo_sobreposto = serializers.BooleanField(
-        source="designacao_detalhe.indicado_possui_cargo_sobreposto",
-        read_only=True,
-    )
-
-    # Titular (DesignacaoDetalhe)
-    titular_nome_civil = serializers.CharField(
-        source="designacao_detalhe.titular_nome_civil", read_only=True
-    )
-    titular_nome_servidor = serializers.CharField(
-        source="designacao_detalhe.titular_nome_servidor", read_only=True
-    )
-    titular_rf = serializers.CharField(
-        source="designacao_detalhe.titular_rf", read_only=True
-    )
-    titular_vinculo = serializers.IntegerField(
-        source="designacao_detalhe.titular_vinculo",
-        read_only=True,
-        allow_null=True,
-    )
-    titular_cargo_base = serializers.CharField(
-        source="designacao_detalhe.titular_cargo_base", read_only=True
-    )
-    titular_codigo_cargo_base = serializers.IntegerField(
-        source="designacao_detalhe.titular_codigo_cargo_base",
-        read_only=True,
-        allow_null=True,
-    )
-    titular_lotacao = serializers.CharField(
-        source="designacao_detalhe.titular_lotacao", read_only=True
-    )
-    titular_cargo_sobreposto = serializers.CharField(
-        source="designacao_detalhe.titular_cargo_sobreposto", read_only=True
-    )
-    titular_codigo_cargo_sobreposto = serializers.IntegerField(
-        source="designacao_detalhe.titular_codigo_cargo_sobreposto",
-        read_only=True,
-        allow_null=True,
-    )
-    titular_local_exercicio = serializers.CharField(
-        source="designacao_detalhe.titular_local_exercicio", read_only=True
-    )
-    titular_local_servico = serializers.CharField(
-        source="designacao_detalhe.titular_local_servico", read_only=True
-    )
-
-    # Período (DesignacaoDetalhe)
-    data_inicio = serializers.DateField(
-        source="designacao_detalhe.data_inicio", read_only=True
-    )
-    data_fim = serializers.DateField(
-        source="designacao_detalhe.data_fim", read_only=True, allow_null=True
-    )
-
-    # Flags (DesignacaoDetalhe)
-    carater_excepcional = serializers.BooleanField(
-        source="designacao_detalhe.carater_excepcional", read_only=True
-    )
-    com_afastamento = serializers.BooleanField(
-        source="designacao_detalhe.com_afastamento", read_only=True
-    )
-    possui_pendencia = serializers.BooleanField(
-        source="designacao_detalhe.possui_pendencia", read_only=True
-    )
-    pendencias = serializers.CharField(
-        source="designacao_detalhe.pendencias", read_only=True
-    )
-    motivo_afastamento = serializers.CharField(
-        source="designacao_detalhe.motivo_afastamento", read_only=True
-    )
-    informacoes_adicionais = serializers.CharField(
-        source="designacao_detalhe.informacoes_adicionais", read_only=True
-    )
-    detalhe_para_quadro_de_historico_por_ano = serializers.BooleanField(
-        source="designacao_detalhe.detalhe_para_quadro_de_historico_por_ano",
-        read_only=True,
-    )
-
-    # Impedimento (DesignacaoDetalhe)
     impedimento_substituicao: serializers.PrimaryKeyRelatedField = (
         serializers.PrimaryKeyRelatedField(
             source="designacao_detalhe.impedimento_substituicao",
@@ -642,15 +661,7 @@ class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
         )
     )
     impedimento_display = serializers.SerializerMethodField()
-
-    # Vaga (DesignacaoDetalhe)
-    tipo_vaga = serializers.CharField(
-        source="designacao_detalhe.tipo_vaga", read_only=True
-    )
     tipo_vaga_display = serializers.SerializerMethodField()
-    cargo_vaga = serializers.IntegerField(
-        source="designacao_detalhe.cargo_vaga", read_only=True, allow_null=True
-    )
     cargo_vaga_display = serializers.SerializerMethodField()
 
     # Situação e histórico
@@ -660,85 +671,7 @@ class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
 
     class Meta:
         model = AtoAdministrativo
-        fields = [
-            # Ato
-            "id",
-            "tipo",
-            "tipo_de_ato",
-            "status",
-            "status_publicacao",
-            "numero_portaria",
-            "ano_vigente",
-            "sei_numero",
-            "doc",
-            "portaria",
-            "ato_pai_id",
-            "ato_raiz_id",
-            "criado_em",
-            "criado_por_nome",
-            # Servidor (derivados, como em atos administrativos)
-            "nome",
-            "cargo",
-            "rf",
-            # Unidade
-            "ue",
-            "dre",
-            "dre_nome",
-            "unidade_proponente",
-            "codigo_hierarquico",
-            "funcionarios_da_unidade",
-            # Indicado
-            "indicado_nome_civil",
-            "indicado_nome_servidor",
-            "indicado_rf",
-            "indicado_vinculo",
-            "indicado_cargo_base",
-            "indicado_codigo_cargo_base",
-            "indicado_lotacao",
-            "indicado_cargo_sobreposto",
-            "indicado_codigo_cargo_sobreposto",
-            "indicado_local_exercicio",
-            "indicado_local_servico",
-            "indicado_categoria",
-            "indicado_codigo_ue_lotacao",
-            "indicado_possui_cargo_sobreposto",
-            # Titular
-            "titular_nome_civil",
-            "titular_nome_servidor",
-            "titular_rf",
-            "titular_vinculo",
-            "titular_cargo_base",
-            "titular_codigo_cargo_base",
-            "titular_lotacao",
-            "titular_cargo_sobreposto",
-            "titular_codigo_cargo_sobreposto",
-            "titular_local_exercicio",
-            "titular_local_servico",
-            # Período
-            "data_inicio",
-            "data_fim",
-            # Flags
-            "carater_excepcional",
-            "com_afastamento",
-            "possui_pendencia",
-            "pendencias",
-            "motivo_afastamento",
-            "informacoes_adicionais",
-            "detalhe_para_quadro_de_historico_por_ano",
-            # Impedimento
-            "impedimento_substituicao",
-            "impedimento_substituicao_detail",
-            "impedimento_display",
-            # Vaga
-            "tipo_vaga",
-            "tipo_vaga_display",
-            "cargo_vaga",
-            "cargo_vaga_display",
-            # Histórico
-            "vigente",
-            "cessada_em",
-            "atos_relacionados",
-        ]
+        fields = _CAMPOS_HISTORICO
 
     def get_impedimento_display(self, obj: AtoAdministrativo) -> str | None:
         """Retorna a descrição do impedimento de substituição.
