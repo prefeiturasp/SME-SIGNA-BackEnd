@@ -852,3 +852,45 @@ class TestDesignacaoServiceSobreposicao:
 
         designacao.designacao_detalhe.refresh_from_db()
         assert designacao.designacao_detalhe.pendencias == "Nova"
+
+
+@pytest.mark.django_db
+class TestContarDesignacoesPorCargo:
+    """Contagem de designações por cargo da vaga, no próprio serviço."""
+
+    def test_rejeita_ue_vazia_ou_so_com_espacos(self):
+        with pytest.raises(ValidationError) as erro:
+            DesignacaoService.contar_designacoes_por_cargo("   ")
+
+        assert "obrigatório" in str(erro.value.detail["ue"])
+
+    def test_conta_variantes_da_ue_e_inclui_cargo_fora_do_painel(self):
+        criar_ato_designacao(ue="019453", cargo_vaga=3360)
+        criar_ato_designacao(ue="19453", cargo_vaga=3352)
+        criar_ato_designacao(ue="099999", cargo_vaga=3360)
+
+        resultado = DesignacaoService.contar_designacoes_por_cargo(" 019453 ")
+
+        por_codigo = {
+            item["codigoCargo"]: item["quantidade_designacoes"]
+            for item in resultado
+        }
+        assert por_codigo[None] == 2
+        assert por_codigo[3360] == 1
+        assert por_codigo[3085] == 0
+        assert por_codigo[3379] == 0
+        assert por_codigo[3182] == 0
+        assert 3352 not in por_codigo
+
+    def test_atos_derivados_nao_entram_na_contagem(self):
+        designacao = criar_ato_designacao(ue="019453", cargo_vaga=3360)
+        criar_ato_cessacao(designacao)
+
+        resultado = DesignacaoService.contar_designacoes_por_cargo("019453")
+
+        assert resultado[0]["quantidade_designacoes"] == 1
+        diretor = next(
+            item for item in resultado if item["codigoCargo"] == 3360
+        )
+        assert diretor["quantidade_designacoes"] == 1
+        assert diretor["nomeCargo"] == "Diretor de escola"
