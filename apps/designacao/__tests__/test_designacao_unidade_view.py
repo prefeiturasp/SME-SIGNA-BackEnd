@@ -160,3 +160,65 @@ class TestDesignacaoUnidadeCargosView:
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert response.json() == {"detail": "Erro interno ao buscar cargos"}
+
+
+@pytest.mark.django_db
+class TestDesignacaoUnidadesCadastradasView:
+    """Testes para a view de unidades já cadastradas em designações."""
+
+    password = secrets.token_urlsafe(16)
+
+    def setup_method(self):
+        """Método setup method."""
+        self.client = APIClient()
+        self.url = "/api/designacao/unidade/cadastradas/"
+
+    @patch(
+        "apps.designacao.api.views.designacao_unidades_view."
+        "DesignacaoUnidadeService.listar_unidades_cadastradas"
+    )
+    def test_get_sucesso(self, mock_service, django_user_model):
+        """Verifica get sucesso repassando o search ao serviço."""
+        user = django_user_model.objects.create_user(
+            username="user", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_data = [
+            {
+                "dre": "108800",
+                "dre_nome": "DRE BUTANTA",
+                "ue": "019453",
+                "ue_nome": "EMEF - ALIPIO",
+            }
+        ]
+        mock_service.return_value = mock_data
+
+        response = self.client.get(self.url, {"search": " alipio "})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == mock_data
+        mock_service.assert_called_once_with("alipio")
+
+    @patch(
+        "apps.designacao.api.views.designacao_unidades_view."
+        "DesignacaoUnidadeService.listar_unidades_cadastradas"
+    )
+    def test_get_erro_inesperado(self, mock_service, django_user_model):
+        """Verifica get erro inesperado."""
+        user = django_user_model.objects.create_user(
+            username="user", password=self.password
+        )
+        self.client.force_authenticate(user=user)
+
+        mock_service.side_effect = Exception("boom")
+
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def test_get_nao_autenticado(self):
+        """Verifica get nao autenticado."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

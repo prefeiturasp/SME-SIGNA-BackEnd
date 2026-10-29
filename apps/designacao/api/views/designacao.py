@@ -8,7 +8,12 @@ from typing import Any
 
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, viewsets
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -215,6 +220,38 @@ class DesignacaoViewSet(  # type: ignore[misc]
         return Response(DesignacaoReadSerializer(ato).data)
 
     # ── Actions de cargos ────────────────────────────────────────────────────
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="ue",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Código EOL da unidade escolar.",
+            ),
+        ],
+        responses=inline_serializer(
+            name="CargoDesignacoes",
+            fields={
+                "codigoCargo": serializers.IntegerField(allow_null=True),
+                "nomeCargo": serializers.CharField(),
+                "quantidade_designacoes": serializers.IntegerField(
+                    min_value=0
+                ),
+            },
+            many=True,
+        ),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="cargos-designacoes")
+    def cargos_designacoes(self, request: Request) -> Response:
+        """Retorna o total de atos de designação da UE por cargo."""
+        return Response(
+            DesignacaoService.contar_designacoes_por_cargo(
+                request.query_params.get("ue", "")
+            )
+        )
 
     @action(detail=False, methods=["get"], url_path="cargos-base-pareados")
     def cargos_base_pareados(self, request: Request) -> Response:
