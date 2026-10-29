@@ -19,6 +19,7 @@ from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.historico_designacao_service import (
     HistoricoDesignacaoService,
 )
+from apps.gestao.models.cargo_base import CargoBase
 
 _CAMPOS_ATO = frozenset(
     {
@@ -89,8 +90,9 @@ class DesignacaoService:
 
         Inclui designações vigentes, encerradas, cessadas e insubsistentes,
         independentemente da publicação. Atos relacionados não aumentam
-        a contagem. O total da UE inclui também os cargos que não são
-        exibidos individualmente no painel.
+        a contagem. Cada linha individual vem de ``cargo_base`` (cargo
+        ativo e utilizado para designações); o total da UE inclui também
+        designações de cargos fora desse cadastro.
         """
         ue = ue.strip()
         if not ue:
@@ -105,12 +107,10 @@ class DesignacaoService:
             .annotate(quantidade=Count("pk"))
             .values_list("cargo_vaga", "quantidade")
         )
-        cargos = (
-            (3085, "Assistente de direção"),
-            (3379, "Coordenador pedagógico"),
-            (3360, "Diretor de escola"),
-            (3182, "Secretário de escola"),
-        )
+        cargos = CargoBase.objects.filter(
+            status=CargoBase.Status.ATIVO,
+            utilizado_para_designacoes=True,
+        ).order_by("descricao_resumida")
         return [
             {
                 "codigoCargo": None,
@@ -119,11 +119,13 @@ class DesignacaoService:
             },
             *[
                 {
-                    "codigoCargo": codigo,
-                    "nomeCargo": nome,
-                    "quantidade_designacoes": totais.get(codigo, 0),
+                    "codigoCargo": int(cargo.codigo_cargo),
+                    "nomeCargo": cargo.descricao_completa,
+                    "quantidade_designacoes": totais.get(
+                        int(cargo.codigo_cargo), 0
+                    ),
                 }
-                for codigo, nome in cargos
+                for cargo in cargos
             ],
         ]
 

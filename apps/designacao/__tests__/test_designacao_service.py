@@ -15,6 +15,7 @@ from apps.designacao.services.designacao_service import (
     CODIGO_PERIODO_SOBREPOSTO,
     DesignacaoService,
 )
+from apps.gestao.models.cargo_base import CargoBase
 
 
 @pytest.mark.django_db
@@ -864,9 +865,9 @@ class TestContarDesignacoesPorCargo:
 
         assert "obrigatório" in str(erro.value.detail["ue"])
 
-    def test_conta_variantes_da_ue_e_inclui_cargo_fora_do_painel(self):
+    def test_conta_variantes_da_ue_e_inclui_cargo_fora_do_cadastro(self):
         criar_ato_designacao(ue="019453", cargo_vaga=3360)
-        criar_ato_designacao(ue="19453", cargo_vaga=3352)
+        criar_ato_designacao(ue="19453", cargo_vaga=9999)
         criar_ato_designacao(ue="099999", cargo_vaga=3360)
 
         resultado = DesignacaoService.contar_designacoes_por_cargo(" 019453 ")
@@ -877,10 +878,7 @@ class TestContarDesignacoesPorCargo:
         }
         assert por_codigo[None] == 2
         assert por_codigo[3360] == 1
-        assert por_codigo[3085] == 0
-        assert por_codigo[3379] == 0
-        assert por_codigo[3182] == 0
-        assert 3352 not in por_codigo
+        assert 9999 not in por_codigo
 
     def test_atos_derivados_nao_entram_na_contagem(self):
         designacao = criar_ato_designacao(ue="019453", cargo_vaga=3360)
@@ -893,4 +891,7 @@ class TestContarDesignacoesPorCargo:
             item for item in resultado if item["codigoCargo"] == 3360
         )
         assert diretor["quantidade_designacoes"] == 1
-        assert diretor["nomeCargo"] == "Diretor de escola"
+        assert (
+            diretor["nomeCargo"]
+            == CargoBase.objects.get(codigo_cargo="3360").descricao_completa
+        )

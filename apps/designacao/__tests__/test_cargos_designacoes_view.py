@@ -15,16 +15,25 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.services.designacao_service import DesignacaoService
+from apps.gestao.models.cargo_base import CargoBase
 
 pytestmark = pytest.mark.django_db
 
-CARGOS = [
-    {"codigoCargo": 3085, "nomeCargo": "Assistente de direção"},
-    {"codigoCargo": 3379, "nomeCargo": "Coordenador pedagógico"},
-    {"codigoCargo": 3360, "nomeCargo": "Diretor de escola"},
-    {"codigoCargo": 3182, "nomeCargo": "Secretário de escola"},
-]
 TODOS = {"codigoCargo": None, "nomeCargo": "Todos os cargos"}
+
+
+def _cargos_do_cadastro() -> list[dict]:
+    """Cargos ativos utilizados para designação, na ordem do painel."""
+    return [
+        {
+            "codigoCargo": int(cargo.codigo_cargo),
+            "nomeCargo": cargo.descricao_completa,
+        }
+        for cargo in CargoBase.objects.filter(
+            status=CargoBase.Status.ATIVO,
+            utilizado_para_designacoes=True,
+        ).order_by("descricao_resumida")
+    ]
 
 
 @pytest.fixture
@@ -51,18 +60,20 @@ def test_rejeita_token_invalido():
     assert response.status_code == 401
 
 
-def test_retorna_total_e_quatro_cargos_sem_designacoes(client):
+def test_retorna_total_e_cargos_do_cadastro_sem_designacoes(client):
     response = client.get(
         reverse("designacao:cargos-designacoes"), {"ue": "019453"}
     )
     assert response.status_code == 200
     assert response.data == [
-        {**cargo, "quantidade_designacoes": 0} for cargo in [TODOS, *CARGOS]
+        {**cargo, "quantidade_designacoes": 0}
+        for cargo in [TODOS, *_cargos_do_cadastro()]
     ]
 
 
 def test_agrupa_por_cargo_da_vaga_sem_duplicar_designacoes(client):
-    for quantidade, cargo in enumerate(CARGOS, start=1):
+    cargos = _cargos_do_cadastro()
+    for quantidade, cargo in enumerate(cargos, start=1):
         for _ in range(quantidade):
             ato = criar_ato_designacao(
                 ue="019453",
@@ -71,7 +82,7 @@ def test_agrupa_por_cargo_da_vaga_sem_duplicar_designacoes(client):
             )
             criar_ato_apostila(ato)
             criar_ato_apostila(ato)
-    criar_ato_designacao(ue="019453", cargo_vaga=3352)
+    # Códigos ausentes do cadastro entram só no total.
     criar_ato_designacao(ue="019453", cargo_vaga=9999)
     criar_ato_designacao(ue="019453", cargo_vaga=None)
 
@@ -79,11 +90,12 @@ def test_agrupa_por_cargo_da_vaga_sem_duplicar_designacoes(client):
         reverse("designacao:cargos-designacoes"), {"ue": "019453"}
     )
 
+    total = sum(range(1, len(cargos) + 1)) + 2
     assert response.status_code == 200
-    assert response.data[0] == {**TODOS, "quantidade_designacoes": 13}
+    assert response.data[0] == {**TODOS, "quantidade_designacoes": total}
     assert response.data[1:] == [
         {**cargo, "quantidade_designacoes": quantidade}
-        for quantidade, cargo in enumerate(CARGOS, start=1)
+        for quantidade, cargo in enumerate(cargos, start=1)
     ]
 
 
@@ -144,7 +156,7 @@ def test_conta_designacoes_independentemente_da_vigencia(
         cessacao.save()
 
     assert ato.esta_vigente == bool(vigente)
-    with django_assert_num_queries(1):
+    with django_assert_num_queries(2):
         resultado = DesignacaoService.contar_designacoes_por_cargo("019453")
     diretor = next(
         cargo for cargo in resultado if cargo["codigoCargo"] == 3360
@@ -189,8 +201,12 @@ def test_exemplo_tres_coordenadores_e_dois_diretores(client):
         reverse("designacao:cargos-designacoes"), {"ue": "019453"}
     )
 
+    esperado = {cargo["codigoCargo"]: 0 for cargo in _cargos_do_cadastro()}
+    esperado[None] = 5
+    esperado[3379] = 3
+    esperado[3360] = 2
     assert response.status_code == 200
     assert {
         item["codigoCargo"]: item["quantidade_designacoes"]
         for item in response.data
-    } == {None: 5, 3085: 0, 3379: 3, 3360: 2, 3182: 0}
+    } == esperado
