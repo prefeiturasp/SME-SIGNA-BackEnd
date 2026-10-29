@@ -17,6 +17,9 @@ from apps.designacao.api.views.designacao_unidades_view import (
     DesignacaoUnidadesCadastradasView,
     DesignacaoUnidadeView,
 )
+from apps.designacao.api.views.historico_designacao_view import (
+    HistoricoDesignacaoView,
+)
 from apps.designacao.api.views.insubsistencia_view import (
     InsubsistenciaViewSet,
 )
@@ -67,6 +70,11 @@ urlpatterns = [
         name="designacao-detail",
     ),
     path(
+        "designacoes/cargos-designacoes/",
+        DesignacaoViewSet.as_view({"get": "cargos_designacoes"}),
+        name="cargos-designacoes",
+    ),
+    path(
         "designacoes/cargos-base-pareados/",
         DesignacaoViewSet.as_view({"get": "cargos_base_pareados"}),
         name="cargos-base-pareados",
@@ -80,6 +88,12 @@ urlpatterns = [
         "designacoes/buscar-por-portaria/",
         DesignacaoViewSet.as_view({"get": "buscar_por_portaria"}),
         name="designacao-buscar-por-portaria",
+    ),
+    # Histórico de designações por unidade escolar
+    path(
+        "historico-de-designacoes/<str:codigo_ue>/",
+        HistoricoDesignacaoView.as_view(),
+        name="historico-de-designacoes",
     ),
     # Cessações (AtoAdministrativo + CessacaoDetalhe)
     path(
