@@ -20,15 +20,8 @@ from apps.designacao.api.filters.historico_designacao_filter import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.cargo_base import CargoBase
 
-# Código EOL de unidade escolar é numérico e normalmente gravado com zeros
-# à esquerda (ex.: "019453"); o tamanho padrão é 6 dígitos.
 _TAMANHO_CODIGO_UE = 6
 
-# Relações OneToOne do ato com o seu detalhe. Todas viram LEFT JOIN na
-# mesma linha do ato (custo de um lookup por pk), então vale carregá-las
-# de uma vez em vez de deixar o serializer consultar cada uma. O
-# impedimento e o usuário criador também entram: o payload do histórico
-# expõe `impedimento_*` e `criado_por_nome`, como a listagem de atos.
 _SELECT_RELATED_DETALHES = (
     "designacao_detalhe",
     "designacao_detalhe__impedimento_substituicao",
@@ -38,10 +31,6 @@ _SELECT_RELATED_DETALHES = (
     "criado_por",
 )
 
-# Único campo grande que este endpoint não devolve: o texto integral da
-# portaria (`texto_sei`). Adiá-lo evita trafegar megabytes do banco para o
-# processo Python em cada linha do histórico — quem precisa do texto usa
-# `atos-administrativos/<id>/`.
 _CAMPOS_ADIADOS = ("texto_sei",)
 
 
@@ -165,11 +154,6 @@ class HistoricoDesignacaoService:
         """
         ids_ue = cls._designacoes_da_ue(codigo_ue, filtros).values("pk")
 
-        # `descricao_cargo_vaga` é cargo_base.descricao_completa da
-        # própria designação (codigo_cargo = cargo_vaga). Atos derivados
-        # não têm detalhe de designação, então a anotação fica nula neles.
-        # `annotate` produz um tipo distinto para o mypy; em runtime o
-        # objeto continua sendo AtoAdministrativo com o campo extra.
         atos = cast(
             list[AtoAdministrativo],
             list(
