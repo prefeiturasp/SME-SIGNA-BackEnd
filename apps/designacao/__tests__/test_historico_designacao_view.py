@@ -290,6 +290,7 @@ def test_ato_relacionado_tem_campos_de_atos_administrativos(auth_client):
 
     for ato in atos:
         assert set(ato) >= CAMPOS_ATO_RELACIONADO
+        assert "cargo_vaga_display" not in ato
         assert ato["rf"] == "1234567"
         assert ato["data_designacao"] == "2024-01-01"
 
@@ -691,10 +692,10 @@ def test_numero_de_consultas_nao_cresce_com_o_volume(
 
 
 @pytest.mark.django_db
-def test_descricao_de_cargo_de_vaga_custa_uma_consulta_extra(
+def test_descricao_de_cargo_de_vaga_vem_na_mesma_consulta(
     django_assert_num_queries,
 ):
-    """O mapa de cargos é carregado uma única vez, não por designação."""
+    """A descrição do cargo entra na consulta da hierarquia."""
     cargo, _criado = CargoBase.objects.get_or_create(
         codigo_cargo="9998",
         defaults={
@@ -711,8 +712,8 @@ def test_descricao_de_cargo_de_vaga_custa_uma_consulta_extra(
             cargo_vaga=int(cargo.codigo_cargo),
         )
 
-    # 1 consulta da hierarquia + 1 do mapa de cargos, independente do volume.
-    with django_assert_num_queries(2):
+    # A descrição do cargo entra na mesma consulta da hierarquia.
+    with django_assert_num_queries(1):
         designacoes = HistoricoDesignacaoService.listar_por_ue(UE)
 
     with django_assert_num_queries(0):

@@ -119,7 +119,7 @@ class TestListarPorUe:
 
         assert [item.pk for item in encontrados] == [diretor.pk]
 
-    def test_sem_cargo_de_vaga_nao_consulta_o_cadastro(
+    def test_sem_cargo_de_vaga_a_descricao_fica_vazia(
         self, django_assert_num_queries
     ):
         criar_ato_designacao(ue=UE, cargo_vaga=None)
@@ -127,9 +127,9 @@ class TestListarPorUe:
         with django_assert_num_queries(1):
             [designacao] = HistoricoDesignacaoService.listar_por_ue(UE)
 
-        assert designacao._cargo_por_codigo == {}
+        assert designacao.descricao_cargo_vaga is None
 
-    def test_anexa_a_descricao_do_cargo_uma_unica_vez(self):
+    def test_anexa_a_descricao_completa_do_cargo_na_designacao(self):
         CargoBase.objects.create(
             codigo_cargo="8801",
             descricao_completa="CARGO DE TESTE",
@@ -140,13 +140,9 @@ class TestListarPorUe:
         criar_ato_designacao(ue=UE, cargo_vaga=8801)
         criar_ato_designacao(ue=UE, cargo_vaga=1111)
 
-        primeira, segunda = HistoricoDesignacaoService.listar_por_ue(UE)
-
-        assert primeira._cargo_por_codigo is segunda._cargo_por_codigo
-        assert primeira._cargo_por_codigo == {"8801": "CARGO DE TESTE"}
-
-    def test_preencher_descricoes_de_lista_vazia_nao_consulta(
-        self, django_assert_num_queries
-    ):
-        with django_assert_num_queries(0):
-            HistoricoDesignacaoService._preencher_descricoes_de_cargo([])
+        # A mais recente (criada por último) não tem cargo no cadastro.
+        sem_cadastro, com_cadastro = HistoricoDesignacaoService.listar_por_ue(
+            UE
+        )
+        assert sem_cadastro.descricao_cargo_vaga is None
+        assert com_cadastro.descricao_cargo_vaga == "CARGO DE TESTE"

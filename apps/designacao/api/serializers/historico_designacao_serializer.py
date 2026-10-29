@@ -703,27 +703,20 @@ class HistoricoDesignacaoSerializer(AtoHistoricoBaseSerializer):
         return detalhe.get_tipo_vaga_display()
 
     def get_cargo_vaga_display(self, obj: AtoAdministrativo) -> str | None:
-        """Retorna a descrição completa do cargo de vaga.
+        """Retorna a descrição completa do cargo de vaga da designação.
 
-        O mapa ``código → descrição`` é carregado uma única vez pelo
-        serviço (``_cargo_por_codigo``) — sem uma consulta por
-        designação.
+        O valor vem de ``cargo_base.descricao_completa``, ligado por
+        ``codigo_cargo`` = ``designacao_detalhe.cargo_vaga`` na consulta
+        do histórico (anotação ``descricao_cargo_vaga``).
 
         Args:
-            obj: Instância de AtoAdministrativo.
+            obj: Instância de AtoAdministrativo de designação.
 
         Returns:
-            str|None: Descrição do cargo ou None se não houver.
+            str|None: Descrição completa do cargo ou None se não houver.
 
         """
-        detalhe = getattr(obj, "designacao_detalhe", None)
-        codigo = getattr(detalhe, "cargo_vaga", None)
-        if codigo is None:
-            return None
-        mapa: dict[str, str] = getattr(obj, "_cargo_por_codigo", None) or (
-            self.context.get("cargo_por_codigo") or {}
-        )
-        return mapa.get(str(codigo))
+        return getattr(obj, "descricao_cargo_vaga", None) or None
 
     @extend_schema_field(AtoRelacionadoHistoricoSerializer(many=True))
     def get_atos_relacionados(

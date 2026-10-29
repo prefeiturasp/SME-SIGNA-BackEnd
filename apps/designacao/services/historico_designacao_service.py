@@ -7,9 +7,10 @@ para que a serialização não gere novas consultas ao banco.
 """
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, cast
 
-from django.db.models import Q, QuerySet
+from django.db.models import CharField, OuterRef, Q, QuerySet, Subquery
+from django.db.models.functions import Cast
 from django.http import QueryDict
 from rest_framework.exceptions import ValidationError
 
@@ -42,6 +43,34 @@ _SELECT_RELATED_DETALHES = (
 # processo Python em cada linha do histórico — quem precisa do texto usa
 # `atos-administrativos/<id>/`.
 _CAMPOS_ADIADOS = ("texto_sei",)
+
+
+def _descricao_do_cargo(caminho_cargo_vaga: str) -> Subquery:
+    """Subconsulta de ``cargo_base.descricao_completa`` pelo código da vaga.
+
+    Não há chave estrangeira entre as tabelas, e os tipos diferem:
+    ``designacao_detalhe.cargo_vaga`` é inteiro e
+    ``cargo_base.codigo_cargo`` é texto. A comparação converte o código
+    da vaga antes de ligar as duas colunas.
+
+    Args:
+        caminho_cargo_vaga: Caminho até ``cargo_vaga`` a partir do ato.
+            Na designação, ``designacao_detalhe__cargo_vaga``.
+
+    Returns:
+        Subquery: Descrição completa do cargo, ou NULL quando o código
+        não existe no cadastro.
+
+    """
+    return Subquery(
+        CargoBase.objects.filter(
+            codigo_cargo=Cast(
+                OuterRef(caminho_cargo_vaga),
+                output_field=CharField(max_length=20),
+            )
+        ).values("descricao_completa")[:1],
+        output_field=CharField(),
+    )
 
 
 class HistoricoDesignacaoService:
@@ -136,16 +165,29 @@ class HistoricoDesignacaoService:
         """
         ids_ue = cls._designacoes_da_ue(codigo_ue, filtros).values("pk")
 
-        atos = list(
-            AtoAdministrativo.objects.filter(
-                # As próprias designações que passaram nos filtros...
-                Q(pk__in=ids_ue)
-                # ...e todos os descendentes delas, em qualquer nível.
-                # `ato_raiz` sempre aponta para a designação de origem.
-                | Q(ato_raiz_id__in=ids_ue)
-            )
-            .select_related(*_SELECT_RELATED_DETALHES)
-            .defer(*_CAMPOS_ADIADOS)
+        # `descricao_cargo_vaga` é cargo_base.descricao_completa da
+        # própria designação (codigo_cargo = cargo_vaga). Atos derivados
+        # não têm detalhe de designação, então a anotação fica nula neles.
+        # `annotate` produz um tipo distinto para o mypy; em runtime o
+        # objeto continua sendo AtoAdministrativo com o campo extra.
+        atos = cast(
+            list[AtoAdministrativo],
+            list(
+                AtoAdministrativo.objects.filter(
+                    # As próprias designações que passaram nos filtros...
+                    Q(pk__in=ids_ue)
+                    # ...e todos os descendentes delas, em qualquer nível.
+                    # `ato_raiz` sempre aponta para a designação de origem.
+                    | Q(ato_raiz_id__in=ids_ue)
+                )
+                .select_related(*_SELECT_RELATED_DETALHES)
+                .defer(*_CAMPOS_ADIADOS)
+                .annotate(
+                    descricao_cargo_vaga=_descricao_do_cargo(
+                        "designacao_detalhe__cargo_vaga"
+                    )
+                )
+            ),
         )
 
         if not atos:
@@ -165,46 +207,7 @@ class HistoricoDesignacaoService:
             ),
             reverse=True,
         )
-        cls._preencher_descricoes_de_cargo(designacoes)
         return designacoes
-
-    @staticmethod
-    def _preencher_descricoes_de_cargo(
-        designacoes: list[AtoAdministrativo],
-    ) -> None:
-        """Anexa a descrição do cargo de vaga a cada designação.
-
-        O serializer expõe ``cargo_vaga_display`` (igual a
-        ``DesignacaoReadSerializer``). Para não fazer uma consulta por
-        designação, as descrições são buscadas **uma única vez** e
-        guardadas em ``_cargo_por_codigo`` na instância. Quando nenhuma
-        designação tem ``cargo_vaga``, nenhuma consulta extra é feita.
-
-        Args:
-            designacoes: Designações já ordenadas.
-
-        """
-        if not designacoes:
-            return
-
-        codigos = {
-            str(detalhe.cargo_vaga)
-            for detalhe in (
-                ato.designacao_detalhe
-                for ato in designacoes
-                if ato.designacao_detalhe is not None
-            )
-            if detalhe.cargo_vaga is not None
-        }
-        mapa: dict[str, str] = {}
-        if codigos:
-            mapa = dict(
-                CargoBase.objects.filter(codigo_cargo__in=codigos).values_list(
-                    "codigo_cargo", "descricao_completa"
-                )
-            )
-        for ato in designacoes:
-            ato._cargo_por_codigo = mapa  # type: ignore[attr-defined]
 
     @staticmethod
     def _preencher_filhos(atos: list[AtoAdministrativo]) -> None:
