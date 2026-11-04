@@ -17,6 +17,9 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.designacao.api.filters.historico_designacao_filter import (
+    HistoricoDesignacaoFilter,
+)
 from apps.designacao.api.serializers.historico_designacao_serializer import (
     HistoricoDesignacaoSerializer,
 )
@@ -39,6 +42,26 @@ class HistoricoDesignacaoView(APIView):
                 location=OpenApiParameter.PATH,
                 required=True,
                 description="Código EOL da unidade escolar.",
+            ),
+            OpenApiParameter(
+                name="tipo",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=[
+                    valor
+                    for valor, _rotulo in (
+                        HistoricoDesignacaoFilter.TIPO_CHOICES
+                    )
+                ],
+                description=(
+                    "Tipo de ato, com as mesmas opções da listagem de "
+                    "atos administrativos. `DESIGNACAO` e "
+                    "`DESIGNACAO_CESSACAO` mantêm as designações. Os "
+                    "demais valores mantêm as designações que possuem um "
+                    "ato relacionado daquele tipo. O histórico da "
+                    "designação selecionada continua completo."
+                ),
             ),
             OpenApiParameter(
                 name="cargo",
@@ -107,8 +130,9 @@ class HistoricoDesignacaoView(APIView):
             ),
             400: OpenApiResponse(
                 description=(
-                    "Filtro com valor inválido (ex.: `status_publicacao` "
-                    "fora das opções ou data em formato incorreto)."
+                    "Filtro com valor inválido (ex.: `tipo` ou "
+                    "`status_publicacao` fora das opções, ou data em "
+                    "formato incorreto)."
                 ),
             ),
         },
@@ -116,7 +140,7 @@ class HistoricoDesignacaoView(APIView):
     def get(self, request: Request, codigo_ue: str) -> Response:
         """Retorna as designações da unidade escolar informada.
 
-        Os filtros de query string (`cargo`, `status_publicacao`,
+        Os filtros de query string (`tipo`, `cargo`, `status_publicacao`,
         `periodo_after`/`periodo_before` e `observacao`) restringem quais
         designações entram na resposta; os atos relacionados de cada
         designação são sempre devolvidos por inteiro.

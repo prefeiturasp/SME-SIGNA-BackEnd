@@ -1,8 +1,8 @@
 """Testes dos filtros do histórico de designações por unidade escolar.
 
-Cobre os filtros `status_publicacao`, `periodo` (params `periodo_after` e
-`periodo_before`) e `observacao`, tanto no ``FilterSet`` (unidade) quanto
-no endpoint (integração).
+Cobre os filtros `tipo`, `status_publicacao`, `periodo` (params
+`periodo_after` e `periodo_before`) e `observacao`, tanto no ``FilterSet``
+(unidade) quanto no endpoint (integração).
 """
 
 import datetime
@@ -66,6 +66,69 @@ def _publicar(ato: AtoAdministrativo) -> AtoAdministrativo:
     )
     ato.refresh_from_db()
     return ato
+
+
+# ── tipo ─────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_designacao_mantem_as_designacoes():
+    """`DESIGNACAO` casa com a própria designação do histórico."""
+    designacao = criar_ato_designacao(ue=UE)
+    criar_ato_cessacao(designacao)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "DESIGNACAO"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [designacao]
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_cessacao_exige_ato_derivado():
+    """`CESSACAO` mantém só a designação que tem cessação."""
+    com_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_cessacao(com_cessacao)
+    sem_cessacao = criar_ato_designacao(ue=UE)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "CESSACAO"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [com_cessacao]
+    assert sem_cessacao not in filtro.qs
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_composto_usa_o_tipo_do_pai():
+    """`APOSTILA_CESSACAO` não casa com apostila filha da designação."""
+    da_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(criar_ato_cessacao(da_cessacao))
+    da_designacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(da_designacao)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "APOSTILA_CESSACAO"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [da_cessacao]
+    assert da_designacao not in filtro.qs
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_invalido():
+    """Valor fora das opções da listagem de atos invalida o filtro."""
+    criar_ato_designacao(ue=UE)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "INEXISTENTE"}, queryset=_designacoes()
+    )
+
+    assert not filtro.is_valid()
+    assert "tipo" in filtro.errors
 
 
 # ── status_publicacao ────────────────────────────────────────────────────────
@@ -453,6 +516,35 @@ def test_endpoint_status_publicacao_invalido_retorna_400(auth_client):
 
 
 @pytest.mark.django_db
+def test_endpoint_filtra_por_tipo_e_mantem_o_historico(auth_client):
+    """`tipo` escolhe a designação e devolve os atos relacionados inteiros."""
+    alvo = criar_ato_designacao(ue=UE)
+    cessacao = criar_ato_cessacao(alvo)
+    apostila = criar_ato_apostila(cessacao)
+    criar_ato_designacao(ue=UE)
+
+    response = auth_client.get(_url(), {"tipo": "CESSACAO"})
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.data] == [alvo.pk]
+    assert [ato["id"] for ato in response.data[0]["atos_relacionados"]] == [
+        apostila.pk,
+        cessacao.pk,
+    ]
+
+
+@pytest.mark.django_db
+def test_endpoint_tipo_invalido_retorna_400(auth_client):
+    """Tipo de ato fora das opções devolve 400."""
+    criar_ato_designacao(ue=UE)
+
+    response = auth_client.get(_url(), {"tipo": "INEXISTENTE"})
+
+    assert response.status_code == 400
+    assert "tipo" in response.data
+
+
+@pytest.mark.django_db
 def test_endpoint_data_invalida_retorna_400(auth_client):
     """Data em formato inválido devolve 400 com o campo do erro."""
     criar_ato_designacao(ue=UE)
@@ -506,6 +598,7 @@ def test_filtro_nao_cresce_o_numero_de_consultas(django_assert_num_queries):
         resultado = HistoricoDesignacaoService.listar_por_ue(
             UE,
             {
+                "tipo": "APOSTILA",
                 "status_publicacao": "NAO_PUBLICADO",
                 "periodo_after": "2024-01-01",
                 "observacao": "ssss",
