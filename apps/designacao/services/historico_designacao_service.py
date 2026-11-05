@@ -103,7 +103,7 @@ class HistoricoDesignacaoService:
 
         Args:
             codigo_ue: Código EOL da unidade escolar.
-            filtros: Parâmetros de query string (``cargo``,
+            filtros: Parâmetros de query string (``tipo``, ``cargo``,
                 ``status_publicacao``,
                 ``periodo_after``, ``periodo_before``, ``observacao``).
 

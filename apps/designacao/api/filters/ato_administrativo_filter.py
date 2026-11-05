@@ -8,6 +8,10 @@ import django_filters
 from django.db import models
 
 from apps.designacao.api.filters.portaria_filter import PortariaFilter
+from apps.designacao.api.filters.tipos_de_ato import (
+    TIPO_CHOICES,
+    dividir_tipo_composto,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
@@ -45,15 +49,6 @@ class AtoAdministrativoFilter(PortariaFilter):
     rf = django_filters.CharFilter(method="filter_rf")
 
     periodo = django_filters.DateFromToRangeFilter(field_name="criado_em")
-    TIPO_CHOICES = AtoAdministrativo.Tipo.choices + [
-        ("DESIGNACAO_CESSACAO", "Designação e Cessação"),
-        ("INSUBSISTENCIA_DESIGNACAO", "Insubsistência de Designação"),
-        ("INSUBSISTENCIA_CESSACAO", "Insubsistência de Cessação"),
-        ("APOSTILA_DESIGNACAO", "Apostila de Designação"),
-        ("APOSTILA_CESSACAO", "Apostila de Cessação"),
-        ("INSUBSISTENCIA_APOSTILA", "Insubsistência de Apostila"),
-        ("INSUBSISTENCIA_INSUBSISTENCIA", "Tornar sem efeito"),
-    ]
 
     tipo = django_filters.ChoiceFilter(
         field_name="tipo",
@@ -227,8 +222,10 @@ class AtoAdministrativoFilter(PortariaFilter):
         """
         if value == "DESIGNACAO_CESSACAO":
             return queryset.filter(tipo__in=["DESIGNACAO", "CESSACAO"])
-        elif "_" in value:
-            tipo, pai = value.split("_")
+
+        composto = dividir_tipo_composto(value)
+        if composto is not None:
+            tipo, pai = composto
             return queryset.filter(tipo=tipo, ato_pai__tipo=pai)
 
         return queryset.filter(tipo=value)

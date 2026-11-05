@@ -7,6 +7,7 @@ informações de designação de servidor e data de cessação.
 import django_filters
 from django.db import models
 
+from apps.designacao.api.filters.tipos_de_ato import TIPO_CHOICES_SIMPLES
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
@@ -33,9 +34,7 @@ class PortariaFilter(django_filters.FilterSet):
         lookup_expr="exact",
         label="Ano vigente",
     )
-    TIPO_CHOICES = AtoAdministrativo.Tipo.choices + [
-        ("DESIGNACAO_CESSACAO", "Designação e Cessação"),
-    ]
+    TIPO_CHOICES = TIPO_CHOICES_SIMPLES
 
     tipo = django_filters.ChoiceFilter(
         field_name="tipo",
