@@ -86,11 +86,30 @@ def test_filtro_tipo_designacao_mantem_as_designacoes():
 
 
 @pytest.mark.django_db
+def test_filtro_tipo_designacao_cessacao_mantem_todo_o_historico():
+    """`DESIGNACAO_CESSACAO` é a união de designação e cessação.
+
+    Como toda designação é do tipo `DESIGNACAO`, a união equivale ao
+    histórico inteiro: o valor não restringe quais designações entram.
+    """
+    com_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_cessacao(com_cessacao)
+    sem_cessacao = criar_ato_designacao(ue=UE)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "DESIGNACAO_CESSACAO"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert set(filtro.qs) == {com_cessacao, sem_cessacao}
+
+
+@pytest.mark.django_db
 def test_filtro_tipo_cessacao_exige_ato_derivado():
     """`CESSACAO` mantém só a designação que tem cessação."""
     com_cessacao = criar_ato_designacao(ue=UE)
     criar_ato_cessacao(com_cessacao)
-    sem_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_designacao(ue=UE)
 
     filtro = HistoricoDesignacaoFilter(
         data={"tipo": "CESSACAO"}, queryset=_designacoes()
@@ -98,7 +117,44 @@ def test_filtro_tipo_cessacao_exige_ato_derivado():
 
     assert filtro.is_valid()
     assert list(filtro.qs) == [com_cessacao]
-    assert sem_cessacao not in filtro.qs
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_apostila_inclui_apostila_de_qualquer_pai():
+    """`APOSTILA` não olha o tipo do pai do ato derivado."""
+    de_designacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(de_designacao)
+    de_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(criar_ato_cessacao(de_cessacao))
+    sem_apostila = criar_ato_designacao(ue=UE)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "APOSTILA"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert set(filtro.qs) == {de_designacao, de_cessacao}
+    assert sem_apostila not in filtro.qs
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_insubsistencia_inclui_insubsistencia_de_qualquer_pai():
+    """`INSUBSISTENCIA` não olha o tipo do pai do ato derivado."""
+    da_designacao = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(da_designacao)
+    da_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(criar_ato_cessacao(da_cessacao))
+    da_apostila = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(criar_ato_apostila(da_apostila))
+    sem_insubsistencia = criar_ato_designacao(ue=UE)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "INSUBSISTENCIA"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert set(filtro.qs) == {da_designacao, da_cessacao, da_apostila}
+    assert sem_insubsistencia not in filtro.qs
 
 
 @pytest.mark.django_db
@@ -115,7 +171,57 @@ def test_filtro_tipo_composto_usa_o_tipo_do_pai():
 
     assert filtro.is_valid()
     assert list(filtro.qs) == [da_cessacao]
-    assert da_designacao not in filtro.qs
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_composto_de_insubsistencia_de_apostila():
+    """`INSUBSISTENCIA_APOSTILA` casa só com insubsistência de apostila."""
+    da_apostila = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(criar_ato_apostila(da_apostila))
+    da_cessacao = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(criar_ato_cessacao(da_cessacao))
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "INSUBSISTENCIA_APOSTILA"}, queryset=_designacoes()
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [da_apostila]
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_tornar_sem_efeito():
+    """`INSUBSISTENCIA_INSUBSISTENCIA` casa só com o ato que desfaz outro."""
+    sem_efeito = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(criar_ato_insubsistencia(sem_efeito))
+    da_designacao = criar_ato_designacao(ue=UE)
+    criar_ato_insubsistencia(da_designacao)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "INSUBSISTENCIA_INSUBSISTENCIA"},
+        queryset=_designacoes(),
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [sem_efeito]
+
+
+@pytest.mark.django_db
+def test_filtro_tipo_combina_em_e_com_os_demais_filtros():
+    """`tipo` restringe junto com os outros parâmetros."""
+    publicada = criar_ato_designacao(ue=UE)
+    _publicar(publicada)
+    criar_ato_cessacao(publicada)
+    nao_publicada = criar_ato_designacao(ue=UE)
+    criar_ato_cessacao(nao_publicada)
+
+    filtro = HistoricoDesignacaoFilter(
+        data={"tipo": "CESSACAO", "status_publicacao": "PUBLICADO"},
+        queryset=_designacoes(),
+    )
+
+    assert filtro.is_valid()
+    assert list(filtro.qs) == [publicada]
 
 
 @pytest.mark.django_db

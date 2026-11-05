@@ -5,17 +5,18 @@ resposta). Os atos derivados continuam sendo devolvidos por inteiro em
 ``atos_relacionados``, pois o histórico de uma designação só faz sentido
 completo.
 
-Reaproveita a nomenclatura já usada no sistema: ``tipo``,
-``status_publicacao`` e ``observacao`` vêm de ``AtoAdministrativoFilter``;
-``periodo`` (com os params ``periodo_after``/``periodo_before``) vem de
-``DesignacaoFilter``.
+Reaproveita a nomenclatura já usada no sistema: ``tipo`` (opções e
+decomposição em ``tipos_de_ato``), ``status_publicacao`` e ``observacao``
+seguem ``AtoAdministrativoFilter``; ``periodo`` (com os params
+``periodo_after``/``periodo_before``) vem de ``DesignacaoFilter``.
 """
 
 import django_filters
 from django.db import models
 
-from apps.designacao.api.filters.ato_administrativo_filter import (
-    AtoAdministrativoFilter,
+from apps.designacao.api.filters.tipos_de_ato import (
+    TIPO_CHOICES,
+    dividir_tipo_composto,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
@@ -28,10 +29,7 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     entram na resposta.
     """
 
-    TIPO_CHOICES = AtoAdministrativoFilter.TIPO_CHOICES
-
     tipo = django_filters.ChoiceFilter(
-        field_name="tipo",
         choices=TIPO_CHOICES,
         label="Tipo de ato",
         method="filter_tipo",
@@ -64,9 +62,10 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     ) -> models.QuerySet:
         """Mantém as designações que possuem o tipo de ato informado.
 
-        O histórico lista designações. ``DESIGNACAO`` e
-        ``DESIGNACAO_CESSACAO`` casam com a própria designação, como a
-        união desses tipos na listagem de atos. Os demais valores casam
+        O histórico lista designações. Como toda designação é do tipo
+        ``DESIGNACAO``, ``DESIGNACAO`` e ``DESIGNACAO_CESSACAO`` (a união
+        de designação e cessação) devolvem o histórico inteiro: o valor
+        não restringe quais designações entram. Os demais valores casam
         com um ato derivado: ``CESSACAO``, ``APOSTILA`` e
         ``INSUBSISTENCIA`` pelo tipo, e os valores com pai
         (``APOSTILA_DESIGNACAO``, ``INSUBSISTENCIA_APOSTILA`` etc.) pelo
@@ -88,8 +87,9 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
         relacionados = AtoAdministrativo.objects.exclude(
             ato_raiz_id__isnull=True
         )
-        if "_" in value:
-            tipo, pai = value.split("_")
+        composto = dividir_tipo_composto(value)
+        if composto is not None:
+            tipo, pai = composto
             relacionados = relacionados.filter(tipo=tipo, ato_pai__tipo=pai)
         else:
             relacionados = relacionados.filter(tipo=value)

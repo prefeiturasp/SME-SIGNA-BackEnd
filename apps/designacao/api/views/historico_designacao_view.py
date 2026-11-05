@@ -17,9 +17,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.designacao.api.filters.historico_designacao_filter import (
-    HistoricoDesignacaoFilter,
-)
+from apps.designacao.api.filters.tipos_de_ato import TIPO_CHOICES
 from apps.designacao.api.serializers.historico_designacao_serializer import (
     HistoricoDesignacaoSerializer,
 )
@@ -48,19 +46,15 @@ class HistoricoDesignacaoView(APIView):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 required=False,
-                enum=[
-                    valor
-                    for valor, _rotulo in (
-                        HistoricoDesignacaoFilter.TIPO_CHOICES
-                    )
-                ],
+                enum=[valor for valor, _rotulo in TIPO_CHOICES],
                 description=(
                     "Tipo de ato, com as mesmas opções da listagem de "
                     "atos administrativos. `DESIGNACAO` e "
-                    "`DESIGNACAO_CESSACAO` mantêm as designações. Os "
-                    "demais valores mantêm as designações que possuem um "
-                    "ato relacionado daquele tipo. O histórico da "
-                    "designação selecionada continua completo."
+                    "`DESIGNACAO_CESSACAO` não restringem o histórico "
+                    "(toda designação é do tipo `DESIGNACAO`). Os demais "
+                    "valores mantêm as designações que possuem um ato "
+                    "relacionado daquele tipo. O histórico da designação "
+                    "selecionada continua completo."
                 ),
             ),
             OpenApiParameter(
