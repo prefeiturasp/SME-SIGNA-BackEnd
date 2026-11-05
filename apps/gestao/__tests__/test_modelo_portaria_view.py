@@ -247,6 +247,22 @@ def test_variaveis_retorna_todas_as_opcoes(auth_client):
 
 
 @pytest.mark.django_db
+def test_variaveis_separa_cargo_ocupado_de_cargo_do_indicado(auth_client):
+    """Verifica que o cargo a ser ocupado e o do indicado são variáveis distintas."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(url)
+
+    assert {
+        "value": "CARGO",
+        "display_name": "Cargo a ser ocupado",
+    } in response.data
+    assert {
+        "value": "CARGO_INDICADO",
+        "display_name": "Cargo do servidor indicado",
+    } in response.data
+
+
+@pytest.mark.django_db
 def test_variaveis_exige_autenticacao():
     """Verifica que o endpoint de variáveis exige autenticação."""
     url = reverse("gestao:modelos-portaria-variaveis")
