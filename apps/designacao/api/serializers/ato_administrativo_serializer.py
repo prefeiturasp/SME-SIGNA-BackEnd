@@ -31,6 +31,9 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
     insubsistencia = serializers.SerializerMethodField()
     criado_por_nome = serializers.SerializerMethodField()
     rf = serializers.SerializerMethodField()
+    apostilado = serializers.BooleanField(
+        source="esta_apostilado", read_only=True
+    )
 
     class Meta:
         model = AtoAdministrativo
@@ -45,6 +48,7 @@ class AtoAdministrativoListSerializer(PortariaListSerializer):
             "nome",
             "rf",
             "status_publicacao",
+            "apostilado",
             "sei_numero",
             "tipo",
             "cessacao",
