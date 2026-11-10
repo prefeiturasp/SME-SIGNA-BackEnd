@@ -73,6 +73,60 @@ class TestAtoAdministrativoStatus:
 
 
 @pytest.mark.django_db
+class TestAtoAdministrativoEstaApostilado:
+    """Testes para a flag de ato apostilado."""
+
+    def test_designacao_sem_apostila_nao_esta_apostilada(self):
+        """Verifica que designação sem apostila não está apostilada."""
+        d = criar_ato_designacao()
+        assert d.esta_apostilado is False
+
+    def test_designacao_com_apostila_ativa_esta_apostilada(self):
+        """Verifica que designação com apostila ativa está apostilada."""
+        d = criar_ato_designacao()
+        criar_ato_apostila(d)
+        assert d.esta_apostilado is True
+
+    def test_cessacao_com_apostila_ativa_esta_apostilada(self):
+        """Verifica que cessação com apostila ativa está apostilada."""
+        d = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(d)
+        criar_ato_apostila(cessacao)
+        assert cessacao.esta_apostilado is True
+
+    def test_apostila_na_cessacao_nao_marca_a_designacao(self):
+        """Verifica que a apostila da cessação não marca a designação."""
+        d = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(d)
+        criar_ato_apostila(cessacao)
+        assert d.esta_apostilado is False
+
+    def test_apostila_anulada_nao_conta(self):
+        """Verifica que apostila anulada (inativa) não marca o ato."""
+        d = criar_ato_designacao()
+        apostila = criar_ato_apostila(d)
+        apostila.ativo = False
+        apostila.save(update_fields=["ativo"])
+        assert d.esta_apostilado is False
+
+    def test_ato_insubsistente_com_apostila_nao_esta_apostilado(self):
+        """Verifica que ato insubsistente deixa de exibir a flag."""
+        d = criar_ato_designacao()
+        criar_ato_apostila(d)
+        d.ativo = False
+        d.save(update_fields=["ativo"])
+        assert d.esta_apostilado is False
+
+    def test_outros_filhos_nao_marcam_apostilado(self):
+        """Verifica que cessação e insubsistência não contam como apostila."""
+        d = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(d)
+        criar_ato_insubsistencia(cessacao)
+        assert d.esta_apostilado is False
+        assert cessacao.esta_apostilado is False
+
+
+@pytest.mark.django_db
 class TestAtoAdministrativoStatusPublicacao:
     """Testes para ato administrativo status publicação."""
 

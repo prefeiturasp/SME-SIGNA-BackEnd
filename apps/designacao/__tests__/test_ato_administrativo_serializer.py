@@ -293,6 +293,7 @@ class TestPortariaListSerializer:
             "nome",
             "rf",
             "status_publicacao",
+            "apostilado",
             "sei_numero",
             "tipo",
             "cessacao",
