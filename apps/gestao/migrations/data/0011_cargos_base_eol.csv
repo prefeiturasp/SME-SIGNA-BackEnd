@@ -1,0 +1,113 @@
+codigo_cargo,descricao_eol,descricao_resumida,descricao_completa,provimento,grupamento,situacao_funcional,testar_laudo,utilizado_para_funcoes,utilizado_para_designacoes,utilizado_para_ste,utilizado_para_permutas,cargo_base_ficticio,pesquisar_licencas_no_sigpec,quantidade_maxima_de_dias_de_licenca
+2615,COORDENADOR PSICOPEDAGÓGICO,Coord Psicopedagógico,Coordenador Psicopedagógico,,DOCENTES,EFETIVO,N,N,N,N,S,N,N,0
+2627,ANALISTA PLANEJ.DESENV.ORG.I,Analis. Plan e Desenv Organiz - N I,Analista de Planejamento e Desenvolvimento Organizacional - Nível I,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2629,Analis de Plan e Desenv Organiz - N IV,Analis. Plan e Desenv Organiz - N IV,Analista de Planejamento e Desenvolvimento Organizacional - Nível IV,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2631,ESP.ADM.ORC.FINANC.PUBL. I,"Espec. Admin, Orçam e Finan Públ I","Especialista em Administração, Orçamento e Finanças Públicas I",,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2632,ESP.ADM.ORC.FINANC.PUBL. II,"Espec. Admin, Orçam e Finan Públ II","Especialista em Administração, Orçamento e Finanças Públicas II",,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2633,ESP.ADM.ORC.FINANC.PUBL. III,"Espec. Admin, Orçam e Finan Públ III","Especialista em Administração, Orçamento e Finanças Públicas III",,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2637,ESP.ASSIST.DESENV.SOCIAL I,Espec. Assistên. e Desenv Social I,Especialista em Assistência e Desenvolvimento Social I,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2638,ESP.ASSIST.DESENV.SOCIAL II,Espec. Assistên. e Desenv Social II,Especialista em Assistência e Desenvolvimento Social II,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2639,ESP.ASSIST.DESENV.SOCIAL III,Espec. Assistên. e Desenv Social III,Especialista em Assistência e Desenvolvimento Social III,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2641,Espec. Desenvolv Urbano I,Espec. Desenvolv Urbano I,Especialista em Desenvolvimento Urbano I,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2642,Espec. Desenvolv Urbano II,Espec. Desenvolv Urbano II,Especialista em Desenvolvimento Urbano II,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2643,Espec. Desenvolv Urbano III,Espec. Desenvolv Urbano III,Especialista em Desenvolvimento Urbano III,,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2647,ESPECIALISTA EM SAUDE - N.I,Espec. Saúde - N I,Especialista em Saúde - Nível I,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2648,ESPECIALISTA EM SAUDE - N.II,Espec. Saúde - N II,Especialista em Saúde - Nível II,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2649,ESPECIALISTA EM SAUDE - N.III,Espec. Saúde - N III,Especialista em Saúde - Nível III,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2650,ESP.INF.TEC.CULT.DESP.-BIBLIOTECA,"Espec. Infor Téc, Cult e Despor - Biblioteca","Especialista em Informações Técnicas, Culturais e Desportivas - Biblioteca",,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2651,ESP.INF.TEC.CULT.DESP.-ED.FISICA,"Espec. Infor Téc, Cult e Despor - Educ Física","Especialista em Informações Técnicas, Culturais e Desportivas - Educação Física",,ESPECIALISTAS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+2652,ANALISTA PLANEJ.DESENV.ORG.II,Analis. Plan e Desenv Organiz - N II,Analista de Planejamento e Desenvolvimento Organizacional - Nível II,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2653,ANALISTA DE INF.CULT. E DESP.- BIBLIOTECA (NI),"Analis. Inform, Cult e Desp - N I (Biblioteca)","Analista de Informações, Cultura e Desporto - Nível I",,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2654,ANALISTA DE INF.CULTURA E DESPORTO-ED.FISICA (NI),"Analis. Inform, Cult e Desp - N I - (Ed Física)","Analista de Informações, Cultura e Desporto - Nível I",,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2655,ANALISTA DE SAUDE NIVEL I,Analis. Saúde - N I,Analista de Saúde - Nível I,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2656,ANALISTA DE SAUDE NIVEL II,Analis. Saúde - N II,Analista de Saúde - Nível II,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2657,ANALISTA DE SAUDE NIVEL III,Analis. Saúde - N III,Analista de Saúde - Nível III,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2658,ANALISTA PLANEJ.DESENV.ORG.III,Analis. Plan e Desenv Organiz - N III,Analista de Planejamento e Desenvolvimento Organizacional - Nível III,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2659,ANALISTA ASSIST.DESENV.SOCIAL I,Analis. Assist e Desenv Social - N I,Analista de Assistência e Desenvolvimento Social - Nível I,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2660,ANALISTA ASSIST.DESENV.SOCIAL II,Analis. Assist e Desenv Social - N II,Analista de Assistência e Desenvolvimento Social - Nível II,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2661,ANALISTA ASSIST.DESENV.SOCIAL III,Analis. Assist e Desenv Social - N III,Analista de Assistência e Desenvolvimento Social - Nível III,,ANALISTAS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+2662,ASSISTENTE DE SAUDE - NIVEL I,Assistente de Saúde - N I,Assistente de Saúde - Nível I,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2663,ASSISTENTE DE SAUDE - NIVEL II,Assistente de Saúde - N II,Assistente de Saúde - Nível II,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2664,ASSISTENTE DE SAUDE,Assistente de Saúde,Assistente de Saúde,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2665,ASSISTENTE TECNICO DE SAUDE,Assist Téc de Saúde,Assistente Técnico de Saúde,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+2666,"Profissional Eng, Arq, Agron e Geologia - N I","Profissional Eng, Arq, Agronomia e Geologia - Nível I","Profissional de Engenharia, Arquitetura, Agronomia e Geologia - Nível I",,ESPECIALISTAS_OUTROS,EFETIVO,N,S,N,N,S,N,N,0
+2667,"Profissional Eng, Arq, Agron e Geologia - N II","Profissional Eng, Arq, Agronomia e Geologia - Nível II","Profissional de Engenharia, Arquitetura, Agronomia e Geologia - Nível II",,ESPECIALISTAS_OUTROS,EFETIVO,N,S,N,N,S,N,N,0
+2668,"Profissional Eng, Arq, Agron e Geologia - N III","Profissional Eng, Arq, Agronomia e Geologia - Nível III","Profissional de Engenharia, Arquitetura, Agronomia e Geologia - Nível III",,ESPECIALISTAS_OUTROS,EFETIVO,N,S,N,N,S,N,N,0
+2669,"Profissional Eng, Arq, Agron e Geologia - N IV","Profissional Eng, Arq, Agronomia e Geologia - Nível IV","Profissional de Engenharia, Arquitetura, Agronomia e Geologia - Nível IV",,ESPECIALISTAS_OUTROS,EFETIVO,N,S,N,N,S,N,N,0
+3085,ASSISTENTE DE DIRETOR DE ESCOLA,AD (nomeado),Assistente de Diretor de Escola (nomeado),experiência de 3 anos no Magistério Municipal,GESTORES_EDUCACAO,EFETIVO,S,N,S,N,N,S,S,30
+3131,PROFESSOR DE 2.GRAU,Professor de 2º Grau,Professor de 2º Grau,,DOCENTES,EFETIVO,N,N,N,N,S,N,N,0
+3182,SECRETARIO DE ESCOLA,Secretário de Escola,Secretário de Escola,dentre integrantes da carreira de Auxiliar Técnico de Educação,APOIO_EDUCACAO,EFETIVO,N,N,S,N,S,N,S,30
+3212,PROF.TITULAR DE EDUCACAO INFANTIL,Prof Tit Ed Inf,Professor Titular de Educação Infantil,,DOCENTES,COMISSIONADO,S,S,N,N,S,N,N,0
+3213,PROF.TITULAR DE ENS.FUND.I,Prof Tit Fund I,Professor Titular de Ensino Fundamental I,,DOCENTES,COMISSIONADO,S,S,N,N,S,N,N,0
+3220,Professor Substituto de Educação Infantil,Prof Subs Ed Inf,Professor Substituto de Educação Infantil,,DOCENTES,COMISSIONADO,S,S,N,N,S,N,N,0
+3239,PROF.ED.INF.E ENS.FUND.I,Prof EI e FI,Professor de Educação Infantil e Ensino Fundamental I,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3247,PROF.SUBST.DE 1.GR. NIVEL I,Prof Subs 1º Grau N I,Professor Substituto de 1º Grau Nível I,,DOCENTES,COMISSIONADO,S,S,N,N,S,N,N,0
+3255,PROF.ENS.FUND.II E MED.-CIENCIAS,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3263,PROF.ENS.FUND.II E MED.-ED.FISICA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3271,PROF.ENS.FUND.II E MED.-GEOGRAFIA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3280,PROF.ENS.FUND.II E MED.-HISTORIA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3298,PROF.ENS.FUND.II E MED.-PORTUGUES,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3301,PROF.ENS.FUND.II E MED.-MATEMATICA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3310,PROF.1.GRAU NIVEL II,Prof de 1º Grau - N II,Professor de 1º Grau - Nível II,,DOCENTES,COMISSIONADO,S,S,N,S,S,N,N,0
+3336,PROF.ENS.FUND.II E MED.-ED.ARTISTICA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3344,PROF.ENS.FUND.II E MED.-INGLES,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3352,SUPERVISOR ESCOLAR,Supervisor Escolar,Supervisor Escolar,"com no mínimo 6 anos de experiência no Magistério, sendo 3 anos em cargos / funções de gestão educacional previstos na Lei 14.660/2007",GESTORES_EDUCACAO,EFETIVO,S,N,S,S,S,N,S,30
+3360,DIRETOR DE ESCOLA,Diretor de Escola,Diretor de Escola,experiência de 3 anos no Magistério,GESTORES_EDUCACAO,EFETIVO,S,S,S,S,S,N,S,30
+3379,COORDENADOR PEDAGOGICO,CP,Coordenador Pedagógico,experiência de 3 anos no Magistério,GESTORES_EDUCACAO,EFETIVO,S,S,S,S,S,N,S,30
+3395,PROF.ADJ.DE ENS.FUND. I,Prof Adj Fund I,Professor Adjunto de Ensino Fundamental I,,DOCENTES,EFETIVO,N,S,N,N,S,N,N,0
+3409,PROF.ADJ.ENS.FUND.II-PORTUGUES,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3425,PROF.ADJ.ENS.FUND.II-MATEMATICA,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3433,PROF.ADJ.ENS.FUND.II-CIENCIAS,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3441,PROF.ADJ.ENS.FUND.II-HISTORIA,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3450,PROF.ADJ.ENS.FUND.II-GEOGRAFIA,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3468,PROF.ADJ.ENS.FUND.II-ED.FISICA,Prof Adj Fund II,Professor Adjunto de Ensino Fundamental II,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+3760,PROF.ENS.FUND.II E MED.-PORT.E LITERAT.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3808,PROF.ENS.FUND.II.E MED.-ADM.CONTROLE,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3816,PROF.ENS.FUND.II E MED.-CONT.CUSTOS,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3840,PROF.ENS.FUND.II E MED.-BIOL.PROG.SAUDE,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3859,PROF.ENS.FUND.II E MED.-FISICA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3867,PROF.ENS.FUND.II E MED.-QUIMICA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3868,PROF.ENS.FUND.II E MED.-CONTEUDO.MET.1 GR.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3869,PROF.ENS.FUND.II E MED.-DIDAT.PRAT.ENS.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3870,PROF.ENS.FUND.II E MED.-DIR.E LEGISL.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3871,PROF.ENS.FUND.II E MED.-ECON.MERCADO,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3873,PROF.ENS.FUND.II E MED.-ESTR.FUNC.ENS.1 GR.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3874,PROF.ENS.FUND.II E MED.-FILOSOFIA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3875,PROF.DE ED.INFANTIL,Prof Ed Inf,Professor de Educação Infantil,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3876,PROF.ENS.FUND.II E MED.-FUND.MET.PRE ESC.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3877,PROF.ENS.FUND.II E MED.-HIST.FILOS.EDUC.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3878,PROF.ENS.FUND.II E MED.-PROT.DENTARIA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3879,PROF.ENS.FUND.II E MED.-PSIC.SOC.EDUC.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3880,PROF.ENS.FUND.II E MED.-PSICOLOGIA,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3881,PROF.ENS.FUND.II E MED.-TEC.SECRET.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3882,PROF.ENS.FUND.II E MEDIO-OUTR.COMP.,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+3883,PROF.ENS.FUND.II E MED.-ESPANHOL,Prof FII e Med,Professor de Ensino Fundamental II e Médio,,DOCENTES,EFETIVO,N,S,N,S,S,N,N,0
+4014,MONITOR DE EDUCACAO DE ADULTOS,Monitor de Educação de Adultos,Monitor de Educação de Adultos,,APOIO_EDUCACAO,EFETIVO,N,N,N,N,S,N,N,0
+4502,AUXILIAR ADM. DE ENSINO,Aux Administrativo de Ensino,Auxiliar Administrativo de Ensino,,APOIO_EDUCACAO,EFETIVO,N,N,N,N,S,N,N,0
+4510,AUXILIAR DE SECRETARIA,Aux de Secretaria,Auxiliar de Secretaria,,APOIO_EDUCACAO,EFETIVO,N,N,N,S,S,N,N,0
+4529,INSPETOR DE ALUNOS,Inspetor de Alunos,Inspetor de Alunos,,APOIO_EDUCACAO,EFETIVO,N,N,N,S,S,N,N,0
+4596,AUX. TECNICO ADMINISTRATIVO-AD GER,Aux Téc Administrativo - Adm Geral,Auxiliar Técnico Administrativo - Administração Geral,,ADMINISTRATIVOS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+4650,AUXILIAR DE DESENVOLVIMENTO INFANTIL,Aux de Desenvolvimento Infantil,Auxiliar de Desenvolvimento Infantil,,DOCENTES,EFETIVO,N,N,N,N,S,N,N,0
+4899,ASSIST.GESTAO POLITICAS PUBLICAS-N.I,AGPP - N I,Assistente de Gestão Políticas Públicas - Nível I,,ADMINISTRATIVOS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+4900,ASSIST.GESTAO POLITICAS PUBLICAS-N.II,AGPP - N II,Assistente de Gestão Políticas Públicas - Nível II,,ADMINISTRATIVOS_OUTROS,EFETIVO,N,S,N,S,S,N,N,0
+4901,ASSIST.DE SUPORTE TECNICO-N.I,Assist de Suporte Téc - N I,Assistente de Suporte Técnico - Nível I,,ADMINISTRATIVOS_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+4906,AUXILIAR TECNICO-INSPETORIA,Aux Téc de Educação,Auxiliar Técnico de Educação,,APOIO_EDUCACAO,EFETIVO,N,S,N,S,S,N,N,0
+4907,AUXILIAR TECNICO-SECRETARIA,Aux Téc de Educação,Auxiliar Técnico de Educação,,APOIO_EDUCACAO,EFETIVO,N,S,N,S,S,N,N,0
+4921,ASSIST. DE SUPORTE OPERACIONAL - NIVEL II,Assist. de Suporte Operacional - Nível II,Assistente de Suporte Operacional - Nível II,,ADMINISTRATIVOS_OUTROS,EFETIVO,S,S,N,S,S,N,N,0
+5703,ASSIST. DE SUPORTE OPERACIONAL - NIVEL I,Assist. de Suporte Operacional - Nível I,Assistente de Suporte Operacional - Nível I,,ADMINISTRATIVOS_OUTROS,EFETIVO,S,S,N,S,S,N,N,0
+5720,AGENTE ESCOLAR,Agente Escolar,Agente Escolar,,APOIO_EDUCACAO,EFETIVO,N,N,N,S,S,N,N,0
+5754,AGENTE DA ADM. - SERV.GERAIS,Agente da Adm - Serviços Gerais,Agente da Administração - Serviços Gerais,,APOIO_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+5762,AGENTE DA ADM. - VIGILANCIA,Agente da Adm - Vigilância,Agente da Administração - Vigilância,,APOIO_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+5800,AUX. APOIO ADM. - COZINHA,Aux Apoio Administrativo - Cozinha,Auxiliar Apoio Administrativo - Cozinha,,APOIO_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+5819,AUX. APOIO ADM. - ZELADORIA,Aux Apoio Administrativo - Zeladoria,Auxiliar Apoio Administrativo - Zeladoria,,APOIO_OUTROS,EFETIVO,N,N,N,N,S,N,N,0
+6106,AGENTE DE APOIO - NIVEL I,Agente de Apoio - Nível I,Agente de Apoio - Nível I,,APOIO_EDUCACAO,EFETIVO,N,N,N,S,S,N,N,0
+6114,AGENTE DE APOIO - NIVEL II,Agente de Apoio - Nível II,Agente de Apoio - Nível II,,APOIO_EDUCACAO,EFETIVO,N,N,N,N,N,N,N,0
+7056,CIRURGIAO DENTISTA I,Cirurgião Dentista I,Cirurgião Dentista I,,SAUDE,EFETIVO,N,N,N,N,S,N,N,0
+7196,NUTRICIONISTA I,Nutricionista I,Nutricionista I,,SAUDE,EFETIVO,N,N,N,N,S,N,N,0
+7307,TECNICO DE SAUDE - NUTRICAO E DIETETICA,Téc de Saúde - Nutrição e Dietética,Técnico de Saúde - Nutrição e Dietética,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+7331,AUXILIAR DE ENFERMAGEM,Aux de Enfermagem,Auxiliar de Enfermagem,,SAUDE,EFETIVO,N,N,N,N,S,N,N,0
+7439,AUX.SERV.DE SAUDE-RADIOLOGIA,Aux de Serviços de Saúde - Radiologia,Auxiliar de Serviços de Saúde - Radiologia,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+7618,AUX.TECNICO SAUDE - NIVEL I,Aux Téc de Saúde - N I,Auxiliar Técnico de Saúde - Nível I,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+7619,AUX.TECNICO SAUDE - NIVEL II,Aux Téc de Saúde - N II,Auxiliar Técnico de Saúde - Nível II,,SAUDE,EFETIVO,S,S,N,S,S,N,N,0
+8040,MASCARA PEI,Prof Ed Inf,Professor de Educação Infantil,,DOCENTES,EFETIVO,S,S,N,S,S,N,N,0
+8050,MASCARA DIRETOR ESCOLA,Diretor de Escola,Diretor de Escola,,GESTORES_EDUCACAO,EFETIVO,S,S,N,S,S,N,N,0

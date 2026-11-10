@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.__tests__.factories import criar_ato_designacao
 
 User = get_user_model()
 
@@ -27,24 +27,19 @@ def auth_client(db):
 
 @pytest.fixture
 def ato(db):
-    return AtoAdministrativo.objects.create(
-        tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+    return criar_ato_designacao(
         numero_portaria=1,
         ano_vigente="2026",
         sei_numero="6018.2026/0000001-0",
-        texto_sei="<p>Texto da portaria um.</p>",
     )
 
 
 @pytest.fixture
 def publicado(db):
-    return AtoAdministrativo.objects.create(
-        tipo=AtoAdministrativo.Tipo.DESIGNACAO,
+    return criar_ato_designacao(
         numero_portaria=2,
         ano_vigente="2026",
         sei_numero="6018.2026/0000002-0",
-        texto_sei="<p>Texto da portaria dois.</p>",
-        status_publicacao=AtoAdministrativo.StatusPublicacao.PUBLICADO,
         doc="2026-02-01",
     )
 
@@ -115,6 +110,7 @@ class TestLaudaEndpoint:
     def test_erro_id_inexistente(self, auth_client):
         response = auth_client.post(URL, {"ids": [99999]}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        # Sem prefixo "ids:" — o erro é do lote, não do campo.
         assert response.json()["detail"] == "Atos não encontrados: 99999."
 
     def test_ato_publicado_entra_na_lauda(self, auth_client, ato, publicado):
@@ -124,18 +120,3 @@ class TestLaudaEndpoint:
             URL, {"ids": [ato.pk, publicado.pk]}, format="json"
         )
         assert response.status_code == status.HTTP_200_OK
-
-    def test_erro_sem_texto_sei_sem_prefixo_de_campo(self, auth_client):
-        vazio = AtoAdministrativo.objects.create(
-            tipo=AtoAdministrativo.Tipo.DESIGNACAO,
-            numero_portaria=3,
-            ano_vigente="2026",
-            sei_numero="6018.2026/0000003-0",
-            texto_sei="",
-        )
-        response = auth_client.post(URL, {"ids": [vazio.pk]}, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        # Sem prefixo "ids:" — o erro é do lote, não do campo.
-        assert response.json()["detail"] == (
-            "Sem texto SEI: Portaria nº 3/2026."
-        )

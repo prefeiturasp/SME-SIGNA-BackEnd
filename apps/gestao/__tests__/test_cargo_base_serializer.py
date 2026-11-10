@@ -186,6 +186,7 @@ def test_write_serializer_valido_cria_cargo_base():
     payload = {
         "codigo_cargo": "9085",
         "descricao_completa": "ASSISTENTE DE DIRETOR DE ESCOLA",
+        "descricao_eol": "ASSISTENTE DE DIRETOR DE ESCOLA",
         "descricao_resumida": "Assistente de Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -204,6 +205,7 @@ def test_write_serializer_valido_cria_cargo_base_com_campos_opcionais():
     payload = {
         "codigo_cargo": "9085",
         "descricao_completa": "ASSISTENTE DE DIRETOR DE ESCOLA",
+        "descricao_eol": "ASSISTENTE DE DIRETOR DE ESCOLA",
         "descricao_resumida": "Assistente de Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -229,6 +231,7 @@ def test_write_serializer_rejeita_codigo_cargo_duplicado():
     payload = {
         "codigo_cargo": "9360",
         "descricao_completa": "DIRETOR DE ESCOLA",
+        "descricao_eol": "DIRETOR DE ESCOLA",
         "descricao_resumida": "Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -246,6 +249,7 @@ def test_write_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_invalida(
     payload = {
         "codigo_cargo": "10000",
         "descricao_completa": "CARGO QUALQUER",
+        "descricao_eol": "CARGO QUALQUER",
         "descricao_resumida": "Cargo Qualquer",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -264,6 +268,7 @@ def test_write_serializer_rejeita_quantidade_maxima_de_dias_de_licenca_zero():
     payload = {
         "codigo_cargo": "10000",
         "descricao_completa": "CARGO QUALQUER",
+        "descricao_eol": "CARGO QUALQUER",
         "descricao_resumida": "Cargo Qualquer",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -283,6 +288,7 @@ def test_write_serializer_rejeita_grupamento_invalido():
     payload = {
         "codigo_cargo": "9999",
         "descricao_completa": "CARGO QUALQUER",
+        "descricao_eol": "CARGO QUALQUER",
         "descricao_resumida": "Cargo Qualquer",
         "grupamento": "INVALIDO",
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -316,8 +322,8 @@ def test_update_serializer_altera_campos_editaveis():
 
 
 @pytest.mark.django_db
-def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
-    """Verifica que campos vindos do EOL não são editáveis via atualização."""
+def test_update_serializer_ignora_codigo_cargo_e_altera_descricao_completa():
+    """Verifica que a descrição completa é editável, mas o código não."""
     cargo = criar_cargo_base(
         codigo_cargo="9360", descricao_completa="DIRETOR DE ESCOLA MUNICIPAL"
     )
@@ -332,7 +338,7 @@ def test_update_serializer_nao_expoe_codigo_cargo_e_descricao_completa():
     assert serializer.is_valid(), serializer.errors
     cargo_atualizado = serializer.save()
     assert cargo_atualizado.codigo_cargo == "9360"
-    assert cargo_atualizado.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+    assert cargo_atualizado.descricao_completa == "OUTRO CARGO QUALQUER"
 
 
 @pytest.mark.django_db
@@ -427,3 +433,111 @@ def test_update_serializer_rejeita_quantidade_de_licenca_sem_pesquisa_ativa():
         MSG_QUANTIDADE_MAXIMA_DE_DIAS_OBRIGATORIO
         in serializer.errors["quantidade_maxima_de_dias_de_licenca"][0]
     )
+
+
+def _payload_cadastro(**kwargs):
+    payload = {
+        "codigo_cargo": "9999",
+        "descricao_completa": "CARGO QUALQUER",
+        "descricao_eol": "CARGO QUALQUER EOL",
+        "descricao_resumida": "Cargo qualquer",
+        "grupamento": CargoBase.Grupamento.DOCENTES,
+        "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
+    }
+    payload.update(kwargs)
+    return payload
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "campo",
+    ["descricao_completa", "descricao_eol", "descricao_resumida"],
+)
+def test_write_serializer_exige_as_tres_descricoes(campo):
+    payload = _payload_cadastro()
+    del payload[campo]
+
+    serializer = CargoBaseWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert campo in serializer.errors
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "campo",
+    ["descricao_completa", "descricao_eol", "descricao_resumida"],
+)
+def test_write_serializer_nao_aceita_descricao_vazia(campo):
+    serializer = CargoBaseWriteSerializer(
+        data=_payload_cadastro(**{campo: ""})
+    )
+
+    assert not serializer.is_valid()
+    assert campo in serializer.errors
+
+
+@pytest.mark.django_db
+def test_read_serializer_expoe_descricao_eol():
+    cargo = criar_cargo_base(descricao_eol="DESCRICAO DO EOL")
+
+    assert (
+        CargoBaseReadSerializer(cargo).data["descricao_eol"]
+        == "DESCRICAO DO EOL"
+    )
+
+
+@pytest.mark.django_db
+def test_update_serializer_nao_altera_descricao_eol():
+    cargo = criar_cargo_base(descricao_eol="DESCRICAO DO EOL")
+
+    serializer = CargoBaseUpdateSerializer(
+        cargo, data={"descricao_eol": "OUTRA"}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+
+    cargo.refresh_from_db()
+    assert cargo.descricao_eol == "DESCRICAO DO EOL"
+
+
+@pytest.mark.django_db
+def test_write_serializer_provimento_e_opcional():
+    serializer = CargoBaseWriteSerializer(data=_payload_cadastro())
+
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.save().provimento == ""
+
+
+@pytest.mark.django_db
+def test_write_serializer_salva_provimento():
+    serializer = CargoBaseWriteSerializer(
+        data=_payload_cadastro(provimento="portando diploma de Pedagogia")
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.save().provimento == "portando diploma de Pedagogia"
+
+
+@pytest.mark.django_db
+def test_read_serializer_expoe_provimento():
+    cargo = criar_cargo_base(provimento="portando diploma de Pedagogia")
+
+    assert (
+        CargoBaseReadSerializer(cargo).data["provimento"]
+        == "portando diploma de Pedagogia"
+    )
+
+
+@pytest.mark.django_db
+def test_update_serializer_altera_provimento():
+    cargo = criar_cargo_base()
+
+    serializer = CargoBaseUpdateSerializer(
+        cargo, data={"provimento": "novo provimento"}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+
+    cargo.refresh_from_db()
+    assert cargo.provimento == "novo provimento"

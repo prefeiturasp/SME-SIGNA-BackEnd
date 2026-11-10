@@ -9,7 +9,6 @@ from io import BytesIO
 
 import pytest
 from docx import Document
-from reportlab.lib.colors import toColor
 from reportlab.platypus import Paragraph
 
 from apps.designacao.services.lauda_renderers import (
@@ -27,38 +26,26 @@ TEXTO_COM_MARKUP = "Cargo <b>X</b> & <img src='file:///etc/passwd'/>"
 @pytest.fixture
 def documento() -> DocumentoLauda:
     return DocumentoLauda(
-        aviso="Aviso de teste",
         titulo="Lauda de teste",
-        sei="6018.2026/0001234-5",
-        subtitulo="Gerada em 18/09/2026 às 10:00 — 2 ato(s)",
         secoes=[
             SecaoLauda(
-                titulo="PORTARIA Nº 5/2026 – DESIGNAÇÃO",
-                sei="6018.2026/0000005-0",
-                blocos=[
-                    [
-                        [Trecho("Primeira linha.")],
-                        [Trecho("Segunda linha.")],
-                    ],
-                    [
-                        [
-                            Trecho("Fim "),
-                            Trecho("negrito", negrito=True),
-                            Trecho(" "),
-                            Trecho("itálico", italico=True),
-                            Trecho(" "),
-                            Trecho("ambos", negrito=True, italico=True),
-                            Trecho(" "),
-                            Trecho("sub", sublinhado=True),
-                            Trecho("."),
-                        ]
-                    ],
+                titulo="DESIGNANDO",
+                dre="Diretoria Regional de Educação BUTANTA",
+                corpo=[
+                    Trecho("Port. 5/2026 -", negrito=True),
+                    Trecho(" Fim "),
+                    Trecho("itálico", italico=True),
+                    Trecho(" "),
+                    Trecho("ambos", negrito=True, italico=True),
+                    Trecho(" "),
+                    Trecho("sub", sublinhado=True),
+                    Trecho("."),
                 ],
             ),
             SecaoLauda(
-                titulo="APOSTILA",
-                sei="6018.2026/0000099-0",
-                blocos=[[[Trecho(TEXTO_COM_MARKUP)]]],
+                titulo="APOSTILANDO",
+                dre="Diretoria Regional de Educação BUTANTA",
+                corpo=[Trecho(TEXTO_COM_MARKUP)],
             ),
         ],
     )
@@ -72,38 +59,30 @@ def _textos(flowables) -> list[str]:
     return [p.text for p in _paragrafos(flowables)]
 
 
+CORPO_PDF = (
+    "<b>Port. 5/2026 -</b> Fim <i>itálico</i> <i><b>ambos</b></i> <u>sub</u>."
+)
+CORPO_DOCX = "Port. 5/2026 - Fim itálico ambos sub."
+
+
 class TestPdf:
     """Renderização em PDF."""
 
-    def test_story_comeca_com_aviso_titulo_sei_e_subtitulo(self, documento):
+    def test_story_titulo_dre_e_corpo(self, documento):
         textos = _textos(montar_story(documento))
-        assert textos[:4] == [
-            "Aviso de teste",
-            "Lauda de teste",
-            "SEI nº 6018.2026/0001234-5",
-            "Gerada em 18/09/2026 às 10:00 — 2 ato(s)",
+        assert textos == [
+            "DESIGNANDO",
+            "Diretoria Regional de Educação BUTANTA",
+            CORPO_PDF,
+            "APOSTILANDO",
+            "Diretoria Regional de Educação BUTANTA",
+            textos[-1],
         ]
 
-    def test_story_aviso_vermelho_e_negrito(self, documento):
-        aviso = _paragrafos(montar_story(documento))[0]
-        assert toColor(aviso.style.textColor) == toColor("#C00000")
-        assert aviso.style.fontName == "Helvetica-Bold"
-
-    def test_story_sem_aviso_quando_none(self, documento):
-        from dataclasses import replace
-
-        textos = _textos(montar_story(replace(documento, aviso=None)))
-        assert textos[0] == "Lauda de teste"
-
-    def test_story_nao_imprime_cabecalho_por_ato(self, documento):
-        textos = _textos(montar_story(documento))
-        assert "PORTARIA Nº 5/2026 – DESIGNAÇÃO" not in textos
-        assert "APOSTILA" not in textos
-        assert "SEI 6018.2026/0000005-0" not in textos
-
-    def test_story_linhas_viram_br(self, documento):
-        textos = _textos(montar_story(documento))
-        assert "Primeira linha.<br/>Segunda linha." in textos
+    def test_story_titulo_e_dre_em_negrito(self, documento):
+        titulo, dre = _paragrafos(montar_story(documento))[:2]
+        assert titulo.style.fontName == "Helvetica-Bold"
+        assert dre.style.fontName == "Helvetica-Bold"
 
     def test_story_escapa_markup(self, documento):
         # O parser de Paragraph do ReportLab interpreta tags — texto do
@@ -111,13 +90,6 @@ class TestPdf:
         textos = _textos(montar_story(documento))
         assert not any("<img" in t for t in textos)
         assert any("&lt;b&gt;X&lt;/b&gt; &amp;" in t for t in textos)
-
-    def test_story_aplica_formatacao_com_tags_do_reportlab(self, documento):
-        textos = _textos(montar_story(documento))
-        assert (
-            "Fim <b>negrito</b> <i>itálico</i> <i><b>ambos</b></i> "
-            "<u>sub</u>."
-        ) in textos
 
     def test_gera_pdf_valido(self, documento):
         pdf = renderizar_pdf(documento)
@@ -132,50 +104,31 @@ class TestDocx:
     def docx(self, documento):
         return Document(BytesIO(renderizar_docx(documento)))
 
-    def test_comeca_com_aviso_titulo_sei_e_subtitulo(self, docx):
+    def test_titulo_dre_e_corpo(self, docx):
         textos = [p.text for p in docx.paragraphs]
-        assert textos[:4] == [
-            "Aviso de teste",
-            "Lauda de teste",
-            "SEI nº 6018.2026/0001234-5",
-            "Gerada em 18/09/2026 às 10:00 — 2 ato(s)",
+        assert textos == [
+            "DESIGNANDO",
+            "Diretoria Regional de Educação BUTANTA",
+            CORPO_DOCX,
+            "",
+            "APOSTILANDO",
+            "Diretoria Regional de Educação BUTANTA",
+            TEXTO_COM_MARKUP,
+            "",
         ]
 
-    def test_aviso_vermelho_e_negrito(self, docx):
-        (run,) = docx.paragraphs[0].runs
-        assert run.bold
-        assert str(run.font.color.rgb) == "C00000"
-
-    def test_sem_aviso_quando_none(self, documento):
-        from dataclasses import replace
-
-        docx = Document(
-            BytesIO(renderizar_docx(replace(documento, aviso=None)))
-        )
-        assert docx.paragraphs[0].text == "Lauda de teste"
-
-    def test_textos_dos_atos_na_ordem_sem_cabecalho(self, docx):
-        textos = [p.text for p in docx.paragraphs]
-        assert "PORTARIA Nº 5/2026 – DESIGNAÇÃO" not in textos
-        assert "APOSTILA" not in textos
-        i_primeiro = textos.index("Primeira linha.\nSegunda linha.")
-        i_apostila = textos.index(TEXTO_COM_MARKUP)
-        assert i_primeiro < i_apostila
-
-    def test_linhas_do_paragrafo_viram_quebra_de_linha(self, docx):
-        textos = [p.text for p in docx.paragraphs]
-        assert "Primeira linha.\nSegunda linha." in textos
+    def test_titulo_e_dre_em_negrito(self, docx):
+        for paragrafo in docx.paragraphs[:2]:
+            (run,) = paragrafo.runs
+            assert run.bold
 
     def test_formatacao_dos_runs(self, docx):
-        paragrafo = next(
-            p for p in docx.paragraphs if p.text.startswith("Fim ")
-        )
-        runs = {r.text: r for r in paragrafo.runs}
-        assert runs["negrito"].bold and not runs["negrito"].italic
+        runs = {r.text: r for r in docx.paragraphs[2].runs}
+        assert runs["Port. 5/2026 -"].bold
         assert runs["itálico"].italic and not runs["itálico"].bold
         assert runs["ambos"].bold and runs["ambos"].italic
         assert runs["sub"].underline
-        assert not runs["Fim "].bold and not runs["Fim "].italic
+        assert not runs[" Fim "].bold and not runs[" Fim "].italic
 
     def test_texto_preservado_literalmente(self, docx):
         # python-docx grava texto, não markup — nada a escapar.
