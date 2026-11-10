@@ -4,6 +4,7 @@ Fornece endpoints para filtrar e atualizar portarias exibidas na publicação do
 D.O.
 """
 
+from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
@@ -50,3 +51,15 @@ class AtoAdministrativoListViewSet(PortariaListViewSet):
     ]
 
     ordering = ["-criado_em", "numero_portaria"]
+
+    def get_queryset(self) -> QuerySet:
+        """Retorna os atos com os filhos já carregados.
+
+        `cessacao`, `apostilas`, `insubsistencia` e `apostilado` leem
+        `filhos.all()`; sem o prefetch, cada linha faria novas consultas.
+
+        Returns:
+            QuerySet: Atos administrativos com `filhos` pré-carregados.
+
+        """
+        return super().get_queryset().prefetch_related("filhos")

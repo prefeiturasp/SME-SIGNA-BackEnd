@@ -89,6 +89,9 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
 
     insubsistencia = serializers.SerializerMethodField()
     apostilas = serializers.SerializerMethodField()
+    apostilado = serializers.BooleanField(
+        source="esta_apostilado", read_only=True
+    )
 
     class Meta:
         model = AtoAdministrativo
@@ -96,6 +99,7 @@ class CessacaoReadSerializer(serializers.ModelSerializer):
             "id",
             "tipo",
             "status",
+            "apostilado",
             "ato_pai_id",
             "ato_raiz_id",
             "numero_portaria",
@@ -178,6 +182,7 @@ class CessacaoReadSerializerById(AtoRelacionadoMixin, CessacaoReadSerializer):
             "id",
             "tipo",
             "status",
+            "apostilado",
             "ato_pai_id",
             "ato_raiz_id",
             "numero_portaria",

@@ -230,6 +230,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     """
 
     status = serializers.SerializerMethodField()
+    apostilado = serializers.BooleanField(
+        source="esta_apostilado", read_only=True
+    )
 
     # Unidade
     dre_nome = serializers.CharField(
@@ -408,6 +411,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "id",
             "tipo",
             "status",
+            "apostilado",
             "ato_pai_id",
             "ato_raiz_id",
             "numero_portaria",
