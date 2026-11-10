@@ -69,52 +69,19 @@ def ler_cargos(cargo_base_model) -> list[dict]:
     vistos: set[str] = set()
     for numero, linha in enumerate(linhas, start=2):
         codigo = linha["codigo_cargo"].strip()
-
-        def erro(mensagem: str, codigo: str = codigo, numero: int = numero):
-            erros.append(
-                f"linha {numero} (código {codigo or '?'}): {mensagem}"
-            )
-
-        if not codigo.isdecimal():
-            erro("código do cargo ausente ou não numérico")
-        elif codigo in vistos:
-            erro("código do cargo repetido")
-        vistos.add(codigo)
-
         dados: dict = {"provimento": linha["provimento"].strip()}
-        for campo, limite in tamanhos.items():
-            valor = linha[campo].strip()
-            if not valor:
-                erro(f"{campo} vazio")
-            elif len(valor) > limite:
-                erro(f"{campo} com mais de {limite} caracteres")
-            dados[campo] = valor
-
-        for campo, validas in opcoes.items():
-            valor = linha[campo].strip()
-            if valor not in validas:
-                erro(f"{campo} inválido: {valor!r}")
-            dados[campo] = valor
-
-        for campo in CAMPOS_BOOLEANOS:
-            valor = linha[campo].strip()
-            if valor not in SIM_NAO:
-                erro(f"{campo} deve ser S ou N: {valor!r}")
-            dados[campo] = SIM_NAO.get(valor, False)
-
-        quantidade = linha["quantidade_maxima_de_dias_de_licenca"].strip()
-        if not quantidade.isdecimal():
-            erro("quantidade_maxima_de_dias_de_licenca deve ser inteiro")
-            quantidade = "0"
-        dados["quantidade_maxima_de_dias_de_licenca"] = int(quantidade)
-
-        # Mesma regra do serializer: a pesquisa no SIGPEC exige uma
-        # quantidade de dias maior que zero, e vice-versa.
-        if dados["pesquisar_licencas_no_sigpec"] != bool(
-            dados["quantidade_maxima_de_dias_de_licenca"]
-        ):
-            erro("pesquisa no SIGPEC e quantidade de dias incoerentes")
-
+        mensagens = [
+            *_validar_codigo(codigo, vistos),
+            *_validar_textos(linha, dados, tamanhos),
+            *_validar_opcoes(linha, dados, opcoes),
+            *_validar_booleanos(linha, dados),
+            *_validar_licencas(linha, dados),
+        ]
+        vistos.add(codigo)
+        erros.extend(
+            f"linha {numero} (código {codigo or '?'}): {mensagem}"
+            for mensagem in mensagens
+        )
         cargos.append(dados)
 
     if erros:
@@ -122,6 +89,71 @@ def ler_cargos(cargo_base_model) -> list[dict]:
             "Arquivo de cargos base inválido:\n" + "\n".join(erros)
         )
     return cargos
+
+
+def _validar_codigo(codigo: str, vistos: set[str]) -> list[str]:
+    if not codigo.isdecimal():
+        return ["código do cargo ausente ou não numérico"]
+    if codigo in vistos:
+        return ["código do cargo repetido"]
+    return []
+
+
+def _validar_textos(
+    linha: dict, dados: dict, tamanhos: dict[str, int]
+) -> list[str]:
+    """Campos de texto obrigatórios e dentro do limite do modelo."""
+    erros = []
+    for campo, limite in tamanhos.items():
+        valor = linha[campo].strip()
+        if not valor:
+            erros.append(f"{campo} vazio")
+        elif len(valor) > limite:
+            erros.append(f"{campo} com mais de {limite} caracteres")
+        dados[campo] = valor
+    return erros
+
+
+def _validar_opcoes(
+    linha: dict, dados: dict, opcoes: dict[str, set[str]]
+) -> list[str]:
+    """Campos com ``choices`` no modelo."""
+    erros = []
+    for campo, validas in opcoes.items():
+        valor = linha[campo].strip()
+        if valor not in validas:
+            erros.append(f"{campo} inválido: {valor!r}")
+        dados[campo] = valor
+    return erros
+
+
+def _validar_booleanos(linha: dict, dados: dict) -> list[str]:
+    """Campos S/N."""
+    erros = []
+    for campo in CAMPOS_BOOLEANOS:
+        valor = linha[campo].strip()
+        if valor not in SIM_NAO:
+            erros.append(f"{campo} deve ser S ou N: {valor!r}")
+        dados[campo] = SIM_NAO.get(valor, False)
+    return erros
+
+
+def _validar_licencas(linha: dict, dados: dict) -> list[str]:
+    """Quantidade de dias de licença, coerente com a pesquisa no SIGPEC.
+
+    Depende de ``pesquisar_licencas_no_sigpec`` já convertido em ``dados``.
+    """
+    quantidade = linha["quantidade_maxima_de_dias_de_licenca"].strip()
+    if not quantidade.isdecimal():
+        dados["quantidade_maxima_de_dias_de_licenca"] = 0
+        return ["quantidade_maxima_de_dias_de_licenca deve ser inteiro"]
+    dados["quantidade_maxima_de_dias_de_licenca"] = int(quantidade)
+
+    # Mesma regra do serializer: a pesquisa no SIGPEC exige uma
+    # quantidade de dias maior que zero, e vice-versa.
+    if dados["pesquisar_licencas_no_sigpec"] != bool(int(quantidade)):
+        return ["pesquisa no SIGPEC e quantidade de dias incoerentes"]
+    return []
 
 
 def popular_cargos_base(apps, schema_editor):
