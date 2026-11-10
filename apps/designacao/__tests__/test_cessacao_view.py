@@ -281,3 +281,16 @@ def test_buscar_por_portaria_cessacao_sem_parametro_ano(auth_client):
     response = auth_client.get(url, {"portaria": "777"})
 
     assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_detalhe_cessacao_informa_apostilado(auth_client):
+    """Verifica a flag `apostilado` no detalhe da cessação."""
+    cessacao = criar_ato_cessacao(criar_ato_designacao())
+    url = reverse("designacao:cessacao-detail", kwargs={"pk": cessacao.pk})
+
+    assert auth_client.get(url).data["apostilado"] is False
+
+    criar_ato_apostila(cessacao)
+
+    assert auth_client.get(url).data["apostilado"] is True

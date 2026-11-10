@@ -225,6 +225,24 @@ class AtoAdministrativo(models.Model):
         return self.ativo
 
     @property
+    def esta_apostilado(self) -> bool:
+        """Indica se o ato possui ao menos uma apostila válida.
+
+        Apostila anulada (insubsistente) não conta, e um ato insubsistente
+        deixa de ser exibido como apostilado. Usa ``filhos.all()`` para
+        aproveitar o prefetch das listagens.
+
+        Returns:
+            bool: True quando o ato está ativo e tem apostila ativa.
+
+        """
+        if not self.ativo:
+            return False
+        return any(
+            f.tipo == self.Tipo.APOSTILA and f.ativo for f in self.filhos.all()
+        )
+
+    @property
     def esta_publicado(self) -> bool:
         """Indica se o ato já foi publicado no Diário Oficial.
 

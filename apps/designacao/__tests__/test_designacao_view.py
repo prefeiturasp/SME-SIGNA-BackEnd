@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIClient, APIRequestFactory
 
 from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
     criar_ato_cessacao,
     criar_ato_designacao,
 )
@@ -641,3 +642,18 @@ def test_create_designacao_aceita_codigo_ue_cargo_base_vazio(
     assert response.status_code == 201
     ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
     assert ato.designacao_detalhe.indicado_codigo_ue_cargo_base == ""
+
+
+@pytest.mark.django_db
+def test_detalhe_designacao_informa_apostilado(auth_client):
+    """Verifica a flag `apostilado` no detalhe da designação."""
+    apostilada = criar_ato_designacao()
+    criar_ato_apostila(apostilada)
+    sem_apostila = criar_ato_designacao()
+
+    def _apostilado(ato):
+        url = reverse("designacao:designacao-detail", kwargs={"pk": ato.pk})
+        return auth_client.get(url).data["apostilado"]
+
+    assert _apostilado(apostilada) is True
+    assert _apostilado(sem_apostila) is False
