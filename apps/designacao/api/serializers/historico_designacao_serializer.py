@@ -100,6 +100,7 @@ _DETALHE_INDICADO = (
     "indicado_local_servico",
     "indicado_categoria",
     "indicado_codigo_ue_lotacao",
+    "indicado_codigo_ue_cargo_base",
     "indicado_possui_cargo_sobreposto",
 )
 _DETALHE_TITULAR = (

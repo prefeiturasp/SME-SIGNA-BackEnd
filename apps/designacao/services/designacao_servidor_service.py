@@ -107,6 +107,9 @@ class DesignacaoServidorService:
             "lotacao": cargo.get("ueCargoBase"),
             "possui_cargo_sobreposto": possui_cargo_sobreposto,
             "cd_ue_lotacao": cd_ue_lotacao,
+            # UE do cargo base, mesmo com cargo sobreposto: é a lotação
+            # impressa na lauda (``lotacao``).
+            "cd_ue_cargo_base": cargo.get("cdUeCargoBase"),
             "cd_cargo_sobreposto_funcao_atividade": cd_cargo_sobreposto_funcao_atividade,  # noqa: E501
             "cargo_sobreposto_funcao_atividade": cargo_sobreposto_funcao_atividade,  # noqa: E501
             "local_de_exercicio": local_exercicio,

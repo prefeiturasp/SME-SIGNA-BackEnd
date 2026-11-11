@@ -161,7 +161,9 @@ class CargoBaseReadSerializer(serializers.ModelSerializer):
             "id",
             "codigo_cargo",
             "descricao_completa",
+            "descricao_eol",
             "descricao_resumida",
+            "provimento",
             "grupamento",
             "grupamento_display",
             "situacao_funcional",
@@ -191,7 +193,9 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
         fields = [
             "codigo_cargo",
             "descricao_completa",
+            "descricao_eol",
             "descricao_resumida",
+            "provimento",
             "grupamento",
             "situacao_funcional",
             "status",
@@ -249,14 +253,16 @@ class CargoBaseWriteSerializer(serializers.ModelSerializer):
 class CargoBaseUpdateSerializer(serializers.ModelSerializer):
     """Serializador de atualização para cargo base.
 
-    Não expõe `codigo_cargo` e `descricao_completa`, pois são dados de
-    origem vindos do EOL e não podem ser alterados após o cadastro.
+    Não expõe `codigo_cargo` e `descricao_eol`, pois são dados de origem
+    vindos do EOL e não podem ser alterados após o cadastro.
     """
 
     class Meta:
         model = CargoBase
         fields = [
+            "descricao_completa",
             "descricao_resumida",
+            "provimento",
             "grupamento",
             "situacao_funcional",
             "status",

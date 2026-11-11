@@ -1,8 +1,10 @@
 """Testes para o model CargoBase."""
 
 from datetime import date
+from importlib import import_module
 
 import pytest
+from django.apps import apps as django_apps
 from django.db import IntegrityError
 
 from apps.gestao.__tests__.factories import criar_cargo_base
@@ -141,3 +143,18 @@ def test_codigo_cargo_deve_ser_unico():
 
     with pytest.raises(IntegrityError):
         criar_cargo_base(codigo_cargo="9085")
+
+
+@pytest.mark.django_db
+def test_migration_copia_descricao_completa_para_descricao_eol():
+    migration = import_module(
+        "apps.gestao.migrations.0009_cargobase_descricao_eol_provimento"
+    )
+    cargo = criar_cargo_base(
+        descricao_completa="DESCRICAO ORIGINAL", descricao_eol=""
+    )
+
+    migration.popular_descricao_eol(django_apps, None)
+
+    cargo.refresh_from_db()
+    assert cargo.descricao_eol == "DESCRICAO ORIGINAL"
