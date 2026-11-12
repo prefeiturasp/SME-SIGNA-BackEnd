@@ -55,7 +55,7 @@ class ModeloPortaria(models.Model):
         )
         ANO_PORTARIA = "ANO_PORTARIA", "Ano da portaria"
         CARGO_BASE = "CARGO_BASE", "Cargo base"
-        EH = "EH", "Estrutura hierárquica"
+        EH = "EH", "Estrutura hierárquica (EH)"
         TITULAR = "TITULAR", "Titular"
 
     VARIAVEIS_POR_TIPO_CARGO: dict[str, str] = {
