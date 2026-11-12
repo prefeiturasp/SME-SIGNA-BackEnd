@@ -10,6 +10,17 @@ from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
 
+class VariavelModeloPortariaSerializer(serializers.Serializer):
+    """Variável disponível no cadastro de modelo de portaria.
+
+    Alimenta o campo de seleção múltipla de variáveis: `value` é a chave
+    usada no placeholder `[[CHAVE]]` e `display_name` é o rótulo exibido.
+    """
+
+    value = serializers.CharField()
+    display_name = serializers.CharField()
+
+
 class ModeloPortariaReadSerializer(serializers.ModelSerializer):
     """Serializador de leitura para modelo de portaria."""
 
@@ -103,6 +114,9 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
         ato pai válidos para aquele tipo, conforme
         `ModeloPortaria.TIPOS_QUE_VARIAM_POR_ATO_PAI`.
 
+        Também rejeita variáveis restritas a outro tipo de cargo, como
+        `TITULAR` em `CARGO_DISPONIVEL`.
+
         Args:
             attrs: Dados já validados individualmente pelos campos.
 
@@ -111,7 +125,8 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
 
         Raises:
             serializers.ValidationError: Quando `tipo_ato_pai` é
-            inconsistente com `tipo_portaria`.
+            inconsistente com `tipo_portaria` ou quando alguma variável
+            não vale para o `tipo_cargo`.
 
         """
         tipo_portaria: str = attrs.get(
@@ -140,6 +155,25 @@ class ModeloPortariaWriteSerializer(serializers.ModelSerializer):
                     "tipo_ato_pai": (
                         f"tipo_portaria={tipo_portaria} não aceita "
                         "tipo_ato_pai."
+                    )
+                }
+            )
+
+        tipo_cargo = attrs.get(
+            "tipo_cargo", getattr(self.instance, "tipo_cargo", "")
+        )
+        variaveis = attrs.get(
+            "variaveis", getattr(self.instance, "variaveis", [])
+        )
+        invalidas = ModeloPortaria.variaveis_invalidas_para_tipo_cargo(
+            variaveis, tipo_cargo
+        )
+        if invalidas:
+            raise serializers.ValidationError(
+                {
+                    "variaveis": (
+                        f"{', '.join(invalidas)} não pode(m) ser usada(s) "
+                        f"com tipo_cargo={tipo_cargo}."
                     )
                 }
             )
