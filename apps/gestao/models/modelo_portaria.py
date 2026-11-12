@@ -38,6 +38,14 @@ class ModeloPortaria(models.Model):
         UNIDADE_PROPONENTE = "UNIDADE_PROPONENTE", "Unidade proponente"
         TIPO_DE_CARGO = "TIPO_DE_CARGO", "Tipo de cargo"
         DATA_INICIAL = "DATA_INICIAL", "Data inicial"
+        # Designação não tem ato pai, então nunca leva tipo_ato_pai. Os
+        # demais tipos sempre levam — mesmo cessação, que só tem um pai
+        # possível (designação): a tela de cadastro usa isso para exibir
+        # "Cessação de Designação" de forma consistente com "Apostila de
+        # Designação/Cessação" e "Insubsistência de X" na listagem.
+        #
+        # Mesma regra de hierarquia usada por `AtoAdministrativo.clean()` —
+        # reaproveitada daqui para não duplicar a definição.
         REMETENTE = "REMETENTE", "Remetente"
         PROVIMENTO = "PROVIMENTO", "Provimento"
         UNIDADE_ADMINISTRATIVA = (
