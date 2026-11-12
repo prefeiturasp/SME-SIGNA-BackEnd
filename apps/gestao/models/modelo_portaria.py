@@ -48,7 +48,6 @@ class ModeloPortaria(models.Model):
         # Mesma regra de hierarquia usada por `AtoAdministrativo.clean()` —
         # reaproveitada daqui para não duplicar a definição.
 
-        PROVIMENTO = "PROVIMENTO", "Provimento"
         UNIDADE_ADMINISTRATIVA = (
             "UNIDADE_ADMINISTRATIVA",
             "Unidade administrativa",
