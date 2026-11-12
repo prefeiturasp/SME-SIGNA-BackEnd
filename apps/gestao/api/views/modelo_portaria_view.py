@@ -117,7 +117,7 @@ class ModeloPortariaVariaveisView(APIView):
                 description=(
                     "Tipo de cargo do modelo. Restringe as variáveis que "
                     "só valem para um tipo de cargo — hoje `TITULAR` só é "
-                    "devolvida com `CARGO_VAGO`. Sem o parâmetro, todas "
+                    "devolvida com `CARGO_DISPONIVEL`. Sem o parâmetro, todas "
                     "as variáveis são devolvidas."
                 ),
             ),
@@ -133,7 +133,7 @@ class ModeloPortariaVariaveisView(APIView):
         """Retorna a lista de variáveis disponíveis para modelos de portaria.
 
         A lista depende do tipo de cargo informado em `tipo_cargo`: a
-        variável `TITULAR` só é oferecida para `CARGO_VAGO`. Sem o
+        variável `TITULAR` só é oferecida para `CARGO_DISPONIVEL`. Sem o
         parâmetro, todas as variáveis são devolvidas.
 
         Args:
