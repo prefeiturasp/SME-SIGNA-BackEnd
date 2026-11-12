@@ -18,6 +18,14 @@ from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.gestao.models.cargo_base import CargoBase
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 
+# Sem código EH no EOL, a unidade está inativa ou foi criada há pouco
+# (a Gestão leva alguns dias para cadastrar o código após o decreto).
+MSG_UNIDADE_SEM_CODIGO_HIERARQUICO = (
+    "Esta unidade ainda não tem código da Estrutura Hierárquica (EH). "
+    "Ela pode estar inativa ou ter sido criada recentemente. "
+    "Procure a Gestão."
+)
+
 
 class ImpedimentoSubstituicaoSerializer(serializers.ModelSerializer):
     """Serializador para impedimento de substituição.
@@ -45,7 +53,14 @@ class DesignacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     # Unidade
     dre_nome = serializers.CharField(max_length=255)
     unidade_proponente = serializers.CharField(max_length=255)
-    codigo_hierarquico = serializers.CharField(max_length=50)
+    codigo_hierarquico = serializers.CharField(
+        max_length=50,
+        error_messages={
+            "required": MSG_UNIDADE_SEM_CODIGO_HIERARQUICO,
+            "null": MSG_UNIDADE_SEM_CODIGO_HIERARQUICO,
+            "blank": MSG_UNIDADE_SEM_CODIGO_HIERARQUICO,
+        },
+    )
     dre = serializers.CharField(
         max_length=50, required=False, default="", allow_blank=True
     )

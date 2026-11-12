@@ -433,3 +433,136 @@ class TestUnidadeViewSet:
 
         # Verifica se o log de warning foi chamado
         mock_logger.warning.assert_called()
+
+
+class TestUnidadeViewSetContextoDesignacao:
+    """Testes do parâmetro ``contexto=designacao``."""
+
+    PATCH_DRES = (
+        "apps.unidades.api.views.unidades_viewset."
+        "DREIntegracaoService.get_dres"
+    )
+    PATCH_UES = (
+        "apps.unidades.api.views.unidades_viewset."
+        "UnidadeIntegracaoService.get_unidades_by_dre_com_tipo_unidade"
+    )
+    PATCH_SUPERVISAO = (
+        "apps.unidades.api.views.unidades_viewset."
+        "UnidadeIntegracaoService.get_unidade_supervisao_by_dre"
+    )
+
+    DRE_ATUAL = {
+        "codigoDRE": "108200",
+        "nomeDRE": "DIRETORIA REGIONAL DE EDUCACAO CAMPO LIMPO",
+        "siglaDRE": "DRE - CL",
+    }
+    COORDENADORIA = {
+        "codigoDRE": "105700",
+        "nomeDRE": "COORDENADORIA DE EDUCACAO CAMPO LIMPO",
+        "siglaDRE": "COORDENADORIA DE EDUCACAO CAMPO IIMPO",
+    }
+    NAE = {
+        "codigoDRE": "100013",
+        "nomeDRE": "NUCLEO DE ACAO EDUCATIVA - NAE-01",
+        "siglaDRE": "NAE-01",
+    }
+
+    SUPERVISAO = {
+        "codigoEscola": 108202,
+        "nomeEscola": "SUPERVISAO DRE CAMPO LIMPO",
+        "codigoDRE": "108200",
+        "siglaTipoEscola": "UA",
+    }
+
+    @staticmethod
+    def _ue(codigo: str, sigla: str) -> dict:
+        return {"codigoEscola": codigo, "siglaTipoEscola": sigla}
+
+    @pytest.fixture
+    def viewset(self):
+        return UnidadeViewSet()
+
+    @staticmethod
+    def _listar(viewset, **params):
+        request = Request(APIRequestFactory().get("/api/unidades/", params))
+        return viewset.list(request)
+
+    @pytest.fixture
+    def dres(self):
+        return [self.DRE_ATUAL, self.COORDENADORIA, self.NAE]
+
+    @pytest.fixture
+    def ues(self):
+        return [
+            self._ue("019751", "EMEF"),
+            self._ue("019537", "EMEI        "),
+            self._ue("123456", "mova"),
+            self._ue("305316", "ESC.PART."),
+            self._ue("306229", "CR.P.CONV"),
+            self._ue("999999", None),
+        ]
+
+    def test_dres_com_contexto_mantem_so_as_atuais(self, viewset, dres):
+        with patch(self.PATCH_DRES, return_value=dres):
+            response = self._listar(viewset, tipo="DRE", contexto="designacao")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == [self.DRE_ATUAL]
+
+    def test_dres_sem_contexto_lista_todas(self, viewset, dres):
+        with patch(self.PATCH_DRES, return_value=dres):
+            response = self._listar(viewset, tipo="DRE")
+
+        assert response.data == dres
+
+    def test_ues_com_contexto_filtra_tipos_e_mantem_supervisao(
+        self, viewset, ues
+    ):
+        with (
+            patch(self.PATCH_UES, return_value=ues),
+            patch(self.PATCH_SUPERVISAO, return_value=self.SUPERVISAO),
+        ):
+            response = self._listar(
+                viewset, tipo="UE", dre="108200", contexto="designacao"
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [u["codigoEscola"] for u in response.data] == [
+            "019751",
+            "019537",
+            "123456",
+            108202,
+        ]
+
+    def test_ues_com_contexto_sem_supervisao(self, viewset, ues):
+        with (
+            patch(self.PATCH_UES, return_value=ues),
+            patch(self.PATCH_SUPERVISAO, side_effect=ValueError("sem UA")),
+        ):
+            response = self._listar(
+                viewset, tipo="UE", dre="108200", contexto="designacao"
+            )
+
+        assert [u["codigoEscola"] for u in response.data] == [
+            "019751",
+            "019537",
+            "123456",
+        ]
+
+    def test_ues_sem_contexto_lista_todas(self, viewset, ues):
+        with (
+            patch(self.PATCH_UES, return_value=list(ues)),
+            patch(self.PATCH_SUPERVISAO, return_value=self.SUPERVISAO),
+        ):
+            response = self._listar(viewset, tipo="UE", dre="108200")
+
+        assert response.data == [*ues, self.SUPERVISAO]
+
+    @pytest.mark.parametrize("contexto", ["outro", "", "DESIGNACAO"])
+    def test_contexto_invalido_retorna_400(self, viewset, contexto):
+        with patch(self.PATCH_DRES) as mock_dres:
+            response = self._listar(viewset, tipo="DRE", contexto=contexto)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "contexto" in response.data["detail"]
+        mock_dres.assert_not_called()

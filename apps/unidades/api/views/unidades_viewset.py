@@ -20,12 +20,45 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from apps.unidades.constants.utils import (
+    CONTEXTO_DESIGNACAO,
+    SUPERVISAO_ESCOLAR_DRES_MAP,
+    TIPOS_UE_DESIGNACAO,
+)
 from apps.unidades.services.unidades_service import (
     DREIntegracaoService,
     UnidadeIntegracaoService,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def filtrar_dres_designacao(dres: list[dict]) -> list[dict]:
+    """Mantém só as DREs atuais, usadas na designação.
+
+    O EOL também devolve as antigas coordenadorias e os NAEs, que não são
+    mais usados. As DREs atuais são as que têm unidade de supervisão
+    configurada.
+    """
+    return [
+        dre
+        for dre in dres
+        if str(dre.get("codigoDRE") or "").strip()
+        in SUPERVISAO_ESCOLAR_DRES_MAP
+    ]
+
+
+def filtrar_ues_designacao(unidades: list[dict]) -> list[dict]:
+    """Mantém só as UEs de tipos permitidos na designação.
+
+    A sigla do EOL pode vir com espaços à direita (ex.: ``"EMEF    "``).
+    """
+    return [
+        unidade
+        for unidade in unidades
+        if str(unidade.get("siglaTipoEscola") or "").strip().upper()
+        in TIPOS_UE_DESIGNACAO
+    ]
 
 
 class UnidadeViewSet(ViewSet):
@@ -53,6 +86,19 @@ class UnidadeViewSet(ViewSet):
                 location=OpenApiParameter.QUERY,
                 required=False,
                 description="Código EOL da DRE (obrigatório quando tipo=UE).",
+            ),
+            OpenApiParameter(
+                name="contexto",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=[CONTEXTO_DESIGNACAO],
+                description=(
+                    "Restringe a listagem ao que a designação usa: com "
+                    "tipo=DRE, só as DREs atuais; com tipo=UE, só os tipos "
+                    "de unidade permitidos (a unidade de supervisão é "
+                    "sempre mantida). Sem o parâmetro, lista tudo."
+                ),
             ),
         ],
         responses={
@@ -94,19 +140,31 @@ class UnidadeViewSet(ViewSet):
         """
         tipo = request.query_params.get("tipo")
         codigo_dre = request.query_params.get("dre")
+        contexto = request.query_params.get("contexto")
 
         logger.info(
-            "Listagem de unidades solicitada com tipo='%s', dre='%s'",
+            "Listagem de unidades solicitada com tipo='%s', dre='%s', "
+            "contexto='%s'",
             tipo,
             codigo_dre,
+            contexto,
         )
 
+        if contexto is not None and contexto != CONTEXTO_DESIGNACAO:
+            logger.warning("Parâmetro 'contexto' inválido: %s", contexto)
+            return self._resposta_erro(
+                "Parâmetro 'contexto' inválido. Use "
+                f"'{CONTEXTO_DESIGNACAO}' ou não informe o parâmetro.",
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        designacao = contexto == CONTEXTO_DESIGNACAO
+
         if tipo == "DRE":
-            return self._listar_dres()
+            return self._listar_dres(designacao)
 
         if tipo == "UE":
-
-            return self._listar_ues(codigo_dre)
+            return self._listar_ues(codigo_dre, designacao)
 
         if tipo is None:
             logger.warning("Nenhum parâmetro 'tipo' informado.")
@@ -121,8 +179,11 @@ class UnidadeViewSet(ViewSet):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def _listar_dres(self) -> Response:
-        """Recupera todas as DREs a partir da API SME Integração.
+    def _listar_dres(self, designacao: bool = False) -> Response:
+        """Recupera as DREs a partir da API SME Integração.
+
+        Args:
+            designacao (bool): Se verdadeiro, devolve só as DREs atuais.
 
         Returns:
             rest_framework.response.Response: Resposta com a lista de DREs ou
@@ -131,6 +192,8 @@ class UnidadeViewSet(ViewSet):
         """
         try:
             dres = DREIntegracaoService.get_dres()
+            if designacao:
+                dres = filtrar_dres_designacao(dres)
             logger.info("DREs encontradas: %d", len(dres))
             return Response(dres)
 
@@ -145,11 +208,16 @@ class UnidadeViewSet(ViewSet):
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _listar_ues(self, codigo_dre: str | None) -> Response:
+    def _listar_ues(
+        self, codigo_dre: str | None, designacao: bool = False
+    ) -> Response:
         """Recupera as Unidades Escolares vinculadas a uma DRE específica.
 
         Args:
             codigo_dre (str): Código EOL da DRE (por exemplo, "108200").
+            designacao (bool): Se verdadeiro, devolve só os tipos de UE
+                permitidos na designação. A unidade de supervisão é sempre
+                mantida.
 
         Returns:
             rest_framework.response.Response: Resposta com a lista de unidades
@@ -192,6 +260,11 @@ class UnidadeViewSet(ViewSet):
                 "UEs encontradas para DRE '%s': %d", codigo_dre, len(unidades)
             )
 
+            if designacao:
+                unidades = filtrar_ues_designacao(unidades)
+
+            # Anexada depois do filtro: a supervisão (sigla "UA") não é um
+            # tipo de UE do EOL, mas deve aparecer na designação.
             if unidade_supervisao:
                 unidades.append(unidade_supervisao)
 
