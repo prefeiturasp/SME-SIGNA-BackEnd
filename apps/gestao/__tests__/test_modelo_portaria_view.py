@@ -269,3 +269,64 @@ def test_variaveis_exige_autenticacao():
     response = APIClient().get(url)
 
     assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_variaveis_com_cargo_disponivel_inclui_titular(auth_client):
+    """TITULAR é oferecida quando o cargo é disponível."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(
+        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL}
+    )
+
+    assert response.status_code == 200
+    assert {
+        "value": "TITULAR",
+        "display_name": "Titular",
+    } in response.data
+
+
+@pytest.mark.django_db
+def test_variaveis_com_cargo_vago_oculta_titular(auth_client):
+    """TITULAR não é oferecida quando o cargo é vago."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(
+        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO}
+    )
+
+    assert response.status_code == 200
+    valores = [variavel["value"] for variavel in response.data]
+    assert "TITULAR" not in valores
+    # Só TITULAR é restrita ao tipo de cargo; as demais continuam.
+    assert len(valores) == len(ModeloPortaria.Variavel.choices) - 1
+
+
+@pytest.mark.django_db
+def test_variaveis_sem_tipo_cargo_devolve_todas(auth_client):
+    """Sem `tipo_cargo`, o endpoint mantém o contrato anterior."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(url)
+
+    assert response.status_code == 200
+    assert len(response.data) == len(ModeloPortaria.Variavel.choices)
+
+
+@pytest.mark.django_db
+def test_variaveis_tipo_cargo_invalido_retorna_400(auth_client):
+    """Tipo de cargo fora das opções devolve 400 com o campo do erro."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(url, {"tipo_cargo": "INEXISTENTE"})
+
+    assert response.status_code == 400
+    assert "tipo_cargo" in response.data
+    assert "tipo_cargo" in response.data["codes"]
+
+
+@pytest.mark.django_db
+def test_variaveis_tipo_cargo_vazio_equivale_a_ausente(auth_client):
+    """`tipo_cargo=` vazio não restringe nem invalida a requisição."""
+    url = reverse("gestao:modelos-portaria-variaveis")
+    response = auth_client.get(url, {"tipo_cargo": ""})
+
+    assert response.status_code == 200
+    assert len(response.data) == len(ModeloPortaria.Variavel.choices)
