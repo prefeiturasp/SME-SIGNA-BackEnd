@@ -144,12 +144,12 @@ def test_write_serializer_rejeita_variavel_invalida():
 
 
 @pytest.mark.django_db
-def test_write_serializer_rejeita_titular_em_cargo_disponivel():
-    """TITULAR só é aceita com cargo vago."""
+def test_write_serializer_rejeita_titular_em_cargo_vago():
+    """TITULAR só é aceita com cargo disponível."""
     payload = {
         "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
         "nome_modelo": "Designação diretor de escola",
-        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
         "variaveis": [
             ModeloPortaria.Variavel.TITULAR,
             ModeloPortaria.Variavel.NOME_SERVIDOR,
@@ -164,12 +164,12 @@ def test_write_serializer_rejeita_titular_em_cargo_disponivel():
 
 
 @pytest.mark.django_db
-def test_write_serializer_aceita_titular_em_cargo_vago():
-    """TITULAR é aceita quando o cargo é vago."""
+def test_write_serializer_aceita_titular_em_cargo_disponivel():
+    """TITULAR é aceita quando o cargo é disponível."""
     payload = {
         "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
         "nome_modelo": "Designação diretor de escola",
-        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
         "variaveis": [ModeloPortaria.Variavel.TITULAR],
         "texto_portaria": "Texto qualquer",
     }

@@ -272,11 +272,11 @@ def test_variaveis_exige_autenticacao():
 
 
 @pytest.mark.django_db
-def test_variaveis_com_cargo_vago_inclui_titular(auth_client):
-    """TITULAR é oferecida quando o cargo é vago."""
+def test_variaveis_com_cargo_disponivel_inclui_titular(auth_client):
+    """TITULAR é oferecida quando o cargo é disponível."""
     url = reverse("gestao:modelos-portaria-variaveis")
     response = auth_client.get(
-        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO}
+        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL}
     )
 
     assert response.status_code == 200
@@ -287,11 +287,11 @@ def test_variaveis_com_cargo_vago_inclui_titular(auth_client):
 
 
 @pytest.mark.django_db
-def test_variaveis_com_cargo_disponivel_oculta_titular(auth_client):
-    """TITULAR não é oferecida quando o cargo é disponível."""
+def test_variaveis_com_cargo_vago_oculta_titular(auth_client):
+    """TITULAR não é oferecida quando o cargo é vago."""
     url = reverse("gestao:modelos-portaria-variaveis")
     response = auth_client.get(
-        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL}
+        url, {"tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO}
     )
 
     assert response.status_code == 200

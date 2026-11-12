@@ -104,23 +104,23 @@ def test_variaveis_disponiveis_sem_tipo_cargo_devolve_todas():
     )
 
 
-def test_variaveis_disponiveis_com_cargo_vago_inclui_titular():
-    """Cargo vago mantém a lista completa."""
+def test_variaveis_disponiveis_com_cargo_disponivel_inclui_titular():
+    """Cargo disponível mantém a lista completa."""
     valores = dict(
         ModeloPortaria.variaveis_disponiveis(
-            ModeloPortaria.TipoCargo.CARGO_VAGO
+            ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
         )
     )
 
     assert ModeloPortaria.Variavel.TITULAR in valores
 
 
-def test_variaveis_disponiveis_com_cargo_disponivel_omite_titular():
-    """Cargo disponível omite apenas TITULAR."""
+def test_variaveis_disponiveis_com_cargo_vago_omite_titular():
+    """Cargo vago omite apenas TITULAR."""
     valores = [
         valor
         for valor, _rotulo in ModeloPortaria.variaveis_disponiveis(
-            ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
+            ModeloPortaria.TipoCargo.CARGO_VAGO
         )
     ]
 
@@ -136,11 +136,11 @@ def test_variaveis_invalidas_para_tipo_cargo():
     ]
 
     assert ModeloPortaria.variaveis_invalidas_para_tipo_cargo(
-        variaveis, ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
+        variaveis, ModeloPortaria.TipoCargo.CARGO_VAGO
     ) == [ModeloPortaria.Variavel.TITULAR]
     assert (
         ModeloPortaria.variaveis_invalidas_para_tipo_cargo(
-            variaveis, ModeloPortaria.TipoCargo.CARGO_VAGO
+            variaveis, ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
         )
         == []
     )
