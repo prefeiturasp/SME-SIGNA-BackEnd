@@ -84,6 +84,9 @@ class DesignacaoWriteSerializer(AtoAdministrativoBaseSerializer):
     indicado_codigo_ue_lotacao = serializers.CharField(
         max_length=50, required=False, default="", allow_blank=True
     )
+    indicado_codigo_ue_cargo_base = serializers.CharField(
+        max_length=50, required=False, default="", allow_blank=True
+    )
     indicado_possui_cargo_sobreposto = serializers.BooleanField(
         required=False, default=False
     )
@@ -230,6 +233,9 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     """
 
     status = serializers.SerializerMethodField()
+    apostilado = serializers.BooleanField(
+        source="esta_apostilado", read_only=True
+    )
 
     # Unidade
     dre_nome = serializers.CharField(
@@ -292,6 +298,10 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
     )
     indicado_codigo_ue_lotacao = serializers.CharField(
         source="designacao_detalhe.indicado_codigo_ue_lotacao",
+        read_only=True,
+    )
+    indicado_codigo_ue_cargo_base = serializers.CharField(
+        source="designacao_detalhe.indicado_codigo_ue_cargo_base",
         read_only=True,
     )
     indicado_possui_cargo_sobreposto = serializers.BooleanField(
@@ -408,6 +418,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "id",
             "tipo",
             "status",
+            "apostilado",
             "ato_pai_id",
             "ato_raiz_id",
             "numero_portaria",
@@ -436,6 +447,7 @@ class DesignacaoReadSerializer(serializers.ModelSerializer):
             "indicado_local_servico",
             "indicado_categoria",
             "indicado_codigo_ue_lotacao",
+            "indicado_codigo_ue_cargo_base",
             "indicado_possui_cargo_sobreposto",
             # Titular
             "titular_nome_civil",

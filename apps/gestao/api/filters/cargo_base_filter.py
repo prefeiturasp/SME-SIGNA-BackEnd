@@ -1,7 +1,7 @@
 """Filtros para consulta de cargos base.
 
-Permite localizar cargos base por grupamento, descrição resumida,
-descrição completa, situação funcional e status.
+Permite localizar cargos base por código do cargo no EOL, grupamento,
+descrição resumida, descrição completa, situação funcional e status.
 """
 
 import django_filters
@@ -12,6 +12,11 @@ from apps.gestao.models.cargo_base import CargoBase
 class CargoBaseFilter(django_filters.FilterSet):
     """Filtro de cargos base baseado no modelo CargoBase."""
 
+    codigo_cargo = django_filters.CharFilter(
+        field_name="codigo_cargo",
+        lookup_expr="exact",
+        label="Código do cargo no EOL",
+    )
     descricao_resumida = django_filters.CharFilter(
         field_name="descricao_resumida",
         lookup_expr="icontains",
@@ -41,6 +46,7 @@ class CargoBaseFilter(django_filters.FilterSet):
     class Meta:
         model = CargoBase
         fields = [
+            "codigo_cargo",
             "grupamento",
             "descricao_resumida",
             "descricao_completa",

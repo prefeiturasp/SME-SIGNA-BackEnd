@@ -10,6 +10,7 @@ def criar_cargo_base(**kwargs) -> CargoBase:
     defaults = {
         "codigo_cargo": "9360",
         "descricao_completa": "DIRETOR DE ESCOLA MUNICIPAL",
+        "descricao_eol": "DIRETOR DE ESCOLA MUNICIPAL",
         "descricao_resumida": "Diretor de Escola",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,

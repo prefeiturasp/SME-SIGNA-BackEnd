@@ -79,6 +79,7 @@ class TestDesignacaoServidorService:
             "lotacao": "Escola Base",
             "possui_cargo_sobreposto": True,
             "cd_ue_lotacao": "090451",
+            "cd_ue_cargo_base": "090450",
             "cd_cargo_sobreposto_funcao_atividade": 123,
             "cargo_sobreposto_funcao_atividade": "Cargo Sobreposto",
             "local_de_exercicio": "Escola X",
@@ -222,3 +223,41 @@ class TestDesignacaoServidorService:
             match="Servidor não possui cargos",
         ):
             DesignacaoServidorService.obter_designacao("0000000")
+
+
+@pytest.mark.parametrize(
+    ("cargo", "esperado"),
+    [
+        (
+            {
+                "cargoSobreposto": "Diretor de Escola",
+                "cdUeCargoSobreposto": "090451",
+                "cdUeCargoBase": "090450",
+            },
+            "090450",
+        ),
+        ({"cargoSobreposto": None, "cdUeCargoBase": "090450"}, "090450"),
+        ({"cargoSobreposto": None}, None),
+    ],
+    ids=["com-sobreposto", "sem-sobreposto", "sem-codigo-no-eol"],
+)
+def test_montar_dados_servidor_devolve_ue_do_cargo_base(cargo, esperado):
+    """Verifica que ``cd_ue_cargo_base`` é sempre a UE do cargo base."""
+    dados = DesignacaoServidorService.montar_dados_servidor({}, cargo)
+
+    assert dados["cd_ue_cargo_base"] == esperado
+
+
+def test_montar_dados_servidor_mantem_cd_ue_lotacao_do_sobreposto():
+    """Verifica que ``cd_ue_lotacao`` continua sendo a UE do sobreposto."""
+    dados = DesignacaoServidorService.montar_dados_servidor(
+        {},
+        {
+            "cargoSobreposto": "Diretor de Escola",
+            "cdUeCargoSobreposto": "090451",
+            "cdUeCargoBase": "090450",
+        },
+    )
+
+    assert dados["cd_ue_lotacao"] == "090451"
+    assert dados["cd_ue_cargo_base"] == "090450"

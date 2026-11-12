@@ -42,6 +42,7 @@ _CAMPOS_ATO_INICIO = (
     "tipo_de_ato",
     "status",
     "status_publicacao",
+    "apostilado",
 )
 _CAMPOS_PORTARIA = (
     "numero_portaria",
@@ -99,6 +100,7 @@ _DETALHE_INDICADO = (
     "indicado_local_servico",
     "indicado_categoria",
     "indicado_codigo_ue_lotacao",
+    "indicado_codigo_ue_cargo_base",
     "indicado_possui_cargo_sobreposto",
 )
 _DETALHE_TITULAR = (
@@ -369,6 +371,9 @@ class AtoHistoricoBaseSerializer(
 
     tipo_de_ato = serializers.SerializerMethodField()
     status = serializers.CharField(read_only=True)
+    apostilado = serializers.BooleanField(
+        source="esta_apostilado", read_only=True
+    )
     portaria = serializers.SerializerMethodField()
     nome = serializers.SerializerMethodField()
     cargo = serializers.SerializerMethodField()

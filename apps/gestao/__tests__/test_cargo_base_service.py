@@ -27,6 +27,7 @@ def test_criar_cria_cargo_base_com_os_dados_informados():
     dados = {
         "codigo_cargo": "9352",
         "descricao_completa": "SUPERVISOR ESCOLAR",
+        "descricao_eol": "SUPERVISOR ESCOLAR",
         "descricao_resumida": "Supervisor Escolar",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,

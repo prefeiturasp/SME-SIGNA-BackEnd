@@ -11,9 +11,17 @@ class CargoBase(models.Model):
     """Representa um cargo base cadastrado a partir de um cargo do EOL."""
 
     class Grupamento(models.TextChoices):
+        ADMINISTRATIVOS_OUTROS = (
+            "ADMINISTRATIVOS_OUTROS",
+            "Administrativos - outros",
+        )
+        ANALISTAS_OUTROS = "ANALISTAS_OUTROS", "Analistas - outros"
         APOIO_EDUCACAO = "APOIO_EDUCACAO", "Apoio - educação"
+        APOIO_OUTROS = "APOIO_OUTROS", "Apoio - outros"
         DOCENTES = "DOCENTES", "Docentes"
+        ESPECIALISTAS_OUTROS = "ESPECIALISTAS_OUTROS", "Especialistas - outros"
         GESTORES_EDUCACAO = "GESTORES_EDUCACAO", "Gestores - educação"
+        SAUDE = "SAUDE", "Saúde"
 
     class SituacaoFuncional(models.TextChoices):
         COMISSIONADO = "COMISSIONADO", "Cargo em comissão"
@@ -30,10 +38,13 @@ class CargoBase(models.Model):
         "Código cargo no EOL", max_length=20, unique=True
     )
     descricao_completa = models.CharField("Descrição completa", max_length=255)
+    descricao_eol = models.CharField("Descrição no EOL", max_length=255)
 
     # --- Dados complementares de gestão ---
     descricao_resumida = models.CharField("Descrição resumida", max_length=255)
-    grupamento = models.CharField(max_length=20, choices=Grupamento.choices)
+    # Exigências do cargo impressas na lauda ("portando diploma de ...").
+    provimento = models.TextField("Provimento", blank=True, default="")
+    grupamento = models.CharField(max_length=30, choices=Grupamento.choices)
     situacao_funcional = models.CharField(
         "Situação funcional",
         max_length=20,

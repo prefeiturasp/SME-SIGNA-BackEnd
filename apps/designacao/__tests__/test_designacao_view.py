@@ -9,6 +9,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIClient, APIRequestFactory
 
 from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
     criar_ato_cessacao,
     criar_ato_designacao,
 )
@@ -578,3 +579,81 @@ def test_create_diretor_com_indicado_ad_retorna_codigo(auth_client):
         "indicado_codigo_cargo_sobreposto": ["assistente_diretor"]
     }
     assert not AtoAdministrativo.objects.exists()
+
+
+def _payload_designacao(**kwargs):
+    payload = {
+        "numero_portaria": 556,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-UE",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Lotacao",
+        "indicado_local_exercicio": "Local",
+        "data_inicio": "2024-01-01",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+    }
+    payload.update(kwargs)
+    return payload
+
+
+@pytest.mark.django_db
+def test_create_designacao_persiste_codigo_ue_cargo_base(auth_client):
+    """Verifica que a UE do cargo base é gravada e devolvida na leitura."""
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(
+        url,
+        data=_payload_designacao(indicado_codigo_ue_cargo_base="090450"),
+        format="json",
+    )
+
+    assert response.status_code == 201
+    ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+    assert ato.designacao_detalhe.indicado_codigo_ue_cargo_base == "090450"
+
+    detalhe_url = reverse(
+        "designacao:designacao-detail", kwargs={"pk": ato.pk}
+    )
+    detalhe = auth_client.get(detalhe_url).data
+    assert detalhe["indicado_codigo_ue_cargo_base"] == "090450"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "extra",
+    [{}, {"indicado_codigo_ue_cargo_base": ""}],
+    ids=["ausente", "vazio"],
+)
+def test_create_designacao_aceita_codigo_ue_cargo_base_vazio(
+    auth_client, extra
+):
+    """Verifica que a UE do cargo base é opcional e aceita vazio."""
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(
+        url, data=_payload_designacao(**extra), format="json"
+    )
+
+    assert response.status_code == 201
+    ato = AtoAdministrativo.objects.get(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+    assert ato.designacao_detalhe.indicado_codigo_ue_cargo_base == ""
+
+
+@pytest.mark.django_db
+def test_detalhe_designacao_informa_apostilado(auth_client):
+    """Verifica a flag `apostilado` no detalhe da designação."""
+    apostilada = criar_ato_designacao()
+    criar_ato_apostila(apostilada)
+    sem_apostila = criar_ato_designacao()
+
+    def _apostilado(ato):
+        url = reverse("designacao:designacao-detail", kwargs={"pk": ato.pk})
+        return auth_client.get(url).data["apostilado"]
+
+    assert _apostilado(apostilada) is True
+    assert _apostilado(sem_apostila) is False
