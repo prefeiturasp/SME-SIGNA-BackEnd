@@ -33,8 +33,6 @@ def _payload(ato_pai_id, **kwargs):
     """Método auxiliar para payload."""
     base = {
         "ato_pai": ato_pai_id,
-        "numero_portaria": "9999",
-        "sei_numero": "99999",
         "observacao": "Apostila via",
     }
     base.update(kwargs)
@@ -44,8 +42,6 @@ def _payload(ato_pai_id, **kwargs):
 def _update_payload(**kwargs):
     """Método auxiliar para payload de atualização."""
     base = {
-        "numero_portaria": "8888",
-        "sei_numero": "SEI-UPD",
         "observacao": "Obs atualizada",
     }
     base.update(kwargs)
@@ -210,9 +206,15 @@ def test_destroy_apostila(auth_client):
 
 @pytest.mark.django_db
 def test_partial_update_apostila(auth_client):
-    """Verifica que partial_update atualiza campos da apostila."""
+    """Verifica que partial_update atualiza a apostila sem mexer na portaria.
+
+    Número da portaria e SEI informados são ignorados, pois são herdados
+    do ato pai.
+    """
     designacao = criar_ato_designacao()
-    apostila = criar_ato_apostila(designacao, sei_numero="SEI-ORIG")
+    apostila = criar_ato_apostila(
+        designacao, sei_numero="SEI-ORIG", numero_portaria=10
+    )
 
     url = reverse("designacao:apostila-detail", args=[apostila.id])
     response = auth_client.patch(
@@ -222,10 +224,28 @@ def test_partial_update_apostila(auth_client):
     )
 
     assert response.status_code == 200
-    assert response.data["sei_numero"] == "SEI-NOVO"
-    assert response.data["numero_portaria"] == 7777
-    apostila.refresh_from_db()
-    assert apostila.sei_numero == "SEI-NOVO"
+    assert response.data["sei_numero"] == "SEI-ORIG"
+    assert response.data["numero_portaria"] == 10
+    assert response.data["observacao"] == "Obs atualizada"
+
+
+@pytest.mark.django_db
+def test_create_apostila_herda_portaria_e_sei_do_ato_pai(auth_client):
+    """Verifica que a criação via API herda portaria e SEI do ato pai."""
+    designacao = criar_ato_designacao(
+        numero_portaria=4321, ano_vigente="2025", sei_numero="SEI-D"
+    )
+
+    url = reverse("designacao:apostilas")
+    response = auth_client.post(
+        url, data=_payload(designacao.id), format="json"
+    )
+
+    assert response.status_code == 201
+    assert response.data["numero_portaria"] == 4321
+    assert response.data["ano_vigente"] == "2025"
+    assert response.data["sei_numero"] == "SEI-D"
+    assert response.data["doc"] is None
 
 
 @pytest.mark.django_db

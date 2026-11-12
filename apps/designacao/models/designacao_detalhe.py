@@ -57,7 +57,7 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
     dre_nome = models.CharField(max_length=255)
     unidade_proponente = models.CharField(max_length=255)
     codigo_hierarquico = models.CharField(max_length=50)
-    ue = models.CharField(max_length=50, blank=True, default="")
+    ue = models.CharField(max_length=50, blank=True, default="", db_index=True)
     dre = models.CharField(max_length=50, blank=True, default="")
     funcionarios_da_unidade = models.CharField(
         max_length=50, blank=True, default=""

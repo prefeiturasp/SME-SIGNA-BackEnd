@@ -130,3 +130,60 @@ class DesignacaoUnidadeCargosView(APIView):
                 {"detail": "Erro interno ao buscar cargos"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class DesignacaoUnidadesCadastradasView(APIView):
+    """View que lista as unidades escolares já usadas em designações."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="search",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Trecho do nome da unidade escolar.",
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                "DesignacaoUnidadeCadastradaResponse",
+                fields={
+                    "dre": serializers.CharField(),
+                    "dre_nome": serializers.CharField(),
+                    "ue": serializers.CharField(),
+                    "ue_nome": serializers.CharField(),
+                },
+                many=True,
+            ),
+            500: inline_serializer(
+                "DesignacaoUnidadesCadastradasErroResponse",
+                fields={"detail": serializers.CharField()},
+            ),
+        },
+    )
+    def get(self, request: Request) -> Response:
+        """Retorna as unidades escolares já cadastradas em designações.
+
+        Args:
+            request: Requisição HTTP com o parâmetro opcional search.
+
+        Returns:
+            Response: Lista de unidades ou mensagem de erro.
+
+        """
+        search = request.query_params.get("search", "").strip()
+
+        try:
+            unidades = DesignacaoUnidadeService.listar_unidades_cadastradas(
+                search
+            )
+            return Response(unidades, status=status.HTTP_200_OK)
+        except Exception:
+            logger.exception("Erro ao listar unidades cadastradas")
+            return Response(
+                {"detail": "Erro interno ao listar unidades"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

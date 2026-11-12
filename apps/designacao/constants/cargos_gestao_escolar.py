@@ -17,6 +17,10 @@ TURNOS_MAP = {
     6: "integral",
 }
 
+# Situação de turma aberta no EOL. As demais (ex.: "E" excluída,
+# "C" concluída) não entram na contagem de classes do módulo.
+SITUACAO_TURMA_ABERTA = "O"
+
 # Código EOL do cargo de Assistente de Diretor (AD). Quem possui esse cargo
 # sobreposto substitui o Diretor informalmente (até 15 dias) e não pode ser
 # designado formalmente para o cargo de Diretor.

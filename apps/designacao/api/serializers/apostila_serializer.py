@@ -8,9 +8,6 @@ from typing import Any, cast
 
 from rest_framework import serializers
 
-from apps.designacao.api.serializers.ato_administrativo_serializer import (
-    AtoAdministrativoBaseSerializer,
-)
 from apps.designacao.api.serializers.ato_relacionado_mixin import (
     AtoRelacionadoMixin,
 )
@@ -36,15 +33,15 @@ class ApostilaAlteracaoWriteSerializer(serializers.Serializer):
     )
 
 
-class ApostilaUpdateSerializer(AtoAdministrativoBaseSerializer):
+class ApostilaUpdateSerializer(serializers.Serializer):
     """Serializador de atualização para apostila.
 
-    Valida os campos necessários para atualizar uma apostila
+    Valida os campos necessários para atualizar uma apostila. Número da
+    portaria, ano vigente e número SEI não são informados: são herdados
+    do ato pai. A data de publicação (D.O) é preenchida posteriormente
+    pela tela de publicação.
     """
 
-    ano_vigente = serializers.CharField(
-        max_length=6, required=False, allow_blank=True, default=""
-    )
     observacao = serializers.CharField(
         required=False, allow_blank=True, default=""
     )

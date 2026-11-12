@@ -44,6 +44,8 @@ def designacao_1(db):
         dre_nome="DRE BUTANTA",  # sem acento para evitar falha de collation
         unidade_proponente="EMEF TESTE 1",
         codigo_hierarquico="108600",
+        dre="108100",
+        ue="094765",
         indicado_nome_servidor="MARIA SILVA",
         indicado_nome_civil="Maria da Silva",
         indicado_rf="12345678",
@@ -86,6 +88,8 @@ def designacao_2(db):
         dre_nome="DRE IPIRANGA",
         unidade_proponente="EMEF TESTE 2",
         codigo_hierarquico="108700",
+        dre="108200",
+        ue="000191",
         indicado_nome_servidor="JOAO SOUZA",
         indicado_nome_civil="Joao de Souza",
         indicado_rf="87654321",
@@ -119,6 +123,8 @@ def designacao_3(db):
         dre_nome="DRE IPIRANGA",
         unidade_proponente="EMEF TESTE 2",
         codigo_hierarquico="108700",
+        dre="108200",
+        ue="019261",
         indicado_nome_servidor="CARLOS SILVA",
         indicado_nome_civil="Carlos da Silva",
         indicado_rf="87654321",
@@ -397,3 +403,35 @@ class TestAtoAdministrativoFilter:
         qs = apply_filter({"observacao": "divergencia documental"})
         assert qs.count() == 1
         assert qs.first() == insubsistencia_com_observacao
+
+    def test_filtro_codigo_dre(self, designacao_1, designacao_2, designacao_3):
+        """Verifica filtro pelo código da DRE."""
+        qs = apply_filter({"codigo_dre": "108200"})
+        assert set(qs) == {designacao_2, designacao_3}
+
+    def test_filtro_codigo_ue(self, designacao_1, designacao_2, designacao_3):
+        """Verifica filtro pelo código da unidade proponente."""
+        qs = apply_filter({"codigo_dre": "108200", "codigo_ue": "000191"})
+        assert list(qs) == [designacao_2]
+
+    def test_filtro_codigo_ue_inclui_atos_filhos(
+        self,
+        designacao_1,
+        designacao_2,
+        cessacao,
+        insubsistencia_cessacao,
+        apostila,
+    ):
+        """Verifica que atos derivados herdam a unidade da designação raiz."""
+        qs = apply_filter({"codigo_dre": "108100", "codigo_ue": "094765"})
+        assert set(qs) == {
+            designacao_1,
+            cessacao,
+            insubsistencia_cessacao,
+            apostila,
+        }
+
+    def test_filtro_codigo_ue_sem_resultado(self, designacao_1, cessacao):
+        """Verifica filtro por unidade sem atos vinculados."""
+        qs = apply_filter({"codigo_ue": "999999"})
+        assert qs.count() == 0

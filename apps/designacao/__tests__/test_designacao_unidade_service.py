@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from apps.designacao.__tests__.factories import criar_ato_designacao
 from apps.designacao.services.designacao_unidades_service import (
     CicloService,
     DesignacaoUnidadeService,
@@ -102,6 +103,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -285,7 +287,9 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
         """Verifica calcular turmas turno desconhecido."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": "999"}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": "999", "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
         mock_dados_turma.return_value = {"tipoTurno": 99}
 
@@ -359,7 +363,9 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas
     ):
         """Verifica que turma com código inválido é ignorada."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": None}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": None, "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
 
         resultado = TurmaService.calcular_turmas("UE123")
@@ -383,6 +389,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": 999,
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -408,13 +415,58 @@ class TestDesignacaoUnidadeService:
         self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
     ):
         """Verifica que turma com tipoTurno não inteiro é ignorada."""
-        mock_buscar_turmas.return_value = [{"codigoTurma": "T1"}]
+        mock_buscar_turmas.return_value = [
+            {"codigoTurma": "T1", "situacao": "O"}
+        ]
         mock_buscar_disciplinas.return_value = []
         mock_dados_turma.return_value = {"tipoTurno": None}
 
         resultado = TurmaService.calcular_turmas("UE123")
 
         assert resultado["total"] == 0
+
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_dados_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_disciplinas_turma"
+    )
+    @patch(
+        "apps.designacao.services.designacao_unidades_service.SmeIntegracaoService.buscar_turmas_ue_ano"
+    )
+    def test_calcular_turmas_conta_apenas_turmas_abertas(
+        self, mock_buscar_turmas, mock_buscar_disciplinas, mock_dados_turma
+    ):
+        """Verifica que só turmas com situação "O" entram no total."""
+        mock_buscar_turmas.return_value = [
+            {
+                "codigoTurma": 1,
+                "situacao": "O",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1A",
+            },
+            {
+                "codigoTurma": 2,
+                "situacao": "E",
+                "siglaModalidade": "EF",
+                "nomeTurmaEOL": "1A",
+            },
+            {
+                "codigoTurma": 3,
+                "situacao": "C",
+                "siglaModalidade": "EJA",
+                "nomeTurmaEOL": "3B",
+            },
+            {"codigoTurma": 4, "siglaModalidade": "EF", "nomeTurmaEOL": "2A"},
+        ]
+        mock_buscar_disciplinas.return_value = []
+        mock_dados_turma.return_value = {"tipoTurno": 1}
+
+        resultado = TurmaService.calcular_turmas("UE123")
+
+        assert resultado["total"] == 1
+        mock_dados_turma.assert_called_once_with(1)
+        mock_buscar_disciplinas.assert_called_once_with(1)
 
     def test_listar_cargos_vaga_sucesso(self):
         """Verifica listar cargos vaga sucesso."""
@@ -478,6 +530,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -508,6 +561,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -541,6 +595,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -579,6 +634,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -622,6 +678,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1 ano",
             }
@@ -662,6 +719,7 @@ class TestDesignacaoUnidadeService:
         mock_buscar_turmas.return_value = [
             {
                 "codigoTurma": "T1",
+                "situacao": "O",
                 "siglaModalidade": "EF",
                 "nomeTurmaEOL": "1º ano",
             }
@@ -903,3 +961,88 @@ class TestFuncaoNormalizar:
         )
 
         assert normalizar(None) == ""
+
+
+@pytest.mark.django_db
+class TestListarUnidadesCadastradas:
+    """Testes para a listagem de unidades já cadastradas em designações."""
+
+    def test_retorna_campos_da_unidade(self):
+        """Verifica que retorna dre, dre_nome, ue e ue_nome."""
+        criar_ato_designacao(
+            dre="108800",
+            dre_nome="DRE BUTANTA",
+            ue="019453",
+            unidade_proponente="EMEF - ALIPIO CORREA NETO, PROF.",
+        )
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas()
+
+        assert resultado == [
+            {
+                "dre": "108800",
+                "dre_nome": "DRE BUTANTA",
+                "ue": "019453",
+                "ue_nome": "EMEF - ALIPIO CORREA NETO, PROF.",
+            }
+        ]
+
+    def test_ignora_registros_sem_codigo(self):
+        """Verifica que registros sem código de dre ou ue são ignorados."""
+        criar_ato_designacao(dre="", ue="019453")
+        criar_ato_designacao(dre="108800", ue="")
+
+        assert DesignacaoUnidadeService.listar_unidades_cadastradas() == []
+
+    def test_remove_repeticoes_usando_nome_mais_recente(self):
+        """Verifica que a mesma UE aparece uma vez, com o nome mais recente."""
+        criar_ato_designacao(
+            dre="108800", ue="019453", unidade_proponente="EMEF - ALIPIO"
+        )
+        criar_ato_designacao(
+            dre="108800",
+            ue="019453",
+            unidade_proponente="EMEF - ALIPIO CORREA NETO, PROF.",
+        )
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas()
+
+        assert [u["ue_nome"] for u in resultado] == [
+            "EMEF - ALIPIO CORREA NETO, PROF."
+        ]
+
+    def test_filtra_por_search_e_ordena_por_nome(self):
+        """Verifica o filtro por nome e a ordenação alfabética."""
+        criar_ato_designacao(
+            dre="1", ue="3", unidade_proponente="EMEF - ZULMIRA"
+        )
+        criar_ato_designacao(
+            dre="1", ue="2", unidade_proponente="EMEF - ALIPIO"
+        )
+        criar_ato_designacao(dre="1", ue="4", unidade_proponente="CEI - BETA")
+
+        resultado = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "emef"
+        )
+
+        assert [u["ue"] for u in resultado] == ["2", "3"]
+
+    def test_search_ignora_acentos(self):
+        """Verifica que o filtro por nome ignora acentuação."""
+        criar_ato_designacao(
+            dre="1", ue="2", unidade_proponente="EMEF - SÃO JOÃO"
+        )
+        criar_ato_designacao(
+            dre="1", ue="3", unidade_proponente="EMEF - SAO PAULO"
+        )
+        criar_ato_designacao(dre="1", ue="4", unidade_proponente="CEI - BETA")
+
+        sem_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "sao"
+        )
+        com_acento = DesignacaoUnidadeService.listar_unidades_cadastradas(
+            "São"
+        )
+
+        assert [u["ue"] for u in sem_acento] == ["2", "3"]
+        assert [u["ue"] for u in com_acento] == ["2", "3"]

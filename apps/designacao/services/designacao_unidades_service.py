@@ -10,7 +10,13 @@ import unicodedata
 from datetime import datetime
 from typing import Any
 
-from apps.designacao.constants.cargos_gestao_escolar import TURNOS_MAP
+from django.db.models import Max
+
+from apps.designacao.constants.cargos_gestao_escolar import (
+    SITUACAO_TURMA_ABERTA,
+    TURNOS_MAP,
+)
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.modulos import Calculadores
 from apps.designacao.modulos.base import ModuloCalculator
 from apps.designacao.services.designacao_servidor_service import (
@@ -233,6 +239,9 @@ class TurmaService:
         }
 
         for turma in turmas:
+            if turma.get("situacao") != SITUACAO_TURMA_ABERTA:
+                continue
+
             codigo = turma.get("codigoTurma")
 
             codigo_turma = cls._normalizar_codigo_turma(codigo)
@@ -523,3 +532,51 @@ class DesignacaoUnidadeService:
     def listar_cargos_vaga(cls) -> list:
         """Retorna a lista de cargos de vaga formatados."""
         return cls._get_cargos_formatados()
+
+    @staticmethod
+    def listar_unidades_cadastradas(
+        search: str | None = None,
+    ) -> list[dict[str, str]]:
+        """Lista as unidades escolares já usadas em designações.
+
+        Ignora registros sem código de DRE ou UE (designações antigas)
+        e devolve uma linha por par (dre, ue), com os nomes do registro
+        mais recente, já que a mesma escola pode ter sido gravada com
+        nomes diferentes ao longo do tempo.
+
+        Args:
+            search: Trecho do nome da unidade para filtrar (opcional).
+
+        Returns:
+            list[dict]: Unidades com dre, dre_nome, ue e ue_nome,
+            ordenadas pelo nome da unidade.
+
+        """
+        mais_recentes = (
+            DesignacaoDetalhe.objects.exclude(ue="")
+            .exclude(dre="")
+            .values("dre", "ue")
+            .annotate(ultimo=Max("ato_id"))
+            .values("ultimo")
+        )
+
+        # Filtro e ordenação em Python para ignorar acentos sem depender
+        # da extensão unaccent nem da collation do banco.
+        termo = normalizar(search)
+        detalhes = sorted(
+            DesignacaoDetalhe.objects.filter(pk__in=mais_recentes).values(
+                "dre", "dre_nome", "ue", "unidade_proponente"
+            ),
+            key=lambda d: normalizar(d["unidade_proponente"]),
+        )
+
+        return [
+            {
+                "dre": detalhe["dre"],
+                "dre_nome": detalhe["dre_nome"],
+                "ue": detalhe["ue"],
+                "ue_nome": detalhe["unidade_proponente"],
+            }
+            for detalhe in detalhes
+            if termo in normalizar(detalhe["unidade_proponente"])
+        ]
