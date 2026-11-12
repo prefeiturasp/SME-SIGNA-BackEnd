@@ -13,7 +13,9 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.api.serializers.designacao_serializer import (
+    MSG_UNIDADE_SEM_CODIGO_HIERARQUICO,
     DesignacaoReadSerializer,
+    DesignacaoWriteSerializer,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
@@ -205,3 +207,34 @@ class TestDesignacaoReadSerializerDisplaysSemDetalhe:
         assert data["impedimento_display"] is None
         assert data["tipo_vaga_display"] is None
         assert data["cargo_vaga_display"] is None
+
+
+@pytest.mark.django_db
+class TestDesignacaoWriteSerializerCodigoHierarquico:
+    """Unidade sem código EH não pode ser designada."""
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"codigo_hierarquico": None},
+            {"codigo_hierarquico": ""},
+            {},
+        ],
+        ids=["nulo", "vazio", "ausente"],
+    )
+    def test_sem_codigo_hierarquico_retorna_mensagem_da_unidade(self, payload):
+        serializer = DesignacaoWriteSerializer(data=payload)
+
+        assert not serializer.is_valid()
+        assert serializer.errors["codigo_hierarquico"] == [
+            MSG_UNIDADE_SEM_CODIGO_HIERARQUICO
+        ]
+
+    def test_com_codigo_hierarquico_nao_gera_erro_no_campo(self):
+        serializer = DesignacaoWriteSerializer(
+            data={"codigo_hierarquico": "001"}
+        )
+
+        serializer.is_valid()
+
+        assert "codigo_hierarquico" not in serializer.errors
