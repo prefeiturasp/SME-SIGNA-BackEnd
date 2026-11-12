@@ -8,7 +8,14 @@ from typing import Any
 
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+)
 from rest_framework import mixins, status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -19,6 +26,7 @@ from apps.gestao.api.filters.modelo_portaria_filter import ModeloPortariaFilter
 from apps.gestao.api.serializers.modelo_portaria_serializer import (
     ModeloPortariaReadSerializer,
     ModeloPortariaWriteSerializer,
+    VariavelModeloPortariaSerializer,
 )
 from apps.gestao.models.modelo_portaria import ModeloPortaria
 from apps.gestao.services.modelo_portaria_service import ModeloPortariaService
@@ -95,8 +103,38 @@ class ModeloPortariaVariaveisView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="tipo_cargo",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=[
+                    valor
+                    for valor, _rotulo in ModeloPortaria.TipoCargo.choices
+                ],
+                description=(
+                    "Tipo de cargo do modelo. Restringe as variáveis que "
+                    "só valem para um tipo de cargo — hoje `TITULAR` só é "
+                    "devolvida com `CARGO_VAGO`. Sem o parâmetro, todas "
+                    "as variáveis são devolvidas."
+                ),
+            ),
+        ],
+        responses={
+            200: VariavelModeloPortariaSerializer(many=True),
+            400: OpenApiResponse(
+                description="`tipo_cargo` fora das opções aceitas."
+            ),
+        },
+    )
     def get(self, request: Request) -> Response:
         """Retorna a lista de variáveis disponíveis para modelos de portaria.
+
+        A lista depende do tipo de cargo informado em `tipo_cargo`: a
+        variável `TITULAR` só é oferecida para `CARGO_VAGO`. Sem o
+        parâmetro, todas as variáveis são devolvidas.
 
         Args:
             request: Requisição HTTP GET.
@@ -104,9 +142,46 @@ class ModeloPortariaVariaveisView(APIView):
         Returns:
             Response: Lista de variáveis com `value` e `display_name`.
 
+        Raises:
+            ValidationError: Quando `tipo_cargo` não é uma opção válida.
+
         """
+        tipo_cargo = self._tipo_cargo(request)
         variaveis = [
             {"value": valor, "display_name": rotulo}
-            for valor, rotulo in ModeloPortaria.Variavel.choices
+            for valor, rotulo in ModeloPortaria.variaveis_disponiveis(
+                tipo_cargo
+            )
         ]
-        return Response(variaveis, status=status.HTTP_200_OK)
+        return Response(
+            VariavelModeloPortariaSerializer(variaveis, many=True).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @staticmethod
+    def _tipo_cargo(request: Request) -> str | None:
+        """Lê e valida o `tipo_cargo` da query string.
+
+        Args:
+            request: Requisição HTTP com o parâmetro opcional `tipo_cargo`.
+
+        Returns:
+            str|None: Tipo de cargo informado, ou None quando ausente.
+
+        Raises:
+            ValidationError: Quando o valor não é uma opção de
+                `ModeloPortaria.TipoCargo`.
+
+        """
+        tipo_cargo = request.query_params.get("tipo_cargo") or None
+        if tipo_cargo is None:
+            return None
+        if tipo_cargo not in ModeloPortaria.TipoCargo.values:
+            raise ValidationError(
+                {
+                    "tipo_cargo": (
+                        f"'{tipo_cargo}' não é um tipo de cargo válido."
+                    )
+                }
+            )
+        return tipo_cargo

@@ -95,3 +95,52 @@ def test_ordering_padrao_e_por_criado_em_decrescente():
     resultado = list(ModeloPortaria.objects.all())
 
     assert resultado == [mais_novo, mais_antigo]
+
+
+def test_variaveis_disponiveis_sem_tipo_cargo_devolve_todas():
+    """Sem tipo de cargo, nenhuma variável é omitida."""
+    assert ModeloPortaria.variaveis_disponiveis() == list(
+        ModeloPortaria.Variavel.choices
+    )
+
+
+def test_variaveis_disponiveis_com_cargo_vago_inclui_titular():
+    """Cargo vago mantém a lista completa."""
+    valores = dict(
+        ModeloPortaria.variaveis_disponiveis(
+            ModeloPortaria.TipoCargo.CARGO_VAGO
+        )
+    )
+
+    assert ModeloPortaria.Variavel.TITULAR in valores
+
+
+def test_variaveis_disponiveis_com_cargo_disponivel_omite_titular():
+    """Cargo disponível omite apenas TITULAR."""
+    valores = [
+        valor
+        for valor, _rotulo in ModeloPortaria.variaveis_disponiveis(
+            ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
+        )
+    ]
+
+    assert ModeloPortaria.Variavel.TITULAR not in valores
+    assert len(valores) == len(ModeloPortaria.Variavel.choices) - 1
+
+
+def test_variaveis_invalidas_para_tipo_cargo():
+    """Aponta só as variáveis que não valem para o tipo de cargo."""
+    variaveis = [
+        ModeloPortaria.Variavel.TITULAR,
+        ModeloPortaria.Variavel.NOME_SERVIDOR,
+    ]
+
+    assert ModeloPortaria.variaveis_invalidas_para_tipo_cargo(
+        variaveis, ModeloPortaria.TipoCargo.CARGO_DISPONIVEL
+    ) == [ModeloPortaria.Variavel.TITULAR]
+    assert (
+        ModeloPortaria.variaveis_invalidas_para_tipo_cargo(
+            variaveis, ModeloPortaria.TipoCargo.CARGO_VAGO
+        )
+        == []
+    )
