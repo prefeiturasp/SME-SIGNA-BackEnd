@@ -1,10 +1,12 @@
 """Testes para a view de designação."""
 
+import datetime
 import secrets
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.request import Request
 from rest_framework.test import APIClient, APIRequestFactory
 
@@ -657,3 +659,79 @@ def test_detalhe_designacao_informa_apostilado(auth_client):
 
     assert _apostilado(apostilada) is True
     assert _apostilado(sem_apostila) is False
+
+
+def _payload_designacao_vaga(**kwargs):
+    """Payload mínimo de criação de designação em cargo vago."""
+    payload = {
+        "numero_portaria": 777,
+        "ano_vigente": "2024",
+        "sei_numero": "SEI-F1",
+        "dre_nome": "DRE Teste",
+        "unidade_proponente": "Escola Teste",
+        "codigo_hierarquico": "001",
+        "indicado_nome_civil": "",
+        "indicado_nome_servidor": "Nome Servidor",
+        "indicado_rf": "1234567",
+        "indicado_vinculo": 1,
+        "indicado_cargo_base": "Cargo Base",
+        "indicado_lotacao": "Escola Teste",
+        "indicado_local_exercicio": "Escola Teste",
+        "tipo_vaga": DesignacaoDetalhe.TipoVaga.VAGO,
+    }
+    payload.update(kwargs)
+    return payload
+
+
+@pytest.mark.django_db
+def test_create_designacao_futura_sem_data_fim_retorna_codigo(auth_client):
+    """Início futuro sem "Até" retorna 400 com código e não salva."""
+    amanha = timezone.localdate() + datetime.timedelta(days=1)
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(
+        url,
+        data=_payload_designacao_vaga(data_inicio=amanha.isoformat()),
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data["codes"] == {"data_fim": ["data_futura_sem_periodo"]}
+    assert "data futura" in response.data["data_fim"][0]
+    assert not AtoAdministrativo.objects.exists()
+
+
+@pytest.mark.django_db
+def test_create_designacao_futura_com_data_fim_e_criada(auth_client):
+    """Início futuro com "Até" é criado normalmente."""
+    hoje = timezone.localdate()
+
+    url = reverse("designacao:designacoes")
+    response = auth_client.post(
+        url,
+        data=_payload_designacao_vaga(
+            data_inicio=(hoje + datetime.timedelta(days=1)).isoformat(),
+            data_fim=(hoje + datetime.timedelta(days=10)).isoformat(),
+        ),
+        format="json",
+    )
+
+    assert response.status_code == 201
+
+
+@pytest.mark.django_db
+def test_partial_update_remove_data_fim_de_designacao_futura_retorna_400(
+    auth_client,
+):
+    """Apagar o "Até" de uma designação futura é bloqueado na edição."""
+    hoje = timezone.localdate()
+    ato = criar_ato_designacao(
+        data_inicio=hoje + datetime.timedelta(days=5),
+        data_fim=hoje + datetime.timedelta(days=15),
+    )
+
+    url = reverse("designacao:designacao-detail", args=[ato.id])
+    response = auth_client.patch(url, data={"data_fim": None}, format="json")
+
+    assert response.status_code == 400
+    assert response.data["codes"] == {"data_fim": ["data_futura_sem_periodo"]}

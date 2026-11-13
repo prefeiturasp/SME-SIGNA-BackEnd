@@ -3,6 +3,7 @@
 import datetime
 
 import pytest
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.__tests__.factories import (
@@ -12,6 +13,7 @@ from apps.designacao.__tests__.factories import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.designacao_service import (
+    CODIGO_DATA_FUTURA_SEM_PERIODO,
     CODIGO_PERIODO_SOBREPOSTO,
     DesignacaoService,
 )
@@ -848,6 +850,94 @@ class TestDesignacaoServiceSobreposicao:
         """Edição que não mexe na substituição nem no período não valida."""
         designacao = _criar_existente()
         _criar_existente()
+
+        DesignacaoService.atualizar(designacao, {"pendencias": "Nova"})
+
+        designacao.designacao_detalhe.refresh_from_db()
+        assert designacao.designacao_detalhe.pendencias == "Nova"
+
+
+def _hoje_mais(dias: int) -> datetime.date:
+    """Retorna a data local de hoje deslocada em ``dias``."""
+    return timezone.localdate() + datetime.timedelta(days=dias)
+
+
+@pytest.mark.django_db
+class TestDesignacaoServiceDataFutura:
+    """Bloqueio de designação com início futuro e sem data final."""
+
+    def test_permite_futura_com_data_final(self):
+        """Início futuro com "Até" preenchido é permitido."""
+        ato = DesignacaoService.criar(
+            _dados_designacao(
+                data_inicio=_hoje_mais(10), data_fim=_hoje_mais(20)
+            )
+        )
+
+        assert ato.pk is not None
+
+    def test_bloqueia_futura_sem_data_final(self):
+        """Início futuro sem "Até" é bloqueado e nada é salvo."""
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.criar(
+                _dados_designacao(data_inicio=_hoje_mais(1), data_fim=None)
+            )
+
+        assert "data futura" in str(exc.value.detail["data_fim"][0])
+        assert exc.value.get_codes() == {
+            "data_fim": [CODIGO_DATA_FUTURA_SEM_PERIODO]
+        }
+        assert not AtoAdministrativo.objects.exists()
+
+    @pytest.mark.parametrize("dias", [0, -1, -30])
+    def test_permite_hoje_ou_passada_sem_data_final(self, dias):
+        """Início hoje ou no passado continua podendo ficar sem "Até"."""
+        ato = DesignacaoService.criar(
+            _dados_designacao(data_inicio=_hoje_mais(dias), data_fim=None)
+        )
+
+        assert ato.designacao_detalhe.data_fim is None
+
+    def test_edicao_bloqueia_ao_remover_data_final_de_ato_futuro(self):
+        """Apagar o "Até" de uma designação futura é bloqueado."""
+        designacao = _criar_existente(
+            data_inicio=_hoje_mais(5), data_fim=_hoje_mais(15)
+        )
+
+        with pytest.raises(ValidationError) as exc:
+            DesignacaoService.atualizar(designacao, {"data_fim": None})
+
+        assert exc.value.get_codes() == {
+            "data_fim": [CODIGO_DATA_FUTURA_SEM_PERIODO]
+        }
+        designacao.designacao_detalhe.refresh_from_db()
+        assert designacao.designacao_detalhe.data_fim == _hoje_mais(15)
+
+    def test_edicao_bloqueia_ao_mover_inicio_para_o_futuro_sem_data_final(
+        self,
+    ):
+        """Levar o início para o futuro sem "Até" usa o valor salvo."""
+        designacao = _criar_existente(
+            data_inicio=_hoje_mais(-5), data_fim=None
+        )
+
+        with pytest.raises(ValidationError):
+            DesignacaoService.atualizar(
+                designacao, {"data_inicio": _hoje_mais(3)}
+            )
+
+    def test_edicao_permite_informar_data_final_em_ato_futuro(self):
+        """Preencher o "Até" de uma designação futura é permitido."""
+        designacao = _criar_existente(data_inicio=_hoje_mais(5), data_fim=None)
+
+        DesignacaoService.atualizar(designacao, {"data_fim": _hoje_mais(10)})
+
+        designacao.designacao_detalhe.refresh_from_db()
+        assert designacao.designacao_detalhe.data_fim == _hoje_mais(10)
+
+    def test_edicao_sem_campos_de_periodo_nao_valida(self):
+        """Edição que não mexe nas datas não revalida o período."""
+        designacao = _criar_existente(data_inicio=_hoje_mais(5), data_fim=None)
 
         DesignacaoService.atualizar(designacao, {"pendencias": "Nova"})
 
