@@ -17,9 +17,11 @@ def test_filtra_por_grupamento():
         codigo_cargo="9379", grupamento=CargoBase.Grupamento.DOCENTES
     )
 
+    # Restringe aos cargos do teste: o seed da migration 0011 já cadastra
+    # cargos de todos os grupamentos.
     resultado = CargoBaseFilter(
         {"grupamento": CargoBase.Grupamento.DOCENTES},
-        queryset=CargoBase.objects.all(),
+        queryset=CargoBase.objects.filter(codigo_cargo__in=["9360", "9379"]),
     ).qs
 
     assert resultado.count() == 1
@@ -135,3 +137,28 @@ def test_sem_filtros_retorna_todos():
     resultado = CargoBaseFilter({}, queryset=CargoBase.objects.all()).qs
 
     assert resultado.count() == CargoBase.objects.count()
+
+
+@pytest.mark.django_db
+def test_filtra_por_codigo_cargo_exato():
+    """Verifica que o filtro por código do cargo exige o código exato."""
+    criar_cargo_base(codigo_cargo="9360")
+    criar_cargo_base(codigo_cargo="93600")
+
+    resultado = CargoBaseFilter(
+        {"codigo_cargo": "9360"}, queryset=CargoBase.objects.all()
+    ).qs
+
+    assert list(resultado.values_list("codigo_cargo", flat=True)) == ["9360"]
+
+
+@pytest.mark.django_db
+def test_filtra_por_codigo_cargo_inexistente_retorna_vazio():
+    """Verifica que um código sem cadastro não retorna cargos."""
+    criar_cargo_base(codigo_cargo="9360")
+
+    resultado = CargoBaseFilter(
+        {"codigo_cargo": "9875"}, queryset=CargoBase.objects.all()
+    ).qs
+
+    assert not resultado.exists()

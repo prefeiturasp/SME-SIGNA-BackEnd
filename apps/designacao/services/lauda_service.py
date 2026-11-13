@@ -1,43 +1,56 @@
 """Serviço de geração da lauda de publicação no Diário Oficial.
 
-Monta um único arquivo (PDF ou Word) com o texto SEI de todos os atos
-selecionados na tela de publicação. O texto vem de
-``AtoAdministrativo.texto_sei`` — já congelado na emissão do ato — e por
-isso não é regerado a partir do modelo de portaria.
+Monta um único arquivo (PDF ou Word) com o texto de publicação de todos
+os atos selecionados na tela de publicação. Diferente do texto SEI, o
+texto da lauda é montado aqui a partir dos dados gravados no banco, com
+um formato próprio por tipo de ato (designando, apostilando, fazendo
+cessar, tornando insubsistente, tornar sem efeito).
 
 Atos já publicados também podem compor a lauda — a trava por
 ``status_publicacao`` ficou comentada em ``buscar_atos`` até a regra ser
 confirmada.
 """
 
-import re
+import datetime
 from collections.abc import Callable
-from dataclasses import dataclass, replace
-from html.parser import HTMLParser
+from dataclasses import dataclass
 
 from django.db import models
-from django.db.models import F
 from django.utils import timezone
 
+from apps.designacao.constants.cargos_gestao_escolar import (
+    CODIGOS_CARGO_PROFESSOR,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
+from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.lauda_renderers import (
     CONTENT_TYPE_DOCX,
     CONTENT_TYPE_PDF,
     DocumentoLauda,
     Linha,
-    Paragrafo,
     SecaoLauda,
     Trecho,
     renderizar_docx,
     renderizar_pdf,
 )
+from apps.gestao.models.cargo_base import CargoBase
 
-# Texto puro: quebra de parágrafo (linha em branco) ou de linha.
-_QUEBRAS_TEXTO_PURO = re.compile(r"(\n[ \t]*\n\s*|\n)")
-# Espaços horizontais (inclui NBSP vindo de &nbsp;) a colapsar numa linha.
-_ESPACOS = re.compile(r"[ \t\xa0\f\v]+")
-# Qualquer tag HTML: decide se o texto é HTML do editor ou texto puro.
-_TEM_TAG = re.compile(r"<[a-zA-Z/][^>]*>")
+# TO-DO: aguardando a área definir de onde vem a situação funcional
+# (efetivo, comissionado...) do indicado e do titular.
+SITUACAO_FUNCIONAL = "efetivo"
+
+_DATA_VAZIA = "__/__/____"
+_PREFIXOS_DRE = (
+    "DIRETORIA REGIONAL DE EDUCAÇÃO",
+    "DIRETORIA REGIONAL DE EDUCACAO",
+    "DRE",
+)
+# Unidades cujo tipo é feminino ("na EMEF", "na DRE"); as demais levam
+# "no" ("no CEI", "no CEU EMEI").
+_UNIDADES_FEMININAS = frozenset(
+    {"EMEF", "EMEFM", "EMEI", "EMEBS", "ESCOLA", "DRE", "DIRETORIA"}
+)
+_ORDEM_TIPOS: list[str] = list(AtoAdministrativo.Tipo)
 
 
 class FormatoLauda(models.TextChoices):
@@ -73,13 +86,6 @@ class LaudaService:
     """Gera a lauda a partir dos atos selecionados."""
 
     TITULO = "PORTARIAS EXPEDIDAS PELO SECRETÁRIO"
-    # TO-DO: remover quando os textos finais da lauda estiverem definidos.
-    AVISO_DESENVOLVIMENTO = (
-        "Versão inicial de desenvolvimento, ainda não traz os textos "
-        "finais de lauda"
-    )
-    # TO-DO: definir de onde vem o número SEI da lauda (não é o do ato).
-    SEI_LAUDA = "xxxxxxxxxxxxxxx"
 
     @staticmethod
     def gerar(ids: list[int], formato: str) -> ArquivoLauda:
@@ -93,8 +99,7 @@ class LaudaService:
             ArquivoLauda: Bytes, nome e content-type do arquivo.
 
         Raises:
-            ValidationError: Quando algum id não existe ou não possui
-                texto SEI.
+            ValidationError: Quando algum id não existe.
             KeyError: Formato não suportado (o serializer já barra
                 antes de chegar aqui).
 
@@ -134,20 +139,23 @@ class LaudaService:
             ids: IDs dos atos administrativos selecionados.
 
         Returns:
-            list[AtoAdministrativo]: Atos ordenados por número de
-            portaria (apostilas, sem número, ficam por último).
+            list[AtoAdministrativo]: Atos em ordem alfabética de DRE e,
+            dentro da DRE, por tipo de ato e número de portaria.
 
         Raises:
-            ValidationError: Quando algum id não existe ou não possui
-                texto SEI.
+            ValidationError: Quando algum id não existe.
 
         """
         # Import local para evitar dependência do DRF no módulo inteiro.
         from rest_framework.exceptions import ValidationError
 
         atos = list(
-            AtoAdministrativo.objects.filter(pk__in=ids).order_by(
-                F("numero_portaria").asc(nulls_last=True), "pk"
+            AtoAdministrativo.objects.filter(pk__in=ids).select_related(
+                "designacao_detalhe__impedimento_substituicao",
+                "cessacao_detalhe",
+                "apostila_detalhe",
+                "ato_pai__ato_pai",
+                "ato_raiz__designacao_detalhe__impedimento_substituicao",
             )
         )
 
@@ -159,31 +167,10 @@ class LaudaService:
             )
 
         # TO-DO: confirmar com a área se ato já publicado pode voltar para
-        # a lauda (reimpressão/republicação). Por ora não há trava; se a
-        # regra for de bloqueio, basta reativar o trecho abaixo.
-        # publicados = [
-        #     ato
-        #     for ato in atos
-        #     if ato.status_publicacao
-        #     == AtoAdministrativo.StatusPublicacao.PUBLICADO
-        # ]
-        # if publicados:
-        #     raise ValidationError(
-        #         {
-        #             "detail": (
-        #                 "Já publicados, não podem compor a lauda: "
-        #                 f"{_listar_atos(publicados)}."
-        #             )
-        #         }
-        #     )
+        # a lauda (reimpressão/republicação). Por ora não há trava.
 
-        sem_texto = [ato for ato in atos if not ato.texto_sei.strip()]
-        if sem_texto:
-            raise ValidationError(
-                {"detail": f"Sem texto SEI: {_listar_atos(sem_texto)}."}
-            )
-
-        return atos
+        # TO-DO: a ordem vai passar a ser escolhida pelo usuário na tela.
+        return sorted(atos, key=_chave_ordenacao)
 
     @staticmethod
     def montar_documento(atos: list[AtoAdministrativo]) -> DocumentoLauda:
@@ -193,271 +180,497 @@ class LaudaService:
             atos: Atos já validados e ordenados.
 
         Returns:
-            DocumentoLauda: Aviso, título, SEI, subtítulo e uma seção
-            por ato.
+            DocumentoLauda: Uma seção por ato, na ordem recebida.
 
         """
-        agora = timezone.localtime()
+        codigos = {
+            str(codigo)
+            for ato in atos
+            for codigo in (
+                _codigo_cargo_vaga(_detalhe_designacao(ato)),
+                _codigo_cargo_titular(_detalhe_designacao(ato)),
+                _codigo_cargo_indicado(_detalhe_designacao(ato)),
+            )
+            if codigo
+        }
+        cargos = {
+            cargo.codigo_cargo: cargo
+            for cargo in CargoBase.objects.filter(codigo_cargo__in=codigos)
+        }
         return DocumentoLauda(
-            aviso=LaudaService.AVISO_DESENVOLVIMENTO,
             titulo=LaudaService.TITULO,
-            sei=LaudaService.SEI_LAUDA,
-            subtitulo=(
-                f"Gerada em {agora:%d/%m/%Y às %H:%M} — {len(atos)} ato(s)"
-            ),
-            secoes=[
-                SecaoLauda(
-                    titulo=LaudaService.titulo_ato(ato),
-                    sei=ato.sei_numero,
-                    blocos=LaudaService.blocos(ato.texto_sei),
-                )
-                for ato in atos
-            ],
+            secoes=[LaudaService.secao(ato, cargos) for ato in atos],
         )
 
-    # TO-DO: Quando terminar desenvolvimento verificar se deve remover
     @staticmethod
-    def titulo_ato(ato: AtoAdministrativo) -> str:
-        """Cabeçalho de um ato dentro da lauda.
+    def secao(
+        ato: AtoAdministrativo, cargos: dict[str, CargoBase]
+    ) -> SecaoLauda:
+        """Monta título, DRE e corpo de um ato.
 
         Args:
-            ato: Ato administrativo.
+            ato: Ato administrativo (com relacionamentos carregados).
+            cargos: Cargos base por código, para o nome e o provimento
+                do cargo da designação e para o nome dos cargos do
+                indicado e do titular.
 
         Returns:
-            str: ``PORTARIA Nº 12/2024 – DESIGNAÇÃO`` para atos com
-            número de portaria; só o tipo (``APOSTILA``) para os demais.
-            O número SEI aparece na linha seguinte, para todos.
+            SecaoLauda: Seção pronta para os renderers.
 
         """
-        tipo = ato.get_tipo_display().upper()
-        if ato.numero_portaria is None:
-            return tipo
-        return f"PORTARIA Nº {ato.numero_portaria}/{ato.ano_vigente} – {tipo}"
-
-    @staticmethod
-    def blocos(texto: str) -> list[Paragrafo]:
-        """Quebra o texto SEI em parágrafos, linhas e trechos formatados.
-
-        O texto SEI é o HTML do editor rich text do modelo de portaria.
-        Tags de bloco viram parágrafos, ``<br>`` vira linha, itens de
-        lista ganham marcador; ``<strong>/<b>``, ``<em>/<i>`` e ``<u>``
-        viram negrito, itálico e sublinhado nos trechos, e as demais
-        tags são descartadas. Quebras de linha do fonte HTML são só
-        espaço, como no browser. Texto sem nenhuma tag (legado) segue a
-        regra de texto puro: linhas em branco separam parágrafos e
-        quebras simples separam linhas.
-
-        Args:
-            texto: Texto SEI do ato (HTML ou texto puro).
-
-        Returns:
-            list[Paragrafo]: Parágrafos → linhas → trechos.
-
-        """
-        normalizado = texto.replace("\r\n", "\n").replace("\r", "\n")
-        extrator = _ExtratorTexto(html=bool(_TEM_TAG.search(normalizado)))
-        extrator.feed(normalizado)
-        extrator.close()
-        return extrator.finalizar()
+        texto = _TextoAto(ato, cargos)
+        titulo, corpo = texto.montar()
+        return SecaoLauda(
+            titulo=titulo,
+            dre=_dre(texto.detalhe.dre_nome),
+            corpo=corpo,
+        )
 
 
-class _ExtratorTexto(HTMLParser):
-    """Reduz o HTML do editor a parágrafos de trechos formatados.
+class _TextoAto:
+    """Monta o texto de publicação de um ato a partir do banco.
 
-    Entidades já chegam decodificadas em ``handle_data``
-    (``convert_charrefs=True``, padrão do ``HTMLParser``).
+    Os dados do servidor, da unidade e do cargo vêm sempre da designação
+    raiz — já com as alterações de apostilas aplicadas.
     """
 
-    _BLOCOS = frozenset(
-        {
-            "p",
-            "div",
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "blockquote",
-            "pre",
-            "table",
-            "tr",
-            "section",
-            "article",
-        }
-    )
-    _IGNORADAS = frozenset({"script", "style"})
-    _TAGS_NEGRITO = frozenset({"b", "strong"})
-    _TAGS_ITALICO = frozenset({"i", "em"})
-    _TAGS_SUBLINHADO = frozenset({"u"})
+    def __init__(self, ato: AtoAdministrativo, cargos: dict[str, CargoBase]):
+        self.ato = ato
+        self.designacao = _designacao_ato(ato)
+        self.detalhe: DesignacaoDetalhe = self.designacao.designacao_detalhe
+        self.cargos = cargos
+        cargo = cargos.get(str(_codigo_cargo_vaga(self.detalhe)))
+        # Nome oficial do cargo, a mesma fonte do texto SEI. A descrição
+        # resumida pode ser sigla (ex.: "CP"). Sem cadastro, usa o nome do
+        # EOL do cargo do titular, como o texto SEI.
+        self.cargo = (
+            cargo.descricao_completa if cargo else self._cargo_titular_eol()
+        )
+        self.provimento = cargo.provimento.strip().rstrip(".") if cargo else ""
+        self._trechos: Linha = []
 
-    def __init__(self, html: bool) -> None:
-        super().__init__()
-        # Em HTML, "\n" do fonte é espaço; em texto puro, é quebra de linha.
-        self._html = html
-        self._paragrafos: list[Paragrafo] = []
-        self._paragrafo: Paragrafo = []
-        self._linha: Linha = []
-        # Profundidade de cada formatação (tags podem se aninhar/repetir).
-        self._negrito = 0
-        self._italico = 0
-        self._sublinhado = 0
-        # Pilha de listas abertas: contador para <ol>, None para <ul>.
-        self._listas: list[int | None] = []
-        self._ignorando = 0
-
-    # ── saída ──
-
-    def finalizar(self) -> list[Paragrafo]:
-        self._fechar_paragrafo()
-        return self._paragrafos
-
-    # ── eventos do parser ──
-
-    def handle_starttag(
-        self, tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
-        if tag in self._IGNORADAS:
-            self._ignorando += 1
-        elif tag == "br":
-            self._fechar_linha()
-        elif tag == "ol":
-            self._listas.append(0)
-            self._fechar_paragrafo()
-        elif tag == "ul":
-            self._listas.append(None)
-            self._fechar_paragrafo()
-        elif tag == "li":
-            self._fechar_paragrafo()
-            self._adicionar(self._marcador(), formatado=False)
-        elif tag in self._BLOCOS:
-            self._fechar_paragrafo()
-        elif tag in self._TAGS_NEGRITO:
-            self._negrito += 1
-        elif tag in self._TAGS_ITALICO:
-            self._italico += 1
-        elif tag in self._TAGS_SUBLINHADO:
-            self._sublinhado += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in self._IGNORADAS:
-            self._ignorando = max(0, self._ignorando - 1)
-        elif tag in ("ol", "ul"):
-            if self._listas:
-                self._listas.pop()
-            self._fechar_paragrafo()
-        elif tag == "li" or tag in self._BLOCOS:
-            self._fechar_paragrafo()
-        elif tag in self._TAGS_NEGRITO:
-            self._negrito = max(0, self._negrito - 1)
-        elif tag in self._TAGS_ITALICO:
-            self._italico = max(0, self._italico - 1)
-        elif tag in self._TAGS_SUBLINHADO:
-            self._sublinhado = max(0, self._sublinhado - 1)
-
-    def handle_data(self, data: str) -> None:
-        if self._ignorando:
-            return
-        if self._html:
-            self._adicionar(data.replace("\n", " "))
-            return
-        # Texto puro: as quebras do próprio texto estruturam o conteúdo.
-        for parte in _QUEBRAS_TEXTO_PURO.split(data):
-            if not parte:
-                continue
-            if parte == "\n":
-                self._fechar_linha()
-            elif parte.startswith("\n"):
-                self._fechar_paragrafo()
-            else:
-                self._adicionar(parte)
-
-    # ── montagem ──
-
-    def _adicionar(self, texto: str, formatado: bool = True) -> None:
-        if not texto:
-            return
-        self._linha.append(
-            Trecho(
-                texto=texto,
-                negrito=formatado and self._negrito > 0,
-                italico=formatado and self._italico > 0,
-                sublinhado=formatado and self._sublinhado > 0,
+    def montar(self) -> tuple[str, Linha]:
+        tipo = AtoAdministrativo.Tipo
+        pai = self.ato.ato_pai
+        if self.ato.tipo == tipo.DESIGNACAO:
+            self._designando()
+            titulo = (
+                "SUBSTITUIÇÃO"
+                if self.detalhe.impedimento_substituicao
+                else "DESIGNANDO"
             )
-        )
-
-    def _fechar_linha(self) -> None:
-        linha = _normalizar_linha(self._linha)
-        self._linha = []
-        if linha:
-            self._paragrafo.append(linha)
-
-    def _fechar_paragrafo(self) -> None:
-        self._fechar_linha()
-        if self._paragrafo:
-            self._paragrafos.append(self._paragrafo)
-            self._paragrafo = []
-
-    def _marcador(self) -> str:
-        if not self._listas:
-            return ""
-        contador = self._listas[-1]
-        if contador is None:
-            return "• "
-        self._listas[-1] = contador + 1
-        return f"{contador + 1}. "
-
-
-def _normalizar_linha(linha: Linha) -> Linha:
-    """Colapsa espaços, funde trechos vizinhos iguais e apara as pontas."""
-    resultado: Linha = []
-    for trecho in linha:
-        texto = _ESPACOS.sub(" ", trecho.texto)
-        if resultado and resultado[-1].texto.endswith(" "):
-            texto = texto.lstrip(" ")
-        if not texto:
-            continue
-        anterior = resultado[-1] if resultado else None
-        if anterior is not None and _mesma_formatacao(anterior, trecho):
-            resultado[-1] = replace(anterior, texto=anterior.texto + texto)
+        elif self.ato.tipo == tipo.APOSTILA:
+            self._apostilando()
+            titulo = "APOSTILANDO"
+        elif self.ato.tipo == tipo.CESSACAO:
+            self._fazendo_cessar()
+            titulo = "FAZENDO CESSAR"
+        elif pai is not None and pai.tipo == tipo.APOSTILA:
+            self._tornar_sem_efeito()
+            titulo = "TORNAR SEM EFEITO"
         else:
-            resultado.append(replace(trecho, texto=texto))
+            self._tornando_insubsistente()
+            titulo = "TORNANDO INSUBSISTENTE"
+        return titulo, self._trechos
 
-    if resultado:
-        resultado[0] = replace(resultado[0], texto=resultado[0].texto.lstrip())
-        resultado[-1] = replace(
-            resultado[-1], texto=resultado[-1].texto.rstrip()
+    # ── um método por tipo de ato ──
+
+    def _designando(self) -> None:
+        d = self.detalhe
+        self._cabecalho_portaria()
+        self._servidor()
+        self._texto(
+            f", {SITUACAO_FUNCIONAL}, lotado(a) "
+            f"{_na_unidade(d.indicado_lotacao)}, para exercer o cargo de "
+            f"{self.cargo}, {self._local_designacao()}, "
+            f"EH: {d.codigo_hierarquico}, "
         )
-    return [trecho for trecho in resultado if trecho.texto]
+        if self._tem_titular():
+            self._texto(
+                f"em substituição a {self._titular()}, Registro nº "
+                f"{_rf(d.titular_rf)}, Vínculo {d.titular_vinculo}, "
+                f"{self._cargo_titular()}, {SITUACAO_FUNCIONAL}, "
+            )
+            if d.impedimento_substituicao:
+                self._texto(f"{_motivo(d)}, ")
+        else:
+            self._texto(
+                f"{d.get_tipo_vaga_display().lower()}, "
+                "previsto na Lei 14.660/2007, "
+            )
+        provimento = f", {self.provimento}" if self.provimento else ""
+        self._texto(f"{self._periodo()}{provimento}.")
+
+    def _apostilando(self) -> None:
+        d = self.detalhe
+        apostilado = self.ato.ato_pai
+        assert apostilado is not None
+        self._texto(f"a portaria nº {_numero(apostilado)}", negrito=True)
+        self._texto(
+            f", de S.M.E., D.O.C. de {_data(apostilado.doc)}, SEI nº "
+            f"{apostilado.sei_numero}, em nome de "
+        )
+        self._texto(self._indicado(), negrito=True)
+        self._texto(
+            f", registro nº {_rf(d.indicado_rf)}, vínculo "
+            f"{d.indicado_vinculo}, a fim de declarar "
+            f"{_declaracao(self.ato.apostila_detalhe.observacao)} - "
+            f"(SEI nº {self.ato.sei_numero})."
+        )
+
+    def _tornar_sem_efeito(self) -> None:
+        d = self.detalhe
+        apostila = self.ato.ato_pai
+        assert apostila is not None and apostila.ato_pai is not None
+        apostilado = apostila.ato_pai
+        self._cabecalho_portaria()
+        self._texto(
+            f"a Apostila feita na Portaria nº {_numero(apostilado)}, de "
+            f"S.M.E., D.O.C. de {_data(apostilado.doc)}, em nome de "
+        )
+        self._texto(self._indicado(), negrito=True)
+        self._texto(
+            f", registro nº {_rf(d.indicado_rf)}, vínculo "
+            f"{d.indicado_vinculo}, publicada no D.O.C. de "
+            f"{_data(apostila.doc)}."
+        )
+
+    def _fazendo_cessar(self) -> None:
+        d = self.detalhe
+        cessacao = self.ato.cessacao_detalhe
+        self._cabecalho_portaria()
+        self._servidor()
+        motivos = [
+            texto
+            for marcado, texto in (
+                (cessacao.a_pedido, "a pedido"),
+                (cessacao.remocao, "por remoção"),
+                (cessacao.aposentadoria, "por aposentadoria"),
+            )
+            if marcado
+        ]
+        self._texto(", " + "".join(f"{m}, " for m in motivos))
+        self._texto(
+            f"os efeitos da Portaria nº {self.designacao.numero_portaria}, "
+            f"{self._referencia(self.designacao)}, pela qual o(a) "
+            "servidor(a) foi designado(a) "
+        )
+        if self._tem_titular():
+            self._texto(
+                f"para substituir o(a) Sr.(a) {self._titular()}, "
+                f"{self._dados_titular()}, "
+                f"{_na_unidade(d.unidade_proponente)}"
+            )
+        else:
+            self._texto(
+                f"para exercer o cargo de {self.cargo}, "
+                f"{_na_unidade(d.unidade_proponente)}"
+            )
+        self._texto(f", a partir de {_data(cessacao.data_cessacao)}.")
+
+    def _tornando_insubsistente(self) -> None:
+        d = self.detalhe
+        pai = self.ato.ato_pai
+        assert pai is not None
+        self._cabecalho_portaria()
+        self._servidor()
+        self._texto(
+            f", os efeitos da Port. {pai.numero_portaria}, "
+            f"{self._referencia(pai)}"
+        )
+        # TO-DO: texto de insubsistência de insubsistência ainda não
+        # definido pela área; por ora só referencia a portaria anulada.
+        if pai.tipo == AtoAdministrativo.Tipo.INSUBSISTENCIA:
+            self._texto(".")
+            return
+
+        if pai.tipo == AtoAdministrativo.Tipo.CESSACAO:
+            self._texto(
+                ", que cessou os efeitos da Port. nº "
+                f"{self.designacao.numero_portaria}, "
+                f"{self._referencia(self.designacao)}"
+            )
+        self._texto(", pela qual o(a) servidor(a) foi designado(a) ")
+        if self._tem_titular():
+            motivo = (
+                _motivo(d)
+                if d.impedimento_substituicao
+                else "durante seu impedimento legal"
+            )
+            self._texto(
+                f"em substituição a {self._titular()}, "
+                f"{self._dados_titular()}, "
+                f"{_na_unidade(d.unidade_proponente)}, {motivo}, "
+            )
+        else:
+            self._texto(
+                f"para exercer o cargo de {self.cargo}, "
+                f"{_na_unidade(d.unidade_proponente)}, "
+            )
+        self._texto(f"{self._periodo()}.")
+
+    # ── trechos reaproveitados ──
+
+    def _texto(self, texto: str, negrito: bool = False) -> None:
+        self._trechos.append(Trecho(texto, negrito=negrito))
+
+    def _cabecalho_portaria(self) -> None:
+        """``Port. 88000/2026 - SEI nº 6016... -`` em negrito."""
+        self._texto(
+            f"Port. {_numero(self.ato)} - SEI nº {self.ato.sei_numero} -",
+            negrito=True,
+        )
+        self._texto(" ")
+
+    def _servidor(self) -> None:
+        """``RF, Vínculo N - NOME, Cargo``."""
+        d = self.detalhe
+        self._texto(f"{_rf(d.indicado_rf)}, Vínculo {d.indicado_vinculo} - ")
+        self._texto(self._indicado(), negrito=True)
+        self._texto(f", {self._cargo_indicado()}")
+
+    def _cargo_indicado(self) -> str:
+        """Cargo do indicado, igual ao ``[[CARGO_INDICADO]]`` do texto SEI.
+
+        Regra da PO: com cargo sobreposto, exibe o sobreposto, sem
+        categoria. Sem ele, exibe o cargo base e, quando é de professor,
+        a categoria logo depois (``- Categoria N``). Função/atividade não
+        conta como cargo sobreposto.
+
+        O nome é a descrição completa do cadastro de cargos, pelo código;
+        sem cadastro, usa o nome do EOL gravado na designação.
+        """
+        d = self.detalhe
+        cadastro = self.cargos.get(str(_codigo_cargo_indicado(d)))
+        sobreposto = (d.indicado_cargo_sobreposto or "").strip()
+        if _indicado_tem_sobreposto(d):
+            return cadastro.descricao_completa if cadastro else sobreposto
+
+        cargo = (
+            cadastro.descricao_completa if cadastro else d.indicado_cargo_base
+        )
+        if (
+            d.indicado_categoria
+            and d.indicado_codigo_cargo_base in CODIGOS_CARGO_PROFESSOR
+        ):
+            return f"{cargo} - Categoria {d.indicado_categoria}"
+        return cargo
+
+    @staticmethod
+    def _referencia(ato: AtoAdministrativo) -> str:
+        return (
+            f"de S.M.E., D.O.C. de {_data(ato.doc)}, SEI nº {ato.sei_numero}"
+        )
+
+    def _indicado(self) -> str:
+        d = self.detalhe
+        return d.indicado_nome_civil or d.indicado_nome_servidor
+
+    def _titular(self) -> str:
+        d = self.detalhe
+        return d.titular_nome_civil or d.titular_nome_servidor
+
+    def _tem_titular(self) -> bool:
+        return bool(self._titular())
+
+    def _cargo_titular(self) -> str:
+        """Descrição completa do cargo do titular no cadastro de cargos.
+
+        Sem cadastro para o código, usa o nome do EOL gravado na designação.
+        """
+        cargo = self.cargos.get(str(_codigo_cargo_titular(self.detalhe)))
+        return cargo.descricao_completa if cargo else self._cargo_titular_eol()
+
+    def _cargo_titular_eol(self) -> str:
+        d = self.detalhe
+        return d.titular_cargo_sobreposto or d.titular_cargo_base
+
+    def _dados_titular(self) -> str:
+        d = self.detalhe
+        return (
+            f"{self._cargo_titular()}, registro nº {_rf(d.titular_rf)}, "
+            f"vínculo {d.titular_vinculo}"
+        )
+
+    def _local_designacao(self) -> str:
+        """``na referida Unidade`` quando o cargo base do indicado é nela.
+
+        A frase imprime ``lotado(a) no {indicado_lotacao}``, que é a UE do
+        cargo base, então a comparação usa a mesma UE, e não a do cargo
+        sobreposto. Caso contrário, imprime o nome da unidade.
+
+        Sem nenhum código de UE do indicado gravado, compara o nome da
+        lotação com o da unidade, ignorando espaços e maiúsculas.
+        """
+        d = self.detalhe
+        lotacao = self._codigo_ue_cargo_base()
+        if lotacao:
+            mesma_unidade = lotacao == _codigo_ue(d.ue)
+        elif self._sem_codigo_ue_do_indicado():
+            mesma_unidade = bool(_nome_unidade(d.indicado_lotacao)) and (
+                _nome_unidade(d.indicado_lotacao).casefold()
+                == _nome_unidade(d.unidade_proponente).casefold()
+            )
+        else:
+            mesma_unidade = False
+        if mesma_unidade:
+            return "na referida Unidade"
+        return _na_unidade(d.unidade_proponente)
+
+    def _sem_codigo_ue_do_indicado(self) -> bool:
+        d = self.detalhe
+        return not (
+            d.indicado_codigo_ue_cargo_base.strip()
+            or d.indicado_codigo_ue_lotacao.strip()
+        )
+
+    def _codigo_ue_cargo_base(self) -> str:
+        """Código da UE do cargo base do indicado, sem zeros à esquerda.
+
+        Designações anteriores a ``indicado_codigo_ue_cargo_base`` só têm
+        ``indicado_codigo_ue_lotacao``, que é a UE do cargo base apenas
+        quando não há cargo sobreposto. Com sobreposto, não há como saber
+        a UE do cargo base e o retorno é vazio.
+        """
+        d = self.detalhe
+        if d.indicado_codigo_ue_cargo_base:
+            return _codigo_ue(d.indicado_codigo_ue_cargo_base)
+        if d.indicado_possui_cargo_sobreposto:
+            return ""
+        return _codigo_ue(d.indicado_codigo_ue_lotacao)
+
+    def _periodo(self) -> str:
+        d = self.detalhe
+        if d.data_fim:
+            return (
+                f"no período de {_data(d.data_inicio)} a {_data(d.data_fim)}"
+            )
+        return f"a partir de {_data(d.data_inicio)}"
 
 
-def _mesma_formatacao(a: Trecho, b: Trecho) -> bool:
-    return (a.negrito, a.italico, a.sublinhado) == (
-        b.negrito,
-        b.italico,
-        b.sublinhado,
+def _designacao_ato(ato: AtoAdministrativo) -> AtoAdministrativo:
+    """Designação de origem do ato (ele mesmo, se for uma designação)."""
+    if ato.tipo == AtoAdministrativo.Tipo.DESIGNACAO:
+        return ato
+    assert ato.ato_raiz is not None
+    return ato.ato_raiz
+
+
+def _detalhe_designacao(ato: AtoAdministrativo) -> DesignacaoDetalhe:
+    return _designacao_ato(ato).designacao_detalhe
+
+
+def _chave_ordenacao(ato: AtoAdministrativo) -> tuple:
+    """DRE (alfabética) → tipo de ato → nº de portaria → id."""
+    return (
+        _dre(_detalhe_designacao(ato).dre_nome).casefold(),
+        _ORDEM_TIPOS.index(ato.tipo),
+        ato.numero_portaria is None,
+        ato.numero_portaria or 0,
+        ato.pk,
     )
+
+
+def _dre(dre_nome: str) -> str:
+    """``DRE BUTANTA`` → ``Diretoria Regional de Educação BUTANTA``."""
+    nome = dre_nome.strip()
+    for prefixo in _PREFIXOS_DRE:
+        if nome.upper().startswith(prefixo):
+            nome = nome[len(prefixo) :].strip(" -")
+            break
+    return f"Diretoria Regional de Educação {nome}"
+
+
+def _codigo_ue(codigo: str) -> str:
+    """Ignora zeros à esquerda: o EOL devolve ``90450`` ou ``090450``."""
+    return codigo.strip().lstrip("0")
+
+
+def _nome_unidade(unidade: str) -> str:
+    """Nome da unidade sem espaços repetidos (``CEI DIRET    - X``)."""
+    return " ".join(unidade.split())
+
+
+def _na_unidade(unidade: str) -> str:
+    """Prefixa a unidade com ``na``/``no`` conforme o tipo da unidade."""
+    unidade = _nome_unidade(unidade)
+    tipo = unidade.split(maxsplit=1)[0].upper() if unidade else ""
+    preposicao = "na" if tipo in _UNIDADES_FEMININAS else "no"
+    return f"{preposicao} {unidade}"
+
+
+def _codigo_cargo_titular(detalhe: DesignacaoDetalhe) -> int | None:
+    """Código do cargo do titular: o sobreposto, se houver; senão o base.
+
+    Segue a mesma escolha do nome do cargo do titular, que usa o
+    sobreposto quando ele está preenchido.
+    """
+    if (
+        detalhe.titular_cargo_sobreposto.strip()
+        and detalhe.titular_codigo_cargo_sobreposto
+    ):
+        return detalhe.titular_codigo_cargo_sobreposto
+    return detalhe.titular_codigo_cargo_base or None
+
+
+def _indicado_tem_sobreposto(detalhe: DesignacaoDetalhe) -> bool:
+    """Cargo sobreposto de fato (função/atividade não conta)."""
+    return detalhe.indicado_possui_cargo_sobreposto and bool(
+        (detalhe.indicado_cargo_sobreposto or "").strip()
+    )
+
+
+def _codigo_cargo_indicado(detalhe: DesignacaoDetalhe) -> int | None:
+    """Código do cargo exibido do indicado: o sobreposto ou o base."""
+    if _indicado_tem_sobreposto(detalhe):
+        return detalhe.indicado_codigo_cargo_sobreposto or None
+    return detalhe.indicado_codigo_cargo_base or None
+
+
+def _codigo_cargo_vaga(detalhe: DesignacaoDetalhe) -> int | None:
+    """Código do cargo a ser ocupado.
+
+    É ``cargo_vaga``. Designações de cargo disponível sem esse código
+    ocupam o cargo do titular.
+    """
+    if detalhe.cargo_vaga is not None:
+        return detalhe.cargo_vaga
+    return _codigo_cargo_titular(detalhe)
+
+
+def _motivo(detalhe: DesignacaoDetalhe) -> str:
+    """``Por férias`` → ``por férias``."""
+    assert detalhe.impedimento_substituicao is not None
+    descricao = detalhe.impedimento_substituicao.descricao
+    return descricao[:1].lower() + descricao[1:]
+
+
+def _declaracao(observacao: str) -> str:
+    """Texto digitado na apostila, sem repetir ``a fim de declarar``."""
+    texto = observacao.strip().rstrip(".").strip()
+    prefixo = "a fim de declarar"
+    if texto.lower().startswith(prefixo):
+        texto = texto[len(prefixo) :].strip()
+    return texto
+
+
+def _numero(ato: AtoAdministrativo) -> str:
+    """``88000/2026`` (ou só o número, quando não há ano)."""
+    if ato.ano_vigente:
+        return f"{ato.numero_portaria}/{ato.ano_vigente}"
+    return str(ato.numero_portaria)
+
+
+def _rf(rf: str) -> str:
+    """``7255667`` → ``725.566.7``; outros formatos ficam como vieram."""
+    if len(rf) == 7 and rf.isdecimal():
+        return f"{rf[:3]}.{rf[3:6]}.{rf[6]}"
+    return rf
+
+
+def _data(data: datetime.date | None) -> str:
+    return f"{data:%d/%m/%Y}" if data else _DATA_VAZIA
 
 
 def _listar(ids: list[int]) -> str:
     return ", ".join(str(i) for i in ids)
-
-
-def _rotulo(ato: AtoAdministrativo) -> str:
-    """Identificação legível do ato para mensagens de erro.
-
-    Args:
-        ato: Ato administrativo.
-
-    Returns:
-        str: ``Portaria nº 12/2026`` quando há número; caso contrário
-        (apostila) ``Apostila SEI 6018...``.
-
-    """
-    if ato.numero_portaria is None:
-        return f"{ato.get_tipo_display()} SEI {ato.sei_numero}"
-    return f"Portaria nº {ato.numero_portaria}/{ato.ano_vigente}"
-
-
-def _listar_atos(atos: list[AtoAdministrativo]) -> str:
-    return ", ".join(_rotulo(ato) for ato in atos)

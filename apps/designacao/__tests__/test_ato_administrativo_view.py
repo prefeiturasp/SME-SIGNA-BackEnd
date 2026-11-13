@@ -5,10 +5,17 @@ from datetime import date
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.test import APIClient
 
+from apps.designacao.__tests__.factories import (
+    criar_ato_apostila,
+    criar_ato_cessacao,
+    criar_ato_designacao,
+)
 from apps.designacao.api.filters.ato_administrativo_filter import (
     AtoAdministrativoFilter,
 )
@@ -211,6 +218,7 @@ class TestAtoAdministrativoListView:
             "nome",
             "rf",
             "status_publicacao",
+            "apostilado",
             "sei_numero",
             "tipo",
             "cessacao",
@@ -306,3 +314,54 @@ class TestAtoAdministrativoListView:
         assert response.status_code == 200
         portarias = [item["numero_portaria"] for item in response.data]
         assert portarias == [2, 1]
+
+
+# ─── Flag de ato apostilado ───────────────────────────────────────────────────
+
+
+def _apostilado_por_id(response) -> dict:
+    """Mapeia o id de cada ato da listagem para a flag `apostilado`."""
+    return {item["id"]: item["apostilado"] for item in response.data}
+
+
+@pytest.mark.django_db
+class TestAtoAdministrativoListApostilado:
+    """Testes da flag `apostilado` na listagem de atos administrativos."""
+
+    def test_designacao_e_cessacao_apostiladas(self, auth_client):
+        """Verifica a flag em designação e cessação com apostila ativa."""
+        designacao = criar_ato_designacao()
+        criar_ato_apostila(designacao)
+        outra = criar_ato_designacao()
+        cessacao = criar_ato_cessacao(outra)
+        criar_ato_apostila(cessacao)
+
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+        flags = _apostilado_por_id(response)
+
+        assert flags[designacao.pk] is True
+        assert flags[cessacao.pk] is True
+        assert flags[outra.pk] is False
+
+    def test_apostila_anulada_nao_marca_o_ato(self, auth_client):
+        """Verifica que apostila inativa não acende a flag."""
+        designacao = criar_ato_designacao()
+        apostila = criar_ato_apostila(designacao)
+        AtoAdministrativo.objects.filter(pk=apostila.pk).update(ativo=False)
+
+        response = auth_client.get(URL_LIST, {"no_pagination": "true"})
+
+        assert _apostilado_por_id(response)[designacao.pk] is False
+
+    def test_quantidade_de_consultas_nao_cresce_com_os_atos(self, auth_client):
+        """Verifica que os filhos são pré-carregados (sem N+1)."""
+        criar_ato_apostila(criar_ato_designacao())
+        with CaptureQueriesContext(connection) as poucos:
+            auth_client.get(URL_LIST, {"no_pagination": "true"})
+
+        for _ in range(3):
+            criar_ato_apostila(criar_ato_designacao())
+        with CaptureQueriesContext(connection) as muitos:
+            auth_client.get(URL_LIST, {"no_pagination": "true"})
+
+        assert len(muitos) == len(poucos)

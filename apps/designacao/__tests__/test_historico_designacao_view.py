@@ -16,6 +16,7 @@ from apps.designacao.__tests__.factories import (
     criar_ato_insubsistencia,
 )
 from apps.designacao.api.serializers.historico_designacao_serializer import (
+    AtoRelacionadoHistoricoSerializer,
     HistoricoDesignacaoSerializer,
 )
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
@@ -746,3 +747,85 @@ def test_requer_autenticacao():
     response = APIClient().get(_url())
 
     assert response.status_code in (401, 403)
+
+
+@pytest.mark.django_db
+def test_insubsistencia_de_insubsistencia_e_tornar_sem_efeito(auth_client):
+    """Insubsistência de insubsistência usa o rótulo 'Tornar sem efeito'."""
+    designacao = criar_ato_designacao(ue=UE)
+    insubsistencia = criar_ato_insubsistencia(designacao)
+    criar_ato_insubsistencia(insubsistencia)
+
+    response = auth_client.get(_url())
+
+    assert response.data[0]["atos_relacionados"][0]["tipo_de_ato"] == (
+        "Tornar sem efeito"
+    )
+
+
+@pytest.mark.django_db
+def test_ato_sem_designacao_de_origem_devolve_servidor_vazio():
+    """Ato legado sem raiz nem pai não inventa nome, cargo ou RF."""
+    cessacao = criar_ato_cessacao(criar_ato_designacao(ue=UE))
+    AtoAdministrativo.objects.filter(pk=cessacao.pk).update(
+        ato_pai=None, ato_raiz=None
+    )
+    cessacao.refresh_from_db()
+
+    data = AtoRelacionadoHistoricoSerializer(cessacao).data
+
+    assert data["nome"] is None
+    assert data["cargo"] is None
+    assert data["rf"] is None
+
+
+@pytest.mark.django_db
+def test_observacao_de_designacao_usa_informacoes_adicionais():
+    """Designação serializada como ato usa as informações adicionais."""
+    designacao = criar_ato_designacao(
+        ue=UE, informacoes_adicionais="Texto da designação"
+    )
+
+    data = AtoRelacionadoHistoricoSerializer(designacao).data
+
+    assert data["observacoes"] == "Texto da designação"
+
+
+def test_tipo_vaga_display_sem_detalhe_e_nulo():
+    """Designação sem detalhe não tem texto de tipo de vaga."""
+    ato = AtoAdministrativo(tipo=AtoAdministrativo.Tipo.DESIGNACAO)
+
+    assert HistoricoDesignacaoSerializer().get_tipo_vaga_display(ato) is None
+
+
+@pytest.mark.django_db
+def test_historico_informa_apostilado_na_designacao_e_na_cessacao(
+    auth_client,
+):
+    """Card da designação e linha da cessação trazem a flag."""
+    designacao = criar_ato_designacao(ue=UE)
+    criar_ato_apostila(designacao)
+    cessacao = criar_ato_cessacao(designacao)
+    criar_ato_apostila(cessacao)
+
+    card = auth_client.get(_url()).data[0]
+    por_id = {ato["id"]: ato for ato in card["atos_relacionados"]}
+
+    assert card["apostilado"] is True
+    assert por_id[cessacao.pk]["apostilado"] is True
+
+
+@pytest.mark.django_db
+def test_historico_sem_apostila_valida_nao_informa_apostilado(auth_client):
+    """Apostila anulada e ato sem apostila não acendem a flag."""
+    designacao = criar_ato_designacao(ue=UE)
+    apostila = criar_ato_apostila(designacao)
+    criar_ato_insubsistencia(apostila)
+    AtoAdministrativo.objects.filter(pk=apostila.pk).update(ativo=False)
+    cessacao = criar_ato_cessacao(designacao)
+
+    card = auth_client.get(_url()).data[0]
+    por_id = {ato["id"]: ato for ato in card["atos_relacionados"]}
+
+    assert card["apostilado"] is False
+    assert por_id[cessacao.pk]["apostilado"] is False

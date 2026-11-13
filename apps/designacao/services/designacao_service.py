@@ -8,6 +8,7 @@ import datetime
 
 from django.db import transaction
 from django.db.models import Count, F, QuerySet
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from apps.designacao.constants.cargos_gestao_escolar import (
@@ -74,6 +75,11 @@ _CAMPOS_SOBREPOSICAO = frozenset(
 )
 
 CODIGO_PERIODO_SOBREPOSTO = "periodo_sobreposto"
+
+# Designação que começa depois de hoje precisa de data final: sem ela o
+# ato fica agendado com vigência indefinida.
+CODIGO_DATA_FUTURA_SEM_PERIODO = "data_futura_sem_periodo"
+_CAMPOS_PERIODO = frozenset({"data_inicio", "data_fim"})
 
 # Campos que representam o texto congelado da portaria — uma vez que o
 # ato é publicado no Diário Oficial (doc preenchido), esse texto passa a
@@ -143,6 +149,7 @@ class DesignacaoService:
         data_ato = {k: v for k, v in data.items() if k in _CAMPOS_ATO}
         data_detalhe = {k: v for k, v in data.items() if k not in _CAMPOS_ATO}
 
+        cls._validar_data_futura_sem_periodo(data_detalhe)
         cls._validar_substituicao_diretor(data_detalhe)
         cls._validar_sobreposicao(data_detalhe)
 
@@ -183,6 +190,15 @@ class DesignacaoService:
                 }
             )
 
+        if _CAMPOS_PERIODO & data_detalhe.keys():
+            detalhe_atual = ato.designacao_detalhe
+            dados_efetivos = {
+                campo: getattr(detalhe_atual, campo)
+                for campo in _CAMPOS_PERIODO
+            }
+            dados_efetivos.update(data_detalhe)
+            cls._validar_data_futura_sem_periodo(dados_efetivos)
+
         if _CAMPOS_SUBSTITUICAO_DIRETOR & data_detalhe.keys():
             detalhe_atual = ato.designacao_detalhe
             dados_efetivos = {
@@ -214,6 +230,39 @@ class DesignacaoService:
                 detalhe.save(update_fields=list(data_detalhe.keys()))
 
         return ato
+
+    @staticmethod
+    def _validar_data_futura_sem_periodo(dados: dict) -> None:
+        """Bloqueia designação com início futuro e sem data final.
+
+        Início hoje ou no passado continua podendo ficar sem data final.
+        "Hoje" é a data local (``TIME_ZONE``), não a UTC.
+
+        Args:
+            dados: Campos do detalhe de designação (valores efetivos).
+
+        Raises:
+            ValidationError: Se ``data_inicio`` for posterior a hoje e
+            ``data_fim`` não estiver preenchida.
+
+        """
+        data_inicio = dados.get("data_inicio")
+        if (
+            data_inicio is None
+            or dados.get("data_fim") is not None
+            or data_inicio <= timezone.localdate()
+        ):
+            return
+
+        raise ValidationError(
+            {
+                "data_fim": [
+                    "Não é possível criar uma designação com data futura "
+                    'sem informar a data "Até".'
+                ]
+            },
+            code=CODIGO_DATA_FUTURA_SEM_PERIODO,
+        )
 
     @staticmethod
     def _validar_substituicao_diretor(dados: dict) -> None:

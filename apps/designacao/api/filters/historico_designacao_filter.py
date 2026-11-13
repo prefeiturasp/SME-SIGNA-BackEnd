@@ -5,14 +5,19 @@ resposta). Os atos derivados continuam sendo devolvidos por inteiro em
 ``atos_relacionados``, pois o histórico de uma designação só faz sentido
 completo.
 
-Reaproveita a nomenclatura já usada no sistema: ``status_publicacao`` e
-``observacao`` vêm de ``AtoAdministrativoFilter``; ``periodo`` (com os
-params ``periodo_after``/``periodo_before``) vem de ``DesignacaoFilter``.
+Reaproveita a nomenclatura já usada no sistema: ``tipo`` (opções e
+decomposição em ``tipos_de_ato``), ``status_publicacao`` e ``observacao``
+seguem ``AtoAdministrativoFilter``; ``periodo`` (com os params
+``periodo_after``/``periodo_before``) vem de ``DesignacaoFilter``.
 """
 
 import django_filters
 from django.db import models
 
+from apps.designacao.api.filters.tipos_de_ato import (
+    TIPO_CHOICES,
+    dividir_tipo_composto,
+)
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 
 
@@ -23,6 +28,12 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     Aplicado ao queryset de designações da UE, define quais designações
     entram na resposta.
     """
+
+    tipo = django_filters.ChoiceFilter(
+        choices=TIPO_CHOICES,
+        label="Tipo de ato",
+        method="filter_tipo",
+    )
 
     cargo = django_filters.NumberFilter(
         field_name="designacao_detalhe__cargo_vaga",
@@ -45,6 +56,44 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
         method="filter_observacao",
         label="Observação de ato relacionado",
     )
+
+    def filter_tipo(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Mantém as designações que possuem o tipo de ato informado.
+
+        O histórico lista designações. Como toda designação é do tipo
+        ``DESIGNACAO``, ``DESIGNACAO`` e ``DESIGNACAO_CESSACAO`` (a união
+        de designação e cessação) devolvem o histórico inteiro: o valor
+        não restringe quais designações entram. Os demais valores casam
+        com um ato derivado: ``CESSACAO``, ``APOSTILA`` e
+        ``INSUBSISTENCIA`` pelo tipo, e os valores com pai
+        (``APOSTILA_DESIGNACAO``, ``INSUBSISTENCIA_APOSTILA`` etc.) pelo
+        tipo do ato e do pai.
+
+        Args:
+            queryset: Queryset de designações (``AtoAdministrativo``).
+            name: Nome do campo de filtro.
+            value: Tipo de ato, no mesmo formato de
+                ``AtoAdministrativoFilter``.
+
+        Returns:
+            Queryset das designações que atendem ao tipo.
+
+        """
+        if value in {"DESIGNACAO", "DESIGNACAO_CESSACAO"}:
+            return queryset
+
+        relacionados = AtoAdministrativo.objects.exclude(
+            ato_raiz_id__isnull=True
+        )
+        composto = dividir_tipo_composto(value)
+        if composto is not None:
+            tipo, pai = composto
+            relacionados = relacionados.filter(tipo=tipo, ato_pai__tipo=pai)
+        else:
+            relacionados = relacionados.filter(tipo=value)
+        return queryset.filter(pk__in=relacionados.values("ato_raiz_id"))
 
     def filter_observacao(
         self, queryset: models.QuerySet, name: str, value: str
@@ -82,6 +131,7 @@ class HistoricoDesignacaoFilter(django_filters.FilterSet):
     class Meta:
         model = AtoAdministrativo
         fields = [
+            "tipo",
             "cargo",
             "status_publicacao",
             "periodo",

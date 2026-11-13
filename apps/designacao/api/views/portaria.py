@@ -139,8 +139,8 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 "(Content-Disposition: attachment).",
             ),
             400: OpenApiResponse(
-                description="Payload inválido, ou atos inexistentes ou "
-                "sem texto SEI (mensagem em `detail`)."
+                description="Payload inválido, ou atos inexistentes "
+                "(mensagem em `detail`)."
             ),
         },
     )
@@ -148,8 +148,8 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def lauda(self, request: Request) -> HttpResponse:
         """Gera a lauda de publicação com os atos selecionados.
 
-        Um único arquivo (PDF ou Word) com o texto SEI de cada ato, na
-        ordem do número de portaria, independentemente do status de
+        Um único arquivo (PDF ou Word) com o texto de publicação de cada
+        ato, ordenado por DRE e tipo de ato, independentemente do status de
         publicação.
 
         Args:

@@ -30,22 +30,34 @@ class ModeloPortaria(models.Model):
         NOME_SERVIDOR = "NOME_SERVIDOR", "Nome do servidor"
         NUMERO_RF = "NUMERO_RF", "Nº do RF"
         VINCULO = "VINCULO", "Vínculo"
-        CARGO = "CARGO", "Cargo"
+        CARGO = "CARGO", "Cargo a ser ocupado"
+        CARGO_INDICADO = "CARGO_INDICADO", "Cargo do servidor indicado"
         CATEGORIA = "CATEGORIA", "Categoria"
         UNIDADE = "UNIDADE", "Unidade"
         CARGO_DESIGNACAO = "CARGO_DESIGNACAO", "Cargo da designação"
         UNIDADE_PROPONENTE = "UNIDADE_PROPONENTE", "Unidade proponente"
         TIPO_DE_CARGO = "TIPO_DE_CARGO", "Tipo de cargo"
         DATA_INICIAL = "DATA_INICIAL", "Data inicial"
-        DIPLOMA = "DIPLOMA", "Diploma"
-        PERIODO = "PERIODO", "Período"
+        REMETENTE = "REMETENTE", "Remetente"
+        PROVIMENTO = "PROVIMENTO", "Provimento"
+        UNIDADE_ADMINISTRATIVA = (
+            "UNIDADE_ADMINISTRATIVA",
+            "Unidade administrativa",
+        )
+        ANO_PORTARIA = "ANO_PORTARIA", "Ano da portaria"
+        CARGO_BASE = "CARGO_BASE", "Cargo base"
+        EH = "EH", "Estrutura hierárquica (EH)"
+        TITULAR = "TITULAR", "Titular"
 
+    VARIAVEIS_POR_TIPO_CARGO: dict[str, str] = {
+        Variavel.TITULAR: TipoCargo.CARGO_DISPONIVEL,
+    }
     # Designação não tem ato pai, então nunca leva tipo_ato_pai. Os
     # demais tipos sempre levam — mesmo cessação, que só tem um pai
     # possível (designação): a tela de cadastro usa isso para exibir
     # "Cessação de Designação" de forma consistente com "Apostila de
     # Designação/Cessação" e "Insubsistência de X" na listagem.
-    #
+
     # Mesma regra de hierarquia usada por `AtoAdministrativo.clean()` —
     # reaproveitada daqui para não duplicar a definição.
     TIPOS_QUE_VARIAM_POR_ATO_PAI = AtoAdministrativo.TIPOS_PAI_VALIDOS
@@ -92,3 +104,52 @@ class ModeloPortaria(models.Model):
 
         """
         return self.nome_modelo
+
+    @classmethod
+    def variaveis_disponiveis(
+        cls, tipo_cargo: str | None = None
+    ) -> list[tuple[str, str]]:
+        """Retorna as variáveis oferecidas para um tipo de cargo.
+
+        Sem `tipo_cargo`, devolve todas as variáveis, preservando o
+        contrato anterior do endpoint. Com `tipo_cargo`, omite as
+        variáveis de `VARIAVEIS_POR_TIPO_CARGO` que não pertencem ao
+        tipo informado.
+
+        Args:
+            tipo_cargo: Tipo de cargo do modelo (`CARGO_VAGO`,
+                `CARGO_DISPONIVEL`) ou None para não restringir.
+
+        Returns:
+            list[tuple[str, str]]: Pares (valor, rótulo) disponíveis.
+
+        """
+        if tipo_cargo is None:
+            return list(cls.Variavel.choices)
+        return [
+            (valor, rotulo)
+            for valor, rotulo in cls.Variavel.choices
+            if cls.VARIAVEIS_POR_TIPO_CARGO.get(valor, tipo_cargo)
+            == tipo_cargo
+        ]
+
+    @classmethod
+    def variaveis_invalidas_para_tipo_cargo(
+        cls, variaveis: list[str], tipo_cargo: str
+    ) -> list[str]:
+        """Retorna as variáveis que não valem para o tipo de cargo.
+
+        Args:
+            variaveis: Chaves de variáveis escolhidas para o modelo.
+            tipo_cargo: Tipo de cargo do modelo.
+
+        Returns:
+            list[str]: Variáveis restritas a outro tipo de cargo.
+
+        """
+        return [
+            valor
+            for valor in variaveis
+            if cls.VARIAVEIS_POR_TIPO_CARGO.get(valor, tipo_cargo)
+            != tipo_cargo
+        ]

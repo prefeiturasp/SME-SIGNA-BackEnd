@@ -146,6 +146,9 @@ SIGNA cujo endpoint é público, sem exigir JWT.
    * - ``tipo=UE&dre=<codigo>``
      - ``GET /api/unidades/?tipo=UE&dre=108200``
      - Lista as UEs da DRE informada, com a unidade de supervisão anexada ao final da lista, se disponível.
+   * - ``contexto=designacao`` (opcional)
+     - ``GET /api/unidades/?tipo=UE&dre=108200&contexto=designacao``
+     - Restringe ao que a designação usa. Com ``tipo=DRE``, devolve só as 13 DREs atuais (as chaves de ``SUPERVISAO_ESCOLAR_DRES_MAP``), sem as antigas coordenadorias e NAEs. Com ``tipo=UE``, devolve só os tipos de ``TIPOS_UE_DESIGNACAO`` (comparando ``siglaTipoEscola`` sem espaços); a unidade de supervisão é anexada depois do filtro e sempre aparece. Unidades sem código da Estrutura Hierárquica continuam na lista: a designação delas é recusada ao salvar.
 
 A filtragem não usa ``django-filter`` — é feita manualmente lendo
 ``request.query_params`` dentro do método ``list()``. O parâmetro
@@ -166,6 +169,9 @@ Regras de erro:
    * - ``tipo`` inválido
      - 400
      - ``{"detail": "Parâmetro 'tipo' inválido. Use 'DRE' ou 'UE'."}``
+   * - ``contexto`` diferente de ``designacao``
+     - 400
+     - ``{"detail": "Parâmetro 'contexto' inválido. Use 'designacao' ou não informe o parâmetro."}``
    * - ``tipo=UE`` sem ``dre``
      - 400
      - ``{"detail": "É necessário informar o código da DRE no parâmetro 'dre'."}``

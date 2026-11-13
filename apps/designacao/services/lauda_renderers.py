@@ -13,9 +13,8 @@ from docx.document import Document as DocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt
 from docx.text.paragraph import Paragraph as DocxParagraph
-from reportlab.lib.colors import HexColor
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -30,12 +29,9 @@ from reportlab.platypus import (
 
 CONTENT_TYPE_PDF = "application/pdf"
 CONTENT_TYPE_DOCX = (
-    "application/vnd.openxmlformats-officedocument."
-    "wordprocessingml.document"
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 
-_CINZA = "#555555"
-_VERMELHO = "#C00000"
 _MARGEM_PDF = 20 * mm
 
 
@@ -49,31 +45,26 @@ class Trecho:
     sublinhado: bool = False
 
 
-# Uma linha é uma sequência de trechos; um parágrafo, uma sequência de
-# linhas (quebras simples preservadas).
+# Uma linha é uma sequência de trechos com formatação própria.
 Linha = list[Trecho]
-Paragrafo = list[Linha]
 
 
 @dataclass(frozen=True)
 class SecaoLauda:
     """Um ato dentro da lauda.
 
-    ``titulo`` e ``sei`` não são impressos por enquanto: a lauda vai ser
-    dividida por DRE e depois por tipo de ato, e o cabeçalho de cada
-    grupo ainda será definido. Ficam aqui porque o agrupamento vai
-    precisar deles.
-
     Attributes:
-        titulo: Cabeçalho do ato (``PORTARIA Nº 12/2026 – DESIGNAÇÃO``).
-        sei: Número do processo SEI do ato.
-        blocos: Parágrafos do texto SEI, já como trechos formatados.
+        titulo: Verbo do ato (``DESIGNANDO``, ``APOSTILANDO``...),
+            centralizado e em negrito.
+        dre: ``Diretoria Regional de Educação X``, centralizado e em
+            negrito.
+        corpo: Texto do ato, justificado.
 
     """
 
     titulo: str
-    sei: str
-    blocos: list[Paragrafo]
+    dre: str
+    corpo: Linha
 
 
 @dataclass(frozen=True)
@@ -81,19 +72,12 @@ class DocumentoLauda:
     """Conteúdo completo da lauda, independente de formato.
 
     Attributes:
-        aviso: Alerta impresso antes de tudo, em vermelho e negrito
-            (``None`` para omitir).
-        titulo: Título da lauda.
-        sei: Número SEI da lauda, impresso logo abaixo do título.
-        subtitulo: Linha discreta de metadados (data de geração).
+        titulo: Título do arquivo (metadado; não é impresso).
         secoes: Um item por ato, na ordem de impressão.
 
     """
 
-    aviso: str | None
     titulo: str
-    sei: str
-    subtitulo: str
     secoes: list[SecaoLauda]
 
 
@@ -134,36 +118,24 @@ def montar_story(documento: DocumentoLauda) -> list[Flowable]:
 
     Todo texto passa por ``escape`` antes de virar ``Paragraph`` — o
     parser de markup do ReportLab já teve RCEs por conteúdo não
-    confiável, e o texto SEI vem do banco.
+    confiável, e o texto vem do banco.
 
     Args:
         documento: Conteúdo da lauda.
 
     Returns:
-        list[Flowable]: Aviso, título, SEI, subtítulo e os textos dos
-        atos em sequência.
+        list[Flowable]: Para cada ato: título, DRE e corpo.
 
     """
     estilos = _estilos_pdf()
     story: list[Flowable] = []
-    if documento.aviso:
-        story.append(Paragraph(escape(documento.aviso), estilos["aviso"]))
-    story += [
-        Paragraph(escape(documento.titulo), estilos["titulo"]),
-        Paragraph(f"SEI nº {escape(documento.sei)}", estilos["sei"]),
-        Paragraph(escape(documento.subtitulo), estilos["meta"]),
-        Spacer(1, 8 * mm),
-    ]
-
     for secao in documento.secoes:
-        story.extend(
-            Paragraph(
-                "<br/>".join(_linha_pdf(linha) for linha in paragrafo),
-                estilos["corpo"],
-            )
-            for paragrafo in secao.blocos
-        )
-        story.append(Spacer(1, 6 * mm))
+        story += [
+            Paragraph(escape(secao.titulo), estilos["titulo"]),
+            Paragraph(escape(secao.dre), estilos["titulo"]),
+            Paragraph(_linha_pdf(secao.corpo), estilos["corpo"]),
+            Spacer(1, 8 * mm),
+        ]
 
     return story
 
@@ -196,37 +168,12 @@ def _rodape_pdf(canvas: Canvas, documento: SimpleDocTemplate) -> None:
 def _estilos_pdf() -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
     return {
-        "aviso": ParagraphStyle(
-            "LaudaAviso",
+        "titulo": ParagraphStyle(
+            "LaudaTitulo",
             parent=base["Normal"],
             fontName="Helvetica-Bold",
             fontSize=10,
-            leading=13,
-            textColor=HexColor(_VERMELHO),
-            alignment=TA_CENTER,
-            spaceAfter=6 * mm,
-        ),
-        "titulo": ParagraphStyle(
-            "LaudaTitulo",
-            parent=base["Title"],
-            fontSize=14,
-            leading=18,
-            alignment=TA_CENTER,
-            spaceAfter=2 * mm,
-        ),
-        "sei": ParagraphStyle(
-            "LaudaSei",
-            parent=base["Normal"],
-            fontSize=11,
             leading=14,
-            alignment=TA_CENTER,
-            spaceAfter=1 * mm,
-        ),
-        "meta": ParagraphStyle(
-            "LaudaMeta",
-            parent=base["Normal"],
-            fontSize=9,
-            textColor=HexColor(_CINZA),
             alignment=TA_CENTER,
         ),
         "corpo": ParagraphStyle(
@@ -235,7 +182,6 @@ def _estilos_pdf() -> dict[str, ParagraphStyle]:
             fontSize=10,
             leading=14,
             alignment=TA_JUSTIFY,
-            spaceAfter=3 * mm,
         ),
     }
 
@@ -264,10 +210,8 @@ def renderizar_docx(documento: DocumentoLauda) -> bytes:
     normal.font.name = "Arial"
     normal.font.size = Pt(10)
 
-    _cabecalho_docx(docx, documento)
     for secao in documento.secoes:
-        for bloco in secao.blocos:
-            _paragrafo_docx(docx, bloco)
+        _secao_docx(docx, secao)
     _numerar_paginas_docx(docx)
 
     buffer = BytesIO()
@@ -275,50 +219,29 @@ def renderizar_docx(documento: DocumentoLauda) -> bytes:
     return buffer.getvalue()
 
 
-def _cabecalho_docx(docx: DocxDocument, documento: DocumentoLauda) -> None:
-    """Aviso (opcional), título, SEI e subtítulo, todos centralizados."""
-    if documento.aviso:
-        aviso = docx.add_paragraph()
-        aviso.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = aviso.add_run(documento.aviso)
-        run.bold = True
-        run.font.color.rgb = RGBColor.from_string(_VERMELHO.lstrip("#"))
+def _secao_docx(docx: DocxDocument, secao: SecaoLauda) -> None:
+    """Título e DRE centralizados e corpo justificado."""
+    for texto in (secao.titulo, secao.dre):
+        paragrafo = _paragrafo_compacto(docx, WD_ALIGN_PARAGRAPH.CENTER)
+        paragrafo.add_run(texto).bold = True
 
-    titulo = docx.add_paragraph()
-    titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = titulo.add_run(documento.titulo)
-    run.bold = True
-    run.font.size = Pt(14)
+    corpo = _paragrafo_compacto(docx, WD_ALIGN_PARAGRAPH.JUSTIFY)
+    for trecho in secao.corpo:
+        run = corpo.add_run(trecho.texto)
+        run.bold = trecho.negrito or None
+        run.italic = trecho.italico or None
+        run.underline = trecho.sublinhado or None
 
-    sei = docx.add_paragraph()
-    sei.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    sei.add_run(f"SEI nº {documento.sei}").font.size = Pt(11)
-
-    subtitulo = docx.add_paragraph()
-    subtitulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _run_cinza(subtitulo, documento.subtitulo)
     docx.add_paragraph()
 
 
-def _paragrafo_docx(docx: DocxDocument, bloco: Paragrafo) -> None:
-    """Parágrafo justificado: quebra entre linhas, um run por trecho."""
+def _paragrafo_compacto(
+    docx: DocxDocument, alinhamento: WD_ALIGN_PARAGRAPH
+) -> DocxParagraph:
     paragrafo = docx.add_paragraph()
-    paragrafo.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    paragrafo.paragraph_format.space_after = Pt(6)
-    for indice, linha in enumerate(bloco):
-        if indice:
-            paragrafo.add_run().add_break()
-        for trecho in linha:
-            run = paragrafo.add_run(trecho.texto)
-            run.bold = trecho.negrito or None
-            run.italic = trecho.italico or None
-            run.underline = trecho.sublinhado or None
-
-
-def _run_cinza(paragrafo: DocxParagraph, texto: str) -> None:
-    run = paragrafo.add_run(texto)
-    run.font.size = Pt(9)
-    run.font.color.rgb = RGBColor.from_string(_CINZA.lstrip("#"))
+    paragrafo.alignment = alinhamento
+    paragrafo.paragraph_format.space_after = Pt(0)
+    return paragrafo
 
 
 def _numerar_paginas_docx(docx: DocxDocument) -> None:

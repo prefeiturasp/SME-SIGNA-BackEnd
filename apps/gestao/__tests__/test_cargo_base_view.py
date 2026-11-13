@@ -41,10 +41,11 @@ def test_list_retorna_cargos_paginados(auth_client):
     url = reverse("gestao:cargos-base")
     response = auth_client.get(url)
 
+    # O seed da migration 0011 já cadastra mais de uma página de cargos.
     assert response.status_code == 200
     assert response.data["count"] == CargoBase.objects.count()
-    codigos_retornados = {c["codigo_cargo"] for c in response.data["results"]}
-    assert {"9360", "9182"}.issubset(codigos_retornados)
+    assert len(response.data["results"]) == 10
+    assert response.data["next"] is not None
 
 
 @pytest.mark.django_db
@@ -55,7 +56,9 @@ def test_list_retorna_vazio_quando_nao_ha_correspondencia(auth_client):
     )
 
     url = reverse("gestao:cargos-base")
-    response = auth_client.get(url, {"grupamento": "DOCENTES"})
+    response = auth_client.get(
+        url, {"grupamento": "DOCENTES", "codigo_cargo": "9360"}
+    )
 
     assert response.status_code == 200
     assert response.data["count"] == 0
@@ -82,11 +85,30 @@ def test_list_aplica_filtro_por_descricao_resumida(auth_client):
 
 
 @pytest.mark.django_db
+def test_list_aplica_filtro_por_codigo_cargo(auth_client):
+    """Verifica que a listagem filtra pelo código exato do cargo."""
+    criar_cargo_base(
+        codigo_cargo="9360", descricao_completa="DIRETOR DE ESCOLA"
+    )
+    criar_cargo_base(codigo_cargo="9182")
+
+    url = reverse("gestao:cargos-base")
+    response = auth_client.get(url, {"codigo_cargo": "9360"})
+
+    assert response.status_code == 200
+    assert response.data["count"] == 1
+    assert response.data["results"][0]["descricao_completa"] == (
+        "DIRETOR DE ESCOLA"
+    )
+
+
+@pytest.mark.django_db
 def test_create_cargo_base_com_sucesso(auth_client):
     """Verifica que a criação de um cargo base retorna 201 com os dados."""
     payload = {
         "codigo_cargo": "9352",
         "descricao_completa": "SUPERVISOR ESCOLAR",
+        "descricao_eol": "SUPERVISOR ESCOLAR",
         "descricao_resumida": "Supervisor Escolar",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -109,6 +131,7 @@ def test_create_cargo_base_duplicado_retorna_400(auth_client):
     payload = {
         "codigo_cargo": "9360",
         "descricao_completa": "DIRETOR DE ESCOLA",
+        "descricao_eol": "DIRETOR DE ESCOLA",
         "descricao_resumida": "Diretor",
         "grupamento": CargoBase.Grupamento.GESTORES_EDUCACAO,
         "situacao_funcional": CargoBase.SituacaoFuncional.EFETIVO,
@@ -127,6 +150,7 @@ def test_create_cargo_base_sem_campo_obrigatorio_retorna_400(auth_client):
     payload = {
         "codigo_cargo": "9352",
         "descricao_completa": "SUPERVISOR ESCOLAR",
+        "descricao_eol": "SUPERVISOR ESCOLAR",
     }
 
     url = reverse("gestao:cargos-base")
@@ -274,8 +298,10 @@ def test_partial_update_altera_campos_editaveis(auth_client):
 
 
 @pytest.mark.django_db
-def test_partial_update_ignora_codigo_cargo_e_descricao_completa(auth_client):
-    """Verifica que o PATCH não altera código e descrição completa."""
+def test_partial_update_ignora_codigo_cargo_e_altera_descricao_completa(
+    auth_client,
+):
+    """Verifica que o PATCH altera a descrição completa, mas não o código."""
     cargo = criar_cargo_base(
         codigo_cargo="9360",
         descricao_completa="DIRETOR DE ESCOLA MUNICIPAL",
@@ -293,8 +319,47 @@ def test_partial_update_ignora_codigo_cargo_e_descricao_completa(auth_client):
     assert response.status_code == 200
     cargo.refresh_from_db()
     assert cargo.codigo_cargo == "9360"
-    assert cargo.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+    assert cargo.descricao_completa == "OUTRO CARGO QUALQUER"
     assert cargo.descricao_resumida == "Diretor de Escola Municipal"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "valor",
+    ["", "   ", "A" * 256],
+    ids=["vazia", "so-espacos", "acima-de-255-caracteres"],
+)
+def test_partial_update_rejeita_descricao_completa_invalida(
+    auth_client, valor
+):
+    """Verifica que o PATCH recusa descrição completa inválida."""
+    cargo = criar_cargo_base(descricao_completa="DIRETOR DE ESCOLA MUNICIPAL")
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = auth_client.patch(
+        url, data={"descricao_completa": valor}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert "descricao_completa" in response.data
+    cargo.refresh_from_db()
+    assert cargo.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+
+
+@pytest.mark.django_db
+def test_partial_update_sem_descricao_completa_mantem_valor(auth_client):
+    """Verifica que o PATCH sem o campo preserva a descrição completa."""
+    cargo = criar_cargo_base(descricao_completa="DIRETOR DE ESCOLA MUNICIPAL")
+
+    url = reverse("gestao:cargos-base-detail", kwargs={"pk": cargo.pk})
+    response = auth_client.patch(
+        url, data={"descricao_resumida": "Diretor"}, format="json"
+    )
+
+    assert response.status_code == 200
+    cargo.refresh_from_db()
+    assert cargo.descricao_completa == "DIRETOR DE ESCOLA MUNICIPAL"
+    assert cargo.descricao_resumida == "Diretor"
 
 
 @pytest.mark.django_db

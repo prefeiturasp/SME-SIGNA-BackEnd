@@ -49,6 +49,10 @@ class DesignacaoDetalhe(ServidorDesignacaoMixin):
     indicado_codigo_ue_lotacao = models.CharField(
         max_length=50, blank=True, default=""
     )
+    # Código da UE do cargo base, mesmo quando há cargo sobreposto.
+    indicado_codigo_ue_cargo_base = models.CharField(
+        max_length=50, blank=True, default=""
+    )
     # Indica se `indicado_codigo_cargo_sobreposto` é um cargo sobreposto
     # (True) ou o código de uma função/atividade (False).
     indicado_possui_cargo_sobreposto = models.BooleanField(default=False)

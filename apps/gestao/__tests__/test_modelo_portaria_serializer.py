@@ -144,6 +144,42 @@ def test_write_serializer_rejeita_variavel_invalida():
 
 
 @pytest.mark.django_db
+def test_write_serializer_rejeita_titular_em_cargo_vago():
+    """TITULAR só é aceita com cargo disponível."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+        "nome_modelo": "Designação diretor de escola",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_VAGO,
+        "variaveis": [
+            ModeloPortaria.Variavel.TITULAR,
+            ModeloPortaria.Variavel.NOME_SERVIDOR,
+        ],
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert not serializer.is_valid()
+    assert "TITULAR" in str(serializer.errors["variaveis"])
+
+
+@pytest.mark.django_db
+def test_write_serializer_aceita_titular_em_cargo_disponivel():
+    """TITULAR é aceita quando o cargo é disponível."""
+    payload = {
+        "tipo_portaria": AtoAdministrativo.Tipo.DESIGNACAO,
+        "nome_modelo": "Designação diretor de escola",
+        "tipo_cargo": ModeloPortaria.TipoCargo.CARGO_DISPONIVEL,
+        "variaveis": [ModeloPortaria.Variavel.TITULAR],
+        "texto_portaria": "Texto qualquer",
+    }
+
+    serializer = ModeloPortariaWriteSerializer(data=payload)
+
+    assert serializer.is_valid(), serializer.errors
+
+
+@pytest.mark.django_db
 def test_write_serializer_valido_cria_apostila_com_tipo_ato_pai():
     """Verifica que apostila é criada com tipo_ato_pai compatível."""
     payload = {
