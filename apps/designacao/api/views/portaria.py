@@ -135,7 +135,7 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         responses={
             200: OpenApiResponse(
                 response=OpenApiTypes.BINARY,
-                description="Arquivo da lauda (PDF ou .docx) como anexo "
+                description="Arquivo da lauda (PDF, .docx ou .csv) como anexo "
                 "(Content-Disposition: attachment).",
             ),
             400: OpenApiResponse(
@@ -148,12 +148,13 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def lauda(self, request: Request) -> HttpResponse:
         """Gera a lauda de publicação com os atos selecionados.
 
-        Um único arquivo (PDF ou Word) com o texto de publicação de cada
-        ato, ordenado por DRE e tipo de ato, independentemente do status de
-        publicação.
+        Um único arquivo (PDF, Word ou CSV) com o texto de publicação de cada
+        ato, na ordem escolhida pelo usuário, independentemente do status
+        de publicação.
 
         Args:
-            request: Requisição HTTP com ``ids`` e ``formato``.
+            request: Requisição HTTP com ``ids``, ``formato`` e
+                ``ordenacao``.
 
         Returns:
             HttpResponse: Arquivo como anexo, com o content-type do
@@ -168,7 +169,9 @@ class PortariaListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         dados = serializer.validated_data
 
-        arquivo = LaudaService.gerar(dados["ids"], dados["formato"])
+        arquivo = LaudaService.gerar(
+            dados["ids"], dados["formato"], dados["ordenacao"]
+        )
 
         response = HttpResponse(
             arquivo.conteudo, content_type=arquivo.content_type

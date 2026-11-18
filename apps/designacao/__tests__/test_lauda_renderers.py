@@ -5,7 +5,8 @@ conteúdo chega ao arquivo, que o PDF escapa markup e que o Word preserva
 o texto literalmente.
 """
 
-from io import BytesIO
+import csv
+from io import BytesIO, StringIO
 
 import pytest
 from docx import Document
@@ -16,6 +17,7 @@ from apps.designacao.services.lauda_renderers import (
     SecaoLauda,
     Trecho,
     montar_story,
+    renderizar_csv,
     renderizar_docx,
     renderizar_pdf,
 )
@@ -141,3 +143,47 @@ class TestDocx:
 
     def test_metadados(self, docx):
         assert docx.core_properties.title == "Lauda de teste"
+
+
+class TestCsv:
+    """Uma linha por ato, legível pelo Excel em pt-BR."""
+
+    def _linhas(self, documento) -> list[list[str]]:
+        conteudo = renderizar_csv(documento).decode("utf-8-sig")
+        return list(csv.reader(StringIO(conteudo), delimiter=";"))
+
+    def test_comeca_com_bom_utf8(self, documento):
+        assert renderizar_csv(documento).startswith(b"\xef\xbb\xbf")
+
+    def test_cabecalho_e_uma_linha_por_secao_na_ordem(self, documento):
+        linhas = self._linhas(documento)
+        assert linhas[0] == ["Título", "DRE", "Texto"]
+        assert [linha[0] for linha in linhas[1:]] == [
+            "DESIGNANDO",
+            "APOSTILANDO",
+        ]
+
+    def test_texto_sem_formatacao(self, documento):
+        assert self._linhas(documento)[1] == [
+            "DESIGNANDO",
+            "Diretoria Regional de Educação BUTANTA",
+            CORPO_DOCX,
+        ]
+
+    def test_texto_com_separador_e_aspas_fica_numa_celula(self):
+        texto = 'a; b "c"\nd'
+        documento = DocumentoLauda(
+            titulo="t",
+            secoes=[SecaoLauda("DESIGNANDO", "DRE X", [Trecho(texto)])],
+        )
+        assert self._linhas(documento)[1][2] == texto
+
+    @pytest.mark.parametrize("inicio", ["=", "+", "-", "@"])
+    def test_neutraliza_formula(self, inicio):
+        documento = DocumentoLauda(
+            titulo="t",
+            secoes=[
+                SecaoLauda("DESIGNANDO", "DRE X", [Trecho(f"{inicio}1+1")])
+            ],
+        )
+        assert self._linhas(documento)[1][2] == f"'{inicio}1+1"

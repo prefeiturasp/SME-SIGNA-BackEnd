@@ -1,6 +1,6 @@
 """Serviço de geração da lauda de publicação no Diário Oficial.
 
-Monta um único arquivo (PDF ou Word) com o texto de publicação de todos
+Monta um único arquivo (PDF, Word ou CSV) com o texto de publicação de todos
 os atos selecionados na tela de publicação. Diferente do texto SEI, o
 texto da lauda é montado aqui a partir dos dados gravados no banco, com
 um formato próprio por tipo de ato (designando, apostilando, fazendo
@@ -12,6 +12,7 @@ confirmada.
 """
 
 import datetime
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -24,12 +25,14 @@ from apps.designacao.constants.cargos_gestao_escolar import (
 from apps.designacao.models.ato_administrativo import AtoAdministrativo
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.lauda_renderers import (
+    CONTENT_TYPE_CSV,
     CONTENT_TYPE_DOCX,
     CONTENT_TYPE_PDF,
     DocumentoLauda,
     Linha,
     SecaoLauda,
     Trecho,
+    renderizar_csv,
     renderizar_docx,
     renderizar_pdf,
 )
@@ -50,7 +53,6 @@ _PREFIXOS_DRE = (
 _UNIDADES_FEMININAS = frozenset(
     {"EMEF", "EMEFM", "EMEI", "EMEBS", "ESCOLA", "DRE", "DIRETORIA"}
 )
-_ORDEM_TIPOS: list[str] = list(AtoAdministrativo.Tipo)
 
 
 class FormatoLauda(models.TextChoices):
@@ -58,6 +60,15 @@ class FormatoLauda(models.TextChoices):
 
     PDF = "PDF", "PDF"
     WORD = "WORD", "Word"
+    CSV = "CSV", "CSV"
+
+
+class OrdenacaoLauda(models.TextChoices):
+    """Ordem dos atos no arquivo, escolhida pelo usuário na tela."""
+
+    NUMERO_PORTARIA = "NUMERO_PORTARIA", "Número de portaria"
+    DRE = "DRE", "Diretoria Regional de Educação"
+    TITULO = "TITULO", "Título"
 
 
 @dataclass(frozen=True)
@@ -79,6 +90,7 @@ class _Renderer:
 _RENDERERS: dict[str, _Renderer] = {
     FormatoLauda.PDF: _Renderer(renderizar_pdf, CONTENT_TYPE_PDF, "pdf"),
     FormatoLauda.WORD: _Renderer(renderizar_docx, CONTENT_TYPE_DOCX, "docx"),
+    FormatoLauda.CSV: _Renderer(renderizar_csv, CONTENT_TYPE_CSV, "csv"),
 }
 
 
@@ -88,25 +100,27 @@ class LaudaService:
     TITULO = "PORTARIAS EXPEDIDAS PELO SECRETÁRIO"
 
     @staticmethod
-    def gerar(ids: list[int], formato: str) -> ArquivoLauda:
-        """Gera o arquivo da lauda no formato pedido.
+    def gerar(ids: list[int], formato: str, ordenacao: str) -> ArquivoLauda:
+        """Gera o arquivo da lauda no formato e na ordem pedidos.
 
         Args:
             ids: IDs dos atos administrativos selecionados.
             formato: Um dos valores de ``FormatoLauda``.
+            ordenacao: Um dos valores de ``OrdenacaoLauda``.
 
         Returns:
             ArquivoLauda: Bytes, nome e content-type do arquivo.
 
         Raises:
             ValidationError: Quando algum id não existe.
-            KeyError: Formato não suportado (o serializer já barra
-                antes de chegar aqui).
+            KeyError: Formato ou ordenação não suportados (o
+                serializer já barra antes de chegar aqui).
 
         """
         renderer = _RENDERERS[formato]
+        chave = _CHAVES_ORDENACAO[ordenacao]
         atos = LaudaService.buscar_atos(ids)
-        documento = LaudaService.montar_documento(atos)
+        documento = LaudaService.montar_documento(atos, chave)
         return ArquivoLauda(
             conteudo=renderer.renderizar(documento),
             nome=LaudaService.nome_arquivo(renderer.extensao),
@@ -139,8 +153,8 @@ class LaudaService:
             ids: IDs dos atos administrativos selecionados.
 
         Returns:
-            list[AtoAdministrativo]: Atos em ordem alfabética de DRE e,
-            dentro da DRE, por tipo de ato e número de portaria.
+            list[AtoAdministrativo]: Atos encontrados, sem ordem
+            definida — a ordem é aplicada em ``montar_documento``.
 
         Raises:
             ValidationError: Quando algum id não existe.
@@ -168,19 +182,25 @@ class LaudaService:
 
         # TO-DO: confirmar com a área se ato já publicado pode voltar para
         # a lauda (reimpressão/republicação). Por ora não há trava.
-
-        # TO-DO: a ordem vai passar a ser escolhida pelo usuário na tela.
-        return sorted(atos, key=_chave_ordenacao)
+        return atos
 
     @staticmethod
-    def montar_documento(atos: list[AtoAdministrativo]) -> DocumentoLauda:
+    def montar_documento(
+        atos: list[AtoAdministrativo],
+        chave: "_ChaveOrdenacao | None" = None,
+    ) -> DocumentoLauda:
         """Monta a estrutura neutra consumida pelos renderers.
 
+        A ordenação acontece aqui, e não em ``buscar_atos``, porque o
+        título de cada ato só existe depois que a seção é montada.
+
         Args:
-            atos: Atos já validados e ordenados.
+            atos: Atos já validados.
+            chave: Chave de ordenação (ver ``_CHAVES_ORDENACAO``). Sem
+                ela, mantém a ordem recebida.
 
         Returns:
-            DocumentoLauda: Uma seção por ato, na ordem recebida.
+            DocumentoLauda: Uma seção por ato, na ordem pedida.
 
         """
         codigos = {
@@ -197,9 +217,12 @@ class LaudaService:
             cargo.codigo_cargo: cargo
             for cargo in CargoBase.objects.filter(codigo_cargo__in=codigos)
         }
+        pares = [(ato, LaudaService.secao(ato, cargos)) for ato in atos]
+        if chave is not None:
+            pares.sort(key=lambda par: chave(*par))
         return DocumentoLauda(
             titulo=LaudaService.TITULO,
-            secoes=[LaudaService.secao(ato, cargos) for ato in atos],
+            secoes=[secao for _, secao in pares],
         )
 
     @staticmethod
@@ -560,15 +583,55 @@ def _detalhe_designacao(ato: AtoAdministrativo) -> DesignacaoDetalhe:
     return _designacao_ato(ato).designacao_detalhe
 
 
-def _chave_ordenacao(ato: AtoAdministrativo) -> tuple:
-    """DRE (alfabética) → tipo de ato → nº de portaria → id."""
+_ChaveOrdenacao = Callable[[AtoAdministrativo, SecaoLauda], tuple]
+
+
+def _numero_ordenacao(ato: AtoAdministrativo) -> tuple[bool, int]:
+    """Nº de portaria crescente; atos sem número ficam no fim."""
+    return (ato.numero_portaria is None, ato.numero_portaria or 0)
+
+
+def _texto_ordenacao(texto: str) -> str:
+    """Texto sem acentos e sem caixa, para ordem alfabética."""
+    texto = unicodedata.normalize("NFD", texto.casefold())
+    return "".join(c for c in texto if not unicodedata.combining(c))
+
+
+def _chave_por_numero(ato: AtoAdministrativo, secao: SecaoLauda) -> tuple:
+    """Nº de portaria → DRE → título → id."""
     return (
-        _dre(_detalhe_designacao(ato).dre_nome).casefold(),
-        _ORDEM_TIPOS.index(ato.tipo),
-        ato.numero_portaria is None,
-        ato.numero_portaria or 0,
+        *_numero_ordenacao(ato),
+        _texto_ordenacao(secao.dre),
+        _texto_ordenacao(secao.titulo),
         ato.pk,
     )
+
+
+def _chave_por_dre(ato: AtoAdministrativo, secao: SecaoLauda) -> tuple:
+    """DRE (alfabética) → título (alfabético) → nº de portaria → id."""
+    return (
+        _texto_ordenacao(secao.dre),
+        _texto_ordenacao(secao.titulo),
+        *_numero_ordenacao(ato),
+        ato.pk,
+    )
+
+
+def _chave_por_titulo(ato: AtoAdministrativo, secao: SecaoLauda) -> tuple:
+    """Título (alfabético) → DRE → nº de portaria → id."""
+    return (
+        _texto_ordenacao(secao.titulo),
+        _texto_ordenacao(secao.dre),
+        *_numero_ordenacao(ato),
+        ato.pk,
+    )
+
+
+_CHAVES_ORDENACAO: dict[str, _ChaveOrdenacao] = {
+    OrdenacaoLauda.NUMERO_PORTARIA: _chave_por_numero,
+    OrdenacaoLauda.DRE: _chave_por_dre,
+    OrdenacaoLauda.TITULO: _chave_por_titulo,
+}
 
 
 def _dre(dre_nome: str) -> str:

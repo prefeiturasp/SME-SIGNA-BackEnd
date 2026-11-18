@@ -36,6 +36,7 @@ def designacao_1(db):
     DesignacaoDetalhe.objects.create(
         ato=ato,
         dre_nome="DRE BUTANTA",  # sem acento para evitar falha de collation
+        dre="108600",
         unidade_proponente="EMEF TESTE 1",
         codigo_hierarquico="108600",
         indicado_nome_servidor="MARIA SILVA",
@@ -68,6 +69,7 @@ def designacao_2(db):
     DesignacaoDetalhe.objects.create(
         ato=ato,
         dre_nome="DRE IPIRANGA",
+        dre="108700",
         unidade_proponente="EMEF TESTE 2",
         codigo_hierarquico="108700",
         indicado_nome_servidor="JOAO SOUZA",
@@ -126,7 +128,6 @@ def insubsistencia(db, designacao_1):
 
 @pytest.mark.django_db
 class TestPortariaFilter:
-
     # tipo
     """Testes para portaria filter."""
 
@@ -257,3 +258,42 @@ class TestPortariaFilterIntervaloNumerico:
         """Verifica que a ordenação coloca 99 antes de 100."""
         qs = AtoAdministrativo.objects.order_by("numero_portaria")
         assert list(qs.values_list("numero_portaria", flat=True)) == [99, 100]
+
+
+# ─── DRE ──────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPortariaFilterDre:
+    """DRE do próprio ato ou da designação raiz (cessação, insubsistência)."""
+
+    def _pks(self, params):
+        return set(apply_filter(params).values_list("pk", flat=True))
+
+    def test_codigo_dre_inclui_atos_filhos_da_designacao(
+        self, designacao_1, designacao_2, cessacao, insubsistencia
+    ):
+        assert self._pks({"codigo_dre": "108600"}) == {
+            designacao_1.pk,
+            cessacao.pk,
+            insubsistencia.pk,
+        }
+
+    def test_codigo_dre_exclui_outra_dre(
+        self, designacao_1, designacao_2, cessacao
+    ):
+        assert self._pks({"codigo_dre": "108700"}) == {designacao_2.pk}
+
+    def test_codigo_dre_inexistente(self, designacao_1, cessacao):
+        assert self._pks({"codigo_dre": "999999"}) == set()
+
+    def test_codigo_dre_com_tipo_designacao_cessacao(
+        self, designacao_1, designacao_2, cessacao, insubsistencia
+    ):
+        params = {"codigo_dre": "108600", "tipo": "DESIGNACAO_CESSACAO"}
+        assert self._pks(params) == {designacao_1.pk, cessacao.pk}
+
+    def test_nome_dre_inclui_atos_filhos_da_designacao(
+        self, designacao_1, designacao_2, cessacao
+    ):
+        assert self._pks({"dre": "butanta"}) == {designacao_1.pk, cessacao.pk}
