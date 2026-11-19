@@ -19,13 +19,17 @@ from apps.designacao.__tests__.factories import (
 from apps.designacao.models.designacao import ImpedimentoSubstituicao
 from apps.designacao.models.designacao_detalhe import DesignacaoDetalhe
 from apps.designacao.services.lauda_renderers import (
+    CONTENT_TYPE_CSV,
     CONTENT_TYPE_DOCX,
     CONTENT_TYPE_PDF,
     Trecho,
 )
 from apps.designacao.services.lauda_service import (
+    _CHAVES_ORDENACAO,
     FormatoLauda,
     LaudaService,
+    OrdenacaoLauda,
+    _texto_ordenacao,
 )
 from apps.gestao.models.cargo_base import CargoBase
 
@@ -126,30 +130,130 @@ class TestBuscarAtos:
         assert _detail(exc) == "Atos não encontrados: 99999."
         assert set(exc.value.detail) == {"detail"}
 
-    def test_ordena_por_dre_tipo_e_numero(self, db):
-        butanta_10 = _designacao(numero_portaria=10, dre_nome="DRE BUTANTA")
-        butanta_5 = _designacao(numero_portaria=5, dre_nome="DRE BUTANTA")
-        cessacao = criar_ato_cessacao(butanta_10, numero_portaria=1)
-        apostila = criar_ato_apostila(butanta_10, numero_portaria=None)
-        campo_limpo = _designacao(
-            numero_portaria=1, dre_nome="DRE CAMPO LIMPO"
-        )
-
-        ids = [campo_limpo, apostila, cessacao, butanta_10, butanta_5]
-        atos = LaudaService.buscar_atos([a.pk for a in ids])
-
-        assert [a.pk for a in atos] == [
-            butanta_5.pk,
-            butanta_10.pk,
-            cessacao.pk,
-            apostila.pk,
-            campo_limpo.pk,
-        ]
-
     def test_ato_publicado_entra_na_lauda(self, designacao_vaga):
         assert LaudaService.buscar_atos([designacao_vaga.pk]) == [
             designacao_vaga
         ]
+
+
+# ─── ordenação ────────────────────────────────────────────────────────────────
+
+
+def _assert_ordem(atos, ordenacao, esperado) -> None:
+    """Confere as seções da lauda contra a ordem esperada de atos."""
+    chave = _CHAVES_ORDENACAO[ordenacao]
+    documento = LaudaService.montar_documento(atos, chave)
+    assert documento.secoes == [_secao(ato) for ato in esperado]
+
+
+@pytest.fixture
+def atos_variados(db):
+    """Atos em DREs, títulos e números diferentes, fora de ordem."""
+    butanta_10 = _designacao(numero_portaria=10, dre_nome="DRE BUTANTA")
+    butanta_5 = _designacao(numero_portaria=5, dre_nome="DRE BUTANTA")
+    cessacao = criar_ato_cessacao(butanta_10, numero_portaria=1)
+    apostila = criar_ato_apostila(butanta_10, numero_portaria=None)
+    campo_limpo = _designacao(numero_portaria=3, dre_nome="DRE CAMPO LIMPO")
+    ferias, _ = ImpedimentoSubstituicao.objects.get_or_create(
+        codigo="FERIAS", defaults={"descricao": "Por férias"}
+    )
+    substituicao = _designacao(
+        numero_portaria=7,
+        dre_nome="DRE BUTANTA",
+        impedimento_substituicao=ferias,
+        **_TITULAR,
+    )
+    return {
+        "butanta_10": butanta_10,
+        "butanta_5": butanta_5,
+        "cessacao": cessacao,
+        "apostila": apostila,
+        "campo_limpo": campo_limpo,
+        "substituicao": substituicao,
+    }
+
+
+class TestOrdenacao:
+    """As três ordens que o usuário pode escolher na tela."""
+
+    def _ordem(self, atos_variados, ordenacao, nomes):
+        atos = list(atos_variados.values())[::-1]
+        esperado = [atos_variados[n] for n in nomes]
+        _assert_ordem(atos, ordenacao, esperado)
+
+    def test_por_numero_de_portaria_sem_numero_no_fim(self, atos_variados):
+        self._ordem(
+            atos_variados,
+            OrdenacaoLauda.NUMERO_PORTARIA,
+            [
+                "cessacao",
+                "campo_limpo",
+                "butanta_5",
+                "substituicao",
+                "butanta_10",
+                "apostila",
+            ],
+        )
+
+    def test_por_dre_depois_titulo_e_numero(self, atos_variados):
+        # BUTANTA: APOSTILANDO → DESIGNANDO (5, 10) → FAZENDO CESSAR
+        # → SUBSTITUIÇÃO; depois CAMPO LIMPO.
+        self._ordem(
+            atos_variados,
+            OrdenacaoLauda.DRE,
+            [
+                "apostila",
+                "butanta_5",
+                "butanta_10",
+                "cessacao",
+                "substituicao",
+                "campo_limpo",
+            ],
+        )
+
+    def test_por_numero_empate_desempata_por_dre_e_titulo(self, db):
+        # Apostila herda o número da portaria apostilada.
+        designacao = _designacao(numero_portaria=5, dre_nome="DRE BUTANTA")
+        apostila = criar_ato_apostila(designacao, numero_portaria=5)
+        campo_limpo = _designacao(
+            numero_portaria=5, dre_nome="DRE CAMPO LIMPO"
+        )
+        _assert_ordem(
+            [campo_limpo, designacao, apostila],
+            OrdenacaoLauda.NUMERO_PORTARIA,
+            [apostila, designacao, campo_limpo],
+        )
+
+    def test_por_titulo_depois_dre_e_numero(self, atos_variados):
+        # APOSTILANDO → DESIGNANDO → FAZENDO CESSAR → SUBSTITUIÇÃO
+        self._ordem(
+            atos_variados,
+            OrdenacaoLauda.TITULO,
+            [
+                "apostila",
+                "butanta_5",
+                "butanta_10",
+                "campo_limpo",
+                "cessacao",
+                "substituicao",
+            ],
+        )
+
+    def test_texto_ordenacao_ignora_acentos_e_caixa(self):
+        assert _texto_ordenacao("SUBSTITUIÇÃO") == "substituicao"
+        assert _texto_ordenacao("Jaçanã/Tremembé") == "jacana/tremembe"
+
+    def test_dre_ignora_acentos(self, db):
+        sao_mateus = _designacao(numero_portaria=1, dre_nome="DRE SÃO MATEUS")
+        santo_amaro = _designacao(
+            numero_portaria=2, dre_nome="DRE SANTO AMARO"
+        )
+        sao_miguel = _designacao(numero_portaria=3, dre_nome="DRE SAO MIGUEL")
+        _assert_ordem(
+            [sao_miguel, sao_mateus, santo_amaro],
+            OrdenacaoLauda.DRE,
+            [santo_amaro, sao_mateus, sao_miguel],
+        )
 
 
 # ─── textos por tipo de ato ───────────────────────────────────────────────────
@@ -733,26 +837,60 @@ class TestGerar:
     def test_gera_pdf(self, designacao_vaga):
         apostila = criar_ato_apostila(designacao_vaga)
         arquivo = LaudaService.gerar(
-            [designacao_vaga.pk, apostila.pk], FormatoLauda.PDF
+            [designacao_vaga.pk, apostila.pk],
+            FormatoLauda.PDF,
+            OrdenacaoLauda.DRE,
         )
         assert arquivo.conteudo.startswith(b"%PDF-")
         assert arquivo.content_type == CONTENT_TYPE_PDF
         assert arquivo.nome.endswith(".pdf")
 
     def test_gera_word(self, designacao_vaga):
-        arquivo = LaudaService.gerar([designacao_vaga.pk], FormatoLauda.WORD)
+        arquivo = LaudaService.gerar(
+            [designacao_vaga.pk], FormatoLauda.WORD, OrdenacaoLauda.TITULO
+        )
         # .docx é um zip
         assert arquivo.conteudo.startswith(b"PK")
         assert arquivo.content_type == CONTENT_TYPE_DOCX
         assert arquivo.nome.endswith(".docx")
 
+    def test_gera_csv_na_ordem_pedida(self, db):
+        campo_limpo = _designacao(
+            numero_portaria=1, dre_nome="DRE CAMPO LIMPO"
+        )
+        butanta = _designacao(numero_portaria=2, dre_nome="DRE BUTANTA")
+        ids = [campo_limpo.pk, butanta.pk]
+
+        def dres(ordenacao):
+            arquivo = LaudaService.gerar(ids, FormatoLauda.CSV, ordenacao)
+            linhas = arquivo.conteudo.decode("utf-8-sig").splitlines()
+            return [linha.split(";")[1] for linha in linhas[1:]]
+
+        arquivo = LaudaService.gerar(ids, FormatoLauda.CSV, OrdenacaoLauda.DRE)
+        assert arquivo.content_type == CONTENT_TYPE_CSV
+        assert arquivo.nome.endswith(".csv")
+        assert dres(OrdenacaoLauda.DRE) == [
+            "Diretoria Regional de Educação BUTANTA",
+            "Diretoria Regional de Educação CAMPO LIMPO",
+        ]
+        assert dres(OrdenacaoLauda.NUMERO_PORTARIA) == [
+            "Diretoria Regional de Educação CAMPO LIMPO",
+            "Diretoria Regional de Educação BUTANTA",
+        ]
+
     def test_formato_desconhecido(self, designacao_vaga):
         with pytest.raises(KeyError):
-            LaudaService.gerar([designacao_vaga.pk], "ODT")
+            LaudaService.gerar([designacao_vaga.pk], "ODT", OrdenacaoLauda.DRE)
+
+    def test_ordenacao_desconhecida(self, designacao_vaga):
+        with pytest.raises(KeyError):
+            LaudaService.gerar([designacao_vaga.pk], FormatoLauda.PDF, "X")
 
     def test_propaga_erro_de_validacao(self, db):
         with pytest.raises(ValidationError):
-            LaudaService.gerar([99999], FormatoLauda.PDF)
+            LaudaService.gerar(
+                [99999], FormatoLauda.PDF, OrdenacaoLauda.NUMERO_PORTARIA
+            )
 
     def test_nome_arquivo_segue_padrao(self):
         nome = LaudaService.nome_arquivo("docx")

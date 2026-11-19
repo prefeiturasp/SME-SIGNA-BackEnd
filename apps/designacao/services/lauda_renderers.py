@@ -1,11 +1,12 @@
-"""Renderizadores da lauda de publicação no D.O. (PDF e Word).
+"""Renderizadores da lauda de publicação no D.O. (PDF, Word e CSV).
 
 Recebem um ``DocumentoLauda`` já montado pelo ``LaudaService`` e devolvem
 os bytes do arquivo. Nenhuma regra de negócio vive aqui — só layout.
 """
 
+import csv
 from dataclasses import dataclass
-from io import BytesIO
+from io import BytesIO, StringIO
 from xml.sax.saxutils import escape
 
 from docx import Document
@@ -31,6 +32,11 @@ CONTENT_TYPE_PDF = "application/pdf"
 CONTENT_TYPE_DOCX = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+CONTENT_TYPE_CSV = "text/csv; charset=utf-8"
+
+_CABECALHO_CSV = ("Título", "DRE", "Texto")
+# Caracteres que fazem o Excel interpretar a célula como fórmula.
+_INICIO_FORMULA = ("=", "+", "-", "@", "\t", "\r")
 
 _MARGEM_PDF = 20 * mm
 
@@ -258,3 +264,37 @@ def _numerar_paginas_docx(docx: DocxDocument) -> None:
     run.append(texto)
     campo.append(run)
     rodape._p.append(campo)
+
+
+# ─── CSV ─────────────────────────────────────────────────────────────────────
+
+
+def renderizar_csv(documento: DocumentoLauda) -> bytes:
+    """Gera o CSV da lauda: uma linha por ato (título, DRE e texto).
+
+    Separador ``;`` e UTF-8 com BOM para o Excel em pt-BR abrir direto,
+    com acentos. O texto sai sem formatação (negrito etc.).
+
+    Args:
+        documento: Conteúdo da lauda.
+
+    Returns:
+        bytes: Arquivo CSV.
+
+    """
+    buffer = StringIO()
+    escritor = csv.writer(buffer, delimiter=";", lineterminator="\r\n")
+    escritor.writerow(_CABECALHO_CSV)
+    for secao in documento.secoes:
+        texto = "".join(trecho.texto for trecho in secao.corpo)
+        escritor.writerow(
+            _celula_csv(valor) for valor in (secao.titulo, secao.dre, texto)
+        )
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def _celula_csv(valor: str) -> str:
+    """Neutraliza fórmulas (CSV injection) prefixando com apóstrofo."""
+    if valor.startswith(_INICIO_FORMULA):
+        return f"'{valor}"
+    return valor

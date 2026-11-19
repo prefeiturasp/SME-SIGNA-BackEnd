@@ -1,7 +1,7 @@
 """Filtros para pesquisa de portarias em AtoAdministrativo.
 
 Inclui filtros por intervalo de portaria, ano vigente, tipo de ato, número SEI,
-informações de designação de servidor e data de cessação.
+informações de designação de servidor, DRE e data de cessação.
 """
 
 import django_filters
@@ -59,9 +59,12 @@ class PortariaFilter(django_filters.FilterSet):
         label="RF do servidor",
     )
     dre = django_filters.CharFilter(
-        field_name="designacao_detalhe__dre_nome",
-        lookup_expr="icontains",
-        label="DRE",
+        label="Nome da DRE",
+        method="filter_dre",
+    )
+    codigo_dre = django_filters.CharFilter(
+        label="Código EOL da DRE",
+        method="filter_codigo_dre",
     )
     unidade = django_filters.CharFilter(
         field_name="designacao_detalhe__unidade_proponente",
@@ -93,6 +96,50 @@ class PortariaFilter(django_filters.FilterSet):
             return queryset.filter(tipo__in=["DESIGNACAO", "CESSACAO"])
         return queryset.filter(tipo=value)
 
+    def filter_dre(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra portarias por parte do nome da DRE.
+
+        Considera a DRE do próprio ato ou da designação raiz, para que
+        cessações, apostilas e insubsistências também sejam retornadas.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Trecho do nome da DRE buscada.
+
+        Returns:
+            Queryset filtrado com os atos vinculados à DRE.
+
+        """
+        return queryset.filter(
+            models.Q(designacao_detalhe__dre_nome__icontains=value)
+            | models.Q(ato_raiz__designacao_detalhe__dre_nome__icontains=value)
+        )
+
+    def filter_codigo_dre(
+        self, queryset: models.QuerySet, name: str, value: str
+    ) -> models.QuerySet:
+        """Filtra portarias pelo código EOL da DRE.
+
+        Mesmo critério do filtro de designações: considera a DRE do
+        próprio ato ou da designação raiz.
+
+        Args:
+            queryset: Queryset de AtoAdministrativo a ser filtrado.
+            name: Nome do campo de filtro.
+            value: Código EOL da DRE buscada.
+
+        Returns:
+            Queryset filtrado com os atos vinculados à DRE.
+
+        """
+        return queryset.filter(
+            models.Q(designacao_detalhe__dre=value)
+            | models.Q(ato_raiz__designacao_detalhe__dre=value)
+        )
+
     class Meta:
         model = AtoAdministrativo
         fields = [
@@ -104,6 +151,7 @@ class PortariaFilter(django_filters.FilterSet):
             "nome",
             "rf",
             "dre",
+            "codigo_dre",
             "unidade",
             "data_cessacao",
         ]
